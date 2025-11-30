@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 import com.GiaThinh.canlua.ui.navigation.CanLuaNavigation
 import com.GiaThinh.canlua.ui.theme.CanLuaTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,8 +22,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CanLuaTheme {
+                val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
-                    CanLuaNavigation()
+                    CanLuaNavigation(navController = navController)
                 }
             }
         }
@@ -33,6 +35,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainActivityPreview() {
     CanLuaTheme {
-        CanLuaNavigation()
+        val navController = rememberNavController()
+        CanLuaNavigation(navController = navController)
     }
 }

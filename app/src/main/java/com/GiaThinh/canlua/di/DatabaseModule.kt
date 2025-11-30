@@ -5,6 +5,8 @@ import com.GiaThinh.canlua.data.dao.CardDao
 import com.GiaThinh.canlua.data.dao.TransactionDao
 import com.GiaThinh.canlua.data.dao.WeightEntryDao
 import com.GiaThinh.canlua.data.database.AppDatabase
+import com.GiaThinh.canlua.repository.SettingsRepository
+import com.GiaThinh.canlua.util.TextToSpeechManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,6 +37,18 @@ object DatabaseModule {
     @Provides
     fun provideTransactionDao(database: AppDatabase): TransactionDao {
         return database.transactionDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTextToSpeechManager(@ApplicationContext context: Context): TextToSpeechManager {
+        return TextToSpeechManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository {
+        return SettingsRepository(context)
     }
 }
 

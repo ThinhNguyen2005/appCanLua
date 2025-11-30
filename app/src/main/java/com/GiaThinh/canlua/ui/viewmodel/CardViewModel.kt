@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.repository.CardRepository
+import com.GiaThinh.canlua.repository.SettingsRepository
+import com.GiaThinh.canlua.util.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +17,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CardViewModel @Inject constructor(
-    private val repository: CardRepository
+    private val repository: CardRepository,
+    private val ttsManager: TextToSpeechManager,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _cards = MutableStateFlow<List<Card>>(emptyList())
@@ -27,8 +31,13 @@ class CardViewModel @Inject constructor(
     private val _weightEntries = MutableStateFlow<List<WeightEntry>>(emptyList())
     val weightEntries: StateFlow<List<WeightEntry>> = _weightEntries.asStateFlow()
 
+    private val _weightInputState = MutableStateFlow(WeightInputUiState())
+    val weightInputState: StateFlow<WeightInputUiState> = _weightInputState.asStateFlow()
+
     init {
         loadCards()
+        ttsManager.initialize()
+        ttsManager.setEnabled(settingsRepository.isTtsEnabled())
     }
 
     private fun loadCards() {
@@ -59,8 +68,13 @@ class CardViewModel @Inject constructor(
         depositAmount: Double = 0.0
     ) {
         viewModelScope.launch {
+            // Validation: tên không được bỏ trống
+            val trimmedName = name.trim()
+            if (trimmedName.isBlank()) {
+                return@launch
+            }
             val newCard = Card(
-                name = name,
+                name = trimmedName,
                 cccd = cccd,
                 date = Date(),
                 pricePerKg = pricePerKg,
@@ -113,6 +127,13 @@ class CardViewModel @Inject constructor(
             
             // Update card calculations
             repository.updateCardCalculations(cardId)
+            
+            // Speak final weight if TTS enabled
+            val ttsEnabled = settingsRepository.isTtsEnabled()
+            ttsManager.setEnabled(ttsEnabled)
+            if (ttsEnabled && ttsManager.isEnabled()) {
+                ttsManager.speakNumber(weight)
+            }
         }
     }
 
@@ -156,8 +177,161 @@ class CardViewModel @Inject constructor(
             card?.let {
                 val updatedCard = it.copy(isLocked = !it.isLocked)
                 repository.updateCard(updatedCard)
+                // Reload card to update UI
+                loadCardById(cardId)
             }
         }
+    }
+
+    fun updateCurrentWeight(weight: String) {
+        _weightInputState.value = _weightInputState.value.copy(currentWeight = weight)
+    }
+
+    fun updateBagWeight(weight: String) {
+        _weightInputState.value = _weightInputState.value.copy(bagWeight = weight)
+    }
+
+    fun updateImpurityWeight(weight: String) {
+        _weightInputState.value = _weightInputState.value.copy(impurityWeight = weight)
+    }
+
+    fun toggleLock() {
+        _weightInputState.value = _weightInputState.value.copy(
+            isLocked = !_weightInputState.value.isLocked
+        )
+    }
+
+    fun clearWeightInput() {
+        _weightInputState.value = _weightInputState.value.copy(currentWeight = "")
+    }
+
+    fun appendToWeight(digit: String) {
+        val current = _weightInputState.value.currentWeight
+        // Validation: không cho phép nhiều dấu chấm
+        if (digit == "." && current.contains(".")) return
+        // Giới hạn số chữ số thập phân
+        if (current.contains(".")) {
+            val decimalPart = current.substringAfter(".")
+            if (decimalPart.length >= 2 && digit != ".") return
+        }
+        _weightInputState.value = _weightInputState.value.copy(
+            currentWeight = current + digit
+        )
+        
+        // Speak digit if TTS enabled
+        val ttsEnabled = settingsRepository.isTtsEnabled()
+        ttsManager.setEnabled(ttsEnabled)
+        if (ttsEnabled && ttsManager.isEnabled()) {
+            ttsManager.speak(digit)
+        }
+    }
+
+    fun removeLastDigit() {
+        val current = _weightInputState.value.currentWeight
+        if (current.isNotEmpty()) {
+            _weightInputState.value = _weightInputState.value.copy(
+                currentWeight = current.dropLast(1)
+            )
+        }
+    }
+
+    fun updateCardName(cardId: Long, name: String) {
+        viewModelScope.launch {
+            // Validation: tên không được bỏ trống
+            if (name.isBlank()) {
+                return@launch
+            }
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(name = name.trim()))
+            }
+        }
+    }
+
+    fun updateCardBagWeight(cardId: Long, bagWeight: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                val updatedCard = it.copy(bagWeight = bagWeight)
+                repository.updateCard(updatedCard)
+                repository.updateCardCalculations(cardId)
+            }
+        }
+    }
+
+    fun updateCardImpurityWeight(cardId: Long, impurityWeight: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                val updatedCard = it.copy(impurityWeight = impurityWeight)
+                repository.updateCard(updatedCard)
+                repository.updateCardCalculations(cardId)
+            }
+        }
+    }
+
+    fun updateCardPricePerKg(cardId: Long, pricePerKg: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                val updatedCard = it.copy(pricePerKg = pricePerKg)
+                repository.updateCard(updatedCard)
+                repository.updateCardCalculations(cardId)
+            }
+        }
+    }
+
+    fun updateCardDepositAmount(cardId: Long, depositAmount: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(depositAmount = depositAmount))
+                repository.updateCardCalculations(cardId)
+            }
+        }
+    }
+
+    fun updateCardPaidAmount(cardId: Long, paidAmount: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(paidAmount = paidAmount))
+                repository.updateCardCalculations(cardId)
+            }
+        }
+    }
+
+    fun addWeightEntryDirectly(cardId: Long, weight: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                // Sử dụng bagWeight và impurityWeight từ card
+                val netWeight = weight - it.bagWeight - it.impurityWeight
+                val weightEntry = WeightEntry(
+                    cardId = cardId,
+                    weight = weight,
+                    bagWeight = it.bagWeight,
+                    impurityWeight = it.impurityWeight,
+                    netWeight = netWeight
+                )
+                repository.insertWeightEntry(weightEntry)
+                
+                // Update card calculations
+                repository.updateCardCalculations(cardId)
+                
+                // Speak final weight if TTS enabled
+                val ttsEnabled = settingsRepository.isTtsEnabled()
+                ttsManager.setEnabled(ttsEnabled)
+                if (ttsEnabled && ttsManager.isEnabled()) {
+                    ttsManager.speakNumber(weight)
+                }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ttsManager.shutdown()
     }
 }
 

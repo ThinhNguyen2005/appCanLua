@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "197777602230",
+    "project_id": "canlua-3995f",
+    "storage_bucket": "canlua-3995f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:197777602230:android:9d7967872deaee2dc15817",
+        "android_client_info": {
+          "package_name": "com.GiaThinh.canlua"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO1pTgSWcEuFr82Nz7hdlIiwjyev7G2LU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
