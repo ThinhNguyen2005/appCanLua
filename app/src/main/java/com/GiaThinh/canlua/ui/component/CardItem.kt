@@ -1,22 +1,32 @@
 package com.GiaThinh.canlua.ui.component
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.data.model.Card
-import com.GiaThinh.canlua.ui.theme.*
+import com.GiaThinh.canlua.ui.theme.BlackText
+import com.GiaThinh.canlua.ui.theme.GrayLabel
+import com.GiaThinh.canlua.ui.theme.GreenSuccess
+import com.GiaThinh.canlua.ui.theme.RedText
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 @Composable
 fun CardItem(
@@ -26,70 +36,78 @@ fun CardItem(
     val numberFormat = NumberFormat.getNumberInstance(Locale("vi", "VN"))
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
 
+    val statusContainerColor = if (card.isLocked) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val statusTextColor = if (card.isLocked) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(20.dp)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(20.dp),
+            .padding(horizontal = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(18.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header with name and lock status
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
                         text = card.name,
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    if (card.cccd != null) {
+                    Text(
+                        text = card.cccd?.let { "CCCD: $it" } ?: "Chưa cập nhật CCCD",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                         Text(
-                            text = "CCCD: ${card.cccd}",
-                            style = MaterialTheme.typography.bodySmall,
+                        text = if (card.traderName.isBlank()) "Thương lái: Chưa có" else "Thương lái: ${card.traderName}",
+                        style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-                
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (card.isLocked) 
-                        MaterialTheme.colorScheme.errorContainer 
-                    else 
-                        MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (card.isLocked) Icons.Default.Lock else Icons.Default.Check,
-                            contentDescription = if (card.isLocked) "Đã khóa" else "Mở khóa",
-                            tint = if (card.isLocked) 
-                                MaterialTheme.colorScheme.onErrorContainer 
-                            else 
-                                MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
 
-            // Date
+                StatusPill(
+                    text = if (card.isLocked) "Đã khóa" else "Đang mở",
+                    containerColor = statusContainerColor,
+                    contentColor = statusTextColor
+                        )
+                    }
+
             Text(
-                text = "📅 ${dateFormat.format(card.date)}",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Ngày tạo: ${dateFormat.format(card.date)}",
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -98,14 +116,12 @@ fun CardItem(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            // Stats row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Left column - Weight info
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     InfoRow(
                         label = "Tổng KL",
@@ -114,15 +130,14 @@ fun CardItem(
                     )
                     InfoRow(
                         label = "Số bao",
-                        value = "${card.bagCount}",
+                        value = "${card.bagCount} bao",
                         isHighlight = false
                     )
                 }
                 
-                // Right column - Money info
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     InfoRow(
                         label = "Thành tiền",
@@ -143,6 +158,27 @@ fun CardItem(
 }
 
 @Composable
+private fun StatusPill(
+    text: String,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color
+) {
+    Surface(
+        color = containerColor,
+        contentColor = contentColor,
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 0.dp
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
 private fun InfoRow(
     label: String,
     value: String,
@@ -157,7 +193,7 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = GrayLabel
         )
         Text(

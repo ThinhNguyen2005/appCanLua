@@ -86,7 +86,7 @@ fun WeightInputScreen(
                 onToggleLock = { viewModel.toggleCardLock(cardId) }
             )
         },
-        containerColor = Color(0xFFF5F5F5) // Nền tổng thể hơi xám nhẹ
+        containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -348,7 +348,7 @@ fun ColumnTotalsRow(totals: List<Double>) {
         Column(modifier = Modifier.padding(8.dp)) {
             Text(
                 "TỔNG CỘT",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -416,6 +416,17 @@ fun LabelInputRow(
     isMoney: Boolean = false,
     isCompact: Boolean = false
 ) {
+    val moneyFormatter = remember { NumberFormat.getNumberInstance(Locale("vi", "VN")) }
+    val displayValue = remember(value, isMoney) {
+        if (isMoney && value.isNotBlank()) {
+            value.filter { it.isDigit() }
+                .takeIf { it.isNotBlank() }
+                ?.toLongOrNull()
+                ?.let { moneyFormatter.format(it) }
+                ?: ""
+        } else value
+    }
+
     Column {
         Text(
             text = label,
@@ -426,11 +437,17 @@ fun LabelInputRow(
         Spacer(modifier = Modifier.height(4.dp))
 
         OutlinedTextField(
-            value = value,
+            value = displayValue,
             onValueChange = {
-                if (isText) onValueChange(it)
-                else if (it.isEmpty() || it.all { char -> char.isDigit() || char == '.' }) {
+                when {
+                    isText -> onValueChange(it)
+                    isMoney -> {
+                        val digits = it.filter { ch -> ch.isDigit() }
+                        onValueChange(digits)
+                    }
+                    else -> if (it.isEmpty() || it.all { char -> char.isDigit() || char == '.' }) {
                     onValueChange(it)
+                    }
                 }
             },
             enabled = isEditable,
@@ -520,32 +537,40 @@ fun WeightTableStyled(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
-            .background(Color.White)
+            .clip(RoundedCornerShape(10.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         // Header Bảng
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(GreenHeader) // GreenHeader
+                .background(MaterialTheme.colorScheme.primary) // GreenHeader
                 .padding(vertical = 8.dp, horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("BẢNG $tableIndex", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(String.format("%.1f", tableTotal), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("BẢNG $tableIndex", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+            Text(String.format("%.1f", tableTotal), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
         }
 
         // Grid Input
         Column(
-            modifier = Modifier.fillMaxWidth().padding(4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // Header cột C1-C5
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 repeat(5) { i ->
-                    Text("C${i + 1}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    Text(
+                        "C${i + 1}",
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
@@ -614,9 +639,13 @@ fun GridInputCell(
 
     Box(
         modifier = modifier
-            .aspectRatio(1.4f)
-            .background(Color.White, RoundedCornerShape(4.dp))
-            .border(1.dp, if (isFocused) Color(0xFF1565C0) else Color.LightGray, RoundedCornerShape(4.dp)),
+                .aspectRatio(1.35f)
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+                .border(
+                    1.dp,
+                    if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    RoundedCornerShape(6.dp)
+                ),
         contentAlignment = Alignment.Center
     ) {
         if (!isLocked) {

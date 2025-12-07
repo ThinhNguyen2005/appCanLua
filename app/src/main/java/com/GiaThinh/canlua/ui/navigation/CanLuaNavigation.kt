@@ -1,23 +1,41 @@
 package com.GiaThinh.canlua.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.GiaThinh.canlua.ui.screen.AuthScreen
 import com.GiaThinh.canlua.ui.screen.CardDetailScreen
 import com.GiaThinh.canlua.ui.screen.CardListScreen
 import com.GiaThinh.canlua.ui.screen.SettingsScreen
 import com.GiaThinh.canlua.ui.screen.SyncStatusScreen
 import com.GiaThinh.canlua.ui.screen.WeightInputScreen
+import com.GiaThinh.canlua.ui.screen.ProfileSetupScreen
 
 @Composable
 fun CanLuaNavigation(
-    navController: NavHostController
+    navController: NavHostController,
+    isAuthenticated: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = "card_list"
+        startDestination = if (isAuthenticated) "card_list" else "login",
+        modifier = modifier
     ) {
+        composable("login") {
+            AuthScreen(
+                onSuccess = {
+                    navController.navigate("profile_setup") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("profile_setup") {
+            ProfileSetupScreen(navController = navController)
+        }
         composable("card_list") {
             CardListScreen(navController = navController)
         }

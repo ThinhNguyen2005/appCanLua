@@ -11,6 +11,13 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.isUnspecified
+import androidx.compose.ui.unit.times
+import com.GiaThinh.canlua.data.model.FontScale
 
 private val DarkColorScheme = darkColorScheme(
     primary = Green80,
@@ -40,6 +47,7 @@ fun CanLuaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    fontScale: FontScale = FontScale.NORMAL,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -52,9 +60,40 @@ fun CanLuaTheme(
         else -> LightColorScheme
     }
 
+    val scaledTypography = Typography.scale(fontScale.scale)
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = scaledTypography,
         content = content
+    )
+}
+
+private fun TextStyle.scale(factor: Float): TextStyle {
+    fun TextUnit.scaleOrKeep() = if (isUnspecified) this else this * factor
+    return copy(
+        fontSize = fontSize.scaleOrKeep(),
+        lineHeight = lineHeight.scaleOrKeep(),
+        letterSpacing = letterSpacing // keep spacing
+    )
+}
+
+private fun androidx.compose.material3.Typography.scale(factor: Float): androidx.compose.material3.Typography {
+    return androidx.compose.material3.Typography(
+        displayLarge = displayLarge.scale(factor),
+        displayMedium = displayMedium.scale(factor),
+        displaySmall = displaySmall.scale(factor),
+        headlineLarge = headlineLarge.scale(factor),
+        headlineMedium = headlineMedium.scale(factor),
+        headlineSmall = headlineSmall.scale(factor),
+        titleLarge = titleLarge.scale(factor),
+        titleMedium = titleMedium.scale(factor),
+        titleSmall = titleSmall.scale(factor),
+        bodyLarge = bodyLarge.scale(factor),
+        bodyMedium = bodyMedium.scale(factor),
+        bodySmall = bodySmall.scale(factor),
+        labelLarge = labelLarge.scale(factor),
+        labelMedium = labelMedium.scale(factor),
+        labelSmall = labelSmall.scale(factor)
     )
 }

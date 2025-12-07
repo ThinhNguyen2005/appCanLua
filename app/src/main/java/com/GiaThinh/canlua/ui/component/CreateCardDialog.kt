@@ -11,10 +11,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CreateCardDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String?, Double, Double) -> Unit
+    onConfirm: (String, String?, String, Double, Double) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var cccd by remember { mutableStateOf("") }
+    var traderName by remember { mutableStateOf("") }
     var pricePerKg by remember { mutableStateOf("") }
     var depositAmount by remember { mutableStateOf("") }
 
@@ -40,6 +41,13 @@ fun CreateCardDialog(
                 )
 
                 OutlinedTextField(
+                    value = traderName,
+                    onValueChange = { traderName = it },
+                    label = { Text("Thương lái (tùy chọn)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
                     value = pricePerKg,
                     onValueChange = { pricePerKg = it },
                     label = { Text("Đơn giá/kg (VNĐ)") },
@@ -61,7 +69,13 @@ fun CreateCardDialog(
                 onClick = {
                     val price = pricePerKg.toDoubleOrNull() ?: 0.0
                     val deposit = depositAmount.toDoubleOrNull() ?: 0.0
-                    onConfirm(name.trim(), cccd.takeIf { it.isNotBlank() }, price, deposit)
+                    onConfirm(
+                        name.trim(),
+                        cccd.takeIf { it.isNotBlank() },
+                        traderName.trim(),
+                        price,
+                        deposit
+                    )
                 },
                 enabled = name.isNotBlank() && pricePerKg.isNotBlank()
             ) {

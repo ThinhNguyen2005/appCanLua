@@ -1,0 +1,44 @@
+package com.GiaThinh.canlua.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.GiaThinh.canlua.data.model.FontScale
+import com.GiaThinh.canlua.repository.SettingsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsRepository: SettingsRepository
+) : ViewModel() {
+    
+    private val _isTtsEnabled = MutableStateFlow(settingsRepository.isTtsEnabled())
+    val isTtsEnabled: StateFlow<Boolean> = _isTtsEnabled.asStateFlow()
+
+    val fontScale: StateFlow<FontScale> = settingsRepository.fontScale
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = settingsRepository.getFontScale()
+        )
+    
+    fun setTtsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setTtsEnabled(enabled)
+            _isTtsEnabled.value = enabled
+        }
+    }
+
+    fun setFontScale(scale: FontScale) {
+        viewModelScope.launch {
+            settingsRepository.setFontScale(scale)
+        }
+    }
+}
+

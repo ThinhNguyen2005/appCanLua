@@ -4,6 +4,7 @@ import android.content.Context
 import com.GiaThinh.canlua.data.dao.CardDao
 import com.GiaThinh.canlua.data.dao.TransactionDao
 import com.GiaThinh.canlua.data.dao.WeightEntryDao
+import com.GiaThinh.canlua.data.dao.ProfileDao
 import com.GiaThinh.canlua.data.database.AppDatabase
 import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.util.TextToSpeechManager
@@ -37,6 +38,11 @@ object DatabaseModule {
     @Provides
     fun provideTransactionDao(database: AppDatabase): TransactionDao {
         return database.transactionDao()
+    }
+
+    @Provides
+    fun provideProfileDao(database: AppDatabase): ProfileDao {
+        return database.profileDao()
     }
 
     @Provides

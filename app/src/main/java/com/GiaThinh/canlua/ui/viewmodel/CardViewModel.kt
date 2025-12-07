@@ -64,6 +64,7 @@ class CardViewModel @Inject constructor(
     fun createNewCard(
         name: String,
         cccd: String?,
+        traderName: String,
         pricePerKg: Double,
         depositAmount: Double = 0.0
     ) {
@@ -76,6 +77,7 @@ class CardViewModel @Inject constructor(
             val newCard = Card(
                 name = trimmedName,
                 cccd = cccd,
+                traderName = traderName.trim(),
                 date = Date(),
                 pricePerKg = pricePerKg,
                 depositAmount = depositAmount

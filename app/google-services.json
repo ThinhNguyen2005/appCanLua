@@ -12,7 +12,20 @@
           "package_name": "com.GiaThinh.canlua"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "197777602230-jv6f3bi5m87ol5nalgv6qojelncl1d6u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.GiaThinh.canlua",
+            "certificate_hash": "b35fc2a03bb76920b9d63848a4090c665eefc3c0"
+          }
+        },
+        {
+          "client_id": "197777602230-o7ul2dldfgi9nu60f02m6ete1jm9ai1b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDO1pTgSWcEuFr82Nz7hdlIiwjyev7G2LU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "197777602230-o7ul2dldfgi9nu60f02m6ete1jm9ai1b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

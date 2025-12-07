@@ -10,11 +10,14 @@ import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Summarize
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.AttachMoney
 import androidx.compose.material.icons.outlined.Calculate
@@ -46,6 +49,7 @@ import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.ui.theme.*
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -71,9 +75,9 @@ fun CardDetailScreen(
     val density = LocalDensity.current
     
     // Dimensions
-    val headerHeight = 160.dp
-    val pillHeight = 80.dp
-    val collapsedPillHeight = 60.dp
+    val headerHeight = 120.dp
+    val pillHeight = 88.dp
+    val collapsedPillHeight = 64.dp
     val pillHalfHeight = pillHeight / 2
     
     // Calculate scroll progress
@@ -90,6 +94,9 @@ fun CardDetailScreen(
     }
 
     val context = LocalContext.current
+    var showOverflow by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = LightGray,
@@ -118,7 +125,7 @@ fun CardDetailScreen(
                             card = card,
                             numberFormat = numberFormat,
                             onOpenClick = {
-                                Toast.makeText(context, "Chức năng đang phát triển", Toast.LENGTH_SHORT).show()
+                                navController.navigate("weight_input/${card.id}")
                             }
                         )
                     }
@@ -147,9 +154,13 @@ fun CardDetailScreen(
                     },
                 onBack = { navController.popBackStack() },
                 onAdd = { navController.navigate("weight_input/${cardId}") },
-                onEdit = {
-                    // TODO: Implement edit functionality
-                }
+                onPrint = {
+                    Toast.makeText(context, "In hóa đơn (đang phát triển)", Toast.LENGTH_SHORT).show()
+                },
+                onEdit = { navController.navigate("weight_input/${cardId}") },
+                onDelete = { showDeleteConfirm = true },
+                showOverflow = showOverflow,
+                onOverflowChange = { showOverflow = it }
             )
 
 
@@ -174,66 +185,83 @@ fun CardDetailScreen(
                     .zIndex(1f)
                     .fillMaxWidth()
                     .offset(y = currentPillTop)
-                    .padding(horizontal = (24 * (1 - collapseFraction)).dp) // Reduce horizontal padding as it expands
+                    .padding(horizontal = 12.dp)
                     .height(androidx.compose.ui.unit.lerp(pillHeight, collapsedPillHeight, collapseFraction)),
                 contentAlignment = Alignment.TopCenter
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(currentPillWidthFraction)
-                        .fillMaxHeight()
-                        .shadow(
-                            elevation = 8.dp * (1 - collapseFraction), // Reduce shadow when stuck (flat look?) or keep it
-                            shape = RoundedCornerShape(androidx.compose.ui.unit.lerp(50.dp, 16.dp, collapseFraction))
-                        )
-                        .background(Color.White, RoundedCornerShape(androidx.compose.ui.unit.lerp(50.dp, 16.dp, collapseFraction)))
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp * (1 - collapseFraction))
                 ) {
-                    // Use Box with BiasAlignment for smooth separation
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        // NAME: Center -> Left
-                        val nameBiasX = androidx.compose.ui.util.lerp(0f, -1f, collapseFraction)
-                        Text(
-                            text = "Người bán: ${card.name}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.Gray,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.align(BiasAlignment(nameBiasX, 0f))
-                        )
-
-                        // WEIGHT: Center -> Right
-                        val weightBiasX = androidx.compose.ui.util.lerp(0f, 1f, collapseFraction)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.align(BiasAlignment(weightBiasX, 0f))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Inventory2,
-                                contentDescription = null,
-                                tint = Green40,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "${numberFormat.format(card.totalWeight)} kg",
+                                text = card.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (card.traderName.isBlank()) "Thương lái: Chưa có" else "Thương lái: ${card.traderName}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Ngày: ${SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")).format(card.date)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "${numberFormat.format(card.totalWeight)} KG",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Green40
                             )
-                            // Hide bag count when collapsed to save space, or keep it if it fits
-                            if (collapseFraction < 0.5f) {
-                                Text(
-                                    text = " / ${card.bagCount} bao",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp).graphicsLayer { alpha = 1f - collapseFraction * 2 }
-                                )
-                            }
+                            Text(
+                                text = "${card.bagCount} bao",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
+            }
+
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = { Text("Xóa phiếu?") },
+                    text = { Text("Hành động này sẽ xóa phiếu và các cân nặng liên quan.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDeleteConfirm = false
+                            scope.launch {
+                                viewModel.deleteCard(card)
+                                navController.popBackStack()
+                            }
+                        }) {
+                            Text("Xóa", color = Color.Red)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text("Hủy")
+                        }
+                    }
+                )
             }
         }
     }
@@ -244,7 +272,11 @@ fun CustomHeader(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onAdd: () -> Unit,
-    onEdit: () -> Unit
+    onPrint: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    showOverflow: Boolean,
+    onOverflowChange: (Boolean) -> Unit
 ) {
     // Use a Box with a gradient background for a modern look
     Box(
@@ -255,65 +287,86 @@ fun CustomHeader(
                     colors = listOf(Green40, GreenGrey40)
                 )
             )
-            // Handle status bar insets
             .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(bottom = 48.dp) // Increased padding to make room for the larger floating pill overlap
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(64.dp)
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Row: Back Button & Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier
-                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                        .size(40.dp)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Green40)
+                }
+                Column {
+                    Text("Tên Người bán", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Green40)
+                    Text("1xx kg / số lượng", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onAdd,
+                    colors = ButtonDefaults.buttonColors(containerColor = RedHeader, contentColor = Color.White),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                    modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(
-                        Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Thêm", fontSize = 12.sp)
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Edit Button
-                    FilledTonalButton(
-                        onClick = onEdit,
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = Amber80,
-                            contentColor = Color.Black
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Sửa")
-                    }
+//                Button(
+//                    onClick = { onEdit() },
+//                    colors = ButtonDefaults.buttonColors(containerColor = Amber80, contentColor = Color.Black),
+//                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+//                    modifier = Modifier.height(34.dp)
+//                ) {
+//                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+//                    Spacer(modifier = Modifier.width(4.dp))
+//                    Text("Sửa", fontSize = 12.sp)
+//                }
 
-                    // Add Button
-                    Button(
-                        onClick = onAdd,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RedHeader,
-                            contentColor = Color.White
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm")
-                    }
+                IconButton(
+                    onClick = { onOverflowChange(!showOverflow) },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = Color.Black)
+                }
+
+                DropdownMenu(
+                    expanded = showOverflow,
+                    onDismissRequest = { onOverflowChange(false) }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("In hóa đơn") },
+                        leadingIcon = { Icon(Icons.Default.Print, contentDescription = null) },
+                        onClick = {
+                            onOverflowChange(false)
+                            onPrint()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Sửa phiếu") },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        onClick = {
+                            onOverflowChange(false)
+                            onEdit()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Xóa phiếu", color = Color.Red) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red) },
+                        onClick = {
+                            onOverflowChange(false)
+                            onDelete()
+                        }
+                    )
                 }
             }
         }

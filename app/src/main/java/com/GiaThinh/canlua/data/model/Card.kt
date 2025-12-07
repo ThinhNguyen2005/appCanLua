@@ -10,6 +10,7 @@ data class Card(
     val id: Long = 0,
     val name: String,
     val cccd: String? = null,
+    val traderName: String = "",
     val date: Date,
     val totalWeight: Double = 0.0, // Tổng khối lượng
     val bagWeight: Double = 0.0, // Khối lượng bao bì
