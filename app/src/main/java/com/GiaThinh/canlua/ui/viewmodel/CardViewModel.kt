@@ -6,6 +6,7 @@ import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.repository.CardRepository
 import com.GiaThinh.canlua.repository.SettingsRepository
+import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.util.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,29 +35,67 @@ class CardViewModel @Inject constructor(
     private val _weightInputState = MutableStateFlow(WeightInputUiState())
     val weightInputState: StateFlow<WeightInputUiState> = _weightInputState.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // Filter state
+    private val _selectedVarietyFilter = MutableStateFlow<String?>(null)
+    val selectedVarietyFilter: StateFlow<String?> = _selectedVarietyFilter.asStateFlow()
+
+    private val _availableVarieties = MutableStateFlow<List<String>>(emptyList())
+    val availableVarieties: StateFlow<List<String>> = _availableVarieties.asStateFlow()
+
     init {
         loadCards()
+        loadAvailableVarieties()
         ttsManager.initialize()
         ttsManager.setEnabled(settingsRepository.isTtsEnabled())
     }
 
     private fun loadCards() {
         viewModelScope.launch {
+            _isLoading.value = true
             repository.getAllCards().collect { cardsList ->
                 _cards.value = cardsList
+                _isLoading.value = false
             }
+        }
+    }
+
+    private fun loadAvailableVarieties() {
+        viewModelScope.launch {
+            repository.getDistinctRiceVarieties().collect { varieties ->
+                _availableVarieties.value = varieties
+            }
+        }
+    }
+
+    fun setVarietyFilter(variety: String?) {
+        _selectedVarietyFilter.value = variety
+        if (variety != null) {
+            viewModelScope.launch {
+                repository.getCardsByRiceVariety(variety).collect { filtered ->
+                    _cards.value = filtered
+                }
+            }
+        } else {
+            loadCards()
         }
     }
 
     fun loadCardById(cardId: Long) {
         viewModelScope.launch {
+            _isLoading.value = true
             val card = repository.getCardById(cardId)
             _currentCard.value = card
             
             if (card != null) {
                 repository.getWeightEntriesByCardId(cardId).collect { entries ->
                     _weightEntries.value = entries
+                    _isLoading.value = false
                 }
+            } else {
+                _isLoading.value = false
             }
         }
     }
@@ -66,25 +105,28 @@ class CardViewModel @Inject constructor(
         cccd: String?,
         traderName: String,
         pricePerKg: Double,
-        depositAmount: Double = 0.0
+        depositAmount: Double = 0.0,
+        riceVariety: String = "",
+        moisturePercent: Double = 0.0,
+        seasonLabel: String = ""
     ) {
         viewModelScope.launch {
-            // Validation: tên không được bỏ trống
             val trimmedName = name.trim()
-            if (trimmedName.isBlank()) {
-                return@launch
-            }
+            if (trimmedName.isBlank()) return@launch
+
             val newCard = Card(
                 name = trimmedName,
                 cccd = cccd,
                 traderName = traderName.trim(),
                 date = Date(),
                 pricePerKg = pricePerKg,
-                depositAmount = depositAmount
+                depositAmount = depositAmount,
+                riceVariety = riceVariety,
+                moisturePercent = moisturePercent,
+                seasonLabel = seasonLabel
             )
             val cardId = repository.insertCard(newCard)
             
-            // Insert deposit transaction if amount > 0
             if (depositAmount > 0) {
                 repository.insertTransaction(
                     com.GiaThinh.canlua.data.model.Transaction(
@@ -117,7 +159,16 @@ class CardViewModel @Inject constructor(
         impurityWeight: Double = 0.0
     ) {
         viewModelScope.launch {
-            val netWeight = weight - bagWeight - impurityWeight
+            val card = repository.getCardById(cardId)
+            val moisture = card?.moisturePercent ?: 0.0
+
+            val netWeight = RiceCalculator.calcNetWeight(
+                rawWeight = weight,
+                bagWeight = bagWeight,
+                impurityWeight = impurityWeight,
+                moisturePercent = moisture
+            )
+
             val weightEntry = WeightEntry(
                 cardId = cardId,
                 weight = weight,
@@ -126,11 +177,8 @@ class CardViewModel @Inject constructor(
                 netWeight = netWeight
             )
             repository.insertWeightEntry(weightEntry)
-            
-            // Update card calculations
             repository.updateCardCalculations(cardId)
             
-            // Speak final weight if TTS enabled
             val ttsEnabled = settingsRepository.isTtsEnabled()
             ttsManager.setEnabled(ttsEnabled)
             if (ttsEnabled && ttsManager.isEnabled()) {
@@ -142,8 +190,6 @@ class CardViewModel @Inject constructor(
     fun updateWeightEntry(weightEntry: WeightEntry) {
         viewModelScope.launch {
             repository.updateWeightEntry(weightEntry)
-            
-            // Update card calculations
             repository.updateCardCalculations(weightEntry.cardId)
         }
     }
@@ -151,8 +197,6 @@ class CardViewModel @Inject constructor(
     fun deleteWeightEntry(weightEntry: WeightEntry) {
         viewModelScope.launch {
             repository.deleteWeightEntry(weightEntry)
-            
-            // Update card calculations
             repository.updateCardCalculations(weightEntry.cardId)
         }
     }
@@ -167,8 +211,6 @@ class CardViewModel @Inject constructor(
                     description = description
                 )
             )
-            
-            // Update card calculations
             repository.updateCardCalculations(cardId)
         }
     }
@@ -179,11 +221,37 @@ class CardViewModel @Inject constructor(
             card?.let {
                 val updatedCard = it.copy(isLocked = !it.isLocked)
                 repository.updateCard(updatedCard)
-                // Reload card to update UI
                 loadCardById(cardId)
             }
         }
     }
+
+    // === QR Handshake ===
+
+    fun generateQrToken(cardId: Long) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId) ?: return@launch
+            val token = RiceCalculator.generateQrToken(
+                cardId = card.id,
+                netWeight = card.totalWeight,
+                totalAmount = card.totalAmount
+            )
+            repository.updateQrToken(cardId, token)
+            loadCardById(cardId)
+        }
+    }
+
+    fun verifyAndLockTransaction(scannedToken: String, traderId: String) {
+        viewModelScope.launch {
+            val card = repository.findByQrToken(scannedToken)
+            if (card != null && !card.isLocked) {
+                repository.lockCard(cardId = card.id, traderId = traderId)
+                _currentCard.value = repository.getCardById(card.id)
+            }
+        }
+    }
+
+    // === Weight input state management ===
 
     fun updateCurrentWeight(weight: String) {
         _weightInputState.value = _weightInputState.value.copy(currentWeight = weight)
@@ -209,9 +277,7 @@ class CardViewModel @Inject constructor(
 
     fun appendToWeight(digit: String) {
         val current = _weightInputState.value.currentWeight
-        // Validation: không cho phép nhiều dấu chấm
         if (digit == "." && current.contains(".")) return
-        // Giới hạn số chữ số thập phân
         if (current.contains(".")) {
             val decimalPart = current.substringAfter(".")
             if (decimalPart.length >= 2 && digit != ".") return
@@ -220,7 +286,6 @@ class CardViewModel @Inject constructor(
             currentWeight = current + digit
         )
         
-        // Speak digit if TTS enabled
         val ttsEnabled = settingsRepository.isTtsEnabled()
         ttsManager.setEnabled(ttsEnabled)
         if (ttsEnabled && ttsManager.isEnabled()) {
@@ -239,10 +304,7 @@ class CardViewModel @Inject constructor(
 
     fun updateCardName(cardId: Long, name: String) {
         viewModelScope.launch {
-            // Validation: tên không được bỏ trống
-            if (name.isBlank()) {
-                return@launch
-            }
+            if (name.isBlank()) return@launch
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(name = name.trim()))
@@ -283,6 +345,35 @@ class CardViewModel @Inject constructor(
         }
     }
 
+    fun updateCardMoisture(cardId: Long, moisturePercent: Double) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                val updatedCard = it.copy(moisturePercent = moisturePercent)
+                repository.updateCard(updatedCard)
+                repository.updateCardCalculations(cardId)
+            }
+        }
+    }
+
+    fun updateCardRiceVariety(cardId: Long, variety: String) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(riceVariety = variety))
+            }
+        }
+    }
+
+    fun updateCardSeasonLabel(cardId: Long, seasonLabel: String) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(seasonLabel = seasonLabel))
+            }
+        }
+    }
+
     fun updateCardDepositAmount(cardId: Long, depositAmount: Double) {
         viewModelScope.launch {
             val card = repository.getCardById(cardId)
@@ -307,8 +398,12 @@ class CardViewModel @Inject constructor(
         viewModelScope.launch {
             val card = repository.getCardById(cardId)
             card?.let {
-                // Sử dụng bagWeight và impurityWeight từ card
-                val netWeight = weight - it.bagWeight - it.impurityWeight
+                val netWeight = RiceCalculator.calcNetWeight(
+                    rawWeight = weight,
+                    bagWeight = it.bagWeight,
+                    impurityWeight = it.impurityWeight,
+                    moisturePercent = it.moisturePercent
+                )
                 val weightEntry = WeightEntry(
                     cardId = cardId,
                     weight = weight,
@@ -317,11 +412,8 @@ class CardViewModel @Inject constructor(
                     netWeight = netWeight
                 )
                 repository.insertWeightEntry(weightEntry)
-                
-                // Update card calculations
                 repository.updateCardCalculations(cardId)
                 
-                // Speak final weight if TTS enabled
                 val ttsEnabled = settingsRepository.isTtsEnabled()
                 ttsManager.setEnabled(ttsEnabled)
                 if (ttsEnabled && ttsManager.isEnabled()) {
@@ -336,4 +428,3 @@ class CardViewModel @Inject constructor(
         ttsManager.shutdown()
     }
 }
-

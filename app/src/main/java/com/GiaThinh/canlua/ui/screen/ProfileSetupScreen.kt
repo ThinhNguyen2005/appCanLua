@@ -1,36 +1,23 @@
 package com.GiaThinh.canlua.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Agriculture
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -42,86 +29,190 @@ enum class UserRole { FARMER, TRADER, STAFF }
 @Composable
 fun ProfileSetupScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    onComplete: (() -> Unit)? = null
 ) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
     var cccd by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
     var role by remember { mutableStateOf(UserRole.FARMER) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        TopAppBar(title = { Text("Thông tin người dùng") })
-
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    Scaffold { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            Text(
+                text = "Chào mừng bạn mới!",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Vui lòng cho biết bạn là ai để chúng tôi tuỳ chỉnh ứng dụng phù hợp nhất.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Role Selection Cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Chọn vai trò", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                OutlinedButton(onClick = { expanded = true }) {
-                    Text(
-                        when (role) {
-                            UserRole.FARMER -> "Nông dân"
-                            UserRole.TRADER -> "Thương lái"
-                            UserRole.STAFF -> "Nhân viên/ủy quyền"
-                        }
+                RoleSelectionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "Nông Dân",
+                    icon = Icons.Default.Agriculture,
+                    isSelected = role == UserRole.FARMER,
+                    onClick = { role = UserRole.FARMER }
+                )
+                
+                RoleSelectionCard(
+                    modifier = Modifier.weight(1f),
+                    title = "Thương Lái",
+                    icon = Icons.Default.Storefront,
+                    isSelected = role == UserRole.TRADER,
+                    onClick = { role = UserRole.TRADER }
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Form Fields
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Họ tên (bắt buộc)") },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                shape = RoundedCornerShape(14.dp),
+                singleLine = true
+            )
+            
+            Spacer(modifier = Modifier.height(18.dp))
+            
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { phone = it },
+                label = { Text("Số điện thoại (tùy chọn)") },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                shape = RoundedCornerShape(14.dp),
+                singleLine = true
+            )
+            
+            Spacer(modifier = Modifier.height(18.dp))
+            
+            OutlinedTextField(
+                value = region,
+                onValueChange = { region = it },
+                label = { Text("Khu vực (Tỉnh/Huyện)") },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                shape = RoundedCornerShape(14.dp),
+                singleLine = true
+            )
+            
+            Spacer(modifier = Modifier.height(18.dp))
+            
+            OutlinedTextField(
+                value = cccd,
+                onValueChange = { cccd = it },
+                label = { Text("CCCD (tùy chọn)") },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                shape = RoundedCornerShape(14.dp),
+                singleLine = true
+            )
+            
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            Button(
+                onClick = {
+                    viewModel.saveProfile(
+                        name = name,
+                        phone = phone,
+                        region = region,
+                        note = "",
+                        role = role,
+                        cccd = cccd,
+                        username = ""
                     )
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    DropdownMenuItem(text = { Text("Nông dân") }, onClick = { role = UserRole.FARMER; expanded = false })
-                    DropdownMenuItem(text = { Text("Thương lái") }, onClick = { role = UserRole.TRADER; expanded = false })
-                    DropdownMenuItem(text = { Text("Nhân viên/ủy quyền") }, onClick = { role = UserRole.STAFF; expanded = false })
-                }
-            }
-        }
-
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(
+                    if (onComplete != null) {
+                        onComplete()
+                    } else {
+                        navController.navigate("main") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                },
+                enabled = name.isNotBlank(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp)
             ) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Họ tên (bắt buộc)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Số điện thoại (+84..., không bắt buộc)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = region, onValueChange = { region = it }, label = { Text("Khu vực (tỉnh/huyện)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text("Ghi chú") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Tên đăng nhập (tuỳ chọn)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = cccd, onValueChange = { cccd = it }, label = { Text("CCCD (tuỳ chọn)") }, modifier = Modifier.fillMaxWidth())
+                Icon(Icons.Default.CheckCircle, contentDescription = null)
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("Hoàn tất thiết lập", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
 
-        Button(
-            onClick = {
-                viewModel.saveProfile(name, phone, region, note, role, cccd, username)
-                navController.navigate("card_list") {
-                    popUpTo("login") { inclusive = true }
-                }
-            },
-            enabled = name.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
+@Composable
+fun RoleSelectionCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+
+    Card(
+        modifier = modifier
+            .height(140.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Default.CheckCircle, contentDescription = null)
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Lưu và tiếp tục")
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                modifier = Modifier.size(48.dp),
+                tint = contentColor
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
         }
     }
 }

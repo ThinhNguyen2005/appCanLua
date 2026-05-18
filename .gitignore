@@ -16,3 +16,5 @@ local.properties
 .cursor
 *.md
 /app/google-services.json
+.agent
+.env

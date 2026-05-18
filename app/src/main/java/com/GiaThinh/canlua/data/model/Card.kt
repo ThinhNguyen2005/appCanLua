@@ -12,16 +12,22 @@ data class Card(
     val cccd: String? = null,
     val traderName: String = "",
     val date: Date,
-    val totalWeight: Double = 0.0, // Tổng khối lượng
-    val bagWeight: Double = 0.0, // Khối lượng bao bì
-    val impurityWeight: Double = 0.0, // Khối lượng tạp chất
-    val netWeight: Double = 0.0, // Khối lượng đã trừ (bao bì + tạp chất)
-    val depositAmount: Double = 0.0, // Tiền cọc
-    val pricePerKg: Double = 0.0, // Đơn giá/kg
-    val totalAmount: Double = 0.0, // Thành tiền
-    val paidAmount: Double = 0.0, // Đã trả
-    val remainingAmount: Double = 0.0, // Còn lại phải trả
-    val bagCount: Int = 0, // Số bao
-    val isLocked: Boolean = false // Khóa để tránh nhập nhầm
-)
+    val totalWeight: Double = 0.0,
+    val bagWeight: Double = 0.0,
+    val impurityWeight: Double = 0.0,
+    val netWeight: Double = 0.0,
+    val depositAmount: Double = 0.0,
+    val pricePerKg: Double = 0.0,
+    val totalAmount: Double = 0.0,
+    val paidAmount: Double = 0.0,
+    val remainingAmount: Double = 0.0,
+    val bagCount: Int = 0,
+    val isLocked: Boolean = false,
 
+    // === PHASE 1 NEW FIELDS ===
+    val riceVariety: String = "",          // Giống lúa (ST25, OM18, Jasmine 85...)
+    val moisturePercent: Double = 0.0,     // Độ ẩm (%)
+    val seasonLabel: String = "",          // Nhãn vụ mùa (Đông Xuân 2026, Hè Thu 2026...)
+    val qrToken: String? = null,           // Hash SHA-256 cho xác thực QR Handshake
+    val lockedByTraderId: String? = null   // UID thương lái đã xác thực QR
+)

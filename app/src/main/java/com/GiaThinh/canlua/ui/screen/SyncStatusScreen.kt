@@ -19,9 +19,13 @@ import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.navigation.NavController
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SyncStatusScreen(
+    navController: NavController,
     viewModel: SyncViewModel = hiltViewModel()
 ) {
     val syncStatus by viewModel.syncStatus.collectAsState()
@@ -30,7 +34,15 @@ fun SyncStatusScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Đồng bộ dữ liệu") }
+                title = { Text("Đồng bộ dữ liệu") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại"
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->

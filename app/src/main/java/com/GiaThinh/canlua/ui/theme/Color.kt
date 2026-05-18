@@ -18,11 +18,11 @@ val SurfaceGreen = Color(0xFFF1F8E9)
 
 // Business colors - Based on reference app (Cân Lúa v5)
 val RedHeader = Color(0xFFD32F2F)        // Header đỏ "TỔNG CỘNG"
-val RedText = Color(0xFF0000)            // Text đỏ (Grand Total, important values)
-val GreenSuccess = Color(0xFF4CAF50)     // Xanh lá (thành công, đã thanh toán đủ)
-val YellowHighlight = Color(0xFFFFEB3B)  // Vàng (highlight, tổng cột)
-val GrayLabel = Color(0xFF757575)        // Xám (label, giá trị = 0)
-val BlackText = Color(0xFF000000)        // Đen (text bình thường)
+val RedText = Color(0xFFD32F2F)            // Text đỏ (Grand Total, important values)
+val GreenSuccess = Color(0xFF388E3C)     // Xanh lá (thành công, đã thanh toán đủ) - Đậm hơn xíu để rõ trên nền trắng
+val YellowHighlight = Color(0xFFFBC02D)  // Vàng (highlight, tổng cột) - Đậm hơn để dễ đọc
+val GrayLabel = Color(0xFF616161)        // Xám (label, giá trị = 0) - Đậm hơn để tăng tương phản
+val BlackText = Color(0xFF212121)        // Đen (text bình thường) - Không dùng đen tuyền để đỡ gắt
 val White = Color(0xFFFFFFFF)           // Trắng
 val LightGray = Color(0xFFF5F5F5)        // Nền xám nhẹ
-val GreenTableHeader = Color(0xFF2E7D32) // Xanh lá đậm (header bảng)
+val GreenTableHeader = Color(0xFF1B5E20) // Xanh lá đậm (header bảng)

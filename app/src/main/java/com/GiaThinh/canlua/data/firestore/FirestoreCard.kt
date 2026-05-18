@@ -25,6 +25,11 @@ data class FirestoreCard(
     val bagCount: Int = 0,
     val isLocked: Boolean = false,
     val traderName: String = "",
+    val riceVariety: String = "",
+    val moisturePercent: Double = 0.0,
+    val seasonLabel: String = "",
+    val qrToken: String? = null,
+    val lockedByTraderId: String? = null,
     val userId: String? = null, // Firebase user ID
     val deviceId: String? = null, // Device identifier
     val syncTimestamp: Long = System.currentTimeMillis(),

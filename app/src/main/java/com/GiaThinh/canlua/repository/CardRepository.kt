@@ -7,6 +7,7 @@ import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.TransactionType
 import com.GiaThinh.canlua.data.model.WeightEntry
+import com.GiaThinh.canlua.util.RiceCalculator
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,7 +48,7 @@ class CardRepository @Inject constructor(
     suspend fun insertTransaction(transaction: Transaction): Long = 
         transactionDao.insertTransaction(transaction)
 
-    // Calculation methods
+    // Calculation methods — uses RiceCalculator with moisture adjustment
     suspend fun calculateCardTotals(cardId: Long): CardCalculationResult {
         val totalNetWeight = weightEntryDao.getTotalNetWeightByCardId(cardId) ?: 0.0
         val bagCount = weightEntryDao.getBagCountByCardId(cardId)
@@ -66,17 +67,43 @@ class CardRepository @Inject constructor(
         val card = cardDao.getCardById(cardId) ?: return
         val calculation = calculateCardTotals(cardId)
         
+        val totalAmount = RiceCalculator.calcTotalAmount(
+            calculation.totalNetWeight,
+            card.pricePerKg
+        )
+        val remainingAmount = RiceCalculator.calcRemainingAmount(
+            totalAmount,
+            calculation.totalPaid,
+            calculation.totalDeposit
+        )
+
         val updatedCard = card.copy(
             totalWeight = calculation.totalNetWeight,
             bagCount = calculation.bagCount,
             paidAmount = calculation.totalPaid,
             depositAmount = calculation.totalDeposit,
-            totalAmount = calculation.totalNetWeight * card.pricePerKg,
-            remainingAmount = (calculation.totalNetWeight * card.pricePerKg) - calculation.totalPaid
+            totalAmount = totalAmount,
+            remainingAmount = remainingAmount
         )
         
         cardDao.updateCard(updatedCard)
     }
+
+    // === Phase 1: QR Handshake ===
+
+    suspend fun findByQrToken(token: String): Card? = cardDao.findByQrToken(token)
+
+    suspend fun updateQrToken(cardId: Long, token: String) = cardDao.updateQrToken(cardId, token)
+
+    suspend fun lockCard(cardId: Long, traderId: String) = cardDao.lockCard(cardId, traderId)
+
+    // === Phase 1: Filter ===
+
+    fun getCardsByRiceVariety(variety: String): Flow<List<Card>> =
+        cardDao.getCardsByRiceVariety(variety)
+
+    fun getDistinctRiceVarieties(): Flow<List<String>> =
+        cardDao.getDistinctRiceVarieties()
 }
 
 data class CardCalculationResult(
@@ -85,4 +112,3 @@ data class CardCalculationResult(
     val totalPaid: Double,
     val totalDeposit: Double
 )
-

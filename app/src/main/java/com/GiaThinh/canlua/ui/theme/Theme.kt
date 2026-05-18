@@ -34,12 +34,13 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Amber40,
     background = SurfaceGreen,
     surface = Color(0xFFFFFFFF),
-    surfaceVariant = LightGreen,
+    surfaceVariant = Color(0xFFE8F5E9), // Lighter green for variant surface to improve contrast
     onPrimary = Color(0xFFFFFFFF),
     onSecondary = Color(0xFFFFFFFF),
     onTertiary = Color(0xFFFFFFFF),
-    onBackground = DarkGreen,
-    onSurface = DarkGreen
+    onBackground = Color(0xFF1A1C1A), // Near black with green tint for high contrast text
+    onSurface = Color(0xFF1A1C1A), // Near black with green tint
+    onSurfaceVariant = Color(0xFF424940) // Dark gray with green tint for secondary text
 )
 
 @Composable
@@ -50,7 +51,7 @@ fun CanLuaTheme(
     fontScale: FontScale = FontScale.NORMAL,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
+    val baseColorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -59,6 +60,46 @@ fun CanLuaTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+
+    // Thêm animation chuyển đổi mượt mà giữa sáng/tối
+    val colorScheme = androidx.compose.material3.ColorScheme(
+        primary = androidx.compose.animation.animateColorAsState(baseColorScheme.primary, label = "primary").value,
+        onPrimary = androidx.compose.animation.animateColorAsState(baseColorScheme.onPrimary, label = "onPrimary").value,
+        primaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.primaryContainer, label = "primaryContainer").value,
+        onPrimaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onPrimaryContainer, label = "onPrimaryContainer").value,
+        inversePrimary = androidx.compose.animation.animateColorAsState(baseColorScheme.inversePrimary, label = "inversePrimary").value,
+        secondary = androidx.compose.animation.animateColorAsState(baseColorScheme.secondary, label = "secondary").value,
+        onSecondary = androidx.compose.animation.animateColorAsState(baseColorScheme.onSecondary, label = "onSecondary").value,
+        secondaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.secondaryContainer, label = "secondaryContainer").value,
+        onSecondaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onSecondaryContainer, label = "onSecondaryContainer").value,
+        tertiary = androidx.compose.animation.animateColorAsState(baseColorScheme.tertiary, label = "tertiary").value,
+        onTertiary = androidx.compose.animation.animateColorAsState(baseColorScheme.onTertiary, label = "onTertiary").value,
+        tertiaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.tertiaryContainer, label = "tertiaryContainer").value,
+        onTertiaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onTertiaryContainer, label = "onTertiaryContainer").value,
+        background = androidx.compose.animation.animateColorAsState(baseColorScheme.background, label = "background").value,
+        onBackground = androidx.compose.animation.animateColorAsState(baseColorScheme.onBackground, label = "onBackground").value,
+        surface = androidx.compose.animation.animateColorAsState(baseColorScheme.surface, label = "surface").value,
+        onSurface = androidx.compose.animation.animateColorAsState(baseColorScheme.onSurface, label = "onSurface").value,
+        surfaceVariant = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceVariant, label = "surfaceVariant").value,
+        onSurfaceVariant = androidx.compose.animation.animateColorAsState(baseColorScheme.onSurfaceVariant, label = "onSurfaceVariant").value,
+        surfaceTint = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceTint, label = "surfaceTint").value,
+        inverseSurface = androidx.compose.animation.animateColorAsState(baseColorScheme.inverseSurface, label = "inverseSurface").value,
+        inverseOnSurface = androidx.compose.animation.animateColorAsState(baseColorScheme.inverseOnSurface, label = "inverseOnSurface").value,
+        error = androidx.compose.animation.animateColorAsState(baseColorScheme.error, label = "error").value,
+        onError = androidx.compose.animation.animateColorAsState(baseColorScheme.onError, label = "onError").value,
+        errorContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.errorContainer, label = "errorContainer").value,
+        onErrorContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onErrorContainer, label = "onErrorContainer").value,
+        outline = androidx.compose.animation.animateColorAsState(baseColorScheme.outline, label = "outline").value,
+        outlineVariant = androidx.compose.animation.animateColorAsState(baseColorScheme.outlineVariant, label = "outlineVariant").value,
+        scrim = androidx.compose.animation.animateColorAsState(baseColorScheme.scrim, label = "scrim").value,
+        surfaceBright = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceBright, label = "surfaceBright").value,
+        surfaceDim = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceDim, label = "surfaceDim").value,
+        surfaceContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainer, label = "surfaceContainer").value,
+        surfaceContainerHigh = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerHigh, label = "surfaceContainerHigh").value,
+        surfaceContainerHighest = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerHighest, label = "surfaceContainerHighest").value,
+        surfaceContainerLow = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerLow, label = "surfaceContainerLow").value,
+        surfaceContainerLowest = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerLowest, label = "surfaceContainerLowest").value
+    )
 
     val scaledTypography = Typography.scale(fontScale.scale)
 

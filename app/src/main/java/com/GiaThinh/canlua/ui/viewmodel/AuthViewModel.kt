@@ -55,7 +55,14 @@ class AuthViewModel @Inject constructor(
             _uiState.value = if (result.isSuccess) {
                 AuthUiState(isSignedIn = true, userLabel = getUserLabel())
             } else {
-                _uiState.value.copy(loading = false, error = result.exceptionOrNull()?.message ?: "Đăng nhập thất bại")
+                val exception = result.exceptionOrNull()
+                val errorMsg = when {
+                    exception?.message?.contains("incorrect, malformed or has expired", ignoreCase = true) == true -> "Email hoặc mật khẩu không chính xác."
+                    exception?.message?.contains("no user record", ignoreCase = true) == true -> "Tài khoản không tồn tại. Vui lòng đăng ký."
+                    exception?.message?.contains("email address is badly formatted", ignoreCase = true) == true -> "Định dạng email không hợp lệ."
+                    else -> exception?.message ?: "Đăng nhập thất bại"
+                }
+                _uiState.value.copy(loading = false, error = errorMsg)
             }
         }
     }
@@ -87,7 +94,14 @@ class AuthViewModel @Inject constructor(
                 )
                 AuthUiState(isSignedIn = true, userLabel = getUserLabel())
             } else {
-                _uiState.value.copy(loading = false, error = result.exceptionOrNull()?.message ?: "Đăng ký thất bại")
+                val exception = result.exceptionOrNull()
+                val errorMsg = when {
+                    exception?.message?.contains("email address is already in use", ignoreCase = true) == true -> "Email này đã được sử dụng. Vui lòng đăng nhập."
+                    exception?.message?.contains("password should be at least", ignoreCase = true) == true -> "Mật khẩu phải có ít nhất 6 ký tự."
+                    exception?.message?.contains("email address is badly formatted", ignoreCase = true) == true -> "Định dạng email không hợp lệ."
+                    else -> exception?.message ?: "Đăng ký thất bại"
+                }
+                _uiState.value.copy(loading = false, error = errorMsg)
             }
         }
     }

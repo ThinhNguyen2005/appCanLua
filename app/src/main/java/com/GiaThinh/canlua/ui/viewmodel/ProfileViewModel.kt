@@ -13,6 +13,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
+    val profile = profileRepository.latestProfile()
 
     fun saveProfile(
         name: String,

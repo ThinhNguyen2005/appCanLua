@@ -18,7 +18,7 @@ import com.GiaThinh.canlua.data.converter.DateConverter
 
 @Database(
     entities = [Card::class, WeightEntry::class, Transaction::class, Profile::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -38,8 +38,12 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "canlua_database"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
-                    .build()
+                ).addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5
+                ).build()
                 INSTANCE = instance
                 instance
             }
@@ -68,6 +72,26 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE profiles ADD COLUMN email TEXT NOT NULL DEFAULT ''")
             }
         }
+
+        /** Phase 1: thêm giống lúa, độ ẩm, vụ mùa, QR token, trader ID */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE cards ADD COLUMN riceVariety TEXT NOT NULL DEFAULT ''"
+                )
+                database.execSQL(
+                    "ALTER TABLE cards ADD COLUMN moisturePercent REAL NOT NULL DEFAULT 0"
+                )
+                database.execSQL(
+                    "ALTER TABLE cards ADD COLUMN seasonLabel TEXT NOT NULL DEFAULT ''"
+                )
+                database.execSQL(
+                    "ALTER TABLE cards ADD COLUMN qrToken TEXT"
+                )
+                database.execSQL(
+                    "ALTER TABLE cards ADD COLUMN lockedByTraderId TEXT"
+                )
+            }
+        }
     }
 }
-

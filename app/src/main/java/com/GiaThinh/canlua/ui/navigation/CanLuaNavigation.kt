@@ -61,7 +61,7 @@ fun CanLuaNavigation(
         }
         
         composable("sync_status") {
-            SyncStatusScreen()
+            SyncStatusScreen(navController = navController)
         }
     }
 }

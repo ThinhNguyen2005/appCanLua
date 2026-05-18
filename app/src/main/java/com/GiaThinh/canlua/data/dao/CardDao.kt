@@ -23,5 +23,23 @@ interface CardDao {
 
     @Query("DELETE FROM cards WHERE id = :id")
     suspend fun deleteCardById(id: Long)
-}
 
+    // === Phase 1: QR Handshake queries ===
+
+    @Query("SELECT * FROM cards WHERE qrToken = :token LIMIT 1")
+    suspend fun findByQrToken(token: String): Card?
+
+    @Query("UPDATE cards SET qrToken = :token WHERE id = :cardId")
+    suspend fun updateQrToken(cardId: Long, token: String)
+
+    @Query("UPDATE cards SET isLocked = 1, lockedByTraderId = :traderId WHERE id = :cardId")
+    suspend fun lockCard(cardId: Long, traderId: String)
+
+    // === Phase 1: Filter & search ===
+
+    @Query("SELECT * FROM cards WHERE riceVariety = :variety ORDER BY date DESC")
+    fun getCardsByRiceVariety(variety: String): Flow<List<Card>>
+
+    @Query("SELECT DISTINCT riceVariety FROM cards WHERE riceVariety != '' ORDER BY riceVariety")
+    fun getDistinctRiceVarieties(): Flow<List<String>>
+}

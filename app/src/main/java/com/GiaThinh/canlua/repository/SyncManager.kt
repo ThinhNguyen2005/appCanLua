@@ -167,6 +167,11 @@ class SyncManager @Inject constructor(
             bagCount = this.bagCount,
             isLocked = this.isLocked,
             traderName = this.traderName,
+            riceVariety = this.riceVariety,
+            moisturePercent = this.moisturePercent,
+            seasonLabel = this.seasonLabel,
+            qrToken = this.qrToken,
+            lockedByTraderId = this.lockedByTraderId,
             localId = this.id
         )
     }

@@ -2,7 +2,9 @@ package com.GiaThinh.canlua.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudSync
@@ -67,19 +69,24 @@ fun SettingsScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                ),
+                // FIX LỖI 1: Tắt tự động thêm status bar padding cho TopAppBar này,
+                // vì Scaffold bên ngoài (MainScreen) đã thêm WindowInsets rồi.
+                windowInsets = WindowInsets(0.dp)
             )
         }
     ) { paddingValues ->
+        // FIX LỖI 3: Chuyển paddingValues ra khỏi modifier chain chứa verticalScroll
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
+                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
@@ -160,7 +167,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -186,70 +193,84 @@ fun SettingsScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                        Text(
-                            text = syncStatusText(syncStatus),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                                Text(
+                                    text = syncStatusText(syncStatus),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
 
-                        StatusRow("Lần đồng bộ cuối", lastSyncTime)
-                        StatusRow("Lần backup cuối", lastBackupTime)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            StatusRow("Lần đồng bộ cuối", lastSyncTime)
+                            StatusRow("Lần backup cuối", lastBackupTime)
+                        }
 
+                        // FIX LỖI 4: Thiết kế lại nút gọn gàng, xếp về bên phải
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Button(
-                                onClick = { syncViewModel.syncAll() },
-                                modifier = Modifier.weight(1f),
-                                enabled = syncStatus !is SyncStatus.Syncing
-                            ) {
-                                if (syncStatus is SyncStatus.Syncing) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                Text("Đồng bộ ngay")
-                            }
-
                             OutlinedButton(
                                 onClick = { syncViewModel.backupNow() },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.wrapContentWidth(),
                                 enabled = backupStatus !is BackupStatus.BackingUp
                             ) {
                                 if (backupStatus is BackupStatus.BackingUp) {
                                     CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
+                                        modifier = Modifier.size(16.dp),
                                         strokeWidth = 2.dp
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                } else {
+                                    Icon(
+                                        Icons.Default.Backup,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                 }
-                                Icon(
-                                    Icons.Default.Backup,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Backup DB")
+                                Text("Backup")
+                            }
+                            
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Button(
+                                onClick = { syncViewModel.syncAll() },
+                                modifier = Modifier.wrapContentWidth(),
+                                enabled = syncStatus !is SyncStatus.Syncing
+                            ) {
+                                if (syncStatus is SyncStatus.Syncing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                } else {
+                                    Icon(
+                                        Icons.Default.CloudSync,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                }
+                                Text("Đồng bộ")
                             }
                         }
 
                         TextButton(
                             onClick = { navController.navigate("sync_status") },
-                            modifier = Modifier.align(Alignment.End)
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
                             Icon(
                                 Icons.Default.CloudDone,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Xem trạng thái chi tiết")
+                            Text("Xem chi tiết trạng thái")
                         }
                     }
                 }
@@ -317,14 +338,15 @@ fun SettingsScreen(
                         Button(
                             onClick = {
                                 authViewModel.signOut()
-                                navController.navigate("login") {
-                                    popUpTo(0) { inclusive = true }
-                                }
                             },
                             enabled = authState.isSignedIn,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         ) {
-                            Text("Đăng xuất")
+                            Text("Đăng xuất", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
