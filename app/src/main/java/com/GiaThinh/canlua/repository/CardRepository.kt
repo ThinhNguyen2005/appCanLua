@@ -50,12 +50,14 @@ class CardRepository @Inject constructor(
 
     // Calculation methods — uses RiceCalculator with moisture adjustment
     suspend fun calculateCardTotals(cardId: Long): CardCalculationResult {
+        val totalRawWeight = weightEntryDao.getTotalRawWeightByCardId(cardId) ?: 0.0
         val totalNetWeight = weightEntryDao.getTotalNetWeightByCardId(cardId) ?: 0.0
         val bagCount = weightEntryDao.getBagCountByCardId(cardId)
         val totalPaid = transactionDao.getTotalPaidAmountByCardId(cardId) ?: 0.0
         val totalDeposit = transactionDao.getTotalDepositAmountByCardId(cardId) ?: 0.0
 
         return CardCalculationResult(
+            totalRawWeight = totalRawWeight,
             totalNetWeight = totalNetWeight,
             bagCount = bagCount,
             totalPaid = totalPaid,
@@ -67,8 +69,18 @@ class CardRepository @Inject constructor(
         val card = cardDao.getCardById(cardId) ?: return
         val calculation = calculateCardTotals(cardId)
         
+        val totalRaw = calculation.totalRawWeight
+        val bagCount = calculation.bagCount
+        val bagWeightVal = card.bagWeight
+        val impurityVal = card.impurityWeight
+        val moistureVal = card.moisturePercent
+
+        // Khối lượng thực = Tổng khối lượng - (Tổng số bao × Trừ bì) - Tạp chất - (Tổng khối lượng × (Độ ẩm / 100))
+        val netWeight = totalRaw - (bagCount * bagWeightVal) - impurityVal - (totalRaw * (moistureVal / 100.0))
+        val finalNetWeight = netWeight.coerceAtLeast(0.0)
+
         val totalAmount = RiceCalculator.calcTotalAmount(
-            calculation.totalNetWeight,
+            finalNetWeight,
             card.pricePerKg
         )
         val remainingAmount = RiceCalculator.calcRemainingAmount(
@@ -78,8 +90,9 @@ class CardRepository @Inject constructor(
         )
 
         val updatedCard = card.copy(
-            totalWeight = calculation.totalNetWeight,
-            bagCount = calculation.bagCount,
+            totalWeight = totalRaw,
+            netWeight = finalNetWeight,
+            bagCount = bagCount,
             paidAmount = calculation.totalPaid,
             depositAmount = calculation.totalDeposit,
             totalAmount = totalAmount,
@@ -107,6 +120,7 @@ class CardRepository @Inject constructor(
 }
 
 data class CardCalculationResult(
+    val totalRawWeight: Double,
     val totalNetWeight: Double,
     val bagCount: Int,
     val totalPaid: Double,

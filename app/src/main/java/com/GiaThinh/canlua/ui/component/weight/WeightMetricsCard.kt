@@ -16,7 +16,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
 import java.util.Locale
@@ -26,10 +31,11 @@ import java.util.Locale
  */
 @Composable
 fun WeightMetricsCard(
-    farmerName: String,
+    traderName: String,
     totalWeight: Double,
     bagWeight: Double,
     impurityWeight: Double,
+    moisturePercent: Double,
     netWeight: Double,
     pricePerKg: Double,
     totalAmount: Double,
@@ -37,6 +43,7 @@ fun WeightMetricsCard(
     isLocked: Boolean,
     onBagWeightChange: (Double) -> Unit,
     onImpurityWeightChange: (Double) -> Unit,
+    onMoistureChange: (Double) -> Unit,
     onPriceChange: (Double) -> Unit
 ) {
     val fmt = remember { NumberFormat.getNumberInstance(Locale("vi", "VN")) }
@@ -45,6 +52,9 @@ fun WeightMetricsCard(
     }
     var impText by remember(impurityWeight) {
         mutableStateOf(if (impurityWeight > 0) impurityWeight.toString() else "")
+    }
+    var moistureText by remember(moisturePercent) {
+        mutableStateOf(if (moisturePercent > 0) moisturePercent.toString() else "")
     }
     var priceText by remember(pricePerKg) {
         mutableStateOf(if (pricePerKg > 0) "%.0f".format(pricePerKg) else "")
@@ -71,7 +81,7 @@ fun WeightMetricsCard(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "$bagCount lần",
+                        "$bagCount bao",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = AppColors.GreenPrimary
@@ -104,38 +114,99 @@ fun WeightMetricsCard(
                 }
             }
 
-            // Trừ bì + Tạp chất
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = bagText,
-                    onValueChange = {
-                        if (!isLocked) {
-                            bagText = it
-                            onBagWeightChange(it.toDoubleOrNull() ?: 0.0)
-                        }
-                    },
-                    label = { Text("Trừ bì (kg)") },
-                    enabled = !isLocked,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                OutlinedTextField(
-                    value = impText,
-                    onValueChange = {
-                        if (!isLocked) {
-                            impText = it
-                            onImpurityWeightChange(it.toDoubleOrNull() ?: 0.0)
-                        }
-                    },
-                    label = { Text("Tạp chất (kg)") },
-                    enabled = !isLocked,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
-                )
+            val context = LocalContext.current
+            // Trừ bì + Tạp chất + Độ ẩm
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Trừ bì
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = bagText,
+                        onValueChange = {
+                            if (!isLocked) {
+                                bagText = it
+                                onBagWeightChange(it.toDoubleOrNull() ?: 0.0)
+                            }
+                        },
+                        label = { Text("Bì (kg/bao)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        enabled = !isLocked,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    if (isLocked) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                                }
+                        )
+                    }
+                }
+                // Tạp chất
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = impText,
+                        onValueChange = {
+                            if (!isLocked) {
+                                impText = it
+                                onImpurityWeightChange(it.toDoubleOrNull() ?: 0.0)
+                            }
+                        },
+                        label = { Text("Tạp chất (kg)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        enabled = !isLocked,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    if (isLocked) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                                }
+                        )
+                    }
+                }
+                // Độ ẩm
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = moistureText,
+                        onValueChange = {
+                            if (!isLocked) {
+                                moistureText = it
+                                onMoistureChange(it.toDoubleOrNull() ?: 0.0)
+                            }
+                        },
+                        label = { Text("Độ ẩm (%)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        enabled = !isLocked,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    if (isLocked) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                                }
+                        )
+                    }
+                }
             }
 
             // KL thực (after deductions) - High Contrast

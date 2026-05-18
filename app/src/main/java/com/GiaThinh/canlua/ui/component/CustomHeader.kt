@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -51,7 +52,7 @@ import java.util.*
 
 private val HeaderGreen   = Color(0xFF3D8B40)
 private val TOPBAR_H      = 52.dp
-private val META_CHIP_H   = 100.dp  // MetaRow + ChipRow + paddings
+private val META_CHIP_H   = 120.dp  // MetaRow + ChipRow + paddings + Divider
 private val BOTTOM_PAD    = 12.dp
 
 /** Trả về expanded/collapsed height đã tính statusBar — dùng ở CardDetailScreen */
@@ -59,15 +60,15 @@ data class HeaderHeights(val expanded: Dp, val collapsed: Dp)
 
 @Composable
 fun rememberHeaderHeights(): HeaderHeights {
-    val statusBarH = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     return HeaderHeights(
-        expanded  = statusBarH + TOPBAR_H + META_CHIP_H + BOTTOM_PAD,
-        collapsed = statusBarH + TOPBAR_H
+        expanded  = TOPBAR_H + META_CHIP_H + BOTTOM_PAD,
+        collapsed = TOPBAR_H
     )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main composable
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -83,11 +84,9 @@ fun CustomHeader(
     onEditCard: () -> Unit = {},
     onDeleteCard: () -> Unit = {},
     onCreateQr: () -> Unit = {},
-    onScanQr: () -> Unit = {}
+    onScanQr: () -> Unit = {},
+    onToggleLock: () -> Unit = {}
 ) {
-    // statusBarHeight tính đúng trên từng thiết bị
-    val statusBarH = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
     // Expanded content mờ dần nhanh ở nửa đầu scroll
     val expandedAlpha = (1f - collapseFraction * 2.2f).coerceIn(0f, 1f)
 
@@ -106,8 +105,6 @@ fun CustomHeader(
         modifier = modifier
             .fillMaxWidth()
             .background(HeaderGreen)
-            // KHÔNG dùng statusBarsPadding() — tự padding bằng giá trị thực
-            .padding(top = statusBarH)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -134,12 +131,36 @@ fun CustomHeader(
                     }
                     Text(
                         text = titleText,
-                        style = MaterialTheme.typography.titleLarge,  // 22sp — dễ đọc hơn
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        style = TextStyle(
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+
+                // Nút Khóa Màn Hình
+                IconButton(
+                    onClick = onToggleLock,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    if (card.isLocked) {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = "Mở khóa",
+                            tint = Color.Red,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.LockOpen,
+                            contentDescription = "Khóa",
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
 
                 // Menu ⋮
@@ -155,13 +176,6 @@ fun CustomHeader(
                         expanded = showOverflow,
                         onDismissRequest = { onOverflowChange(false) }
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Thêm cân", fontSize = 15.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Add, null, tint = HeaderGreen)
-                            },
-                            onClick = { onOverflowChange(false); onAdd() }
-                        )
                         DropdownMenuItem(
                             text = { Text("Sửa phiếu", fontSize = 15.sp) },
                             leadingIcon = {
@@ -184,16 +198,11 @@ fun CustomHeader(
                             onClick = { onOverflowChange(false); onCreateQr() }
                         )
                         DropdownMenuItem(
-                            text = { Text("Quét mã QR", fontSize = 15.sp) },
+                            text = { Text("Quét QR (Thương lái)", fontSize = 15.sp) },
                             leadingIcon = {
                                 Icon(Icons.Outlined.CameraAlt, null, tint = HeaderGreen)
                             },
                             onClick = { onOverflowChange(false); onScanQr() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Xuất phiếu", fontSize = 15.sp) },
-                            leadingIcon = { Icon(Icons.Default.Share, null) },
-                            onClick = { onOverflowChange(false) }
                         )
                     }
                 }
@@ -256,6 +265,16 @@ fun CustomHeader(
                             modifier = Modifier.weight(1f)
                         )
                     }
+
+                    Spacer(Modifier.height(16.dp))
+                    
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        thickness = 1.dp,
+                        color = Color.White.copy(alpha = 0.25f)
+                    )
 
                     // Bottom padding — tránh sát mép card bên dưới
                     Spacer(Modifier.height(BOTTOM_PAD))

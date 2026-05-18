@@ -142,7 +142,42 @@ class CardViewModel @Inject constructor(
 
     fun updateCard(card: Card) {
         viewModelScope.launch {
+            val oldCard = repository.getCardById(card.id)
             repository.updateCard(card)
+
+            var needRecalc = false
+            if (oldCard != null) {
+                val depositDiff = card.depositAmount - oldCard.depositAmount
+                if (depositDiff != 0.0) {
+                    repository.insertTransaction(
+                        com.GiaThinh.canlua.data.model.Transaction(
+                            cardId = card.id,
+                            amount = depositDiff,
+                            type = com.GiaThinh.canlua.data.model.TransactionType.DEPOSIT,
+                            description = "Cập nhật tiền cọc"
+                        )
+                    )
+                    needRecalc = true
+                }
+
+                val paidDiff = card.paidAmount - oldCard.paidAmount
+                if (paidDiff != 0.0) {
+                    repository.insertTransaction(
+                        com.GiaThinh.canlua.data.model.Transaction(
+                            cardId = card.id,
+                            amount = paidDiff,
+                            type = com.GiaThinh.canlua.data.model.TransactionType.PAYMENT,
+                            description = "Cập nhật đã trả"
+                        )
+                    )
+                    needRecalc = true
+                }
+            }
+
+            if (needRecalc || oldCard?.pricePerKg != card.pricePerKg) {
+                repository.updateCardCalculations(card.id)
+                loadCardById(card.id)
+            }
         }
     }
 

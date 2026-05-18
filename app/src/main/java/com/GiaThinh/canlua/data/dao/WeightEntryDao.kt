@@ -27,6 +27,9 @@ interface WeightEntryDao {
     @Query("SELECT SUM(netWeight) FROM weight_entries WHERE cardId = :cardId")
     suspend fun getTotalNetWeightByCardId(cardId: Long): Double?
 
+    @Query("SELECT SUM(weight) FROM weight_entries WHERE cardId = :cardId")
+    suspend fun getTotalRawWeightByCardId(cardId: Long): Double?
+
     @Query("SELECT COUNT(*) FROM weight_entries WHERE cardId = :cardId")
     suspend fun getBagCountByCardId(cardId: Long): Int
 }

@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -24,6 +26,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import android.widget.Toast
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -43,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.WeightEntry
+import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.ui.component.weight.WeightMetricsCard
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
@@ -97,7 +103,37 @@ fun WeightInputScreen(
         }
     }
 
+    val lazyListState = rememberLazyListState()
+
+    // Theo dõi tỷ lệ cuộn của khối Card "Chỉ số cân" (mã key: "metrics")
+    val scrollFraction by remember {
+        derivedStateOf {
+            if (lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset < 50) {
+                0f
+            } else {
+                val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
+                if (visibleItems.isEmpty()) {
+                    0f
+                } else {
+                    val firstVisibleItem = visibleItems.firstOrNull { it.key == "metrics" }
+                    if (firstVisibleItem == null) {
+                        1f
+                    } else {
+                        val scrolledHeight = -firstVisibleItem.offset.toFloat()
+                        val totalHeight = firstVisibleItem.size.toFloat()
+                        if (totalHeight > 0) {
+                            (scrolledHeight / totalHeight).coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             Surface(
                 shadowElevation = 3.dp,
@@ -107,7 +143,6 @@ fun WeightInputScreen(
             ) {
                 Row(
                     modifier = Modifier
-                        .windowInsetsPadding(WindowInsets.statusBars)
                         .fillMaxWidth()
                         .height(56.dp)
                         .padding(horizontal = 4.dp),
@@ -118,30 +153,58 @@ fun WeightInputScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
                     }
 
-                    Text(
-                        text = "Cân lúa: ${card.name}",
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    TextButton(
-                        onClick = {
-                            navController.navigate("card_detail/${card.id}")
-                        }
+                    // Khu vực căn giữa tiêu đề dịch chuyển động
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Xem/Sửa", fontWeight = FontWeight.Bold)
+                        // 1. Tên thương lái/nông dân (Mặc định)
+                        Text(
+                            text = card.name,
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer {
+                                alpha = (1f - scrollFraction).coerceIn(0f, 1f)
+                            }
+                        )
+
+                        // 2. Chỉ số cân thu gọn (Khi cuộn lên)
+                        val totalWeightStr = "%.1f".format(card.totalWeight).replace(".", ",")
+                        Text(
+                            text = "$totalWeightStr kg / ${card.bagCount} bao",
+                            style = TextStyle(
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFB71C1C) // Màu đỏ tương phản cao rực rỡ để nổi bật
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer {
+                                alpha = scrollFraction.coerceIn(0f, 1f)
+                            }
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.toggleCardLock(card.id) }
+                    ) {
+                        if (card.isLocked) {
+                            Icon(Icons.Default.Lock, "Mở khóa", tint = Color.Red)
+                        } else {
+                            Icon(Icons.Default.LockOpen, "Khóa", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
         }
     ) { paddingValues ->
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -150,22 +213,35 @@ fun WeightInputScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            // === CARD 1: Chỉ số cân (Tên nông dân chỉ hiển thị, Tổng khối lượng, Trừ bì, Trừ tạp chất, Đơn giá, Thành tiền) ===
+            // === CARD 1: Chỉ số cân ===
             item(key = "metrics") {
-                WeightMetricsCard(
-                    farmerName = card.name,
-                    totalWeight = card.totalWeight,
-                    bagWeight = card.bagWeight,
-                    impurityWeight = card.impurityWeight,
-                    netWeight = card.netWeight,
-                    pricePerKg = card.pricePerKg,
-                    totalAmount = card.totalAmount,
-                    bagCount = card.bagCount,
-                    isLocked = card.isLocked,
-                    onBagWeightChange = { viewModel.updateCardBagWeight(cardId, it) },
-                    onImpurityWeightChange = { viewModel.updateCardImpurityWeight(cardId, it) },
-                    onPriceChange = { viewModel.updateCardPricePerKg(cardId, it) }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            alpha = (1f - scrollFraction).coerceIn(0f, 1f)
+                            val scale = 1f - (scrollFraction * 0.05f)
+                            scaleX = scale
+                            scaleY = scale
+                        }
+                ) {
+                    WeightMetricsCard(
+                        traderName = card.traderName,
+                        totalWeight = card.totalWeight,
+                        bagWeight = card.bagWeight,
+                        impurityWeight = card.impurityWeight,
+                        moisturePercent = card.moisturePercent,
+                        netWeight = card.netWeight,
+                        pricePerKg = card.pricePerKg,
+                        totalAmount = card.totalAmount,
+                        bagCount = card.bagCount,
+                        isLocked = card.isLocked,
+                        onBagWeightChange = { viewModel.updateCardBagWeight(cardId, it) },
+                        onImpurityWeightChange = { viewModel.updateCardImpurityWeight(cardId, it) },
+                        onMoistureChange = { viewModel.updateCardMoisture(cardId, it) },
+                        onPriceChange = { viewModel.updateCardPricePerKg(cardId, it) }
+                    )
+                }
             }
 
             // === Thanh chọn Bảng dữ liệu và Thêm Bảng Thủ Công [Chọn bảng nhập          + Thêm] ===
@@ -180,24 +256,28 @@ fun WeightInputScreen(
                     ) {
                         Text(
                             text = "Chọn Bảng Nhập",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
                             color = AppColors.TextPrimary
                         )
 
                         if (!card.isLocked) {
-                            TextButton(
+                            FilledTonalButton(
                                 onClick = {
                                     manualTableCount++
                                     // Tự động nhảy sang bảng vừa tạo
                                     selectedTableIndex = tables.size
                                     HapticUtil.confirm(context)
                                 },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = AppColors.GreenPrimary,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                             ) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Thêm", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Thêm", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                             }
                         }
                     }
@@ -223,8 +303,8 @@ fun WeightInputScreen(
                             ) {
                                 Text(
                                     text = "Bảng ${index + 1}",
-                                    fontSize = if (isSelected) 17.sp else 14.sp,
-                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold
+                                    fontSize = 16.sp,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
                                 )
                             }
                         }
@@ -250,8 +330,19 @@ fun WeightInputScreen(
                                 HapticUtil.tick(context)
                             },
                             onWeightUpdated = { entry, newWeight ->
+                                val netWeight = RiceCalculator.calcNetWeight(
+                                    rawWeight = newWeight,
+                                    bagWeight = card.bagWeight,
+                                    impurityWeight = card.impurityWeight,
+                                    moisturePercent = card.moisturePercent
+                                )
                                 viewModel.updateWeightEntry(
-                                    entry.copy(weight = newWeight, netWeight = newWeight - card.bagWeight - card.impurityWeight)
+                                    entry.copy(
+                                        weight = newWeight,
+                                        bagWeight = card.bagWeight,
+                                        impurityWeight = card.impurityWeight,
+                                        netWeight = netWeight
+                                    )
                                 )
                             },
                             isLocked = card.isLocked
@@ -264,7 +355,13 @@ fun WeightInputScreen(
             item(key = "col_totals") { ColumnTotalsRow(columnTotals) }
 
             // Bottom spacing
-            item { Spacer(Modifier.height(16.dp)) }
+            item {
+                Spacer(
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .height(180.dp)
+                )
+            }
         }
     }
 }
@@ -298,12 +395,12 @@ private fun WeightTableCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(AppColors.GreenPrimary, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .padding(vertical = 10.dp, horizontal = 16.dp),
+                    .padding(vertical = 14.dp, horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("BẢNG $tableIndex", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color.White)
-                Text("${"%.1f".format(tableTotal)} kg", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("BẢNG $tableIndex", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
+                Text("${"%.1f".format(tableTotal)} kg", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
             }
 
             Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -368,6 +465,7 @@ private fun GridCell(
     } ?: ""
     var text by remember(value) { mutableStateOf(displayValue) }
     var isFocused by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Box(
         modifier = modifier
@@ -379,6 +477,16 @@ private fun GridCell(
                 1.dp,
                 if (isFocused) AppColors.GreenPrimary else AppColors.Divider,
                 RoundedCornerShape(8.dp)
+            )
+            .then(
+                if (isLocked) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                    }
+                } else Modifier
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -442,20 +550,23 @@ private fun ColumnTotalsRow(totals: List<Double>) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(12.dp)) {
-            Text("TỔNG CỘT", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.GoldDark)
+            Text("TỔNG CỘT", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AppColors.GoldDark))
             Spacer(Modifier.height(6.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 totals.forEach { total ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 40.dp) // Sử dụng chiều cao linh hoạt để hỗ trợ co giãn chữ hệ thống tốt hơn
+                            .heightIn(min = 48.dp) // Tăng chiều cao để người dùng trung niên dễ nhìn ngoài đồng ruộng
                             .padding(vertical = 2.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color.White.copy(alpha = 0.7f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("%.1f".format(total), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "%.1f".format(total),
+                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = AppColors.TextPrimary)
+                        )
                     }
                 }
             }
@@ -481,7 +592,7 @@ private fun organizeIntoTables(entries: List<WeightEntry>, manualCount: Int): Li
                 // Công thức ánh xạ dữ liệu phẳng sang Column-Major (cột trước, hàng sau)
                 val entryIdx = (t * 25) + (c * 5) + r
                 if (entryIdx < totalEntries) {
-                    tableGrid[r][c] = entries[entryIdx].netWeight
+                    tableGrid[r][c] = entries[entryIdx].weight
                 }
             }
         }
@@ -497,7 +608,7 @@ private fun calculateColumnTotals(entries: List<WeightEntry>): List<Double> {
         val localIdx = index % 25
         val col = localIdx / 5
         if (col in 0..4) {
-            totals[col] += entry.netWeight
+            totals[col] += entry.weight
         }
     }
     return totals

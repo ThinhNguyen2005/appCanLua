@@ -131,12 +131,16 @@ fun CardDetailScreen(
     val collapseRangePx = with(density) { heights.expanded.toPx() } // Distance to scroll before fully collapsed
     val collapseFraction by remember {
         derivedStateOf {
-            val scroll = if (scrollState.firstVisibleItemIndex == 0) {
-                scrollState.firstVisibleItemScrollOffset.toFloat()
+            if (scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset < 50) {
+                0f
             } else {
-                collapseRangePx // Fully collapsed if scrolled past first item
+                val scroll = if (scrollState.firstVisibleItemIndex == 0) {
+                    scrollState.firstVisibleItemScrollOffset.toFloat()
+                } else {
+                    collapseRangePx // Fully collapsed if scrolled past first item
+                }
+                (scroll / collapseRangePx).coerceIn(0f, 1f)
             }
-            (scroll / collapseRangePx).coerceIn(0f, 1f)
         }
     }
 
@@ -249,13 +253,11 @@ fun CardDetailScreen(
                                             val textStyle = if (isActive) {
                                                 MaterialTheme.typography.bodyMedium.copy(
                                                     fontWeight = FontWeight.ExtraBold,
-                                                    fontSize = 15.sp,
                                                     color = AppColors.GreenPrimary
                                                 )
                                             } else {
                                                 MaterialTheme.typography.bodyMedium.copy(
                                                     fontWeight = FontWeight.Normal,
-                                                    fontSize = 14.sp,
                                                     color = AppColors.TextSecondary
                                                 )
                                             }
@@ -355,13 +357,39 @@ fun CardDetailScreen(
                         translationY = -clampedFraction * collapseRangePx
                     },
                 onBack = { navController.popBackStack() },
-                onAdd = { navController.navigate("weight_input/${cardId}") },
+                onAdd = {
+                    if (card.isLocked) {
+                        Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        navController.navigate("weight_input/${cardId}")
+                    }
+                },
                 showOverflow = showOverflow,
                 onOverflowChange = { showOverflow = it },
-                onEditCard = { showEditDialog = true },
-                onDeleteCard = { showDeleteConfirm = true },
+                onEditCard = {
+                    if (card.isLocked) {
+                        Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        showEditDialog = true
+                    }
+                },
+                onDeleteCard = {
+                    if (card.isLocked) {
+                        Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        showDeleteConfirm = true
+                    }
+                },
                 onCreateQr = { navController.navigate("qr_generate/${card.id}") },
-                onScanQr = { navController.navigate("qr_scan") }
+                onScanQr = { navController.navigate("qr_scan") },
+                onToggleLock = {
+                    viewModel.toggleCardLock(card.id)
+                    Toast.makeText(
+                        context,
+                        if (card.isLocked) "Đã mở khóa phiếu cân" else "Đã khóa phiếu cân",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             )
 
             if (showDeleteConfirm) {
@@ -411,8 +439,6 @@ fun DetailCardItem(
     numberFormat: NumberFormat,
     onOpenClick: () -> Unit
 ) {
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -433,72 +459,85 @@ fun DetailCardItem(
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                // Header: Date & Open Button
+                // Header: Nút Cân lúa
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
-                        Text(
-                            text = "Ngày tạo",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = GrayLabel
-                        )
-                        Text(
-                            text = dateFormat.format(card.date),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
+                    Text(
+                        text = "Thông tin phiếu cân",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenPrimary
+                    )
                     WeighingButton(onClick = onOpenClick)
                 }
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = LightGray
-                )
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Stats Grid with Distinct Icons
+                // ── PHẦN 1: KHỐI LƯỢNG ──────────────────────────────────────
                 StatRow(
-                    icon = Icons.Outlined.Inventory2, // Total Weight
-                    label = "Tổng K/Lượng",
+                    icon = Icons.Outlined.Inventory2,
+                    label = "Tổng khối lượng",
                     value = "${numberFormat.format(card.totalWeight)} KG",
                     valueColor = BlackText,
-                    isBold = true
+                    isBold = false
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 StatRow(
-                    icon = Icons.Outlined.Scale, // Remaining Weight
-                    label = "K/Lượng còn lại",
-                    value = "${numberFormat.format(card.netWeight)} KG",
-                    valueColor = BlackText,
-                    isBold = true
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                StatRow(
-                    icon = Icons.Outlined.ShoppingBag, // Bags (Changed from Inventory2)
+                    icon = Icons.Outlined.ShoppingBag,
                     label = "Số bao",
                     value = "${card.bagCount} bao",
                     valueColor = BlackText,
+                    isBold = false
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                StatRow(
+                    icon = Icons.Outlined.Inventory2,
+                    label = "Trừ bì",
+                    value = "${numberFormat.format(card.bagWeight)} KG",
+                    valueColor = BlackText,
+                    isBold = false
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                StatRow(
+                    icon = Icons.Outlined.Scale,
+                    label = "Tạp chất",
+                    value = "${numberFormat.format(card.impurityWeight)} KG",
+                    valueColor = BlackText,
+                    isBold = false
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // Dòng kết quả: Khối lượng thực — in đậm nổi bật
+                StatRow(
+                    icon = Icons.Outlined.Scale,
+                    label = "Khối lượng thực",
+                    value = "${numberFormat.format(card.netWeight)} KG",
+                    valueColor = AppColors.GreenPrimary,
                     isBold = true
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Financials with Icons (Custom Row for better control)
-                FinancialRow(icon = Icons.Outlined.AttachMoney, label = "Giá tiền:", value = "${numberFormat.format(card.pricePerKg)} đ")
-                FinancialRow(icon = Icons.Outlined.Calculate, label = "Thành tiền:", value = "${numberFormat.format(card.totalAmount)} đ")
-                FinancialRow(icon = Icons.Outlined.CreditCard, label = "Tiền Cọc:", value = "${numberFormat.format(card.depositAmount)} đ")
-                FinancialRow(icon = Icons.Outlined.CheckCircle, label = "Đã trả:", value = "${numberFormat.format(card.paidAmount)} đ")
-
+                // ── DIVIDER PHÂN CÁCH ───────────────────────────────────────
                 HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
+                    modifier = Modifier.padding(vertical = 14.dp),
+                    thickness = 0.8.dp,
                     color = LightGray
                 )
 
-                // Remaining Amount (Explicitly rendered)
+                // ── PHẦN 2: TÀI CHÍNH ──────────────────────────────────────
+                FinancialRow(icon = Icons.Outlined.AttachMoney, label = "Đơn giá:", value = "${numberFormat.format(card.pricePerKg)} đ")
+                FinancialRow(icon = Icons.Outlined.Calculate, label = "Thành tiền:", value = "${numberFormat.format(card.totalAmount)} đ")
+                FinancialRow(icon = Icons.Outlined.CreditCard, label = "Tiền cọc:", value = "${numberFormat.format(card.depositAmount)} đ")
+                FinancialRow(icon = Icons.Outlined.CheckCircle, label = "Đã trả:", value = "${numberFormat.format(card.paidAmount)} đ")
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 14.dp),
+                    thickness = 0.8.dp,
+                    color = LightGray
+                )
+
+                // ── CÒN LẠI — Nhấn mạnh kết quả cuối cùng ─────────────────
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -506,24 +545,24 @@ fun DetailCardItem(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Outlined.AccountBalanceWallet, // Wallet Icon
+                            Icons.Outlined.AccountBalanceWallet,
                             contentDescription = null,
-                            tint = RedText,
+                            tint = Color(0xFFB71C1C),
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Còn lại",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = RedText
+                            color = Color(0xFFB71C1C)
                         )
                     }
                     Text(
                         text = "${numberFormat.format(card.remainingAmount)} đ",
-                        style = MaterialTheme.typography.headlineSmall, // Larger text
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = RedText
+                        color = Color(0xFFB71C1C)
                     )
                 }
             }
@@ -566,7 +605,7 @@ fun SummaryCardItem(
                         )
                     }
                     Text(
-                        "x(${card.bagCount} lượng)",
+                        "${card.bagCount} bao",
                         color = Color.White.copy(alpha = 0.9f),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -577,7 +616,7 @@ fun SummaryCardItem(
             Column(modifier = Modifier.padding(16.dp)) {
                 StatRow(
                     icon = Icons.Outlined.Inventory2,
-                    label = "Tổng K/Lượng",
+                    label = "Tổng khối lượng",
                     value = "${numberFormat.format(card.totalWeight)} KG",
                     valueColor = BlackText,
                     isBold = true
@@ -585,7 +624,7 @@ fun SummaryCardItem(
                 Spacer(modifier = Modifier.height(8.dp))
                 StatRow(
                     icon = Icons.Outlined.Scale,
-                    label = "K/Lượng còn lại",
+                    label = "Khối lượng thực",
                     value = "${numberFormat.format(card.netWeight)} KG",
                     valueColor = RedText,
                     isBold = true
@@ -601,9 +640,9 @@ fun SummaryCardItem(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = LightGray)
 
-                MoneyRow(label = "Giá tiền:", value = "${numberFormat.format(card.pricePerKg)} đ")
+                MoneyRow(label = "Đơn giá:", value = "${numberFormat.format(card.pricePerKg)} đ")
                 MoneyRow(label = "Thành tiền:", value = "${numberFormat.format(card.totalAmount)} đ")
-                MoneyRow(label = "Tiền Cọc:", value = "${numberFormat.format(card.depositAmount)} đ")
+                MoneyRow(label = "Tiền cọc:", value = "${numberFormat.format(card.depositAmount)} đ")
                 MoneyRow(label = "Đã trả:", value = "${numberFormat.format(card.paidAmount)} đ")
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = LightGray)
