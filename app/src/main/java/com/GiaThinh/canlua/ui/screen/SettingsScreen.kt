@@ -7,30 +7,41 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.GiaThinh.canlua.repository.SyncStatus
-import com.GiaThinh.canlua.repository.BackupStatus
 import com.GiaThinh.canlua.data.model.FontScale
+import com.GiaThinh.canlua.repository.BackupStatus
+import com.GiaThinh.canlua.repository.SyncStatus
+import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
-import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * SettingsScreen — đồng bộ màu sắc với toàn app qua AppColors design tokens.
+ *
+ * Mapping:
+ *  - Background  → AppColors.Surface
+ *  - Card BG     → AppColors.CardBg
+ *  - Primary     → AppColors.GreenPrimary (button, switch, radio)
+ *  - Text        → AppColors.TextPrimary / TextSecondary / TextHint
+ *  - Icon tile   → tint-tinted background (GreenSurface, GoldLight, ...) tùy chức năng
+ *  - Danger      → AppColors.Error (đăng xuất)
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -46,15 +57,16 @@ fun SettingsScreen(
     val lastBackupTime by syncViewModel.lastBackupTime.collectAsState()
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsState()
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         "Cài đặt",
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
                     )
                 },
                 navigationIcon = {
@@ -62,25 +74,25 @@ fun SettingsScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = AppColors.TextPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = AppColors.Surface,
+                    titleContentColor = AppColors.TextPrimary
                 ),
                 // FIX LỖI 1: Tắt tự động thêm status bar padding cho TopAppBar này,
                 // vì Scaffold bên ngoài (MainScreen) đã thêm WindowInsets rồi.
                 windowInsets = WindowInsets(0.dp)
             )
-        }
+        },
+        containerColor = AppColors.Surface
     ) { paddingValues ->
-        // FIX LỖI 3: Chuyển paddingValues ra khỏi modifier chain chứa verticalScroll
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(AppColors.Surface)
                 .padding(paddingValues)
         ) {
             Column(
@@ -88,16 +100,10 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
+                // ── TTS Card ──
+                SettingsCard {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -110,59 +116,50 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
+                            IconTile(
+                                bg = AppColors.GreenSurface,
+                                tint = AppColors.GreenPrimary,
+                                icon = { tint, mod ->
                                     Icon(
                                         Icons.AutoMirrored.Filled.VolumeUp,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(24.dp)
+                                        tint = tint,
+                                        modifier = mod
                                     )
                                 }
-                            }
-                            
+                            )
+
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Đọc số khi nhập",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = AppColors.TextPrimary
                                 )
                                 Text(
                                     text = "Bật/tắt tính năng đọc số khi nhập cân",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = AppColors.TextHint,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
                         }
-                        
+
                         Switch(
                             checked = isTtsEnabled,
                             onCheckedChange = { viewModel.setTtsEnabled(it) },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AppColors.GreenPrimary,
+                                uncheckedThumbColor = AppColors.TextHint,
+                                uncheckedTrackColor = AppColors.SurfaceContainer
                             )
                         )
                     }
                 }
-                
-                // Sync & Backup Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
+
+                // ── Sync & Backup Card ──
+                SettingsCard {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -173,30 +170,29 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
+                            IconTile(
+                                bg = AppColors.Info.copy(alpha = 0.12f),
+                                tint = AppColors.Info,
+                                icon = { tint, mod ->
                                     Icon(
                                         Icons.Default.CloudSync,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.size(24.dp)
+                                        tint = tint,
+                                        modifier = mod
                                     )
                                 }
-                            }
+                            )
                             Column {
                                 Text(
                                     text = "Đồng bộ & Backup",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.TextPrimary
                                 )
                                 Text(
                                     text = syncStatusText(syncStatus),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = AppColors.TextHint
                                 )
                             }
                         }
@@ -206,7 +202,6 @@ fun SettingsScreen(
                             StatusRow("Lần backup cuối", lastBackupTime)
                         }
 
-                        // FIX LỖI 4: Thiết kế lại nút gọn gàng, xếp về bên phải
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End,
@@ -215,12 +210,19 @@ fun SettingsScreen(
                             OutlinedButton(
                                 onClick = { syncViewModel.backupNow() },
                                 modifier = Modifier.wrapContentWidth(),
-                                enabled = backupStatus !is BackupStatus.BackingUp
+                                enabled = backupStatus !is BackupStatus.BackingUp,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = AppColors.GreenPrimary
+                                ),
+                                border = ButtonDefaults.outlinedButtonBorder.copy(
+                                    brush = androidx.compose.ui.graphics.SolidColor(AppColors.GreenPrimary)
+                                )
                             ) {
                                 if (backupStatus is BackupStatus.BackingUp) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp
+                                        strokeWidth = 2.dp,
+                                        color = AppColors.GreenPrimary
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 } else {
@@ -231,21 +233,27 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 }
-                                Text("Backup")
+                                Text("Backup", fontWeight = FontWeight.SemiBold)
                             }
-                            
+
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Button(
                                 onClick = { syncViewModel.syncAll() },
                                 modifier = Modifier.wrapContentWidth(),
-                                enabled = syncStatus !is SyncStatus.Syncing
+                                enabled = syncStatus !is SyncStatus.Syncing,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AppColors.GreenPrimary,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = AppColors.GreenPrimary.copy(alpha = 0.4f),
+                                    disabledContentColor = Color.White
+                                )
                             ) {
                                 if (syncStatus is SyncStatus.Syncing) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
                                         strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimary
+                                        color = Color.White
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 } else {
@@ -256,13 +264,16 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 }
-                                Text("Đồng bộ")
+                                Text("Đồng bộ", fontWeight = FontWeight.SemiBold)
                             }
                         }
 
                         TextButton(
                             onClick = { navController.navigate("sync_status") },
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = AppColors.GreenPrimary
+                            )
                         ) {
                             Icon(
                                 Icons.Default.CloudDone,
@@ -275,15 +286,8 @@ fun SettingsScreen(
                     }
                 }
 
-                // Font scale Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
+                // ── Font scale Card ──
+                SettingsCard {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -294,12 +298,12 @@ fun SettingsScreen(
                             text = "Kích thước chữ",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = AppColors.TextPrimary
                         )
                         Text(
                             text = "Chọn mức chữ dễ đọc cho toàn bộ ứng dụng",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = AppColors.TextHint
                         )
 
                         FontScaleOptions(
@@ -309,15 +313,8 @@ fun SettingsScreen(
                     }
                 }
 
-                // Account Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
+                // ── Account Card ──
+                SettingsCard {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -327,23 +324,27 @@ fun SettingsScreen(
                         Text(
                             text = "Tài khoản",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.TextPrimary
                         )
                         Text(
                             text = authState.userLabel ?: "Chưa đăng nhập",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = AppColors.TextHint
                         )
 
                         Button(
-                            onClick = {
-                                authViewModel.signOut()
-                            },
+                            onClick = { authViewModel.signOut() },
                             enabled = authState.isSignedIn,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                containerColor = AppColors.Error.copy(alpha = 0.1f),
+                                contentColor = AppColors.Error,
+                                disabledContainerColor = AppColors.SurfaceContainer,
+                                disabledContentColor = AppColors.TextHint
                             )
                         ) {
                             Text("Đăng xuất", fontWeight = FontWeight.Bold)
@@ -351,6 +352,41 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reusable bits
+// ─────────────────────────────────────────────────────────────
+
+/** Card chuẩn cho settings — đồng nhất shape, color, elevation với app. */
+@Composable
+private fun SettingsCard(content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        content()
+    }
+}
+
+/** Avatar-style icon tile thay cho `Surface` cũ — giúp icon nổi mà không cần Material container colors. */
+@Composable
+private fun IconTile(
+    bg: Color,
+    tint: Color,
+    icon: @Composable (tint: Color, modifier: Modifier) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = bg,
+        modifier = Modifier.size(48.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            icon(tint, Modifier.size(24.dp))
         }
     }
 }
@@ -363,31 +399,33 @@ private fun FontScaleOptions(
     val options = listOf(FontScale.SMALL, FontScale.NORMAL, FontScale.LARGE, FontScale.XLARGE)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { scale ->
+            val isSelected = scale == selected
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(1.dp, RoundedCornerShape(12.dp)),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = if (scale == selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 1.dp,
+                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
                 onClick = { onSelect(scale) }
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
                         text = scale.label,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = if (scale == selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
                     )
                     RadioButton(
-                        selected = scale == selected,
-                        onClick = { onSelect(scale) }
+                        selected = isSelected,
+                        onClick = { onSelect(scale) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = AppColors.GreenPrimary,
+                            unselectedColor = AppColors.TextHint
+                        )
                     )
                 }
             }
@@ -406,8 +444,17 @@ private fun StatusRow(label: String, time: Long?) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.TextHint
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = AppColors.TextSecondary
+        )
     }
 }
 

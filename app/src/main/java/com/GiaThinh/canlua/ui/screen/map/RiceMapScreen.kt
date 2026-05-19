@@ -16,8 +16,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOff
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
@@ -356,6 +358,26 @@ private fun CardSummaryBottomSheet(
             }
         }
 
+        // Địa chỉ ruộng (reverse-geocoded khi tạo thẻ) — quan trọng cho thương lái
+        if (card.fieldAddress.isNotBlank()) {
+            ContactInfoRow(
+                icon = Icons.Filled.LocationOn,
+                label = "Địa chỉ ruộng",
+                value = card.fieldAddress,
+                tint = AppColors.GreenPrimary
+            )
+        }
+
+        // SDT thương lái — hiển thị nếu có
+        if (card.traderPhone.isNotBlank()) {
+            ContactInfoRow(
+                icon = Icons.Filled.Phone,
+                label = "SDT thương lái",
+                value = card.traderPhone,
+                tint = AppColors.Info
+            )
+        }
+
         Spacer(Modifier.height(4.dp))
 
         Button(
@@ -407,6 +429,58 @@ private fun MapStatBox(
             fontWeight = FontWeight.Bold,
             color = AppColors.TextPrimary
         )
+    }
+}
+
+/**
+ * Row liệt kê thông tin liên hệ — địa chỉ ruộng / SDT thương lái.
+ * Hiển thị leading icon bên trái, label nhỏ bên trên, value đậm bên dưới.
+ */
+@Composable
+private fun ContactInfoRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    tint: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(AppColors.SurfaceContainer)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(Modifier.size(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.TextHint
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

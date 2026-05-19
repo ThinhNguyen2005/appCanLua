@@ -66,7 +66,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.GiaThinh.canlua.data.firestore.FirestoreRicePrice
+import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.util.MoneyVisualTransformation
 import com.GiaThinh.canlua.ui.util.isScrollingUp
 import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import java.text.NumberFormat
@@ -371,31 +373,30 @@ private fun BidEditorForm(
             modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
         )
 
-        OutlinedTextField(
-            value = variety,
-            onValueChange = { variety = it },
-            label = { Text("Giống lúa (vd: ST25, OM18)") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = textFieldColors(),
-            singleLine = true
+        RiceVarietyDropdown(
+            selected = variety,
+            onSelect = { variety = it },
+            modifier = Modifier.fillMaxWidth()
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = minStr,
-                onValueChange = { minStr = it.filter { c -> c.isDigit() } },
+                onValueChange = { minStr = it.filter { c -> c.isDigit() }.take(9) },
                 label = { Text("Giá min (đ/kg)") },
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = MoneyVisualTransformation,
                 colors = textFieldColors(),
                 singleLine = true
             )
             OutlinedTextField(
                 value = maxStr,
-                onValueChange = { maxStr = it.filter { c -> c.isDigit() } },
+                onValueChange = { maxStr = it.filter { c -> c.isDigit() }.take(9) },
                 label = { Text("Giá max (đ/kg)") },
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = MoneyVisualTransformation,
                 colors = textFieldColors(),
                 singleLine = true
             )

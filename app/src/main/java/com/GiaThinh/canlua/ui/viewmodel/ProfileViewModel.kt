@@ -3,18 +3,39 @@ package com.GiaThinh.canlua.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.data.model.Profile
+import com.GiaThinh.canlua.data.model.TraderHistoryItem
+import com.GiaThinh.canlua.repository.CardRepository
 import com.GiaThinh.canlua.repository.ProfileRepository
 import com.GiaThinh.canlua.ui.screen.UserRole
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val cardRepository: CardRepository
 ) : ViewModel() {
+
+    /** Latest profile — emits null until first save. */
     val profile = profileRepository.latestProfile()
 
+    /**
+     * Lịch sử thương lái đã từng mua ruộng — reactive, tự update khi card mới được tạo.
+     * Hiển thị ở FarmerProfileScreen → "Thương lái đã giao dịch".
+     */
+    val traderHistory: StateFlow<List<TraderHistoryItem>> =
+        cardRepository.getTraderHistory()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList()
+            )
+
+    /** Lưu profile mới (đường register / setup lần đầu). */
     fun saveProfile(
         name: String,
         phone: String?,
@@ -39,5 +60,34 @@ class ProfileViewModel @Inject constructor(
             onSaved()
         }
     }
-}
 
+    /**
+     * Update profile hiện tại — dùng cho FarmerProfileScreen / TraderProfileScreen.
+     *
+     * Vì ProfileDao.insert() có OnConflictStrategy.REPLACE và profile có @PrimaryKey
+     * autoGenerate, cách an toàn để update là copy() từ current rồi insert lại VỚI cùng id.
+     */
+    fun updateProfile(
+        current: Profile,
+        name: String = current.name,
+        phone: String = current.phone,
+        region: String = current.region,
+        note: String = current.note,
+        role: String = current.role,
+        cccd: String = current.cccd,
+        onSaved: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val updated = current.copy(
+                name = name.trim(),
+                phone = phone.trim(),
+                region = region.trim(),
+                note = note.trim(),
+                role = role,
+                cccd = cccd.trim()
+            )
+            profileRepository.saveProfile(updated)
+            onSaved()
+        }
+    }
+}

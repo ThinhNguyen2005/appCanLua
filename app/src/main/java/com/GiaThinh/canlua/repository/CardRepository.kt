@@ -6,6 +6,7 @@ import com.GiaThinh.canlua.data.dao.WeightEntryDao
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.SeasonStats
 import com.GiaThinh.canlua.data.model.SeasonStatsRaw
+import com.GiaThinh.canlua.data.model.TraderHistoryItem
 import com.GiaThinh.canlua.data.model.TraderStat
 import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.TransactionType
@@ -170,6 +171,9 @@ class CardRepository @Inject constructor(
                 ).toDomain(row.season)
             }
         }
+
+    /** Lịch sử thương lái đã mua — reactive Flow từ cards table. */
+    fun getTraderHistory(): Flow<List<TraderHistoryItem>> = cardDao.getTraderHistory()
 }
 
 data class CardCalculationResult(

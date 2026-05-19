@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.SmartToy
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.SmartToy
@@ -48,18 +50,33 @@ data class BottomNavItem(
         val DASHBOARD = BottomNavItem(
             "dashboard", Icons.Outlined.BarChart, Icons.Filled.BarChart, "Mùa vụ"
         )
+        val ACCOUNT = BottomNavItem(
+            "account", Icons.Outlined.Person, Icons.Filled.Person, "Tài khoản"
+        )
 
-        val farmerNavItems = listOf(SCALE, MARKET, AI_CHAT, DASHBOARD)
+        val farmerNavItems = listOf(SCALE, MARKET, AI_CHAT, DASHBOARD, ACCOUNT)
 
         val traderNavItems = listOf(
             BottomNavItem("trader_bids", Icons.Outlined.Sell, Icons.Filled.Sell, "Rao mua"),
+            BottomNavItem("trader_map", Icons.Outlined.Map, Icons.Filled.Map, "Bản đồ"),
+            BottomNavItem(
+                "qr_scan",
+                Icons.Outlined.QrCodeScanner,
+                Icons.Filled.QrCodeScanner,
+                "Quét QR"
+            ),
+            BottomNavItem(
+                "trader_weigh",
+                Icons.Outlined.Scale,
+                Icons.Filled.Scale,
+                "Cân lúa"
+            ),
             BottomNavItem(
                 "trader_transactions",
                 Icons.Outlined.Storefront,
                 Icons.Filled.Storefront,
-                "Sổ giao dịch"
+                "Sổ"
             ),
-            BottomNavItem("trader_map", Icons.Outlined.Map, Icons.Filled.Map, "Nguồn cung"),
             BottomNavItem(
                 "trader_profile",
                 Icons.Outlined.Person,
@@ -69,3 +86,4 @@ data class BottomNavItem(
         )
     }
 }
+

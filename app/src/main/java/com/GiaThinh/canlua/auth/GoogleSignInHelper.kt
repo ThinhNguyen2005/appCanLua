@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.GiaThinh.canlua.R
@@ -46,6 +47,12 @@ class GoogleSignInHelper(private val context: Context) {
         } catch (e: NoCredentialException) {
             // Không có account Google nào trên thiết bị
             onError("Thiết bị chưa có tài khoản Google nào. Hãy thêm tài khoản trong Cài đặt.")
+        } catch (e: GetCredentialCancellationException) {
+            // User huỷ dialog, hoặc framework báo "[16] Account reauth failed"
+            // (xảy ra khi cần xác thực lại nhưng user đóng popup). Không log error để
+            // tránh đập vỡ Crashlytics — đây là happy-path "user thay đổi quyết định".
+            Log.i(TAG, "User cancelled Google sign-in: ${e.message}")
+            onError("Bạn đã huỷ đăng nhập Google.")
         } catch (e: GetCredentialException) {
             Log.e(TAG, "GetCredential failed", e)
             onError(humanizeError(e))
@@ -76,6 +83,10 @@ class GoogleSignInHelper(private val context: Context) {
             extractIdToken(response.credential)
         } catch (e: NoCredentialException) {
             null
+        } catch (e: GetCredentialCancellationException) {
+            // Silent step bị huỷ → ném tiếp lên caller; KHÔNG fallback sang explicit
+            // (vì tryExplicit cũng sẽ bị huỷ giống vậy → spam dialog).
+            throw e
         } catch (e: GetCredentialException) {
             // User chưa từng đăng nhập app này — fallback explicit
             null
@@ -111,7 +122,9 @@ class GoogleSignInHelper(private val context: Context) {
             msg.contains("DEVELOPER_ERROR", ignoreCase = true) ->
                 "Cấu hình Google Sign-In sai (SHA-1 / package). Kiểm tra Firebase Console."
             msg.contains("activity is cancelled", ignoreCase = true) ||
-                msg.contains("user canceled", ignoreCase = true) -> "Bạn đã hủy đăng nhập."
+                msg.contains("user canceled", ignoreCase = true) ||
+                msg.contains("Account reauth failed", ignoreCase = true) ||
+                msg.contains("[16]", ignoreCase = true) -> "Bạn đã huỷ đăng nhập."
             else -> msg.ifBlank { "Đăng nhập Google thất bại." }
         }
     }

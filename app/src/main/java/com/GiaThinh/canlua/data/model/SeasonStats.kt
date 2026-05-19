@@ -66,6 +66,19 @@ data class TraderStat(
 )
 
 /**
+ * 1 dòng lịch sử thương lái đã mua ruộng — aggregate từ bảng cards.
+ * Dùng cho FarmerProfileScreen → "Lịch sử thu mua".
+ */
+data class TraderHistoryItem(
+    val traderName: String,
+    val traderPhone: String,
+    val deals: Int,
+    val totalRevenue: Double,
+    val totalWeight: Double,
+    val lastDealDate: Long
+)
+
+/**
  * Helper: 3 vụ chuẩn miền Tây Nam Bộ.
  *
  * Lịch nông vụ truyền thống:

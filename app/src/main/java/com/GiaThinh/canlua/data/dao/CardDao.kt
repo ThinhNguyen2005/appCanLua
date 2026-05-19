@@ -3,6 +3,7 @@ package com.GiaThinh.canlua.data.dao
 import androidx.room.*
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.SeasonStatsRaw
+import com.GiaThinh.canlua.data.model.TraderHistoryItem
 import com.GiaThinh.canlua.data.model.TraderStat
 import com.GiaThinh.canlua.data.model.VarietyStat
 import kotlinx.coroutines.flow.Flow
@@ -142,6 +143,26 @@ interface CardDao {
         LIMIT 6
     """)
     fun getAllSeasonsComparison(): Flow<List<SeasonStatsWithLabel>>
+
+    /**
+     * Lịch sử thương lái đã mua ruộng — aggregate toàn bộ cards.
+     * Group theo (traderName, traderPhone) vì có thể cùng tên nhưng khác SDT.
+     * COALESCE để trader không có SDT (cards cũ) vẫn group được.
+     */
+    @Query("""
+        SELECT 
+            traderName,
+            COALESCE(traderPhone, '') as traderPhone,
+            COUNT(*) as deals,
+            SUM(totalAmount) as totalRevenue,
+            SUM(netWeight) as totalWeight,
+            MAX(date) as lastDealDate
+        FROM cards 
+        WHERE traderName != ''
+        GROUP BY traderName, traderPhone
+        ORDER BY lastDealDate DESC
+    """)
+    fun getTraderHistory(): Flow<List<TraderHistoryItem>>
 }
 
 /** Helper data class cho query getAllSeasonsComparison — Room map theo column name. */

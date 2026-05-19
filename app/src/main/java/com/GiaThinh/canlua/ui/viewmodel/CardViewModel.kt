@@ -162,10 +162,23 @@ class CardViewModel @Inject constructor(
                         description = "Tiền cọc"
                     )
                 )
+                // Resync card cache (deposit field, totalAmount, remainingAmount) sau khi insert
+                // để đảm bảo Card.depositAmount = sum(Transaction).
+                repository.updateCardCalculations(cardId)
             }
         }
     }
 
+    /**
+     * Update card metadata + thay đổi tiền cọc / đã trả.
+     *
+     * **Source of truth:** `Transaction` table.
+     * - `Card.depositAmount` và `Card.paidAmount` chỉ là CACHE của sum(Transaction).
+     * - Mọi thay đổi deposit/paid PHẢI đi qua [Transaction] (delta entries),
+     *   rồi [updateCardCalculations] resync lại field cache.
+     * - Tuyệt đối không sửa trực tiếp `Card.depositAmount`/`paidAmount` ngoài fn này
+     *   và [createCard], nếu không sẽ bị [updateCardCalculations] ghi đè.
+     */
     fun updateCard(card: Card) {
         viewModelScope.launch {
             val oldCard = repository.getCardById(card.id)
@@ -469,26 +482,6 @@ class CardViewModel @Inject constructor(
                 )
             )
             loadCardById(cardId)
-        }
-    }
-
-    fun updateCardDepositAmount(cardId: Long, depositAmount: Double) {
-        viewModelScope.launch {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(depositAmount = depositAmount))
-                repository.updateCardCalculations(cardId)
-            }
-        }
-    }
-
-    fun updateCardPaidAmount(cardId: Long, paidAmount: Double) {
-        viewModelScope.launch {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(paidAmount = paidAmount))
-                repository.updateCardCalculations(cardId)
-            }
         }
     }
 

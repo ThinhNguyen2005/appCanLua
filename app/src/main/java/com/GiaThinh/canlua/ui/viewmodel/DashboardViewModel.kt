@@ -69,6 +69,11 @@ class DashboardViewModel @Inject constructor(
     val seasons: StateFlow<List<String>> = repository.getDistinctSeasons()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    // === AI Analysis state ===
+    // Khai báo TRƯỚC init {} để init block không gặp NPE khi reference _aiAnalysis.
+    private val _aiAnalysis = MutableStateFlow<AiAnalysisState>(AiAnalysisState.Idle)
+    val aiAnalysis: StateFlow<AiAnalysisState> = _aiAnalysis.asStateFlow()
+
     init {
         // Auto-select vụ mới nhất khi data load lần đầu
         combine(seasons, _selectedSeason) { list, selected ->
@@ -126,10 +131,7 @@ class DashboardViewModel @Inject constructor(
         else repository.getSeasonStats(prevSeason).map<SeasonStats, SeasonStats?> { it }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    // === AI Analysis ===
-
-    private val _aiAnalysis = MutableStateFlow<AiAnalysisState>(AiAnalysisState.Idle)
-    val aiAnalysis: StateFlow<AiAnalysisState> = _aiAnalysis.asStateFlow()
+    // === AI dependencies (profile + weather làm ngữ cảnh cho prompt) ===
 
     private val profile: StateFlow<Profile?> = profileRepository.latestProfile()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)

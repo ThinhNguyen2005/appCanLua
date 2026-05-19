@@ -36,6 +36,7 @@ import com.GiaThinh.canlua.util.HapticUtil
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.firebase.auth.FirebaseAuth
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -64,126 +65,148 @@ fun QrScanScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Quét QR Giao Dịch") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
-                    }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (!cameraPermission.status.isGranted) {
+            // Permission not granted
+            Column(
+                Modifier.fillMaxSize().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Outlined.CameraAlt, null, modifier = Modifier.size(64.dp), tint = AppColors.TextHint)
+                Spacer(Modifier.height(16.dp))
+                Text("Cần quyền Camera", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Cho phép ứng dụng sử dụng camera để quét mã QR",
+                    textAlign = TextAlign.Center,
+                    color = AppColors.TextSecondary
+                )
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = { cameraPermission.launchPermissionRequest() }) {
+                    Text("Cấp quyền Camera")
                 }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (!cameraPermission.status.isGranted) {
-                // Permission not granted
-                Column(
-                    Modifier.fillMaxSize().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Outlined.CameraAlt, null, modifier = Modifier.size(64.dp), tint = AppColors.TextHint)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Cần quyền Camera", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    Text("Cho phép ứng dụng sử dụng camera để quét mã QR", textAlign = TextAlign.Center, color = AppColors.TextSecondary)
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = { cameraPermission.launchPermissionRequest() }) {
-                        Text("Cấp quyền Camera")
-                    }
-                }
-            } else if (scanResult != null) {
-                // Scan success
-                val result = scanResult!!
-                Column(
-                    Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Outlined.CheckCircle, null, modifier = Modifier.size(72.dp), tint = AppColors.Success)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Xác Thực Thành Công!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = AppColors.Success)
-                    Spacer(Modifier.height(16.dp))
+            }
+        } else if (scanResult != null) {
+            // Scan success
+            val result = scanResult!!
+            Column(
+                Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    Icons.Outlined.CheckCircle,
+                    null,
+                    modifier = Modifier.size(72.dp),
+                    tint = AppColors.Success
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Xác Thực Thành Công!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.Success
+                )
+                Spacer(Modifier.height(16.dp))
 
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = AppColors.GreenSurface),
-                        modifier = Modifier.fillMaxWidth()
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppColors.GreenSurface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        InfoRow("Nông dân", result.farmerName)
+                        InfoRow("Khối lượng", "${result.weight} kg")
+                        InfoRow("Thành tiền", "${result.amount} đ")
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            scanResult = null
+                            isProcessing = false
+                        },
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            InfoRow("Nông dân", result.farmerName)
-                            InfoRow("Khối lượng", "${result.weight} kg")
-                            InfoRow("Thành tiền", "${result.amount} đ")
-                        }
+                        Text("Quét tiếp")
                     }
-
-                    Spacer(Modifier.height(24.dp))
                     Button(
-                        onClick = { navController.popBackStack() },
+                        onClick = { navController.navigate("trader_transactions") },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
                     ) {
-                        Text("Hoàn tất")
+                        Text("Xem sổ")
                     }
                 }
-            } else {
-                // Camera preview
-                Box(modifier = Modifier.weight(1f)) {
-                    CameraPreview(
-                        onQrScanned = { rawValue ->
-                            if (!isProcessing) {
-                                isProcessing = true
-                                // Parse: CANLUA|cardId|name|weight|amount|token
-                                val parts = rawValue.split("|")
-                                if (parts.size >= 6 && parts[0] == "CANLUA") {
-                                    val token = parts[5]
-                                    val traderId = "trader_${System.currentTimeMillis()}" // TODO: use real trader UID
-                                    viewModel.verifyAndLockTransaction(token, traderId)
-                                    HapticUtil.confirm(context)
-                                    scanResult = ScanResult(
-                                        farmerName = parts[2],
-                                        weight = parts[3],
-                                        amount = parts[4]
-                                    )
-                                } else {
-                                    Toast.makeText(context, "Mã QR không hợp lệ", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            // Camera preview
+            Box(modifier = Modifier.weight(1f)) {
+                CameraPreview(
+                    onQrScanned = { rawValue ->
+                        if (!isProcessing) {
+                            isProcessing = true
+                            // Parse: CANLUA|cardId|name|weight|amount|token
+                            val parts = rawValue.split("|")
+                            if (parts.size >= 6 && parts[0] == "CANLUA") {
+                                val token = parts[5]
+                                // Lấy traderId từ FirebaseAuth — phải đúng UID của tài khoản hiện hành
+                                // để backend rules `lockedByTraderId == request.auth.uid` cho phép ghi.
+                                val traderId = FirebaseAuth.getInstance().currentUser?.uid
+                                if (traderId.isNullOrBlank()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Bạn cần đăng nhập trước khi quét QR",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                     HapticUtil.error(context)
                                     isProcessing = false
+                                    return@CameraPreview
                                 }
+                                viewModel.verifyAndLockTransaction(token, traderId)
+                                HapticUtil.confirm(context)
+                                scanResult = ScanResult(
+                                    farmerName = parts[2],
+                                    weight = parts[3],
+                                    amount = parts[4]
+                                )
+                            } else {
+                                Toast.makeText(context, "Mã QR không hợp lệ", Toast.LENGTH_SHORT).show()
+                                HapticUtil.error(context)
+                                isProcessing = false
                             }
                         }
-                    )
+                    }
+                )
 
-                    // Scan overlay
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(250.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.1f))
-                    )
-                }
+                // Scan overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(250.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.1f))
+                )
+            }
 
-                // Bottom instruction
-                Surface(
-                    color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "Hướng camera vào mã QR của nông dân",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-                }
+            // Bottom instruction
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "Hướng camera vào mã QR của nông dân",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextSecondary,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }

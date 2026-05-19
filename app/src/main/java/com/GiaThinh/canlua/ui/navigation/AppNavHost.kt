@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.GiaThinh.canlua.ui.screen.CardDetailScreen
 import com.GiaThinh.canlua.ui.screen.CardListScreen
+import com.GiaThinh.canlua.ui.screen.FarmerProfileScreen
 import com.GiaThinh.canlua.ui.screen.SettingsScreen
 import com.GiaThinh.canlua.ui.screen.SyncStatusScreen
 import com.GiaThinh.canlua.ui.screen.WeightInputScreen
@@ -21,8 +22,10 @@ import com.GiaThinh.canlua.ui.screen.map.RiceMapScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrGenerateScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrScanScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderBidsScreen
+import com.GiaThinh.canlua.ui.screen.trader.TraderManualWeighScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderProfileScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderTransactionsScreen
+import com.GiaThinh.canlua.ui.screen.trader.TraderWeighScreen
 
 /**
  * NavHost chính cho app — bao gồm cả 4 tab và các sub-screens.
@@ -100,6 +103,11 @@ fun AppNavHost(
             DashboardScreen()
         }
 
+        // === Tab 5: Tài khoản (FARMER) ===
+        composable(BottomNavItem.ACCOUNT.route) {
+            FarmerProfileScreen()
+        }
+
         // === Tab Thương Lái ===
         composable("trader_bids") {
             TraderBidsScreen()
@@ -115,6 +123,14 @@ fun AppNavHost(
         
         composable("trader_profile") {
             TraderProfileScreen()
+        }
+
+        composable("trader_weigh") {
+            TraderWeighScreen(navController = navController)
+        }
+
+        composable("trader_manual_weigh") {
+            TraderManualWeighScreen(navController = navController)
         }
     }
 }
