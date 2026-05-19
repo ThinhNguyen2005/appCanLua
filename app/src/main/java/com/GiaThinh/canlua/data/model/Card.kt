@@ -29,5 +29,9 @@ data class Card(
     val moisturePercent: Double = 0.0,     // Độ ẩm (%)
     val seasonLabel: String = "",          // Nhãn vụ mùa (Đông Xuân 2026, Hè Thu 2026...)
     val qrToken: String? = null,           // Hash SHA-256 cho xác thực QR Handshake
-    val lockedByTraderId: String? = null   // UID thương lái đã xác thực QR
+    val lockedByTraderId: String? = null,  // UID thương lái đã xác thực QR
+
+    // === PHASE 2.6: GPS location for map ===
+    val latitude: Double? = null,          // Tọa độ GPS lúc tạo thẻ (nơi cân lúa)
+    val longitude: Double? = null
 )

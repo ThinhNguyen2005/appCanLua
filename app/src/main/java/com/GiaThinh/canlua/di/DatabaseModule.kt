@@ -46,6 +46,21 @@ object DatabaseModule {
     }
 
     @Provides
+    fun provideRicePriceDao(database: AppDatabase): com.GiaThinh.canlua.data.dao.RicePriceDao {
+        return database.ricePriceDao()
+    }
+
+    @Provides
+    fun provideWeatherCacheDao(database: AppDatabase): com.GiaThinh.canlua.data.dao.WeatherCacheDao {
+        return database.weatherCacheDao()
+    }
+
+    @Provides
+    fun provideNewsArticleDao(database: AppDatabase): com.GiaThinh.canlua.data.dao.NewsArticleDao {
+        return database.newsArticleDao()
+    }
+
+    @Provides
     @Singleton
     fun provideTextToSpeechManager(@ApplicationContext context: Context): TextToSpeechManager {
         return TextToSpeechManager(context)

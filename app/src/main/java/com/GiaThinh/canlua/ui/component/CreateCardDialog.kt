@@ -301,7 +301,7 @@ class ThousandSeparatorTransformation : VisualTransformation {
         // Định dạng số chuẩn locale Việt Nam sử dụng dấu chấm phân cách ngàn
         val formatted = try {
             val number = original.toLong()
-            String.format(Locale("vi", "VN"), "%,d", number)
+            String.format(Locale.forLanguageTag("vi-VN"), "%,d", number)
         } catch (e: Exception) {
             original
         }

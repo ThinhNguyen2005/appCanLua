@@ -22,7 +22,8 @@ class ProfileViewModel @Inject constructor(
         note: String?,
         role: UserRole,
         cccd: String?,
-        username: String?
+        username: String?,
+        onSaved: () -> Unit = {}
     ) {
         viewModelScope.launch {
             val profile = Profile(
@@ -35,6 +36,7 @@ class ProfileViewModel @Inject constructor(
                 username = username?.trim().orEmpty()
             )
             profileRepository.saveProfile(profile)
+            onSaved()
         }
     }
 }

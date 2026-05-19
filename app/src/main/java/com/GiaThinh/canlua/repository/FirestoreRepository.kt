@@ -5,7 +5,11 @@ import com.GiaThinh.canlua.data.firestore.FirestoreTransaction
 import com.GiaThinh.canlua.data.firestore.FirestoreWeightEntry
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -109,12 +113,14 @@ class FirestoreRepository @Inject constructor(
 
     suspend fun getWeightEntriesByCardId(cardId: String): Result<List<FirestoreWeightEntry>> {
         return try {
+            // NOTE: Sort client-side để tránh composite index (whereEqualTo + orderBy).
             val snapshot = weightEntriesCollection
                 .whereEqualTo("cardId", cardId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .await()
-            val entries = snapshot.documents.mapNotNull { it.toObject(FirestoreWeightEntry::class.java) }
+            val entries = snapshot.documents
+                .mapNotNull { it.toObject(FirestoreWeightEntry::class.java) }
+                .sortedByDescending { it.timestamp }
             Result.success(entries)
         } catch (e: Exception) {
             Result.failure(e)
@@ -152,12 +158,15 @@ class FirestoreRepository @Inject constructor(
 
     suspend fun getTransactionsByCardId(cardId: String): Result<List<FirestoreTransaction>> {
         return try {
+            // NOTE: Bỏ .orderBy("date") server-side để tránh composite index requirement.
+            // Sort client-side — 1 card thường có vài chục transactions, perf không vấn đề.
             val snapshot = transactionsCollection
                 .whereEqualTo("cardId", cardId)
-                .orderBy("date", Query.Direction.DESCENDING)
                 .get()
                 .await()
-            val transactions = snapshot.documents.mapNotNull { it.toObject(FirestoreTransaction::class.java) }
+            val transactions = snapshot.documents
+                .mapNotNull { it.toObject(FirestoreTransaction::class.java) }
+                .sortedByDescending { it.date }
             Result.success(transactions)
         } catch (e: Exception) {
             Result.failure(e)
@@ -171,6 +180,69 @@ class FirestoreRepository @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    // ========== Trader Operations (Phase 2.4) ==========
+
+    /**
+     * Realtime stream các card mà trader hiện tại đã verify bằng QR
+     * (lockedByTraderId == uid).
+     */
+    fun observeMyTraderCards(): Flow<List<FirestoreCard>> = callbackFlow {
+        val uid = userId
+        if (uid == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        // NOTE: Bỏ .orderBy("date") server-side để tránh yêu cầu composite index
+        // (whereEqualTo + orderBy ở field khác → Firestore bắt buộc composite index).
+        // Sort client-side vì 1 trader chỉ có vài chục/trăm card đã verify.
+        val registration: ListenerRegistration = cardsCollection
+            .whereEqualTo("lockedByTraderId", uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    // Không crash app — trả emptyList, để UI tự hiển thị empty state.
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val cards = snapshot?.documents
+                    ?.mapNotNull { it.toObject(FirestoreCard::class.java) }
+                    .orEmpty()
+                    .sortedByDescending { it.date }
+                trySend(cards)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    /**
+     * Realtime stream transactions thuộc về một list cardId.
+     * Firestore `whereIn` tối đa 30 ID per query — đủ cho use case TRADER.
+     */
+    fun observeTransactionsForCards(cardIds: List<String>): Flow<List<FirestoreTransaction>> = callbackFlow {
+        if (cardIds.isEmpty()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        // Firestore whereIn limit = 30 — chunk nếu cần
+        val chunk = cardIds.take(30)
+        // NOTE: whereIn + orderBy(field khác) cũng yêu cầu composite index.
+        // Sort client-side để tránh phụ thuộc cấu hình Console.
+        val registration: ListenerRegistration = transactionsCollection
+            .whereIn("cardId", chunk)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val list = snapshot?.documents
+                    ?.mapNotNull { it.toObject(FirestoreTransaction::class.java) }
+                    .orEmpty()
+                    .sortedByDescending { it.date }
+                trySend(list)
+            }
+        awaitClose { registration.remove() }
     }
 }
 

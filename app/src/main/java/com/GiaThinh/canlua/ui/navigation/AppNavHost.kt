@@ -1,6 +1,9 @@
 package com.GiaThinh.canlua.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -14,8 +17,12 @@ import com.GiaThinh.canlua.ui.screen.WeightInputScreen
 import com.GiaThinh.canlua.ui.screen.aichat.AiChatScreen
 import com.GiaThinh.canlua.ui.screen.dashboard.DashboardScreen
 import com.GiaThinh.canlua.ui.screen.market.MarketScreen
+import com.GiaThinh.canlua.ui.screen.map.RiceMapScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrGenerateScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrScanScreen
+import com.GiaThinh.canlua.ui.screen.trader.TraderBidsScreen
+import com.GiaThinh.canlua.ui.screen.trader.TraderProfileScreen
+import com.GiaThinh.canlua.ui.screen.trader.TraderTransactionsScreen
 
 /**
  * NavHost chính cho app — bao gồm cả 4 tab và các sub-screens.
@@ -25,12 +32,20 @@ import com.GiaThinh.canlua.ui.screen.qr.QrScanScreen
 fun AppNavHost(
     navController: NavHostController,
     startDestination: String = BottomNavItem.SCALE.route,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    aiChatDrawerState: DrawerState = rememberDrawerState(DrawerValue.Closed)
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
+        // === Transition mặc định: Fade + Scale 250ms ===
+        // Áp dụng cho tất cả composable bên trong → đồng nhất, tránh lặp code.
+        // Có thể override ở từng composable bằng cách truyền enterTransition/exitTransition.
+        enterTransition = FadeScaleEnter,
+        exitTransition = FadeScaleExit,
+        popEnterTransition = FadeScalePopEnter,
+        popExitTransition = FadeScalePopExit
     ) {
         // === Tab 1: Cân Lúa ===
         composable(BottomNavItem.SCALE.route) {
@@ -77,7 +92,7 @@ fun AppNavHost(
 
         // === Tab 3: AI Chat ===
         composable(BottomNavItem.AI_CHAT.route) {
-            AiChatScreen()
+            AiChatScreen(drawerState = aiChatDrawerState)
         }
 
         // === Tab 4: Thống Kê ===
@@ -87,27 +102,19 @@ fun AppNavHost(
 
         // === Tab Thương Lái ===
         composable("trader_bids") {
-            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                androidx.compose.material3.Text("Tính năng Rao Mua đang được phát triển")
-            }
+            TraderBidsScreen()
         }
         
         composable("trader_transactions") {
-            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                androidx.compose.material3.Text("Sổ giao dịch đang được phát triển")
-            }
+            TraderTransactionsScreen()
         }
         
         composable("trader_map") {
-            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                androidx.compose.material3.Text("Bản đồ nguồn cung đang được phát triển")
-            }
+            RiceMapScreen(navController = navController)
         }
         
         composable("trader_profile") {
-            androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                androidx.compose.material3.Text("Cá nhân và Uy tín đang được phát triển")
-            }
+            TraderProfileScreen()
         }
     }
 }

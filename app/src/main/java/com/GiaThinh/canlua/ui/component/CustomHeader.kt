@@ -15,15 +15,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import com.GiaThinh.canlua.ui.theme.AppColors
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import com.GiaThinh.canlua.data.model.Card
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -52,8 +63,8 @@ import java.util.*
 
 private val HeaderGreen   = Color(0xFF3D8B40)
 private val TOPBAR_H      = 52.dp
-private val META_CHIP_H   = 120.dp  // MetaRow + ChipRow + paddings + Divider
-private val BOTTOM_PAD    = 12.dp
+private val META_CHIP_H   = 76.dp   // 120 → 76 (chỉ còn 1 hàng MetaItem, MetricChip đã removed)
+private val BOTTOM_PAD    = 8.dp    // 12 → 8 (sát hơn)
 
 /** Trả về expanded/collapsed height đã tính statusBar — dùng ở CardDetailScreen */
 data class HeaderHeights(val expanded: Dp, val collapsed: Dp)
@@ -87,18 +98,19 @@ fun CustomHeader(
     onScanQr: () -> Unit = {},
     onToggleLock: () -> Unit = {}
 ) {
-    // Expanded content mờ dần nhanh ở nửa đầu scroll
-    val expandedAlpha = (1f - collapseFraction * 2.2f).coerceIn(0f, 1f)
+    // Expanded content fade mượt — giảm cường độ để tránh chuyển động mạnh
+    // Fade chậm và đều: cần scroll ~70% mới ẩn hẳn (multiplier 1.4 thay vì 2.2)
+    val expandedAlpha = (1f - collapseFraction * 1.4f).coerceIn(0f, 1f)
 
-    // Title khi collapse > 60%: [Tên Nông Dân] — [Tổng Số KG] KG — [Thành Tiền] đ
-    val farmerName = card.name
-    val titleText = if (collapseFraction > 0.6f) {
-        val fmt = java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN"))
+    // Title topbar — ẩn tên nông dân khi expanded (đã có ở Meta "Thương lái").
+    // Chỉ hiện info compact khi đã collapse > 75%.
+    val titleText = if (collapseFraction > 0.75f) {
+        val fmt = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
         val totalWeightFormatted = if (card.totalWeight % 1.0 == 0.0) "%.0f".format(card.totalWeight) else "%.1f".format(card.totalWeight)
-        val totalAmountFormatted = fmt.format(card.totalAmount.toLong())
-        "$farmerName — $totalWeightFormatted KG — $totalAmountFormatted đ"
+        val totalbagCount = fmt.format(card.bagCount)
+        "$totalWeightFormatted KG · $totalbagCount bao"
     } else {
-        farmerName
+        ""  // Ẩn tên nông dân — title trống, đã có Meta row hiển thị bên dưới
     }
 
     Box(
@@ -132,7 +144,7 @@ fun CustomHeader(
                     Text(
                         text = titleText,
                         style = TextStyle(
-                            fontSize = 15.sp,
+                            fontSize = 17.sp,                       // 15 → 17 (người lớn tuổi)
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
                         ),
@@ -141,69 +153,96 @@ fun CustomHeader(
                     )
                 }
 
-                // Nút Khóa Màn Hình
-                IconButton(
-                    onClick = onToggleLock,
-                    modifier = Modifier.size(48.dp)
+                // Nhóm action bên phải: [✏️ Edit] [🔓 Lock] [⋮ Menu]
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    if (card.isLocked) {
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = "Mở khóa",
-                            tint = Color.Red,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        Icon(
-                            Icons.Default.LockOpen,
-                            contentDescription = "Khóa",
-                            tint = Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-
-                // Menu ⋮
-                Box {
+                    // Sửa phiếu (icon cây bút) — đã chuyển từ dropdown menu ra topbar
                     IconButton(
-                        onClick = { onOverflowChange(!showOverflow) },
+                        onClick = onEditCard,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(Icons.Default.MoreVert, "Menu", tint = Color.White,
-                            modifier = Modifier.size(24.dp))
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Chỉnh sửa phiếu",
+                            tint = Color.White.copy(alpha = if (card.isLocked) 0.5f else 0.95f),
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
-                    DropdownMenu(
-                        expanded = showOverflow,
-                        onDismissRequest = { onOverflowChange(false) }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Sửa phiếu", fontSize = 15.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Edit, null, tint = HeaderGreen)
-                            },
-                            onClick = { onOverflowChange(false); onEditCard() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Xóa phiếu", fontSize = 15.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Delete, null, tint = Color.Red)
-                            },
-                            onClick = { onOverflowChange(false); onDeleteCard() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Tạo mã QR", fontSize = 15.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Outlined.QrCode2, null, tint = HeaderGreen)
-                            },
-                            onClick = { onOverflowChange(false); onCreateQr() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Quét QR (Thương lái)", fontSize = 15.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Outlined.CameraAlt, null, tint = HeaderGreen)
-                            },
-                            onClick = { onOverflowChange(false); onScanQr() }
-                        )
+
+                    // // Nút Khóa / Mở khóa
+                    // IconButton(
+                    //     onClick = onToggleLock,
+                    //     modifier = Modifier.size(48.dp)
+                    // ) {
+                    //     if (card.isLocked) {
+                    //         Icon(
+                    //             Icons.Default.Lock,
+                    //             contentDescription = "Mở khóa",
+                    //             tint = Color(0xFFFFCDD2),
+                    //             modifier = Modifier.size(22.dp)
+                    //         )
+                    //     } else {
+                    //         Icon(
+                    //             Icons.Default.LockOpen,
+                    //             contentDescription = "Khóa",
+                    //             tint = Color.White.copy(alpha = 0.8f),
+                    //             modifier = Modifier.size(22.dp)
+                    //         )
+                    //     }
+                    // }
+
+                    // Menu ⋮
+                    Box {
+                        IconButton(
+                            onClick = { onOverflowChange(!showOverflow) },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                "Menu",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showOverflow,
+                            onDismissRequest = { onOverflowChange(false) },
+                            offset = DpOffset(x = (-4).dp, y = 8.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            containerColor = AppColors.SurfaceContainer,
+                            shadowElevation = 8.dp,
+                            tonalElevation = 4.dp,
+                            modifier = Modifier
+                                .background(AppColors.SurfaceContainer, RoundedCornerShape(14.dp))
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Xóa phiếu", fontSize = 15.sp, color = AppColors.Error) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Delete, null, tint = AppColors.Error)
+                                },
+                                onClick = { onOverflowChange(false); onDeleteCard() }
+                            )
+                            HorizontalDivider(
+                                color = AppColors.Divider,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Tạo mã QR", fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.QrCode2, null, tint = HeaderGreen)
+                                },
+                                onClick = { onOverflowChange(false); onCreateQr() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Quét QR (Thương lái)", fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.CameraAlt, null, tint = HeaderGreen)
+                                },
+                                onClick = { onOverflowChange(false); onScanQr() }
+                            )
+                        }
                     }
                 }
             }
@@ -251,57 +290,40 @@ fun CustomHeader(
                         )
                     }
 
-                    // ── 3 metric chips ────────────────────────────────────────
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MetricChip("Tổng K/L", formatKg(card.totalWeight), Modifier.weight(1f))
-                        MetricChip("Số bao", "${card.bagCount} bao",       Modifier.weight(1f))
-                        MetricChip(
-                            label = "Đơn giá",
-                            value = if (card.pricePerKg > 0.0)
-                                formatMoney(card.pricePerKg) + " đ" else "Chưa có",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    // // ── 3 metric chips ────────────────────────────────────────
+                    // Row(
+                    //     modifier = Modifier.fillMaxWidth(),
+                    //     horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    // ) {
+                    //     MetricChip("Tổng K/L", formatKg(card.totalWeight), Modifier.weight(1f))
+                    //     MetricChip("Số bao", "${card.bagCount} bao",       Modifier.weight(1f))
+                    //     MetricChip(
+                    //         label = "Đơn giá",
+                    //         value = if (card.pricePerKg > 0.0)
+                    //             formatMoney(card.pricePerKg) + " đ" else "Chưa có",
+                    //         modifier = Modifier.weight(1f)
+                    //     )
+                    // }
 
-                    Spacer(Modifier.height(16.dp))
+                    // Spacer(Modifier.height(16.dp))
                     
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        thickness = 1.dp,
-                        color = Color.White.copy(alpha = 0.25f)
-                    )
+                    // HorizontalDivider(
+                    //     modifier = Modifier
+                    //         .fillMaxWidth()
+                    //         .padding(horizontal = 16.dp),
+                    //     thickness = 1.dp,
+                    //     color = Color.White.copy(alpha = 0.25f)
+                    // )
 
                     // Bottom padding — tránh sát mép card bên dưới
-                    Spacer(Modifier.height(BOTTOM_PAD))
+                    // Spacer(Modifier.height(BOTTOM_PAD))
                 }
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Nút "Cân lúa" — thay thế nút "Chi tiết" trong CardDetailScreen
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-fun WeighingButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(38.dp),
-        border = BorderStroke(1.5.dp, HeaderGreen.copy(alpha = 0.7f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = HeaderGreen),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
-    ) {
-        Icon(Icons.Default.Scale, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(5.dp))
-        Text("Cân lúa", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-    }
-}
+// (Legacy WeighingButton removed — đã được thay bằng FilledIconButton trên topbar)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -319,22 +341,23 @@ private fun MetaItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Icon(icon, null, tint = Color.White.copy(alpha = 0.65f),
-            modifier = Modifier.size(15.dp))
+        Icon(icon, null, tint = Color.White.copy(alpha = 0.7f),
+            modifier = Modifier.size(18.dp))                    // 15 → 18 (lớn hơn, dễ thấy)
         Text(
             text  = label,
-            fontSize  = 10.sp,           // tăng từ 9 → 10
-            color = Color.White.copy(alpha = 0.6f),
-            lineHeight = 11.sp
+            fontSize  = 12.sp,           // 10 → 12 (người lớn tuổi đọc rõ)
+            color = Color.White.copy(alpha = 0.7f),
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Medium
         )
         Text(
             text  = value,
-            fontSize  = 13.sp,           // tăng từ 11 → 13
+            fontSize  = 15.sp,           // 13 → 15 (chuẩn body lớn)
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            lineHeight = 15.sp
+            lineHeight = 17.sp
         )
     }
 }
@@ -349,17 +372,31 @@ private fun MetricChip(label: String, value: String, modifier: Modifier = Modifi
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Text(
-            text  = value,
-            fontSize  = 14.sp,           // tăng từ 12 → 14
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        AnimatedContent(
+            targetState = value,
+            transitionSpec = {
+                val enter = slideInVertically(
+                    animationSpec = tween(150, easing = FastOutLinearInEasing),
+                ) { it } + fadeIn(tween(150, easing = FastOutLinearInEasing))
+                val exit = slideOutVertically(
+                    animationSpec = tween(150, easing = FastOutLinearInEasing),
+                ) { -it } + fadeOut(tween(150, easing = FastOutLinearInEasing))
+                enter.togetherWith(exit)
+            },
+            label = "metric_chip_value"
+        ) { current ->
+            Text(
+                text  = current,
+                fontSize  = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
         Text(
             text  = label,
-            fontSize  = 11.sp,           // tăng từ 9 → 11
+            fontSize  = 11.sp,
             color = Color.White.copy(alpha = 0.7f)
         )
     }
@@ -377,8 +414,8 @@ private fun formatTimeShort(ts: Long): String =
 
 private fun formatKg(kg: Double): String =
     if (kg == 0.0) "0 KG"
-    else "${NumberFormat.getNumberInstance(Locale("vi")).format(kg.toInt())} KG"
+    else "${NumberFormat.getNumberInstance(Locale.forLanguageTag("vi")).format(kg.toInt())} KG"
 
 private fun formatMoney(amount: Double): String =
-    NumberFormat.getNumberInstance(Locale("vi"))
+    NumberFormat.getNumberInstance(Locale.forLanguageTag("vi"))
         .format(amount.toLong()).replace(',', '.')

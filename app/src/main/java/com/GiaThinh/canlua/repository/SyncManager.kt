@@ -24,7 +24,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 class SyncManager @Inject constructor(
     private val firestoreRepository: FirestoreRepository,
     private val cardRepository: CardRepository,
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val auth: FirebaseAuth
 ) {
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
@@ -172,6 +172,8 @@ class SyncManager @Inject constructor(
             seasonLabel = this.seasonLabel,
             qrToken = this.qrToken,
             lockedByTraderId = this.lockedByTraderId,
+            latitude = this.latitude,
+            longitude = this.longitude,
             localId = this.id
         )
     }

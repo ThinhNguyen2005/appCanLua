@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "updated": "2026-05",
+    "source": "Tổng hợp tài liệu khuyến nông Sở NN&PTNT các tỉnh ĐBSCL — chỉ mang tính tham khảo nội bộ.",
+    "disclaimer": "Khi áp dụng thuốc BVTV, ưu tiên hỏi cán bộ khuyến nông địa phương."
+  },
+  "entries": [
+    {
+      "id": "dao_on_co_bong",
+      "title": "Đạo ôn cổ bông (Magnaporthe oryzae)",
+      "keywords": ["đạo ôn", "cổ bông", "lép trắng", "magnaporthe", "blast", "đạo on", "dao on"],
+      "content": "Đạo ôn cổ bông xuất hiện khi lúa trổ trong điều kiện ẩm ướt, sương mù dày, biên độ nhiệt ngày-đêm lớn. Triệu chứng: cổ gié bị thắt đen, hạt lép trắng. Phòng ngừa: bón cân đối NPK, không bón thừa đạm cuối vụ. Xử lý: phun trước trổ 5-7 ngày và sau trổ với hoạt chất Tricyclazole, Isoprothiolane hoặc Azoxystrobin + Difenoconazole. Phun lúc sáng sớm hoặc chiều mát, không phun khi sắp mưa."
+    },
+    {
+      "id": "ray_nau",
+      "title": "Rầy nâu (Nilaparvata lugens) và bệnh vàng lùn / lùn xoắn lá",
+      "keywords": ["rầy nâu", "ray nau", "vàng lùn", "lùn xoắn", "nilaparvata", "cháy rầy"],
+      "content": "Rầy nâu là vector truyền virus vàng lùn / lùn xoắn lá — gây thất thu nặng. Quan sát: lúa cháy chòm, bẹ có nhiều rầy non. Ngưỡng phòng trừ: 3 con/dảnh giai đoạn đẻ nhánh, 5-7 con/dảnh giai đoạn đòng. Sử dụng giống kháng (OM5451, OM18, ST25 hạn chế). Hoạt chất: Pymetrozine, Buprofezin (rầy non), Nitenpyram (rầy đã trưởng thành). Tránh Imidacloprid liên tục — đã kháng tại nhiều vùng."
+    },
+    {
+      "id": "sau_cuon_la",
+      "title": "Sâu cuốn lá nhỏ (Cnaphalocrocis medinalis)",
+      "keywords": ["sâu cuốn lá", "sau cuon la", "cuốn lá", "cnaphalocrocis"],
+      "content": "Sâu non cuốn lá lúa ăn phần thịt, để lại lớp biểu bì trắng. Mật độ gây hại: trên 20 con/m² giai đoạn đẻ nhánh, trên 9-12 con/m² giai đoạn làm đòng. Phòng trừ sinh học: bảo vệ thiên địch (ong ký sinh, nhện). Khi cần phun: Chlorantraniliprole, Indoxacarb, Emamectin benzoate. Phun khi sâu tuổi 1-2, vào sáng sớm hoặc chiều mát."
+    },
+    {
+      "id": "lich_bon_st25",
+      "title": "Lịch bón phân chuẩn cho ST25 (lúa 100-105 ngày)",
+      "keywords": ["bón phân", "bon phan", "st25", "phân bón", "lịch bón", "npk"],
+      "content": "ST25 lúa thơm cao cấp, cần bón cân đối:\n- Đợt 1 (sau sạ 7-10 ngày): 60-80 kg DAP + 30 kg Ure / ha — kích thích đẻ nhánh.\n- Đợt 2 (20-25 ngày): 80-100 kg Ure + 30 kg KCl / ha — đón đòng. Đây là đợt quan trọng nhất.\n- Đợt 3 (45-50 ngày, đòng già): 50 kg Ure + 50 kg KCl / ha — nuôi hạt.\nKhông bón đạm khi lúa đã trổ. Theo dõi bảng so màu lá lúa (LCC) để điều chỉnh."
+    },
+    {
+      "id": "lich_bon_om",
+      "title": "Lịch bón phân OM5451 / OM18 (lúa 90-95 ngày)",
+      "keywords": ["om5451", "om18", "om 5451", "lịch bón om"],
+      "content": "Giống OM ngắn ngày, lượng đạm vừa phải:\n- Đợt 1 (5-7 ngày sau sạ): 50 kg DAP + 20 kg Ure / ha.\n- Đợt 2 (18-22 ngày): 60-80 kg Ure + 25 kg KCl / ha — đón đòng.\n- Đợt 3 (40-45 ngày): 30-40 kg Ure + 30 kg KCl / ha — nuôi hạt.\nTổng vụ: ~120-140 kg N nguyên chất / ha."
+    },
+    {
+      "id": "ngap_ung",
+      "title": "Lúa ngập úng nhiều ngày",
+      "keywords": ["ngập", "ngap ung", "ngập úng", "nước ngập", "lũ"],
+      "content": "Lúa giai đoạn mạ đến đẻ nhánh chịu ngập 5-7 ngày nếu nước trong; nếu nước đục, có phù sa, chỉ chịu 3-4 ngày. Sau khi nước rút: rửa lá bằng nước sạch, không bón đạm ngay (sẽ làm vàng lá), đợi 5-7 ngày rồi bón Ure + KCl liều thấp. Phun phân bón lá có chứa kẽm, lân để hồi sức. Theo dõi đạo ôn lá vì lá còn ướt rất dễ nhiễm bệnh."
+    },
+    {
+      "id": "thoi_diem_phun_thuoc",
+      "title": "Thời điểm phun thuốc đúng cách",
+      "keywords": ["phun thuốc", "thời điểm phun", "phun sáng", "phun chiều", "phun thuoc"],
+      "content": "Quy tắc 5 đúng: đúng thuốc, đúng liều, đúng lúc, đúng cách, đúng đối tượng.\n- Sáng sớm 6:00-9:00 hoặc chiều 16:00-18:00, không phun lúc nắng gắt.\n- Không phun trước mưa 2-3 giờ — thuốc rửa trôi.\n- Pha đúng nồng độ ghi trên nhãn, không trộn quá 2 loại trừ khi nhà SX khuyến cáo.\n- Mặc đồ bảo hộ, không ăn uống trong khi phun.\n- Không phun khi lúa đang trổ phấn (8:00-10:00) vì gây cản trở thụ phấn."
+    },
+    {
+      "id": "thu_hoach",
+      "title": "Thời điểm thu hoạch lúa tối ưu",
+      "keywords": ["thu hoạch", "thu hoach", "gặt", "chín", "85 ngày"],
+      "content": "Thu hoạch khi 85-90% hạt trên bông chuyển vàng. Hạt cuống đầu vẫn còn xanh nhẹ là lý tưởng — không bị rụng, không bị rạn. Quá muộn (≥95% chín): hạt nứt, gãy khi xay, giảm giá. Quá sớm: hạt non, lép, gạo bị bạc bụng. Sau thu hoạch: phơi/sấy về 14% ẩm trong 24 giờ, không để bao ướt qua đêm để tránh nấm mốc."
+    },
+    {
+      "id": "vang_la_sinh_ly",
+      "title": "Vàng lá sinh lý (không phải bệnh)",
+      "keywords": ["vàng lá", "vang la", "ngộ độc hữu cơ", "phèn"],
+      "content": "Vàng lá sinh lý do ngộ độc phèn / hữu cơ phân hủy, thường xuất hiện đông xuân ở vùng đất phèn. Triệu chứng: lá già vàng dần lên, rễ đen thâm. Xử lý: thay nước, bón vôi 200-500 kg/ha tùy độ phèn, phun lân DAP qua lá để cứu rễ. Sau 7-10 ngày bón 5-10 kg Ure/ha kích sinh trưởng. Không nhầm với đạo ôn vì hai bệnh xử lý hoàn toàn khác."
+    },
+    {
+      "id": "khoang_cach_sa",
+      "title": "Mật độ sạ và khoảng cách hàng",
+      "keywords": ["sạ", "sa", "mật độ", "mat do", "khoảng cách hàng", "gieo sạ"],
+      "content": "Sạ lan: 100-120 kg giống/ha. Sạ thưa: 80-100 kg giống/ha (giảm sâu bệnh, đẻ nhánh khoẻ). Sạ hàng: 70-90 kg giống/ha, hàng cách hàng 20-25 cm. Vụ Đông Xuân có thể sạ thưa hơn vì đẻ nhánh tốt; Hè Thu nên sạ dày hơn 10-15 kg để bù sâu bệnh. Giống có tỷ lệ nảy mầm <85% → tăng giống thêm 10%."
+    }
+  ]
+}

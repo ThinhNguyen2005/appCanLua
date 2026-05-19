@@ -1,0 +1,186 @@
+package com.GiaThinh.canlua.repository
+
+import com.GiaThinh.canlua.BuildConfig
+import com.GiaThinh.canlua.data.model.Profile
+import com.GiaThinh.canlua.data.model.RicePrice
+import com.GiaThinh.canlua.data.model.WeatherInfo
+import com.GiaThinh.canlua.data.remote.HttpClient
+import com.GiaThinh.canlua.data.remote.ai.ChatMessage
+import com.GiaThinh.canlua.data.remote.ai.OpenRouterRequest
+import com.GiaThinh.canlua.data.remote.ai.OpenRouterResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * AI chat qua OpenRouter (OpenAI-compatible). Dùng model free-tier để tiết kiệm chi phí.
+ *
+ * RAG-lite chia 4 nguồn context, chèn lần lượt vào system prompt:
+ *  1. Hồ sơ user (tên, vai trò FARMER/TRADER, vùng canh tác)  → cá nhân hoá xưng hô.
+ *  2. Thời tiết hiện tại (vị trí + nhiệt độ + ẩm + cảnh báo)  → AI khuyến nghị theo điều kiện thực.
+ *  3. Bảng giá lúa hôm nay                                    → AI tra cứu khi user hỏi giá.
+ *  4. Knowledge base nội bộ (tài liệu khuyến nông tin cậy)    → ngăn AI bịa thông tin về bệnh/lịch bón.
+ */
+@Singleton
+class AiChatRepository @Inject constructor(
+    private val httpClient: HttpClient
+) {
+    companion object {
+        private const val MODEL = "openrouter/free"
+        private const val URL = "https://openrouter.ai/api/v1/chat/completions"
+        private const val SYSTEM_PROMPT_BASE = """
+Bạn là Trợ Lý Khuyến Nông cho nông dân trồng lúa tại Đồng bằng sông Cửu Long, Việt Nam.
+Luôn trả lời bằng Tiếng Việt, ngắn gọn, ưu tiên tính thực tế và dễ áp dụng.
+Khi đưa ra giải pháp kỹ thuật, ghi rõ: 1) Nguyên nhân, 2) Cách xử lý, 3) Phòng ngừa.
+
+QUY TẮC TUYỆT ĐỐI:
+- Khi user hỏi về GIÁ LÚA: CHỈ dùng số liệu trong "BẢNG GIÁ LÚA HÔM NAY". Nếu giống không có, nói thẳng "chưa có dữ liệu".
+- Khi tư vấn kỹ thuật: ưu tiên trích từ "TÀI LIỆU KHUYẾN NÔNG NỘI BỘ" được cung cấp. Không bịa tên thuốc/liều lượng.
+- Tận dụng "THỜI TIẾT HIỆN TẠI" để khuyến nghị (vd: trời mưa → hoãn phun thuốc).
+- Cá nhân hoá xưng hô theo "HỒ SƠ NGƯỜI DÙNG" (vd: gọi tên + vai trò Nông dân/Thương lái).
+- Nếu không chắc, khuyên hỏi cán bộ khuyến nông địa phương.
+"""
+    }
+
+    /**
+     * Tham số context đầy đủ cho 1 lượt chat. Field nào null/rỗng sẽ bỏ qua khi build prompt.
+     *
+     * @param history       Lịch sử hội thoại (đã lọc error).
+     * @param profile       Hồ sơ user (Room) — cá nhân hoá.
+     * @param weather       Thời tiết hiện tại từ WeatherRepository.
+     * @param ricePrices    Bảng giá hôm nay từ MarketRepository.
+     * @param knowledgeHits Top entries match keyword từ KnowledgeBaseRepository.search(query).
+     */
+    suspend fun chat(
+        history: List<ChatMessage>,
+        profile: Profile? = null,
+        weather: WeatherInfo? = null,
+        ricePrices: List<RicePrice> = emptyList(),
+        knowledgeHits: List<KnowledgeBaseRepository.KnowledgeEntry> = emptyList()
+    ): Result<String> = withContext(Dispatchers.IO) {
+        if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
+            return@withContext Result.failure(IllegalStateException(
+                "Thiếu OPENROUTER_API_KEY trong local.properties"
+            ))
+        }
+        try {
+            val systemPrompt = buildSystemPrompt(profile, weather, ricePrices, knowledgeHits)
+            val req = OpenRouterRequest(
+                model = MODEL,
+                messages = listOf(ChatMessage("system", systemPrompt)) + history
+            )
+            val resp: OpenRouterResponse = httpClient.postJson(
+                url = URL,
+                body = req,
+                headers = mapOf(
+                    "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
+                    "HTTP-Referer" to "https://canlua.app",
+                    "X-Title" to "CanLua"
+                )
+            )
+            resp.error?.message?.let { return@withContext Result.failure(RuntimeException(it)) }
+            val answer = resp.choices.firstOrNull()?.message?.content?.trim().orEmpty()
+            if (answer.isEmpty()) {
+                Result.failure(RuntimeException("AI không trả về nội dung"))
+            } else {
+                Result.success(answer)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun buildSystemPrompt(
+        profile: Profile?,
+        weather: WeatherInfo?,
+        prices: List<RicePrice>,
+        kbHits: List<KnowledgeBaseRepository.KnowledgeEntry>
+    ): String {
+        val parts = mutableListOf(SYSTEM_PROMPT_BASE.trim())
+        parts += buildContextHeader()
+        profile?.let { parts += buildProfileBlock(it) }
+        weather?.let { parts += buildWeatherBlock(it) }
+        if (prices.isNotEmpty()) parts += buildPriceContextBlock(prices)
+        if (kbHits.isNotEmpty()) parts += buildKnowledgeBlock(kbHits)
+        return parts.joinToString("\n\n")
+    }
+
+    private fun buildContextHeader(): String {
+        val now = SimpleDateFormat("EEEE, dd/MM/yyyy HH:mm", Locale.forLanguageTag("vi"))
+            .format(Date())
+        return "🕐 BỐI CẢNH CUỘC HỘI THOẠI:\nThời điểm: $now"
+    }
+
+    private fun buildProfileBlock(p: Profile): String {
+        val role = when (p.role.uppercase()) {
+            "TRADER" -> "Thương lái"
+            else -> "Nông dân"
+        }
+        val sb = StringBuilder("👤 HỒ SƠ NGƯỜI DÙNG:\n")
+        sb.append("- Tên: ${p.name.ifBlank { "Chưa cung cấp" }}\n")
+        sb.append("- Vai trò: $role\n")
+        if (p.region.isNotBlank()) sb.append("- Vùng canh tác: ${p.region}\n")
+        if (p.note.isNotBlank()) sb.append("- Ghi chú: ${p.note}\n")
+        return sb.toString().trimEnd()
+    }
+
+    private fun buildWeatherBlock(w: WeatherInfo): String {
+        val sb = StringBuilder("🌦️ THỜI TIẾT HIỆN TẠI (theo GPS):\n")
+        sb.append("- Vị trí: ${w.location}\n")
+        sb.append("- ${w.condition} · ${w.temperature}°C (cảm giác ${w.feelsLike}°C)\n")
+        sb.append("- Độ ẩm ${w.humidity}% · gió ${"%.1f".format(w.windSpeed)} m/s · mây ${w.rainChance}%\n")
+        if (!w.advisory.isNullOrBlank()) sb.append("- Cảnh báo: ${w.advisory}\n")
+        return sb.toString().trimEnd()
+    }
+
+    private fun buildPriceContextBlock(prices: List<RicePrice>): String {
+        val nf = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi"))
+        val now = System.currentTimeMillis()
+        val sb = StringBuilder("📊 BẢNG GIÁ LÚA HÔM NAY (đơn vị: VNĐ/kg lúa tươi tại ruộng):\n")
+        prices
+            .sortedByDescending { it.priceAvg7d }
+            .take(8)
+            .forEach { p ->
+                val trendIcon = when (p.trend) {
+                    "UP" -> "↑"
+                    "DOWN" -> "↓"
+                    else -> "→"
+                }
+                val freshness = formatFreshness(now - p.updatedAt)
+                sb.append(
+                    "- ${p.variety}: ${nf.format(p.priceMin.toLong())} - " +
+                        "${nf.format(p.priceMax.toLong())} (TB tuần: " +
+                        "${nf.format(p.priceAvg7d.toLong())}) $trendIcon, $freshness\n"
+                )
+            }
+        sb.append("Nguồn: ${prices.firstOrNull()?.region ?: "ĐBSCL"} · " +
+            "Tổng số giống đang theo dõi: ${prices.size}")
+        return sb.toString()
+    }
+
+    private fun buildKnowledgeBlock(hits: List<KnowledgeBaseRepository.KnowledgeEntry>): String {
+        val sb = StringBuilder("📚 TÀI LIỆU KHUYẾN NÔNG NỘI BỘ (ưu tiên trích dẫn):\n")
+        hits.forEachIndexed { idx, e ->
+            sb.append("\n[${idx + 1}] ${e.title}\n")
+            sb.append(e.content)
+            sb.append("\n")
+        }
+        return sb.toString().trimEnd()
+    }
+
+    private fun formatFreshness(ageMs: Long): String {
+        val mins = TimeUnit.MILLISECONDS.toMinutes(ageMs)
+        return when {
+            mins < 1 -> "vừa cập nhật"
+            mins < 60 -> "$mins phút trước"
+            mins < 60 * 24 -> "${mins / 60} giờ trước"
+            else -> "${mins / (60 * 24)} ngày trước"
+        }
+    }
+}

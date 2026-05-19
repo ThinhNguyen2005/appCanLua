@@ -64,15 +64,56 @@ object AppColors {
     val ComingSoonBg = Color(0xFFF3E5F5)
     val ComingSoonText = Color(0xFF6A1B9A)
 
+    // ── Detail screen surfaces (Fluent Tonal Layers) ─────────────────────
+    /** Highlight cho dòng "Còn lại" — đỏ đậm light, đỏ mềm dark */
+    val RemainingHighlight: Color
+        @Composable get() = animateColorAsState(
+            if (isSystemInDarkTheme()) Dark.RemainingHighlight else Color(0xFFB71C1C),
+            label = "RemainingHighlight"
+        ).value
+
+    /** Surface cho card highlight tổng khối lượng */
+    val WeightSurface: Color
+        @Composable get() = animateColorAsState(
+            if (isSystemInDarkTheme()) Dark.WeightSurface else Color(0xFFFFF8E1),
+            label = "WeightSurface"
+        ).value
+
+    /** Surface cho card tài chính */
+    val MoneySurface: Color
+        @Composable get() = animateColorAsState(
+            if (isSystemInDarkTheme()) Dark.MoneySurface else Color(0xFFE8F5E9),
+            label = "MoneySurface"
+        ).value
+
+    /** Surface lighter (sub card depth layer 2) */
+    val SurfaceContainer: Color
+        @Composable get() = animateColorAsState(
+            if (isSystemInDarkTheme()) Dark.SurfaceContainer else Color(0xFFF5F5F5),
+            label = "SurfaceContainer"
+        ).value
+
+    /** Acrylic overlay nhẹ — cho gradient & glassmorphism */
+    val AcrylicLight = Color(0x14FFFFFF)   // 8% white
+    val AcrylicMedium = Color(0x33FFFFFF)  // 20% white
+
+    /** Shadow tokens — Fluent depth layering */
+    val ShadowAmbient = Color(0x1A000000)  // 10% black
+    val ShadowDirect = Color(0x33000000)   // 20% black
+
     // Dark theme overrides
     object Dark {
         val Surface = Color(0xFF121212)
         val CardBg = Color(0xFF1E1E1E)
+        val SurfaceContainer = Color(0xFF252525)
         val TextPrimary = Color(0xFFE0E0E0)
         val TextSecondary = Color(0xFFE0E0E0)
         val TextHint = Color(0xFFAAAAAA)
         val Divider = Color(0xFF333333)
         val GreenPrimary = Color(0xFFA5D6A7) // Green80 (light soft green)
         val GreenSurface = Color(0xFF1E3A24) // Soft dark forest green
+        val RemainingHighlight = Color(0xFFEF5350) // Đỏ mềm cho dark
+        val WeightSurface = Color(0xFF332B14)      // Vàng đất tối
+        val MoneySurface = Color(0xFF1A2E1F)       // Xanh rêu tối
     }
 }

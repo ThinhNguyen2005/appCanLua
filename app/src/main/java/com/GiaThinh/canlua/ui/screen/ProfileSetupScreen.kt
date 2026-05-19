@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 
@@ -146,15 +146,18 @@ fun ProfileSetupScreen(
                         note = "",
                         role = role,
                         cccd = cccd,
-                        username = ""
-                    )
-                    if (onComplete != null) {
-                        onComplete()
-                    } else {
-                        navController.navigate("main") {
-                            popUpTo("login") { inclusive = true }
+                        username = "",
+                        onSaved = {
+                            // Save xong rồi mới navigate — tránh race khi AuthVM re-read DB.
+                            if (onComplete != null) {
+                                onComplete()
+                            } else {
+                                navController.navigate("main") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            }
                         }
-                    }
+                    )
                 },
                 enabled = name.isNotBlank(),
                 modifier = Modifier

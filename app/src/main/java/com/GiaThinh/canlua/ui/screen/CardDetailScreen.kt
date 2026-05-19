@@ -1,91 +1,78 @@
 package com.GiaThinh.canlua.ui.screen
 
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import android.widget.Toast
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Dialog
-import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
-import com.GiaThinh.canlua.ui.component.ThousandSeparatorTransformation
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.Summarize
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Grass
-import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.AttachMoney
-import androidx.compose.material.icons.outlined.Calculate
-import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.CreditCard
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.QrCode2
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Scale
-import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.unit.lerp
-import com.GiaThinh.canlua.ui.component.CustomHeader
-import com.GiaThinh.canlua.ui.component.WeighingButton
-import com.GiaThinh.canlua.ui.component.rememberHeaderHeights
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.Card
-import com.GiaThinh.canlua.ui.theme.*
+import com.GiaThinh.canlua.data.model.WeightEntry
+import com.GiaThinh.canlua.ui.component.CustomHeader
+import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
+import com.GiaThinh.canlua.ui.component.ThousandSeparatorTransformation
+import com.GiaThinh.canlua.ui.component.detail.DetailSkeleton
+import com.GiaThinh.canlua.ui.component.detail.FinancialSummaryCard
+import com.GiaThinh.canlua.ui.component.detail.RemainingHeroCard
+import com.GiaThinh.canlua.ui.component.detail.WeightSummaryCard
+import com.GiaThinh.canlua.ui.component.rememberHeaderHeights
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.util.isScrollingUp
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
     cardId: Long,
@@ -95,40 +82,33 @@ fun CardDetailScreen(
     val currentCard by viewModel.currentCard.collectAsState()
     val weightEntries by viewModel.weightEntries.collectAsState()
 
-    // Formatters
-    val numberFormat = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
 
-    LaunchedEffect(cardId) {
-        viewModel.loadCardById(cardId)
-    }
+    LaunchedEffect(cardId) { viewModel.loadCardById(cardId) }
 
-    val card = currentCard ?: return
+    val heights = rememberHeaderHeights()
+    val scrollState = rememberLazyListState()
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    val tables = remember(weightEntries) { weightEntries.chunked(25) }
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { tables.size.coerceAtLeast(1) }
-    )
-    var selectedTableIndex by remember(tables.size) { mutableStateOf(0) }
-    val activeTableIndex = selectedTableIndex.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
-
-    LaunchedEffect(pagerState.currentPage) {
-        selectedTableIndex = pagerState.currentPage
-    }
-
-    LaunchedEffect(activeTableIndex) {
-        if (pagerState.currentPage != activeTableIndex && activeTableIndex < tables.size) {
-            pagerState.animateScrollToPage(activeTableIndex)
+    // Pull-to-refresh state
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullState = rememberPullToRefreshState()
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            delay(550) // perceptible feedback even on cache hit
+            viewModel.loadCardById(cardId)
+            isRefreshing = false
         }
     }
 
-    val heights = rememberHeaderHeights()
+    // Long-press → bottom sheet on bag cell
+    var entryActionTarget by remember { mutableStateOf<WeightEntry?>(null) }
+    var entryActionGlobalIndex by remember { mutableStateOf(0) }
 
-    val scrollState = rememberLazyListState()
-    val density = LocalDensity.current
-    
-    // Calculate scroll progress
-    val collapseRangePx = with(density) { heights.expanded.toPx() } // Distance to scroll before fully collapsed
+    val collapseRangePx = with(density) { heights.expanded.toPx() }
     val collapseFraction by remember {
         derivedStateOf {
             if (scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset < 50) {
@@ -137,7 +117,7 @@ fun CardDetailScreen(
                 val scroll = if (scrollState.firstVisibleItemIndex == 0) {
                     scrollState.firstVisibleItemScrollOffset.toFloat()
                 } else {
-                    collapseRangePx // Fully collapsed if scrolled past first item
+                    collapseRangePx
                 }
                 (scroll / collapseRangePx).coerceIn(0f, 1f)
             }
@@ -147,637 +127,644 @@ fun CardDetailScreen(
     val clampedFraction = collapseFraction.coerceIn(0f, 1f)
     val headerHeight = lerp(heights.expanded, heights.collapsed, clampedFraction)
 
-    val lastEntryTime = weightEntries.maxOfOrNull { it.timestamp }
-
-    val context = LocalContext.current
     var showOverflow by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     Scaffold(
-        containerColor = LightGray,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        containerColor = AppColors.Surface,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        floatingActionButton = {
+            // Drive-style Extended FAB — chỉ hiện khi card đã load và user đang ở đầu trang
+            currentCard?.let { c ->
+                val fabVisible = scrollState.isScrollingUp() && entryActionTarget == null
+                AnimatedVisibility(
+                    visible = fabVisible,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+                ) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            if (c.isLocked) {
+                                Toast.makeText(context, "Vui lòng mở khóa phiếu trước khi cân!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                navController.navigate("weight_input/${cardId}")
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                Icons.Outlined.Scale,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        },
+                        text = {
+                            Text(
+                                "Cân lúa",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            )
+                        },
+                        expanded = true,
+                        containerColor = if (c.isLocked) AppColors.GreenPrimary.copy(alpha = 0.45f) else AppColors.GreenPrimary,
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 6.dp,
+                            pressedElevation = 12.dp
+                        )
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
+        // === PLACEHOLDER CARD (Performance Optimization) ===
+        // Khi currentCard == null (data đang load), header vẫn render với card rỗng.
+        // → Frame 0 đã có header đầy đủ (back button, FAB, layout), không có cảm giác
+        //   "header appear sau content". Khi data về, chỉ Text bên trong recompose
+        //   (cheap), không mount lại view tree.
+        val placeholderCard = remember {
+            Card(
+                id = 0L,
+                name = "",
+                date = Date(),
+                traderName = ""
+            )
+        }
+        val displayCard = currentCard ?: placeholderCard
+        val isLoading = currentCard == null
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
-            // 1. The Scrollable Content (LazyColumn)
-            LazyColumn(
-                state = scrollState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                // Spacer to push content down below the Header
-                item {
-                    Spacer(modifier = Modifier.height(heights.expanded + 16.dp))
+            // === Content layer ===
+            if (isLoading) {
+                Column {
+                    Spacer(Modifier.height(heights.expanded + 16.dp))
+                    DetailSkeleton()
                 }
+            } else {
+                val card = currentCard!!
+                val tables = remember(weightEntries) { weightEntries.chunked(25) }
+                val pagerState = rememberPagerState(
+                    initialPage = 0,
+                    pageCount = { tables.size.coerceAtLeast(1) }
+                )
+                var selectedTableIndex by remember(tables.size) { mutableStateOf(0) }
+                val activeTableIndex = selectedTableIndex.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
 
-                // ITEM 1: Detail Card
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        DetailCardItem(
-                            card = card,
-                            numberFormat = numberFormat,
-                            onOpenClick = {
-                                navController.navigate("weight_input/${card.id}")
-                            }
-                        )
+                LaunchedEffect(pagerState.currentPage) {
+                    if (selectedTableIndex != pagerState.currentPage) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        selectedTableIndex = pagerState.currentPage
                     }
                 }
 
-                item { Spacer(modifier = Modifier.height(16.dp)) }
+                LaunchedEffect(activeTableIndex) {
+                    if (pagerState.currentPage != activeTableIndex && activeTableIndex < tables.size) {
+                        pagerState.animateScrollToPage(activeTableIndex)
+                    }
+                }
 
-                // ITEM 2: Weight entries detail list (Replacing the old SummaryCardItem)
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            Icons.Outlined.Scale,
-                                            contentDescription = null,
-                                            tint = AppColors.GreenPrimary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            "Chi tiết các bao cân",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Text(
-                                        "${weightEntries.size} bao",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.Gray,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                                
-                                Spacer(modifier = Modifier.height(12.dp))
-                                
-                                if (weightEntries.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 24.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            "Chưa có bao cân nào được nhập.",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Gray
-                                        )
-                                    }
-                                } else {
-                                    // Selector cho các Bảng
-                                    LazyRow(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(tables.size) { index ->
-                                            val isActive = index == activeTableIndex
-                                            val textStyle = if (isActive) {
-                                                MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    color = AppColors.GreenPrimary
-                                                )
-                                            } else {
-                                                MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.Normal,
-                                                    color = AppColors.TextSecondary
-                                                )
-                                            }
-                                            Surface(
-                                                onClick = {
-                                                    selectedTableIndex = index
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = if (isActive) AppColors.GreenSurface else Color.Transparent,
-                                                border = if (isActive) BorderStroke(1.dp, AppColors.GreenPrimary) else null,
-                                                modifier = Modifier.padding(horizontal = 4.dp)
-                                            ) {
-                                                Text(
-                                                    text = "Bảng ${index + 1}",
-                                                    style = textStyle,
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                                )
-                                            }
+                val lastEntryTime = weightEntries.maxOfOrNull { it.timestamp }
+
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        isRefreshing = true
+                    },
+                    state = pullState,
+                    modifier = Modifier.fillMaxSize(),
+                    indicator = {
+                        PullToRefreshDefaults.Indicator(
+                            state = pullState,
+                            isRefreshing = isRefreshing,
+                            color = AppColors.GreenPrimary,
+                            containerColor = AppColors.GreenSurface,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = heights.collapsed + 8.dp)
+                        )
+                    }
+                ) {
+                    LazyColumn(
+                        state = scrollState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.height(heights.expanded + 16.dp)) }
+
+                        // Card 1: Khối lượng
+                        item {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                WeightSummaryCard(
+                                    totalWeight = card.totalWeight,
+                                    bagCount = card.bagCount,
+                                    bagWeight = card.bagWeight,
+                                    impurityWeight = card.impurityWeight,
+                                    netWeight = card.netWeight,
+                                    numberFormat = numberFormat
+                                )
+                            }
+                        }
+
+                        // Card 2: Tài chính (gộp "Còn lại" vào cuối với style highlight vàng)
+                        item {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                FinancialSummaryCard(
+                                    pricePerKg = card.pricePerKg,
+                                    totalAmount = card.totalAmount,
+                                    depositAmount = card.depositAmount,
+                                    paidAmount = card.paidAmount,
+                                    remainingAmount = card.remainingAmount,
+                                    numberFormat = numberFormat
+                                )
+                            }
+                        }
+
+                        // (Card "Còn lại" đã gộp vào FinancialSummaryCard ở trên)
+
+                        // Card 4: Chi tiết bao cân
+                        item {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                BagEntriesCard(
+                                    bagCountTotal = weightEntries.size,
+                                    tables = tables,
+                                    pagerState = pagerState,
+                                    activeTableIndex = activeTableIndex,
+                                    isLocked = card.isLocked,
+                                    onTableSelected = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        selectedTableIndex = it
+                                    },
+                                    onAddFirstBag = {
+                                        if (card.isLocked) {
+                                            Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            navController.navigate("weight_input/${cardId}")
+                                        }
+                                    },
+                                    onEntryLongPress = { entry, globalIdx ->
+                                        if (card.isLocked) {
+                                            Toast.makeText(context, "Phiếu cân đang khóa!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            entryActionGlobalIndex = globalIdx
+                                            entryActionTarget = entry
                                         }
                                     }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // Pager cho phép vuốt ngang qua lại các bảng
-                                    HorizontalPager(
-                                        state = pagerState,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) { pageIndex ->
-                                        if (pageIndex < tables.size) {
-                                            val tableEntries = tables[pageIndex]
-                                            val tableGrid = MutableList(5) { MutableList<com.GiaThinh.canlua.data.model.WeightEntry?>(5) { null } }
-                                            for (c in 0 until 5) {
-                                                for (r in 0 until 5) {
-                                                    val entryIdx = c * 5 + r
-                                                    if (entryIdx < tableEntries.size) {
-                                                        tableGrid[r][c] = tableEntries[entryIdx]
-                                                    }
-                                                }
-                                            }
-                                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                for (r in 0 until 5) {
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                    ) {
-                                                        for (c in 0 until 5) {
-                                                            val entry = tableGrid[r][c]
-                                                            val globalIndex = pageIndex * 25 + c * 5 + r + 1
-                                                            if (entry != null) {
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .weight(1f)
-                                                                        .clip(RoundedCornerShape(8.dp))
-                                                                        .background(AppColors.GreenSurface)
-                                                                        .padding(vertical = 8.dp),
-                                                                    contentAlignment = Alignment.Center
-                                                                ) {
-                                                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                        Text(
-                                                                            text = "#$globalIndex",
-                                                                            style = MaterialTheme.typography.labelSmall,
-                                                                            color = AppColors.GreenPrimary,
-                                                                            fontWeight = FontWeight.Bold
-                                                                        )
-                                                                        Text(
-                                                                            text = if (entry.weight % 1.0 == 0.0) "%.0f".format(entry.weight) else "%.1f".format(entry.weight),
-                                                                            style = MaterialTheme.typography.bodyMedium,
-                                                                            fontWeight = FontWeight.Bold,
-                                                                            color = AppColors.TextPrimary
-                                                                        )
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                Spacer(modifier = Modifier.weight(1f))
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                )
                             }
                         }
                     }
                 }
+
+                if (showDeleteConfirm) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteConfirm = false },
+                        title = { Text("Xóa phiếu?") },
+                        text = { Text("Hành động này sẽ xóa phiếu và các cân nặng liên quan.") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showDeleteConfirm = false
+                                scope.launch {
+                                    viewModel.deleteCard(card)
+                                    navController.popBackStack()
+                                }
+                            }) {
+                                Text("Xóa", color = AppColors.Error)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteConfirm = false }) { Text("Hủy") }
+                        }
+                    )
+                }
+
+                if (showEditDialog) {
+                    EditCardDialog(
+                        card = card,
+                        onDismiss = { showEditDialog = false },
+                        onConfirm = { updatedCard ->
+                            viewModel.updateCard(updatedCard)
+                            showEditDialog = false
+                            Toast.makeText(context, "Đã cập nhật thông tin phiếu cân", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+
+                // Bag entry action sheet (long-press)
+                entryActionTarget?.let { entry ->
+                    BagEntryActionSheet(
+                        entry = entry,
+                        globalIndex = entryActionGlobalIndex,
+                        numberFormat = numberFormat,
+                        onDismiss = { entryActionTarget = null },
+                        onDelete = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.deleteWeightEntry(entry)
+                            entryActionTarget = null
+                            Toast.makeText(context, "Đã xóa bao #$entryActionGlobalIndex", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
             }
 
-            // 2. The Header (Background) - Scrolls away
+            // === HEADER LAYER (luôn render từ frame 0) ===
+            // Đặt OUT of if/else → header tồn tại NGAY khi composable mount,
+            // không có cảm giác "appear sau content". Khi data từ null → loaded,
+            // chỉ Text bên trong recompose (rẻ), view tree không tear down/rebuild.
             CustomHeader(
-                card = card,
+                card = displayCard,
                 collapseFraction = clampedFraction,
-                lastEntryTime = lastEntryTime,
-                modifier = Modifier
-                    .height(headerHeight)
-                    .graphicsLayer {
-                        translationY = -clampedFraction * collapseRangePx
-                    },
+                lastEntryTime = if (isLoading) null else weightEntries.maxOfOrNull { it.timestamp },
+                modifier = Modifier.height(headerHeight),
                 onBack = { navController.popBackStack() },
                 onAdd = {
-                    if (card.isLocked) {
+                    if (isLoading) return@CustomHeader
+                    if (displayCard.isLocked) {
                         Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
                     } else {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigate("weight_input/${cardId}")
                     }
                 },
                 showOverflow = showOverflow,
-                onOverflowChange = { showOverflow = it },
+                onOverflowChange = { if (!isLoading) showOverflow = it },
                 onEditCard = {
-                    if (card.isLocked) {
+                    if (isLoading) return@CustomHeader
+                    if (displayCard.isLocked) {
                         Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
                     } else {
                         showEditDialog = true
                     }
                 },
                 onDeleteCard = {
-                    if (card.isLocked) {
+                    if (isLoading) return@CustomHeader
+                    if (displayCard.isLocked) {
                         Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
                     } else {
                         showDeleteConfirm = true
                     }
                 },
-                onCreateQr = { navController.navigate("qr_generate/${card.id}") },
-                onScanQr = { navController.navigate("qr_scan") },
+                onCreateQr = { if (!isLoading) navController.navigate("qr_generate/${displayCard.id}") },
+                onScanQr = { if (!isLoading) navController.navigate("qr_scan") },
                 onToggleLock = {
-                    viewModel.toggleCardLock(card.id)
+                    if (isLoading) return@CustomHeader
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.toggleCardLock(displayCard.id)
                     Toast.makeText(
                         context,
-                        if (card.isLocked) "Đã mở khóa phiếu cân" else "Đã khóa phiếu cân",
+                        if (displayCard.isLocked) "Đã mở khóa phiếu cân" else "Đã khóa phiếu cân",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             )
-
-            if (showDeleteConfirm) {
-                AlertDialog(
-                    onDismissRequest = { showDeleteConfirm = false },
-                    title = { Text("Xóa phiếu?") },
-                    text = { Text("Hành động này sẽ xóa phiếu và các cân nặng liên quan.") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showDeleteConfirm = false
-                            scope.launch {
-                                viewModel.deleteCard(card)
-                                navController.popBackStack()
-                            }
-                        }) {
-                            Text("Xóa", color = Color.Red)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDeleteConfirm = false }) {
-                            Text("Hủy")
-                        }
-                    }
-                )
-            }
-
-            if (showEditDialog) {
-                EditCardDialog(
-                    card = card,
-                    onDismiss = { showEditDialog = false },
-                    onConfirm = { updatedCard ->
-                        viewModel.updateCard(updatedCard)
-                        showEditDialog = false
-                        Toast.makeText(context, "Đã cập nhật thông tin phiếu cân", Toast.LENGTH_SHORT).show()
-                    }
-                )
-            }
         }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Bag entries card (selector + 5×5 row-major grid)
+// ─────────────────────────────────────────────────────────────────────────────
 
-
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun DetailCardItem(
-    card: Card,
-    numberFormat: NumberFormat,
-    onOpenClick: () -> Unit
+private fun BagEntriesCard(
+    bagCountTotal: Int,
+    tables: List<List<WeightEntry>>,
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    activeTableIndex: Int,
+    isLocked: Boolean,
+    onTableSelected: (Int) -> Unit,
+    onAddFirstBag: () -> Unit,
+    onEntryLongPress: (WeightEntry, Int) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            // Decorative side bar
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .fillMaxHeight()
-                    .background(GreenGrey40)
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header: Nút Cân lúa
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.Scale,
+                        contentDescription = null,
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Thông tin phiếu cân",
+                        "Chi tiết các bao cân",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = AppColors.GreenPrimary
+                        color = AppColors.TextPrimary
                     )
-                    WeighingButton(onClick = onOpenClick)
+                }
+                Surface(
+                    color = AppColors.GreenSurface,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "$bagCountTotal bao",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenPrimary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (bagCountTotal == 0) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Chưa có bao cân nào được nhập.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextHint,
+                        textAlign = TextAlign.Center
+                    )
+                    OutlinedButton(
+                        onClick = onAddFirstBag,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, AppColors.GreenPrimary),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary)
+                    ) {
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Thêm bao cân đầu tiên", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            } else {
+                // Selector chips
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(tables.size) { index ->
+                        val isActive = index == activeTableIndex
+                        val borderWidth by animateDpAsState(
+                            targetValue = if (isActive) 1.5.dp else 0.dp,
+                            animationSpec = tween(180),
+                            label = "chip_border"
+                        )
+                        Surface(
+                            onClick = { onTableSelected(index) },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isActive) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                            border = if (isActive) BorderStroke(borderWidth, AppColors.GreenPrimary) else null,
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        ) {
+                            Text(
+                                text = "Bảng ${index + 1}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Normal,
+                                color = if (isActive) AppColors.GreenPrimary else AppColors.TextSecondary,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ── PHẦN 1: KHỐI LƯỢNG ──────────────────────────────────────
-                StatRow(
-                    icon = Icons.Outlined.Inventory2,
-                    label = "Tổng khối lượng",
-                    value = "${numberFormat.format(card.totalWeight)} KG",
-                    valueColor = BlackText,
-                    isBold = false
-                )
                 Spacer(modifier = Modifier.height(8.dp))
-                StatRow(
-                    icon = Icons.Outlined.ShoppingBag,
-                    label = "Số bao",
-                    value = "${card.bagCount} bao",
-                    valueColor = BlackText,
-                    isBold = false
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                StatRow(
-                    icon = Icons.Outlined.Inventory2,
-                    label = "Trừ bì",
-                    value = "${numberFormat.format(card.bagWeight)} KG",
-                    valueColor = BlackText,
-                    isBold = false
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                StatRow(
-                    icon = Icons.Outlined.Scale,
-                    label = "Tạp chất",
-                    value = "${numberFormat.format(card.impurityWeight)} KG",
-                    valueColor = BlackText,
-                    isBold = false
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                // Dòng kết quả: Khối lượng thực — in đậm nổi bật
-                StatRow(
-                    icon = Icons.Outlined.Scale,
-                    label = "Khối lượng thực",
-                    value = "${numberFormat.format(card.netWeight)} KG",
-                    valueColor = AppColors.GreenPrimary,
-                    isBold = true
-                )
 
-                // ── DIVIDER PHÂN CÁCH ───────────────────────────────────────
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 14.dp),
-                    thickness = 0.8.dp,
-                    color = LightGray
-                )
-
-                // ── PHẦN 2: TÀI CHÍNH ──────────────────────────────────────
-                FinancialRow(icon = Icons.Outlined.AttachMoney, label = "Đơn giá:", value = "${numberFormat.format(card.pricePerKg)} đ")
-                FinancialRow(icon = Icons.Outlined.Calculate, label = "Thành tiền:", value = "${numberFormat.format(card.totalAmount)} đ")
-                FinancialRow(icon = Icons.Outlined.CreditCard, label = "Tiền cọc:", value = "${numberFormat.format(card.depositAmount)} đ")
-                FinancialRow(icon = Icons.Outlined.CheckCircle, label = "Đã trả:", value = "${numberFormat.format(card.paidAmount)} đ")
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 14.dp),
-                    thickness = 0.8.dp,
-                    color = LightGray
-                )
-
-                // ── CÒN LẠI — Nhấn mạnh kết quả cuối cùng ─────────────────
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Outlined.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = Color(0xFFB71C1C),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Còn lại",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFB71C1C)
+                HorizontalPager(
+                    state = pagerState,
+                    pageSpacing = 8.dp,
+                    pageSize = PageSize.Fill,
+                    modifier = Modifier.fillMaxWidth()
+                ) { pageIndex ->
+                    if (pageIndex < tables.size) {
+                        val tableEntries = tables[pageIndex]
+                        BagGrid(
+                            entries = tableEntries,
+                            globalOffset = pageIndex * 25,
+                            isLocked = isLocked,
+                            onEntryLongPress = onEntryLongPress
                         )
                     }
-                    Text(
-                        text = "${numberFormat.format(card.remainingAmount)} đ",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFB71C1C)
-                    )
                 }
             }
         }
     }
 }
 
+/**
+ * Row-major 5×5 grid: index 0..24 = (row=idx/5, col=idx%5).
+ * Đọc trái-phải, trên-xuống — tự nhiên với người dùng.
+ */
 @Composable
-fun SummaryCardItem(
-    card: Card,
-    numberFormat: NumberFormat
+private fun BagGrid(
+    entries: List<WeightEntry>,
+    globalOffset: Int,
+    isLocked: Boolean,
+    onEntryLongPress: (WeightEntry, Int) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (r in 0 until 5) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                for (c in 0 until 5) {
+                    val entryIdx = r * 5 + c
+                    val entry = entries.getOrNull(entryIdx)
+                    val globalIndex = globalOffset + entryIdx + 1
+                    if (entry != null) {
+                        BagCell(
+                            indexLabel = "#$globalIndex",
+                            weight = entry.weight,
+                            isLocked = isLocked,
+                            onLongPress = { onEntryLongPress(entry, globalIndex) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun BagCell(
+    indexLabel: String,
+    weight: Double,
+    isLocked: Boolean,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    val weightText = if (weight % 1.0 == 0.0) "%.0f".format(weight) else "%.1f".format(weight)
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(AppColors.GreenSurface)
+            .combinedClickable(
+                onClick = { /* reserved for future quick edit */ },
+                onLongClick = if (!isLocked) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLongPress()
+                    }
+                } else null
+            )
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column {
-            // Red Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(RedHeader)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = indexLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.GreenPrimary,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = weightText,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+        }
+    }
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Bag entry action sheet — long-press → ModalBottomSheet
+// ───────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BagEntryActionSheet(
+    entry: WeightEntry,
+    globalIndex: Int,
+    numberFormat: NumberFormat,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    var confirmDelete by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = AppColors.CardBg,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = AppColors.Divider) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(AppColors.GreenSurface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Scale,
+                        contentDescription = null,
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        "Bao cân #$globalIndex",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        "${numberFormat.format(entry.weight)} kg",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary
+                    )
+                }
+            }
+
+            HorizontalDivider(color = AppColors.Divider)
+
+            // Action: Delete
+            Surface(
+                onClick = { confirmDelete = true },
+                shape = RoundedCornerShape(12.dp),
+                color = Color.Transparent
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Summarize, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "TỔNG CỘNG",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = null,
+                        tint = AppColors.Error
+                    )
                     Text(
-                        "${card.bagCount} bao",
-                        color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.bodyMedium
+                        "Xóa bao cân này",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Error
                     )
                 }
             }
 
-            // Content
-            Column(modifier = Modifier.padding(16.dp)) {
-                StatRow(
-                    icon = Icons.Outlined.Inventory2,
-                    label = "Tổng khối lượng",
-                    value = "${numberFormat.format(card.totalWeight)} KG",
-                    valueColor = BlackText,
-                    isBold = true
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                StatRow(
-                    icon = Icons.Outlined.Scale,
-                    label = "Khối lượng thực",
-                    value = "${numberFormat.format(card.netWeight)} KG",
-                    valueColor = RedText,
-                    isBold = true
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                StatRow(
-                    icon = Icons.Outlined.Inventory2,
-                    label = "Số bao",
-                    value = "${card.bagCount} bao",
-                    valueColor = BlackText,
-                    isBold = true
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = LightGray)
-
-                MoneyRow(label = "Đơn giá:", value = "${numberFormat.format(card.pricePerKg)} đ")
-                MoneyRow(label = "Thành tiền:", value = "${numberFormat.format(card.totalAmount)} đ")
-                MoneyRow(label = "Tiền cọc:", value = "${numberFormat.format(card.depositAmount)} đ")
-                MoneyRow(label = "Đã trả:", value = "${numberFormat.format(card.paidAmount)} đ")
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = LightGray)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.MonetizationOn,
-                            contentDescription = null,
-                            tint = GrayLabel,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Còn lại", fontWeight = FontWeight.Bold, color = RedText)
-                    }
-                    Text(
-                        text = "${numberFormat.format(card.remainingAmount)} đ",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = RedText
-                    )
-                }
-            }
+            Spacer(Modifier.height(8.dp))
         }
     }
-}
 
-@Composable
-fun StatRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    valueColor: Color,
-    isBold: Boolean = false
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = GrayLabel,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = BlackText
-            )
-        }
-        Text(
-            text = value,
-            color = valueColor,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Xóa bao #$globalIndex?") },
+            text = { Text("Hành động này không thể hoàn tác. Bao ${numberFormat.format(entry.weight)} kg sẽ bị xóa khỏi bảng.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) { Text("Xóa", color = AppColors.Error, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Hủy") }
+            },
+            containerColor = AppColors.CardBg
         )
     }
 }
 
-@Composable
-fun MoneyRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = GrayLabel
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = BlackText
-        )
-    }
-}
-
-@Composable
-fun FinancialRow(icon: ImageVector, label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = GrayLabel, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = GrayLabel)
-        }
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = BlackText)
-    }
-}
-
-class ThousandSeparatorTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val originalText = text.text
-        if (originalText.isEmpty()) {
-            return TransformedText(text, OffsetMapping.Identity)
-        }
-        val parsed = originalText.toLongOrNull() ?: 0L
-        val formatted = java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN")).format(parsed)
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 0) return 0
-                val originalSub = originalText.substring(0, offset.coerceAtMost(originalText.length))
-                val parsedSub = originalSub.toLongOrNull() ?: 0L
-                val formattedSub = java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN")).format(parsedSub)
-                return formattedSub.length
-            }
-
-            override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 0) return 0
-                val transformedSub = formatted.substring(0, offset.coerceAtMost(formatted.length))
-                val digitsOnly = transformedSub.filter { it.isDigit() }
-                return digitsOnly.length.coerceAtMost(originalText.length)
-            }
-        }
-        return TransformedText(AnnotatedString(formatted), offsetMapping)
-    }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Edit dialog
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun FormTextField(
@@ -879,7 +866,6 @@ fun EditCardDialog(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        
                         FormTextField(
                             value = seasonLabel,
                             onValueChange = { seasonLabel = it },
@@ -909,7 +895,6 @@ fun EditCardDialog(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp)
                         )
-
                         OutlinedTextField(
                             value = pricePerKg,
                             onValueChange = { pricePerKg = it },
@@ -936,7 +921,6 @@ fun EditCardDialog(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp)
                         )
-
                         OutlinedTextField(
                             value = paidAmount,
                             onValueChange = { paidAmount = it },

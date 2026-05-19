@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.repository.AuthManager
+import com.GiaThinh.canlua.repository.ChatSessionStore
 import com.GiaThinh.canlua.repository.ProfileRepository
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
@@ -14,6 +15,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
@@ -25,14 +27,20 @@ data class AuthUiState(
     val error: String? = null,
     val info: String? = null,
     val userLabel: String? = null,
-    val verificationId: String? = null
+    val verificationId: String? = null,
+    /**
+     * `true` nếu user đã sign-in nhưng chưa có Profile (name blank trong Room DB).
+     * `null` = chưa xác định — vẫn đang load. UI nên chờ thay vì điều hướng vội.
+     */
+    val needsProfileSetup: Boolean? = null
 )
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val firebaseAuth: FirebaseAuth,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val chatSessionStore: ChatSessionStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -43,6 +51,36 @@ class AuthViewModel @Inject constructor(
     )
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    init {
+        // Nếu user đã đăng nhập sẵn (cold start), load profile để quyết định route.
+        if (authManager.isAuthenticated) {
+            refreshProfileSetupFlag()
+        } else {
+            // Chưa sign-in — không cần setup, vào login luôn.
+            _uiState.value = _uiState.value.copy(needsProfileSetup = false)
+        }
+    }
+
+    /**
+     * Đọc Profile mới nhất từ Room để quyết định user có cần màn hình ProfileSetup hay không.
+     * Gọi sau mọi sign-in success, và trong init khi cold start.
+     */
+    private fun refreshProfileSetupFlag() {
+        viewModelScope.launch {
+            val profile = profileRepository.latestProfile().first()
+            val needsSetup = profile?.name?.isBlank() ?: true
+            _uiState.value = _uiState.value.copy(needsProfileSetup = needsSetup)
+        }
+    }
+
+    /**
+     * Gọi từ ProfileSetupScreen sau khi user nhấn "Hoàn tất thiết lập".
+     * Refresh flag → LaunchedEffect ở MainActivity sẽ điều hướng vào "main".
+     */
+    fun markProfileCompleted() {
+        refreshProfileSetupFlag()
+    }
+
     private fun getUserLabel(): String? {
         val user = authManager.currentUser
         return user?.email ?: user?.phoneNumber ?: user?.uid
@@ -52,8 +90,13 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             val result = authManager.signInWithEmailAndPassword(email, password)
-            _uiState.value = if (result.isSuccess) {
-                AuthUiState(isSignedIn = true, userLabel = getUserLabel())
+            if (result.isSuccess) {
+                _uiState.value = AuthUiState(
+                    isSignedIn = true,
+                    userLabel = getUserLabel(),
+                    needsProfileSetup = null // pending until refresh below
+                )
+                refreshProfileSetupFlag()
             } else {
                 val exception = result.exceptionOrNull()
                 val errorMsg = when {
@@ -62,7 +105,7 @@ class AuthViewModel @Inject constructor(
                     exception?.message?.contains("email address is badly formatted", ignoreCase = true) == true -> "Định dạng email không hợp lệ."
                     else -> exception?.message ?: "Đăng nhập thất bại"
                 }
-                _uiState.value.copy(loading = false, error = errorMsg)
+                _uiState.value = _uiState.value.copy(loading = false, error = errorMsg)
             }
         }
     }
@@ -81,7 +124,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             val result = authManager.createUserWithEmailAndPassword(email, password)
-            _uiState.value = if (result.isSuccess) {
+            if (result.isSuccess) {
                 saveProfileLocal(
                     name = name,
                     phone = phone,
@@ -92,7 +135,12 @@ class AuthViewModel @Inject constructor(
                     username = username,
                     email = email
                 )
-                AuthUiState(isSignedIn = true, userLabel = getUserLabel())
+                _uiState.value = AuthUiState(
+                    isSignedIn = true,
+                    userLabel = getUserLabel(),
+                    needsProfileSetup = null
+                )
+                refreshProfileSetupFlag()
             } else {
                 val exception = result.exceptionOrNull()
                 val errorMsg = when {
@@ -101,7 +149,7 @@ class AuthViewModel @Inject constructor(
                     exception?.message?.contains("email address is badly formatted", ignoreCase = true) == true -> "Định dạng email không hợp lệ."
                     else -> exception?.message ?: "Đăng ký thất bại"
                 }
-                _uiState.value.copy(loading = false, error = errorMsg)
+                _uiState.value = _uiState.value.copy(loading = false, error = errorMsg)
             }
         }
     }
@@ -110,10 +158,16 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             val result = authManager.signInAnonymously()
-            _uiState.value = if (result.isSuccess) {
-                AuthUiState(isSignedIn = true, info = "Đăng nhập ẩn danh", userLabel = getUserLabel())
+            if (result.isSuccess) {
+                _uiState.value = AuthUiState(
+                    isSignedIn = true,
+                    info = "Đăng nhập ẩn danh",
+                    userLabel = getUserLabel(),
+                    needsProfileSetup = null
+                )
+                refreshProfileSetupFlag()
             } else {
-                _uiState.value.copy(loading = false, error = result.exceptionOrNull()?.message ?: "Đăng nhập thất bại")
+                _uiState.value = _uiState.value.copy(loading = false, error = result.exceptionOrNull()?.message ?: "Đăng nhập thất bại")
             }
         }
     }
@@ -124,7 +178,12 @@ class AuthViewModel @Inject constructor(
             val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
             try {
                 firebaseAuth.signInWithCredential(credential).await()
-                _uiState.value = AuthUiState(isSignedIn = true, userLabel = getUserLabel())
+                _uiState.value = AuthUiState(
+                    isSignedIn = true,
+                    userLabel = getUserLabel(),
+                    needsProfileSetup = null
+                )
+                refreshProfileSetupFlag()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(loading = false, error = e.message ?: "Đăng nhập Google thất bại")
             }
@@ -172,16 +231,37 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 firebaseAuth.signInWithCredential(credential).await()
-                _uiState.value = AuthUiState(isSignedIn = true, userLabel = getUserLabel())
+                _uiState.value = AuthUiState(
+                    isSignedIn = true,
+                    userLabel = getUserLabel(),
+                    needsProfileSetup = null
+                )
+                refreshProfileSetupFlag()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(loading = false, error = e.message ?: "OTP không hợp lệ")
             }
         }
     }
 
+    /**
+     * Forgot-password placeholder — chưa gọi Firebase `sendPasswordResetEmail`.
+     * Sẽ implement ở phase sau khi đã thiết kế xong UX (deep link, custom email template).
+     */
+    fun requestPasswordReset(@Suppress("UNUSED_PARAMETER") email: String) {
+        _uiState.value = _uiState.value.copy(
+            error = null,
+            info = "Tính năng quên mật khẩu đang được phát triển. Vui lòng liên hệ admin."
+        )
+    }
+
     fun signOut() {
         authManager.signOut()
-        _uiState.value = AuthUiState(isSignedIn = false, info = "Đã đăng xuất")
+        chatSessionStore.clear() // Xóa phiên chat AI in-memory để tránh leak sang user khác.
+        _uiState.value = AuthUiState(
+            isSignedIn = false,
+            info = "Đã đăng xuất",
+            needsProfileSetup = false
+        )
     }
 
     private suspend fun saveProfileLocal(

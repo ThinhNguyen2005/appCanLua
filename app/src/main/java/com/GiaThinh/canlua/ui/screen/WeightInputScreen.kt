@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -45,11 +46,13 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.WeightEntry
+import kotlinx.coroutines.delay
 import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.ui.component.weight.WeightMetricsCard
+import com.GiaThinh.canlua.ui.component.pressableScale
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.util.HapticUtil
@@ -105,31 +108,53 @@ fun WeightInputScreen(
 
     val lazyListState = rememberLazyListState()
 
+    // Cache height nguyên bản của metrics card để tính scroll fraction
+    // Tránh feedback loop: nếu dùng item.size đang co lại để tính fraction, height sẽ đuổi nhau đến 0
+    var metricsOriginalHeight by remember { mutableIntStateOf(0) }
+
     // Theo dõi tỷ lệ cuộn của khối Card "Chỉ số cân" (mã key: "metrics")
-    val scrollFraction by remember {
+    // Soften scroll — giảm cảm giác "vuốt mạnh" bằng:
+    //   1) Hệ số 0.6f — cần cuộn xa ~1.67x mới collapse hoàn toàn (giảm sensitivity)
+    //   2) Ease-out cubic — chuyển động mượt, chậm dần ở cuối thay vì linear
+    val rawFraction by remember {
         derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset < 50) {
+            if (metricsOriginalHeight == 0) {
                 0f
             } else {
-                val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
-                if (visibleItems.isEmpty()) {
-                    0f
+                val visible = lazyListState.layoutInfo.visibleItemsInfo
+                val metrics = visible.firstOrNull { it.key == "metrics" }
+                if (metrics == null) {
+                    if (lazyListState.firstVisibleItemIndex > 0) 1f else 0f
                 } else {
-                    val firstVisibleItem = visibleItems.firstOrNull { it.key == "metrics" }
-                    if (firstVisibleItem == null) {
-                        1f
-                    } else {
-                        val scrolledHeight = -firstVisibleItem.offset.toFloat()
-                        val totalHeight = firstVisibleItem.size.toFloat()
-                        if (totalHeight > 0) {
-                            (scrolledHeight / totalHeight).coerceIn(0f, 1f)
-                        } else {
-                            0f
-                        }
-                    }
+                    val scrolled = (-metrics.offset).toFloat()
+                    // ↓ Giảm tốc độ collapse — scroll mượt và nhẹ nhàng hơn
+                    (scrolled / metricsOriginalHeight.toFloat() * 0.6f).coerceIn(0f, 1f)
                 }
             }
         }
+    }
+
+    // Ease-out cubic: 1 - (1-x)^3 — chậm dần ở cuối, mượt mà hơn linear
+    val scrollFraction by remember {
+        derivedStateOf {
+            val x = rawFraction
+            (1f - (1f - x) * (1f - x) * (1f - x)).coerceIn(0f, 1f)
+        }
+    }
+
+    // === LAZY INIT (Performance Optimization) ===
+    // Trì hoãn render hệ thống grid 25 ô × N bảng + FocusRequesters cho đến khi
+    // page transition (250ms) đã hoàn tất + 150ms buffer.
+    // Tại sao? Mở màn trùng với enter animation → main thread bị nghẽn:
+    //   - organizeIntoTables() chạy đồng bộ
+    //   - HorizontalPager measure tất cả pages
+    //   - 25 FocusRequester per table được tạo (5×5 grid)
+    // Trì hoãn 150ms cho phép enter animation chạy mượt 60fps trước khi
+    // composition heavy work bắt đầu.
+    var isAnimationFinished by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(150L)
+        isAnimationFinished = true
     }
 
     Scaffold(
@@ -144,7 +169,11 @@ fun WeightInputScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        // === LAYOUT STABILITY (Performance Optimization) ===
+                        // heightIn(min) thay vì height() — khoá chiều cao tối thiểu để hệ thống
+                        // không phải tính lại Measure/Layout pass khi IME (bàn phím ảo) bật/tắt
+                        // hoặc khi nội dung con thay đổi alpha/scale.
+                        .heightIn(min = 56.dp)
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -158,9 +187,10 @@ fun WeightInputScreen(
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        // 1. Tên thương lái/nông dân (Mặc định)
+                        // 1. Tên thương lái (Mặc định) — fallback về tên nông dân nếu trader trống
+                        val displayName = card.traderName.ifBlank { card.name }
                         Text(
-                            text = card.name,
+                            text = displayName,
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
@@ -214,19 +244,41 @@ fun WeightInputScreen(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             // === CARD 1: Chỉ số cân ===
+            // Dùng Modifier.layout để GIẢM HEIGHT THỰC SỰ theo scrollFraction.
+            // graphicsLayer chỉ làm mờ, KHÔNG giải phóng không gian → bảng nhập bị đẩy/che.
+            // Đã loại bỏ scale animation — gây cảm giác phồng/xẹp khó chịu khi vuốt.
             item(key = "metrics") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        // === LAYOUT STABILITY ===
+                        // Đặt min height để frame đầu có height ổn định,
+                        // tránh giai đoạn placeable.height = 0 gây layout reflow.
+                        .heightIn(min = 1.dp)
+                        // === ISOLATION (Draw Phase Only) ===
+                        // Alpha & layout transform nằm HOÀN TOÀN trong lambda graphicsLayer/layout.
+                        // Đọc scrollFraction ở đây chỉ trigger Draw phase invalidation,
+                        // KHÔNG chạy lại Composition của Text/Button con bên trong WeightMetricsCard.
                         .graphicsLayer {
-                            alpha = (1f - scrollFraction).coerceIn(0f, 1f)
-                            val scale = 1f - (scrollFraction * 0.05f)
-                            scaleX = scale
-                            scaleY = scale
+                            // Alpha fade nhẹ — multiplier 0.85 để giữ visible lâu hơn
+                            alpha = (1f - scrollFraction * 0.85f).coerceIn(0f, 1f)
+                        }
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            // Cache height nguyên bản lần đầu mỗi lần thay đổi
+                            if (metricsOriginalHeight != placeable.height && placeable.height > 0) {
+                                metricsOriginalHeight = placeable.height
+                            }
+                            // Co height theo scrollFraction — 0% → nguyên bản; 100% → 0px
+                            val collapsedHeight = (placeable.height * (1f - scrollFraction))
+                                .toInt()
+                                .coerceAtLeast(0)
+                            layout(placeable.width, collapsedHeight) {
+                                placeable.place(0, 0)
+                            }
                         }
                 ) {
                     WeightMetricsCard(
-                        traderName = card.traderName,
                         totalWeight = card.totalWeight,
                         bagWeight = card.bagWeight,
                         impurityWeight = card.impurityWeight,
@@ -290,8 +342,13 @@ fun WeightInputScreen(
                     ) {
                         items(tables.size) { index ->
                             val isSelected = index == activeTableIndex
+                            val tabInteraction = remember { MutableInteractionSource() }
                             Button(
-                                onClick = { selectedTableIndex = index },
+                                onClick = {
+                                    selectedTableIndex = index
+                                    HapticUtil.tick(context)
+                                },
+                                interactionSource = tabInteraction,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isSelected) AppColors.GreenPrimary else AppColors.CardBg,
                                     contentColor = if (isSelected) Color.White else AppColors.TextSecondary.copy(alpha = 0.7f)
@@ -299,7 +356,9 @@ fun WeightInputScreen(
                                 border = if (!isSelected) BorderStroke(1.dp, AppColors.Divider) else null,
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                modifier = Modifier.heightIn(min = 44.dp)
+                                modifier = Modifier
+                                    .heightIn(min = 44.dp)
+                                    .pressableScale(tabInteraction)
                             ) {
                                 Text(
                                     text = "Bảng ${index + 1}",
@@ -313,41 +372,55 @@ fun WeightInputScreen(
             }
 
             // === Bảng dữ liệu hỗ trợ VUỐT NGANG (HorizontalPager) ===
+            // === LAZY GATE ===
+            // Chỉ render Pager + 25 GridCell + 25 FocusRequester sau khi
+            // page transition hoàn tất (isAnimationFinished = true sau 150ms).
+            // Trong lúc đó, hiện placeholder height ổn định (heightIn) để
+            // tránh layout shift khi grid được mở màn.
             item(key = "selected_table_card") {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth()
-                ) { pageIndex ->
-                    if (pageIndex < tables.size) {
-                        val table = tables[pageIndex]
-                        WeightTableCard(
-                            tableIndex = pageIndex + 1,
-                            tableData = table,
-                            weightEntries = weightEntries,
-                            tableIndexInList = pageIndex,
-                            onWeightEntered = { weight ->
-                                viewModel.addWeightEntryDirectly(cardId, weight)
-                                HapticUtil.tick(context)
-                            },
-                            onWeightUpdated = { entry, newWeight ->
-                                val netWeight = RiceCalculator.calcNetWeight(
-                                    rawWeight = newWeight,
-                                    bagWeight = card.bagWeight,
-                                    impurityWeight = card.impurityWeight,
-                                    moisturePercent = card.moisturePercent
-                                )
-                                viewModel.updateWeightEntry(
-                                    entry.copy(
-                                        weight = newWeight,
+                if (isAnimationFinished) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { pageIndex ->
+                        if (pageIndex < tables.size) {
+                            val table = tables[pageIndex]
+                            WeightTableCard(
+                                tableIndex = pageIndex + 1,
+                                tableData = table,
+                                weightEntries = weightEntries,
+                                tableIndexInList = pageIndex,
+                                onWeightEntered = { weight ->
+                                    viewModel.addWeightEntryDirectly(cardId, weight)
+                                    HapticUtil.tick(context)
+                                },
+                                onWeightUpdated = { entry, newWeight ->
+                                    val netWeight = RiceCalculator.calcNetWeight(
+                                        rawWeight = newWeight,
                                         bagWeight = card.bagWeight,
                                         impurityWeight = card.impurityWeight,
-                                        netWeight = netWeight
+                                        moisturePercent = card.moisturePercent
                                     )
-                                )
-                            },
-                            isLocked = card.isLocked
-                        )
+                                    viewModel.updateWeightEntry(
+                                        entry.copy(
+                                            weight = newWeight,
+                                            bagWeight = card.bagWeight,
+                                            impurityWeight = card.impurityWeight,
+                                            netWeight = netWeight
+                                        )
+                                    )
+                                },
+                                isLocked = card.isLocked
+                            )
+                        }
                     }
+                } else {
+                    // Placeholder — giữ chiều cao ổn định để grid xuất hiện mà không layout shift
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 360.dp)
+                    )
                 }
             }
 
@@ -495,6 +568,7 @@ private fun GridCell(
                 value = if (isFocused) text else displayValue,
                 onValueChange = { input ->
                     if (input.all { it.isDigit() || it == '.' } && input.length <= 3) {
+                        if (input.length > text.length) HapticUtil.textHandleMove(context)
                         text = input
                         if (input.length == 3) {
                             input.toDoubleOrNull()?.let {

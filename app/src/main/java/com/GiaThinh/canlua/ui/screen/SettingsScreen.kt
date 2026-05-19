@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Backup
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.repository.SyncStatus
 import com.GiaThinh.canlua.repository.BackupStatus
@@ -117,7 +117,7 @@ fun SettingsScreen(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        Icons.Default.VolumeUp,
+                                        Icons.AutoMirrored.Filled.VolumeUp,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                         modifier = Modifier.size(24.dp)

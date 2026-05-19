@@ -22,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
+import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
 import java.util.Locale
@@ -31,7 +32,6 @@ import java.util.Locale
  */
 @Composable
 fun WeightMetricsCard(
-    traderName: String,
     totalWeight: Double,
     bagWeight: Double,
     impurityWeight: Double,
@@ -46,7 +46,7 @@ fun WeightMetricsCard(
     onMoistureChange: (Double) -> Unit,
     onPriceChange: (Double) -> Unit
 ) {
-    val fmt = remember { NumberFormat.getNumberInstance(Locale("vi", "VN")) }
+    val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     var bagText by remember(bagWeight) {
         mutableStateOf(if (bagWeight > 0) bagWeight.toString() else "")
     }
@@ -80,8 +80,9 @@ fun WeightMetricsCard(
                     color = AppColors.GreenSurface,
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(
-                        "$bagCount bao",
+                    AnimatedNumber(
+                        value = bagCount,
+                        formatter = { "$it bao" },
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = AppColors.GreenPrimary
@@ -100,8 +101,9 @@ fun WeightMetricsCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Tổng khối lượng", style = MaterialTheme.typography.bodyMedium, color = Color.Black, fontWeight = FontWeight.Bold)
-                    Text(
-                        "${"%.1f".format(totalWeight)} kg",
+                    AnimatedNumber(
+                        value = totalWeight,
+                        formatter = { "${"%.1f".format(it)} kg" },
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFFB71C1C) // Đỏ đậm cực kỳ nổi bật
@@ -220,8 +222,9 @@ fun WeightMetricsCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Khối lượng thực", style = MaterialTheme.typography.bodyMedium, color = Color.Black, fontWeight = FontWeight.Bold)
-                    Text(
-                        "${"%.1f".format(netWeight)} kg",
+                    AnimatedNumber(
+                        value = netWeight,
+                        formatter = { "${"%.1f".format(it)} kg" },
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF1B5E20) // Xanh lá đậm tương phản cao
@@ -242,8 +245,9 @@ fun WeightMetricsCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Thành tiền", style = MaterialTheme.typography.titleMedium, color = Color.Black, fontWeight = FontWeight.Bold)
-                Text(
-                    "${fmt.format(totalAmount)} đ",
+                AnimatedNumber(
+                    value = totalAmount,
+                    formatter = { "${fmt.format(it)} đ" },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF1B5E20) // Xanh lá đậm tương phản mạnh

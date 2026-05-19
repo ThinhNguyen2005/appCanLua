@@ -8,7 +8,7 @@ import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.Storefront
-import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.ui.graphics.vector.ImageVector
 
 data class BottomNavItem(
@@ -19,7 +19,7 @@ data class BottomNavItem(
     companion object {
         // Fallback or old constants for backward compatibility in AppNavHost temporarily
         val SCALE = BottomNavItem("scale", Icons.Outlined.Scale, "Cân Lúa")
-        val MARKET = BottomNavItem("market", Icons.Outlined.TrendingUp, "Thị Trường")
+        val MARKET = BottomNavItem("market", Icons.AutoMirrored.Outlined.TrendingUp, "Thị Trường")
         val AI_CHAT = BottomNavItem("ai_chat", Icons.Outlined.SmartToy, "Hỏi đáp AI")
         val DASHBOARD = BottomNavItem("dashboard", Icons.Outlined.BarChart, "Mùa vụ")
 

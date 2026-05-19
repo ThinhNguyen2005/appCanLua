@@ -8,10 +8,15 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,12 +28,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,12 +49,13 @@ import com.GiaThinh.canlua.ui.component.OfflineStatusBanner
 import com.GiaThinh.canlua.ui.navigation.AppNavHost
 import com.GiaThinh.canlua.ui.navigation.BottomNavItem
 import com.GiaThinh.canlua.ui.theme.AppColors
+import kotlinx.coroutines.launch
 
 /**
  * MainScreen — Shell chính chứa TopBar + BottomNavigationBar + Content.
  * Đây là composable gốc cho user đã đăng nhập.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -62,7 +70,7 @@ fun MainScreen() {
         onDispose { }
     }
 
-    val profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
     val profile by profileViewModel.profile.collectAsState(initial = null)
     
     // Determine nav items based on role
@@ -73,29 +81,62 @@ fun MainScreen() {
     val currentTab = navItems.find { it.route == currentRoute }
     val isOnTabScreen = currentTab != null
 
-    // Các route con mà vẫn hiển thị bottom bar (detail, weight input...)
-    val showBottomBar = isOnTabScreen || currentRoute in listOf("sync_status")
+    // Ẩn BottomBar khi keyboard đang mở — quan trọng cho AI Chat,
+    // nếu không input bar sẽ bị đẩy lên thêm ~80dp (= chiều cao navBar)
+    // do imePadding cộng dồn với paddingValues của Scaffold.
+    val isImeVisible = WindowInsets.isImeVisible
 
-    // Title theo tab/route
-    val topBarTitle = currentTab?.label ?: when (currentRoute) {
+    // Các route con mà vẫn hiển thị bottom bar (detail, weight input...)
+    val showBottomBar = (isOnTabScreen || currentRoute in listOf("sync_status")) && !isImeVisible
+
+    // Title theo tab/route — riêng AI Chat dùng tên brand thay cho label tab.
+    val topBarTitle = when (currentRoute) {
+        BottomNavItem.AI_CHAT.route -> "Trợ Lý Khuyến Nông"
         "settings" -> "Cài Đặt"
         "sync_status" -> "Trạng Thái Đồng Bộ"
-        else -> "Cân Lúa"
+        else -> currentTab?.label ?: "Cân Lúa"
     }
 
-    // Ẩn TopBar trên các sub-screen có TopBar riêng
+    // Subtitle hiện chỉ dành cho AI Chat
+    val topBarSubtitle = if (currentRoute == BottomNavItem.AI_CHAT.route) "Được hỗ trợ bởi Gemini" else null
+
     val showTopBar = currentRoute in navItems.map { it.route }
+
+    // Drawer state cho AI Chat (lifted lên đây để TopBar có thể mở drawer).
+    val aiChatDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             if (showTopBar) {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = topBarTitle,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column {
+                            Text(
+                                text = topBarTitle,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (topBarSubtitle != null) {
+                                Text(
+                                    text = topBarSubtitle,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AppColors.TextHint
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        if (currentRoute == BottomNavItem.AI_CHAT.route) {
+                            IconButton(onClick = {
+                                scope.launch { aiChatDrawerState.open() }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Menu,
+                                    contentDescription = "Mở danh sách phiên chat"
+                                )
+                            }
+                        }
                     },
                     actions = {
                         if (isOnTabScreen) { // Show Settings icon on any main tab for easy access
@@ -177,7 +218,8 @@ fun MainScreen() {
                 AppNavHost(
                     navController = navController,
                     startDestination = navItems.first().route,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    aiChatDrawerState = aiChatDrawerState
                 )
             }
         }

@@ -13,7 +13,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Singleton
 class TtsHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private var textToSpeech: TextToSpeech? = null
     private val _isInitialized = MutableStateFlow(false)
@@ -28,7 +28,7 @@ class TtsHelper @Inject constructor(
     private fun initializeTts() {
         textToSpeech = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val result = textToSpeech?.setLanguage(Locale("vi", "VN"))
+                val result = textToSpeech?.setLanguage(Locale.forLanguageTag("vi-VN"))
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     // Fallback to default locale if Vietnamese not available
                     textToSpeech?.setLanguage(Locale.getDefault())

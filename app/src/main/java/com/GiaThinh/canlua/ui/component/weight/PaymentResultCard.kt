@@ -33,7 +33,7 @@ fun PaymentResultCard(
     onPaidChange: (Double) -> Unit,
     onPaidFullToggle: (Boolean) -> Unit
 ) {
-    val fmt = remember { NumberFormat.getNumberInstance(Locale("vi", "VN")) }
+    val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val isPaidFull = remainingAmount <= 0.0 && totalAmount > 0
 
     var depositText by remember(depositAmount) {

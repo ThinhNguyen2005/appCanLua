@@ -52,6 +52,10 @@ class CardViewModel @Inject constructor(
         ttsManager.setEnabled(settingsRepository.isTtsEnabled())
     }
 
+    fun refreshCards() {
+        loadCards()
+    }
+
     private fun loadCards() {
         viewModelScope.launch {
             _isLoading.value = true

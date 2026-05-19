@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
@@ -41,7 +41,7 @@ fun QrGenerateScreen(
 ) {
     val currentCard by viewModel.currentCard.collectAsState()
     val context = LocalContext.current
-    val fmt = remember { NumberFormat.getNumberInstance(Locale("vi", "VN")) }
+    val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
 
     LaunchedEffect(cardId) { viewModel.loadCardById(cardId) }
 

@@ -7,6 +7,17 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+import java.util.Properties
+
+// Load API keys từ local.properties (không commit). Fallback empty string nếu chưa cấu hình.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val openWeatherKey: String = localProps.getProperty("OPENWEATHER_API_KEY", "")
+val openRouterKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
+val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY", "")
+
 android {
     namespace = "com.GiaThinh.canlua"
     compileSdk = 36
@@ -19,6 +30,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "OPENWEATHER_API_KEY", "\"$openWeatherKey\"")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"$openRouterKey\"")
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+
+        // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -39,6 +57,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -105,8 +124,13 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
 
-    // Location (GPS for weather)
+    // Location (GPS for weather + map)
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // Google Maps Compose 6.x + Clustering utils
+    implementation("com.google.maps.android:maps-compose:6.4.1")
+    implementation("com.google.maps.android:maps-compose-utils:6.4.1")
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
 
     // Accompanist Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.36.0")
@@ -115,6 +139,12 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
+
+    // Coil — load thumbnail bài báo trong NewsSection
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // AndroidX Browser — Chrome Custom Tab cho mở bài báo external
+    implementation("androidx.browser:browser:1.8.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua.repository
 
+import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.WeightEntry
@@ -14,17 +15,24 @@ import javax.inject.Singleton
 @Singleton
 class SyncableCardRepository @Inject constructor(
     private val cardRepository: CardRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val locationProvider: LocationProvider
 ) {
     fun getAllCards(): Flow<List<Card>> = cardRepository.getAllCards()
 
     suspend fun getCardById(id: Long) = cardRepository.getCardById(id)
 
     suspend fun insertCard(card: Card): Long {
-        val id = cardRepository.insertCard(card)
+        // Auto-capture GPS nếu card chưa có toạ độ và app có quyền
+        val cardWithGps = if (card.latitude == null || card.longitude == null) {
+            val geo = locationProvider.getCurrentLocation()
+            if (geo != null) card.copy(latitude = geo.lat, longitude = geo.lon) else card
+        } else card
+
+        val id = cardRepository.insertCard(cardWithGps)
         // Sync to Firestore if online
         if (syncManager.isOnline()) {
-            val cardWithId = card.copy(id = id)
+            val cardWithId = cardWithGps.copy(id = id)
             syncManager.syncCard(cardWithId)
         }
         return id

@@ -52,8 +52,8 @@ fun CardItem(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val numberFormat = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
+    val numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->

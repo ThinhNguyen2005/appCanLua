@@ -69,4 +69,24 @@ object HapticUtil {
             vibrator.vibrate(pattern, -1)
         }
     }
+
+    /**
+     * Texture tick — phản hồi cực nhẹ khi gõ từng chữ số trong input lớn.
+     * Dùng EFFECT_TICK (API 29+) — pattern haptic dịu hơn cho gõ phím liên tục.
+     */
+    fun textHandleMove(context: Context) {
+        val vibrator = getVibrator(context)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            vibrator.vibrate(
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(
+                VibrationEffect.createOneShot(10, 60)
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(10)
+        }
+    }
 }

@@ -33,6 +33,10 @@ data class FirestoreCard(
     val userId: String? = null, // Firebase user ID
     val deviceId: String? = null, // Device identifier
     val syncTimestamp: Long = System.currentTimeMillis(),
-    val localId: Long? = null // Local Room database ID for mapping
+    val localId: Long? = null, // Local Room database ID for mapping
+
+    // === PHASE 2.6: GPS location ===
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
 
