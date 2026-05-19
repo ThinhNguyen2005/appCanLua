@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Grass
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material3.Card
@@ -85,6 +86,8 @@ fun CardListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val selectedFilter by viewModel.selectedVarietyFilter.collectAsState()
     val availableVarieties by viewModel.availableVarieties.collectAsState()
+    val selectedSeason by viewModel.selectedSeasonFilter.collectAsState()
+    val availableSeasons by viewModel.availableSeasons.collectAsState()
     val profileState by profileViewModel.profile.collectAsState(initial = null)
     val syncStatus by syncViewModel.syncStatus.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -170,7 +173,51 @@ fun CardListScreen(
                 }
             }
 
-            // === Filter Chips ===
+            // === Season Filter Chips — vai trò chính trong cách tổ chức dữ liệu theo mùa vụ ===
+            if (availableSeasons.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedSeason == null,
+                        onClick = { viewModel.setSeasonFilter(null) },
+                        label = { Text("Mọi vụ") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AppColors.GreenPrimary,
+                            selectedLabelColor = AppColors.CardBg,
+                            selectedLeadingIconColor = AppColors.CardBg
+                        )
+                    )
+                    availableSeasons.forEach { season ->
+                        FilterChip(
+                            selected = selectedSeason == season,
+                            onClick = {
+                                viewModel.setSeasonFilter(
+                                    if (selectedSeason == season) null else season
+                                )
+                            },
+                            label = { Text(season) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColors.GreenPrimary,
+                                selectedLabelColor = AppColors.CardBg
+                            )
+                        )
+                    }
+                }
+            }
+
+            // === Variety Filter Chips ===
             if (availableVarieties.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -191,7 +238,11 @@ fun CardListScreen(
                     availableVarieties.forEach { variety ->
                         FilterChip(
                             selected = selectedFilter == variety,
-                            onClick = { viewModel.setVarietyFilter(variety) },
+                            onClick = {
+                                viewModel.setVarietyFilter(
+                                    if (selectedFilter == variety) null else variety
+                                )
+                            },
                             label = { Text(variety) },
                             leadingIcon = {
                                 if (selectedFilter == variety) {
@@ -363,7 +414,7 @@ fun CardListScreen(
         CreateCardDialog(
             farmerName = farmerName,
             onDismiss = { showCreateDialog = false },
-            onCreate = { traderName, variety, season, moisture, price, deposit ->
+            onCreate = { traderName, traderPhone, variety, season, moisture, price, deposit ->
                 viewModel.createNewCard(
                     name = farmerName,
                     cccd = "",
@@ -372,7 +423,8 @@ fun CardListScreen(
                     depositAmount = deposit,
                     riceVariety = variety,
                     moisturePercent = moisture,
-                    seasonLabel = season
+                    seasonLabel = season,
+                    traderPhone = traderPhone
                 )
             }
         )

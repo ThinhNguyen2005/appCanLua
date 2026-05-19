@@ -37,6 +37,10 @@ data class FirestoreCard(
 
     // === PHASE 2.6: GPS location ===
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+
+    // === PHASE 2.8: Contact + field address ===
+    val traderPhone: String = "",
+    val fieldAddress: String = ""
 )
 

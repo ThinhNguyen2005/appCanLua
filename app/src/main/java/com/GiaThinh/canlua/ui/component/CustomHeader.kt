@@ -61,18 +61,16 @@ import java.util.*
 //   )
 // ─────────────────────────────────────────────────────────────────────────────
 
-private val HeaderGreen   = Color(0xFF3D8B40)
-private val TOPBAR_H      = 52.dp
-private val META_CHIP_H   = 76.dp   // 120 → 76 (chỉ còn 1 hàng MetaItem, MetricChip đã removed)
-private val BOTTOM_PAD    = 8.dp    // 12 → 8 (sát hơn)
+private val HeaderGreen   = Color(0xFF2E7D32)   // Green 800 — đậm hơn, sang hơn 3D8B40
+private val TOPBAR_H      = 56.dp                // 52 → 56: tiêu chuẩn M3 TopAppBar
 
-/** Trả về expanded/collapsed height đã tính statusBar — dùng ở CardDetailScreen */
+/** Trả về expanded/collapsed height — cả hai bằng nhau vì header đã phẳng */
 data class HeaderHeights(val expanded: Dp, val collapsed: Dp)
 
 @Composable
 fun rememberHeaderHeights(): HeaderHeights {
     return HeaderHeights(
-        expanded  = TOPBAR_H + META_CHIP_H + BOTTOM_PAD,
+        expanded  = TOPBAR_H,
         collapsed = TOPBAR_H
     )
 }
@@ -98,19 +96,15 @@ fun CustomHeader(
     onScanQr: () -> Unit = {},
     onToggleLock: () -> Unit = {}
 ) {
-    // Expanded content fade mượt — giảm cường độ để tránh chuyển động mạnh
-    // Fade chậm và đều: cần scroll ~70% mới ẩn hẳn (multiplier 1.4 thay vì 2.2)
-    val expandedAlpha = (1f - collapseFraction * 1.4f).coerceIn(0f, 1f)
-
-    // Title topbar — ẩn tên nông dân khi expanded (đã có ở Meta "Thương lái").
-    // Chỉ hiện info compact khi đã collapse > 75%.
-    val titleText = if (collapseFraction > 0.75f) {
+    // Title: luôn hiển thị info trọng lượng — đã bỏ farmer name khỏi header
+    // Khi card còn trống (mới tạo) → “Phiếu cân”, không để trống hổng.
+    val titleText = if (card.totalWeight > 0.0 || card.bagCount > 0) {
         val fmt = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
         val totalWeightFormatted = if (card.totalWeight % 1.0 == 0.0) "%.0f".format(card.totalWeight) else "%.1f".format(card.totalWeight)
         val totalbagCount = fmt.format(card.bagCount)
         "$totalWeightFormatted KG · $totalbagCount bao"
     } else {
-        ""  // Ẩn tên nông dân — title trống, đã có Meta row hiển thị bên dưới
+        "Phiếu cân"
     }
 
     Box(
@@ -247,78 +241,8 @@ fun CustomHeader(
                 }
             }
 
-            // ── Phần mở rộng — fade + clip khi scroll ────────────────────────
-            // Chỉ render khi còn visible (tránh layout cost thừa)
-            if (expandedAlpha > 0.01f) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(expandedAlpha)
-                        .padding(horizontal = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-
-                    // ── 4 meta items — font lớn hơn ──────────────────────────
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        MetaItem(
-                            icon  = Icons.Default.Person,
-                            label = "Thương lái",
-                            value = card.traderName.ifBlank { "—" },
-                            modifier = Modifier.weight(1f)
-                        )
-                        MetaItem(
-                            icon  = Icons.Default.CalendarToday,
-                            label = "Ngày tạo",
-                            value = formatDate(card.date.time),
-                            modifier = Modifier.weight(1.1f)
-                        )
-                        MetaItem(
-                            icon  = Icons.Default.Grass,
-                            label = "Giống lúa",
-                            value = card.riceVariety.ifBlank { "—" },
-                            modifier = Modifier.weight(0.9f)
-                        )
-                        MetaItem(
-                            icon  = Icons.Default.AccessTime,
-                            label = "Lần cuối",
-                            value = lastEntryTime?.let { formatTimeShort(it) } ?: "—",
-                            modifier = Modifier.weight(0.9f)
-                        )
-                    }
-
-                    // // ── 3 metric chips ────────────────────────────────────────
-                    // Row(
-                    //     modifier = Modifier.fillMaxWidth(),
-                    //     horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    // ) {
-                    //     MetricChip("Tổng K/L", formatKg(card.totalWeight), Modifier.weight(1f))
-                    //     MetricChip("Số bao", "${card.bagCount} bao",       Modifier.weight(1f))
-                    //     MetricChip(
-                    //         label = "Đơn giá",
-                    //         value = if (card.pricePerKg > 0.0)
-                    //             formatMoney(card.pricePerKg) + " đ" else "Chưa có",
-                    //         modifier = Modifier.weight(1f)
-                    //     )
-                    // }
-
-                    // Spacer(Modifier.height(16.dp))
-                    
-                    // HorizontalDivider(
-                    //     modifier = Modifier
-                    //         .fillMaxWidth()
-                    //         .padding(horizontal = 16.dp),
-                    //     thickness = 1.dp,
-                    //     color = Color.White.copy(alpha = 0.25f)
-                    // )
-
-                    // Bottom padding — tránh sát mép card bên dưới
-                    // Spacer(Modifier.height(BOTTOM_PAD))
-                }
-            }
+            // Header phẳng — farmer name và toàn bộ meta đã chuyển xuống CardInfoCard.
+            // Không còn expanded section → header rất gọn, tập trung vào nội dung bên dưới.
         }
     }
 }

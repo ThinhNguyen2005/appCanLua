@@ -2,6 +2,7 @@ package com.GiaThinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.repository.CardRepository
@@ -9,22 +10,28 @@ import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.util.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CardViewModel @Inject constructor(
     private val repository: CardRepository,
     private val ttsManager: TextToSpeechManager,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val locationProvider: LocationProvider
 ) : ViewModel() {
-
-    private val _cards = MutableStateFlow<List<Card>>(emptyList())
-    val cards: StateFlow<List<Card>> = _cards.asStateFlow()
 
     private val _currentCard = MutableStateFlow<Card?>(null)
     val currentCard: StateFlow<Card?> = _currentCard.asStateFlow()
@@ -38,53 +45,57 @@ class CardViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // Filter state
+    // === Filter state — cả 2 filter combine với nhau ===
     private val _selectedVarietyFilter = MutableStateFlow<String?>(null)
     val selectedVarietyFilter: StateFlow<String?> = _selectedVarietyFilter.asStateFlow()
 
-    private val _availableVarieties = MutableStateFlow<List<String>>(emptyList())
-    val availableVarieties: StateFlow<List<String>> = _availableVarieties.asStateFlow()
+    private val _selectedSeasonFilter = MutableStateFlow<String?>(null)
+    val selectedSeasonFilter: StateFlow<String?> = _selectedSeasonFilter.asStateFlow()
+
+    /**
+     * Cards reactive: combine 2 filters → flatMapLatest lấy từ DB.
+     * Vì Room DAO chỉ có query single-filter, ở đây lấy allCards rồi filter tại memory —
+     * với data nhỏ (vai trăm phiếu/vụ) đây là chi phí không đáng kể và đơn giản hơn viết DAO mới.
+     */
+    val cards: StateFlow<List<Card>> = combine(
+        repository.getAllCards(),
+        _selectedVarietyFilter,
+        _selectedSeasonFilter
+    ) { all, variety, season ->
+        all.filter { card ->
+            (variety == null || card.riceVariety == variety) &&
+                    (season == null || card.seasonLabel == season)
+        }
+    }.onEach { _isLoading.value = false }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val availableVarieties: StateFlow<List<String>> = repository.getDistinctRiceVarieties()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val availableSeasons: StateFlow<List<String>> = repository.getDistinctSeasons()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
-        loadCards()
-        loadAvailableVarieties()
         ttsManager.initialize()
         ttsManager.setEnabled(settingsRepository.isTtsEnabled())
     }
 
     fun refreshCards() {
-        loadCards()
-    }
-
-    private fun loadCards() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.getAllCards().collect { cardsList ->
-                _cards.value = cardsList
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private fun loadAvailableVarieties() {
-        viewModelScope.launch {
-            repository.getDistinctRiceVarieties().collect { varieties ->
-                _availableVarieties.value = varieties
-            }
-        }
+        // Cards đã tự reactive qua Room Flow — chỉ ping isLoading để UI hiển thị pull-to-refresh.
+        _isLoading.value = false
     }
 
     fun setVarietyFilter(variety: String?) {
         _selectedVarietyFilter.value = variety
-        if (variety != null) {
-            viewModelScope.launch {
-                repository.getCardsByRiceVariety(variety).collect { filtered ->
-                    _cards.value = filtered
-                }
-            }
-        } else {
-            loadCards()
-        }
+    }
+
+    fun setSeasonFilter(season: String?) {
+        _selectedSeasonFilter.value = season
+    }
+
+    fun clearFilters() {
+        _selectedVarietyFilter.value = null
+        _selectedSeasonFilter.value = null
     }
 
     fun loadCardById(cardId: Long) {
@@ -112,11 +123,18 @@ class CardViewModel @Inject constructor(
         depositAmount: Double = 0.0,
         riceVariety: String = "",
         moisturePercent: Double = 0.0,
-        seasonLabel: String = ""
+        seasonLabel: String = "",
+        traderPhone: String = ""
     ) {
         viewModelScope.launch {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) return@launch
+
+            // Lấy GPS + reverse geocoding (best-effort, không block tạo phiếu)
+            val geo = runCatching { locationProvider.getCurrentLocation() }.getOrNull()
+            val address = geo?.let {
+                runCatching { locationProvider.reverseGeocode(it.lat, it.lon) }.getOrNull()
+            }.orEmpty()
 
             val newCard = Card(
                 name = trimmedName,
@@ -127,7 +145,11 @@ class CardViewModel @Inject constructor(
                 depositAmount = depositAmount,
                 riceVariety = riceVariety,
                 moisturePercent = moisturePercent,
-                seasonLabel = seasonLabel
+                seasonLabel = seasonLabel,
+                latitude = geo?.lat,
+                longitude = geo?.lon,
+                traderPhone = traderPhone.trim(),
+                fieldAddress = address
             )
             val cardId = repository.insertCard(newCard)
             
@@ -410,6 +432,43 @@ class CardViewModel @Inject constructor(
             card?.let {
                 repository.updateCard(it.copy(seasonLabel = seasonLabel))
             }
+        }
+    }
+
+    fun updateCardTraderPhone(cardId: Long, phone: String) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(traderPhone = phone.trim()))
+                loadCardById(cardId)
+            }
+        }
+    }
+
+    fun updateCardFieldAddress(cardId: Long, address: String) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                repository.updateCard(it.copy(fieldAddress = address.trim()))
+                loadCardById(cardId)
+            }
+        }
+    }
+
+    /** Refresh GPS + địa chỉ ruộng cho phiếu hiện tại (gọi lại Geocoder) */
+    fun refreshFieldLocation(cardId: Long) {
+        viewModelScope.launch {
+            val geo = runCatching { locationProvider.getCurrentLocation() }.getOrNull() ?: return@launch
+            val address = runCatching { locationProvider.reverseGeocode(geo.lat, geo.lon) }.getOrNull().orEmpty()
+            val card = repository.getCardById(cardId) ?: return@launch
+            repository.updateCard(
+                card.copy(
+                    latitude = geo.lat,
+                    longitude = geo.lon,
+                    fieldAddress = address.ifBlank { card.fieldAddress }
+                )
+            )
+            loadCardById(cardId)
         }
     }
 

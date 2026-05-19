@@ -58,6 +58,7 @@ fun CreateCardDialog(
     onDismiss: () -> Unit,
     onCreate: (
         traderName: String,
+        traderPhone: String,
         riceVariety: String,
         seasonLabel: String,
         moisturePercent: Double,
@@ -65,10 +66,12 @@ fun CreateCardDialog(
         depositAmount: Double
     ) -> Unit
 ) {
-    // ── State ────────────────────────────────────────────────────────────────
+    // ── State ───────────────────────────────────────────────────────────────────────
     var traderName      by remember { mutableStateOf("") }
+    var traderPhone     by remember { mutableStateOf("") }
     var riceVariety     by remember { mutableStateOf("") }
-    var seasonLabel     by remember { mutableStateOf("") }
+    // Pre-fill vụ theo lịch nông nghiệp hiện tại — user có thể đổi qua dropdown
+    var seasonLabel     by remember { mutableStateOf(com.GiaThinh.canlua.data.model.SeasonHelper.suggestFromDate()) }
 
     // Lưu chuỗi số thô, hiển thị được format qua VisualTransformation
     var moistureRaw     by remember { mutableStateOf("") }   // "18.2" -> 18.2%
@@ -144,7 +147,7 @@ fun CreateCardDialog(
                     // Section: Thông tin lô hàng
                     SectionLabel("THÔNG TIN LÔ HÀNG")
 
-                    // Row 1: [Giống lúa ▼] [Vụ mùa] — 2 cột song song tiết kiệm diện tích đứng
+                    // Row 1: [Giống lúa ▼] [Vụ mùa ▼] — 2 dropdown chuẩn hóa
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -156,14 +159,14 @@ fun CreateCardDialog(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        
-                        FormTextField(
-                            value = seasonLabel,
-                            onValueChange = { seasonLabel = it },
-                            label = "Vụ mùa",
-                            placeholder = "VD: Đông Xuân 26",
-                            modifier = Modifier.weight(1f)
-                        )
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            SeasonDropdown(
+                                selected = seasonLabel,
+                                onSelect = { seasonLabel = it },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
 
                     // Row 2: Tên thương lái — full width
@@ -173,6 +176,22 @@ fun CreateCardDialog(
                         label = "Tên thương lái *",
                         placeholder = "Nhập tên thương lái mua lúa",
                         modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Row 2.1: SĐT thương lái — tùy chọn, kí tự số + dấu
+                    OutlinedTextField(
+                        value = traderPhone,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() || it == '+' || it == ' ' || it == '-' }
+                            if (filtered.length <= 15) traderPhone = filtered
+                        },
+                        label = { Text("SĐT thương lái") },
+                        placeholder = { Text("Tuỳ chọn — VD: 0901 234 567", style = MaterialTheme.typography.bodySmall) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = dialogTextFieldColors()
                     )
 
                     Spacer(Modifier.height(4.dp))
@@ -260,6 +279,7 @@ fun CreateCardDialog(
                         onClick = {
                             onCreate(
                                 traderName.trim(),
+                                traderPhone.trim(),
                                 riceVariety,
                                 seasonLabel.trim(),
                                 moistureRaw.toDoubleOrNull() ?: 0.0,

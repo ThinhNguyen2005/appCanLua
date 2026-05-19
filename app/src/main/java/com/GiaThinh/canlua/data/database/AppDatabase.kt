@@ -34,7 +34,7 @@ import com.GiaThinh.canlua.data.converter.DateConverter
         WeatherCache::class,
         NewsArticle::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -65,7 +65,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_5_6,
                     MIGRATION_6_7,
                     MIGRATION_7_8,
-                    MIGRATION_8_9
+                    MIGRATION_8_9,
+                    MIGRATION_9_10
                 ).build()
                 INSTANCE = instance
                 instance
@@ -205,6 +206,14 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL(
                     "CREATE INDEX IF NOT EXISTS `idx_news_topic_published` ON `news_articles` (`topic`, `publishedAt`)"
                 )
+            }
+        }
+
+        /** Phase 2.8: Trader phone + field address (modern CardInfoCard) */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE cards ADD COLUMN traderPhone TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE cards ADD COLUMN fieldAddress TEXT NOT NULL DEFAULT ''")
             }
         }
     }

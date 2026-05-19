@@ -21,9 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.GiaThinh.canlua.ui.component.BottomBarItemSpec
+import com.GiaThinh.canlua.ui.component.ModernBottomBar
 import com.GiaThinh.canlua.ui.component.OfflineStatusBanner
 import com.GiaThinh.canlua.ui.navigation.AppNavHost
 import com.GiaThinh.canlua.ui.navigation.BottomNavItem
@@ -158,50 +157,34 @@ fun MainScreen() {
             }
         },
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-                    navItems.forEach { item ->
-                        val isSelected = currentRoute == item.route
-
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = item.label
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = item.label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    maxLines = 1
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = AppColors.GreenPrimary,
-                                selectedTextColor = AppColors.GreenPrimary,
-                                unselectedIconColor = AppColors.TextSecondary,
-                                unselectedTextColor = AppColors.TextSecondary,
-                                indicatorColor = AppColors.GreenSurface
-                            )
+            // Slide-up + fade animation khi keyboard hoặc chuyển route không hệ thống.
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                ModernBottomBar(
+                    items = navItems.map { nav ->
+                        BottomBarItemSpec(
+                            route = nav.route,
+                            icon = nav.icon,
+                            selectedIcon = nav.selectedIcon,
+                            label = nav.label
                         )
+                    },
+                    currentRoute = currentRoute,
+                    onItemClick = { item ->
+                        if (currentRoute != item.route) {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
                     }
-                }
+                )
             }
         }
     ) { paddingValues ->

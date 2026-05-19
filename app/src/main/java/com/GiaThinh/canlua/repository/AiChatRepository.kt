@@ -96,6 +96,87 @@ QUY TẮC TUYỆT ĐỐI:
         }
     }
 
+    /**
+     * Phân tích mùa vụ — gọi AI với prompt tối ưu cho dashboard insights.
+     *
+     * Khác `chat()`: không cần history, không cần knowledge base.
+     * Input là 1 block summary đã build sẵn từ DashboardViewModel.
+     *
+     * Mục tiêu output: 4 mục chính
+     *  1. Đánh giá tổng quan vụ (tốt/trung bình/cần cải thiện + lý do số liệu)
+     *  2. So sánh với vụ trước (delta nào đáng chú ý)
+     *  3. Phân bổ giống lúa (giống nào hiệu quả nhất)
+     *  4. Khuyến nghị thực tiễn cho vụ tới (≤ 3 ý)
+     */
+    suspend fun analyzeSeason(
+        seasonSummary: String,
+        profile: Profile? = null,
+        weather: WeatherInfo? = null
+    ): Result<String> = withContext(Dispatchers.IO) {
+        if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
+            return@withContext Result.failure(IllegalStateException(
+                "Thiếu OPENROUTER_API_KEY trong local.properties"
+            ))
+        }
+        try {
+            val systemPrompt = buildSeasonAnalysisPrompt(profile, weather)
+            val userMsg = ChatMessage(role = "user", content = seasonSummary)
+
+            val req = OpenRouterRequest(
+                model = MODEL,
+                messages = listOf(ChatMessage("system", systemPrompt), userMsg)
+            )
+            val resp: OpenRouterResponse = httpClient.postJson(
+                url = URL,
+                body = req,
+                headers = mapOf(
+                    "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
+                    "HTTP-Referer" to "https://canlua.app",
+                    "X-Title" to "CanLua"
+                )
+            )
+            resp.error?.message?.let { return@withContext Result.failure(RuntimeException(it)) }
+            val answer = resp.choices.firstOrNull()?.message?.content?.trim().orEmpty()
+            if (answer.isEmpty()) Result.failure(RuntimeException("AI không trả về nội dung"))
+            else Result.success(answer)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun buildSeasonAnalysisPrompt(profile: Profile?, weather: WeatherInfo?): String {
+        val parts = mutableListOf(
+            """
+Bạn là chuyên gia phân tích nông nghiệp lúa nước cho nông dân ĐBSCL Việt Nam.
+Nhiệm vụ: phân tích bảng số liệu mùa vụ mà người dùng cung cấp, đưa ra insights ngắn, dễ hiểu.
+
+ĐỊNH DẠNG OUTPUT (Markdown thuần, ngắn gọn, tổng cộng < 350 từ):
+
+## 📊 Tổng quan vụ
+[1–2 câu đánh giá: vụ tốt / trung bình / cần cải thiện, dựa trên số liệu cụ thể]
+
+## 📈 So sánh với vụ trước
+[Liệt kê 2–3 thay đổi quan trọng nhất. Có % delta. Nếu không có vụ trước thì ghi "Đây là vụ đầu tiên có dữ liệu"]
+
+## 🌾 Giống lúa hiệu quả
+[Giống nào chiếm tỉ trọng lớn nhất? Có gợi ý đa dạng hóa hay tập trung?]
+
+## 💡 Khuyến nghị vụ tới
+[Tối đa 3 gạch đầu dòng. Thực tiễn, áp dụng được ngay]
+
+QUY TẮC:
+- Trả lời 100% Tiếng Việt.
+- KHÔNG bịa số liệu — chỉ dùng số có trong input.
+- Khi delta là +/-, gọi đúng "tăng" / "giảm".
+- Nếu input thiếu data (vd: tổng số phiếu = 0), nói rõ "chưa đủ dữ liệu để phân tích".
+- Tránh thuật ngữ kỹ thuật phức tạp.
+""".trim()
+        )
+        profile?.let { parts += buildProfileBlock(it) }
+        weather?.let { parts += buildWeatherBlock(it) }
+        return parts.joinToString("\n\n")
+    }
+
     private fun buildSystemPrompt(
         profile: Profile?,
         weather: WeatherInfo?,

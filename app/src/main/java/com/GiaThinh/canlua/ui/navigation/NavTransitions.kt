@@ -8,62 +8,46 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.navigation.NavBackStackEntry
 
 /**
- * Bộ preset transition chuẩn cho NavHost — Fade + Scale nhẹ.
+ * Bộ preset transition chuẩn cho NavHost — FADE-ONLY (no scale).
  *
- * Tại sao chọn pattern này?
- *  - Hiện đại, có chiều sâu (giống Material 3 Container Transform)
- *  - Nhẹ hơn slide horizontal đáng kể: chỉ animate alpha + transform matrix,
- *    GPU compositor xử lý native → ít rớt frame trên máy yếu
- *  - Pop transition tự nhiên (zoom out nhẹ) — không gây mất phương hướng
+ * v2 (2026-05-19): Bỏ scaleIn/scaleOut vì gây jank trên CardDetailScreen.
  *
- * Thông số:
- *  - Duration 250ms (Material 3 standard)
- *  - Scale delta nhỏ 0.04 — đủ để tạo depth, không gây "phồng/xẹp"
- *  - Asymmetric easing: LinearOutSlowIn (vào) / FastOutSlowIn (ra)
+ * ROOT CAUSE phân tích:
+ *  - scale + fade ép Compose tạo offscreen layer cho mỗi screen → render
+ *    toàn bộ content tree vào texture, apply transform matrix mỗi frame.
+ *  - CardDetailScreen có LazyColumn + 5 cards + dividers + ripples → texture
+ *    lớn → mỗi frame transition copy ~full screen → drop frame trên máy yếu.
+ *  - Cộng thêm DetailSkeleton's rememberInfiniteTransition + data swap giữa
+ *    transition → 3 animation tranh GPU cùng lúc → cảm giác "không mượt".
+ *
+ * Fade-only thì sao?
+ *  - Không cần offscreen layer cho transform → animate alpha trực tiếp trên
+ *    view layer → cực rẻ với GPU compositor.
+ *  - Material 3 standard cho navigation: fade là transition mặc định an toàn,
+ *    không gây mất phương hướng.
+ *  - Duration 220ms: nhanh hơn 250ms tiêu chuẩn để content stabilize sớm.
  */
-private const val NAV_DURATION_MS = 250
-private const val SCALE_ENTER_FROM = 0.96f      // Forward push: vào nhỏ → lớn (zoom in)
-private const val SCALE_EXIT_TO = 1.04f         // Forward push: ra lớn nhẹ (như đẩy về phía sau)
-private const val SCALE_POP_ENTER_FROM = 1.04f  // Pop back: vào lớn → bình thường (zoom out)
-private const val SCALE_POP_EXIT_TO = 0.96f     // Pop back: ra nhỏ nhẹ (lùi về sau)
+private const val NAV_DURATION_MS = 220
 
 /** Forward navigation — trang mới xuất hiện. */
 val FadeScaleEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing)) +
-    scaleIn(
-        initialScale = SCALE_ENTER_FROM,
-        animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing)
-    )
+    fadeIn(animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing))
 }
 
 /** Forward navigation — trang cũ thoát ra. */
 val FadeScaleExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing)) +
-    scaleOut(
-        targetScale = SCALE_EXIT_TO,
-        animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing)
-    )
+    fadeOut(animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing))
 }
 
 /** Pop back — trang trước hiện lại. */
 val FadeScalePopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing)) +
-    scaleIn(
-        initialScale = SCALE_POP_ENTER_FROM,
-        animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing)
-    )
+    fadeIn(animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing))
 }
 
-/** Pop back — trang hiện tại biến mất (zoom out nhẹ). */
+/** Pop back — trang hiện tại biến mất. */
 val FadeScalePopExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing)) +
-    scaleOut(
-        targetScale = SCALE_POP_EXIT_TO,
-        animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing)
-    )
+    fadeOut(animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing))
 }

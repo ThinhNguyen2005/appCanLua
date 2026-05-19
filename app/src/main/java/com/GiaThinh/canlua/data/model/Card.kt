@@ -33,5 +33,9 @@ data class Card(
 
     // === PHASE 2.6: GPS location for map ===
     val latitude: Double? = null,          // Tọa độ GPS lúc tạo thẻ (nơi cân lúa)
-    val longitude: Double? = null
+    val longitude: Double? = null,
+
+    // === PHASE 2.8: Contact + field address ===
+    val traderPhone: String = "",          // SĐT thương lái (tap để gọi)
+    val fieldAddress: String = ""          // Địa chỉ ruộng (reverse geocode → tap mở map)
 )

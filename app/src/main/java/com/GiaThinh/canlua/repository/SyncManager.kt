@@ -174,6 +174,8 @@ class SyncManager @Inject constructor(
             lockedByTraderId = this.lockedByTraderId,
             latitude = this.latitude,
             longitude = this.longitude,
+            traderPhone = this.traderPhone,
+            fieldAddress = this.fieldAddress,
             localId = this.id
         )
     }

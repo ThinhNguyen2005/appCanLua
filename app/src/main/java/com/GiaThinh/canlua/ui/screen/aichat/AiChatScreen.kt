@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -135,6 +134,10 @@ fun AiChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(AppColors.Surface)
+                // imePadding ở root → toàn bộ content (LazyColumn + InputBar) co theo IME
+                // đồng bộ với keyboard animation. Kết hợp với MainScreen ẩn bottom bar khi
+                // imeVisible → không còn gap thừa giữa Input và keyboard.
+                .imePadding()
         ) {
 
             // Preset prompts (chỉ hiển thị khi mới mở chat)
@@ -433,7 +436,6 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InputBar(
     value: String,
@@ -469,18 +471,14 @@ private fun InputBar(
         }
     }
 
-    // Keyboard visible → dán sát IME (đã bao gồm nav bar height).
-    // Keyboard hidden → dán sát nav bar.
-    // Tránh stack 2 padding gay gap thừa ~24dp khi keyboard bật.
-    val imeVisible = WindowInsets.isImeVisible
+    // Column outer ở AiChatScreen đã có imePadding() → InputBar tự push lên theo IME.
+    // Khi keyboard tắt: paddingValues của Scaffold đã reserve bottom bar height (80dp)
+    //   và bottom bar đã tự vẽ với navigationBars inset → InputBar dán sát bottom bar.
+    // Không cần add độc lập navigationBarsPadding/imePadding ở đây — tránh cộng dồn.
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.Surface)
-            .then(
-                if (imeVisible) Modifier.imePadding()
-                else Modifier.navigationBarsPadding()
-            )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

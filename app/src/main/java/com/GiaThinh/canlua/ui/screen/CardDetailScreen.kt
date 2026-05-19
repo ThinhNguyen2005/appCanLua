@@ -1,5 +1,7 @@
 package com.GiaThinh.canlua.ui.screen
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -58,6 +60,7 @@ import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.ui.component.CustomHeader
 import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
 import com.GiaThinh.canlua.ui.component.ThousandSeparatorTransformation
+import com.GiaThinh.canlua.ui.component.detail.CardInfoCard
 import com.GiaThinh.canlua.ui.component.detail.DetailSkeleton
 import com.GiaThinh.canlua.ui.component.detail.FinancialSummaryCard
 import com.GiaThinh.canlua.ui.component.detail.RemainingHeroCard
@@ -69,6 +72,7 @@ import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -258,6 +262,57 @@ fun CardDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         item { Spacer(modifier = Modifier.height(heights.expanded + 16.dp)) }
+
+                        // Card 0: Thông tin phiếu (thương lái · SDT · giống lúa · ngày · địa chỉ ruộng)
+                        item {
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                val createdLabel = remember(card.date) {
+                                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(card.date)
+                                }
+                                CardInfoCard(
+                                    traderName = card.traderName,
+                                    traderPhone = card.traderPhone,
+                                    riceVariety = card.riceVariety,
+                                    seasonLabel = card.seasonLabel,
+                                    createdDateLabel = createdLabel,
+                                    fieldAddress = card.fieldAddress,
+                                    hasCoordinates = card.latitude != null && card.longitude != null,
+                                    onCallTrader = {
+                                        val phone = card.traderPhone.trim()
+                                        if (phone.isBlank()) return@CardInfoCard
+                                        runCatching {
+                                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            context.startActivity(intent)
+                                        }.onFailure {
+                                            Toast.makeText(context, "Không mở được ứng dụng gọi điện", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    onOpenMap = {
+                                        val lat = card.latitude
+                                        val lon = card.longitude
+                                        if (lat == null || lon == null) {
+                                            Toast.makeText(context, "Chưa có tọa độ GPS", Toast.LENGTH_SHORT).show()
+                                            return@CardInfoCard
+                                        }
+                                        val label = card.fieldAddress.ifBlank { card.name.ifBlank { "Ruộng lúa" } }
+                                        val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(${Uri.encode(label)})")
+                                        runCatching {
+                                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            context.startActivity(intent)
+                                        }.onFailure {
+                                            Toast.makeText(context, "Không tìm thấy ứng dụng bản đồ", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    onRefreshLocation = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        viewModel.refreshFieldLocation(cardId)
+                                        Toast.makeText(context, "Đang cập nhật vị trí…", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
 
                         // Card 1: Khối lượng
                         item {

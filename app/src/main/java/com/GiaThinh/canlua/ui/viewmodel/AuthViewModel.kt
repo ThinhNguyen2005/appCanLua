@@ -52,6 +52,23 @@ class AuthViewModel @Inject constructor(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
+        // Subscribe vào FirebaseAuth state — đồng bộ TẤT CẢ instance của AuthViewModel
+        // (mỗi NavBackStackEntry tạo instance mới theo Hilt) qua source-of-truth duy nhất.
+        viewModelScope.launch {
+            authManager.authStateFlow.collect { user ->
+                val signedIn = user != null
+                if (_uiState.value.isSignedIn != signedIn) {
+                    _uiState.value = _uiState.value.copy(
+                        isSignedIn = signedIn,
+                        userLabel = getUserLabel(),
+                        // Reset profile flag để đẩy lại đúng route sau khi state đổi.
+                        needsProfileSetup = if (signedIn) null else false
+                    )
+                    if (signedIn) refreshProfileSetupFlag()
+                }
+            }
+        }
+
         // Nếu user đã đăng nhập sẵn (cold start), load profile để quyết định route.
         if (authManager.isAuthenticated) {
             refreshProfileSetupFlag()
