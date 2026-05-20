@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,9 +33,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -308,6 +311,142 @@ private fun RoleChip(
                 fontWeight = FontWeight.SemiBold,
                 color = if (selected) Color.White else AppColors.TextSecondary
             )
+        }
+    }
+}
+
+/**
+ * Card upsell Premium — gradient gold lúa chín, dùng chung Farmer & Trader.
+ * Tap → navigate("premium").
+ */
+@Composable
+fun PremiumUpsellCard(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(AppColors.GoldLight, AppColors.GoldAccent)
+                )
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.35f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = AppColors.GoldDark,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(Modifier.size(14.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Nâng cấp Cân Lúa Premium",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AppColors.GoldDark
+                )
+                Text(
+                    text = "Bỏ quảng cáo · AI khuyến nông không giới hạn · Heatmap giá",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextSecondary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Card huy hiệu Premium đang active — hiển thị thay UpsellCard khi user đã mua.
+ * Gradient xanh primary + viền gold + ngôi sao + tên gói + thời điểm kích hoạt.
+ */
+@Composable
+fun PremiumStatusCard(
+    plan: String?,
+    sinceMs: Long,
+    onClick: () -> Unit
+) {
+    val sinceLabel = remember(sinceMs) {
+        if (sinceMs <= 0L) "Đã kích hoạt"
+        else {
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.forLanguageTag("vi-VN"))
+            "Kích hoạt từ ${sdf.format(java.util.Date(sinceMs))}"
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(AppColors.GreenPrimary, AppColors.GreenDark)
+                )
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.GoldAccent.copy(alpha = 0.25f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = AppColors.GoldAccent,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            Spacer(Modifier.size(14.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Premium",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(AppColors.GoldAccent)
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "ACTIVE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+                Text(
+                    text = plan?.takeIf { it.isNotBlank() } ?: "Gói đã kích hoạt",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.95f),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = sinceLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.75f)
+                )
+            }
         }
     }
 }

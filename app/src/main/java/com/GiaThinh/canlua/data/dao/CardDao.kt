@@ -8,13 +8,18 @@ import com.GiaThinh.canlua.data.model.TraderStat
 import com.GiaThinh.canlua.data.model.VarietyStat
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Tất cả query lọc theo `ownerUid` để cô lập data per-user trên cùng device
+ * (xem `Card.ownerUid`). Repository chịu trách nhiệm forward Firebase UID đang
+ * sign-in vào tham số `:uid`.
+ */
 @Dao
 interface CardDao {
-    @Query("SELECT * FROM cards ORDER BY date DESC")
-    fun getAllCards(): Flow<List<Card>>
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid ORDER BY date DESC")
+    fun getAllCards(uid: String): Flow<List<Card>>
 
-    @Query("SELECT * FROM cards WHERE id = :id")
-    suspend fun getCardById(id: Long): Card?
+    @Query("SELECT * FROM cards WHERE id = :id AND ownerUid = :uid")
+    suspend fun getCardById(id: Long, uid: String): Card?
 
     @Insert
     suspend fun insertCard(card: Card): Long
@@ -25,10 +30,14 @@ interface CardDao {
     @Delete
     suspend fun deleteCard(card: Card)
 
-    @Query("DELETE FROM cards WHERE id = :id")
-    suspend fun deleteCardById(id: Long)
+    @Query("DELETE FROM cards WHERE id = :id AND ownerUid = :uid")
+    suspend fun deleteCardById(id: Long, uid: String)
 
     // === Phase 1: QR Handshake queries ===
+    // QR token là hash SHA-256 — khoá xác thực giữa farmer và trader.
+    // Trader (uid khác farmer) phải scan được card nên các query này KHÔNG
+    // filter ownerUid; thay vào đó dựa vào tính duy nhất của qrToken + Firestore
+    // rule kiểm soát.
 
     @Query("SELECT * FROM cards WHERE qrToken = :token LIMIT 1")
     suspend fun findByQrToken(token: String): Card?
@@ -41,22 +50,22 @@ interface CardDao {
 
     // === Phase 1: Filter & search ===
 
-    @Query("SELECT * FROM cards WHERE riceVariety = :variety ORDER BY date DESC")
-    fun getCardsByRiceVariety(variety: String): Flow<List<Card>>
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND riceVariety = :variety ORDER BY date DESC")
+    fun getCardsByRiceVariety(variety: String, uid: String): Flow<List<Card>>
 
-    @Query("SELECT DISTINCT riceVariety FROM cards WHERE riceVariety != '' ORDER BY riceVariety")
-    fun getDistinctRiceVarieties(): Flow<List<String>>
+    @Query("SELECT DISTINCT riceVariety FROM cards WHERE ownerUid = :uid AND riceVariety != '' ORDER BY riceVariety")
+    fun getDistinctRiceVarieties(uid: String): Flow<List<String>>
 
     // === Phase 3: Season Statistics Dashboard ===
 
     /** Lấy danh sách các vụ đã có dữ liệu, sort theo ngày card mới nhất trong vụ đó. */
     @Query("""
-        SELECT seasonLabel FROM cards 
-        WHERE seasonLabel != '' 
-        GROUP BY seasonLabel 
+        SELECT seasonLabel FROM cards
+        WHERE ownerUid = :uid AND seasonLabel != ''
+        GROUP BY seasonLabel
         ORDER BY MAX(date) DESC
     """)
-    fun getDistinctSeasons(): Flow<List<String>>
+    fun getDistinctSeasons(uid: String): Flow<List<String>>
 
     /**
      * Aggregate stats cho 1 vụ.
@@ -64,7 +73,7 @@ interface CardDao {
      * COUNT/SUM trên empty set trả 0/null tương ứng → SeasonStatsRaw fields nullable.
      */
     @Query("""
-        SELECT 
+        SELECT
             COUNT(*) as cardCount,
             SUM(netWeight) as totalNetWeight,
             SUM(totalAmount) as totalRevenue,
@@ -72,15 +81,18 @@ interface CardDao {
             SUM(remainingAmount) as totalRemaining,
             AVG(NULLIF(pricePerKg, 0)) as avgPrice,
             AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
-            SUM(bagCount) as totalBags
-        FROM cards 
-        WHERE seasonLabel = :season
+            SUM(bagCount) as totalBags,
+            SUM(impurityWeight) as totalImpurity,
+            SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
+            SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
+        FROM cards
+        WHERE ownerUid = :uid AND seasonLabel = :season
     """)
-    fun getSeasonStats(season: String): Flow<SeasonStatsRaw>
+    fun getSeasonStats(season: String, uid: String): Flow<SeasonStatsRaw>
 
     /** Tổng quan toàn bộ data — dùng khi user chưa chọn vụ nào / chưa chuẩn hóa. */
     @Query("""
-        SELECT 
+        SELECT
             COUNT(*) as cardCount,
             SUM(netWeight) as totalNetWeight,
             SUM(totalAmount) as totalRevenue,
@@ -88,44 +100,48 @@ interface CardDao {
             SUM(remainingAmount) as totalRemaining,
             AVG(NULLIF(pricePerKg, 0)) as avgPrice,
             AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
-            SUM(bagCount) as totalBags
+            SUM(bagCount) as totalBags,
+            SUM(impurityWeight) as totalImpurity,
+            SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
+            SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
         FROM cards
+        WHERE ownerUid = :uid
     """)
-    fun getOverallStats(): Flow<SeasonStatsRaw>
+    fun getOverallStats(uid: String): Flow<SeasonStatsRaw>
 
     /** Phân bổ giống lúa trong 1 vụ — sort by weight desc. */
     @Query("""
-        SELECT 
+        SELECT
             riceVariety as variety,
             SUM(netWeight) as weight,
             COUNT(*) as count
-        FROM cards 
-        WHERE seasonLabel = :season AND riceVariety != ''
-        GROUP BY riceVariety 
+        FROM cards
+        WHERE ownerUid = :uid AND seasonLabel = :season AND riceVariety != ''
+        GROUP BY riceVariety
         ORDER BY weight DESC
     """)
-    fun getVarietyBreakdown(season: String): Flow<List<VarietyStat>>
+    fun getVarietyBreakdown(season: String, uid: String): Flow<List<VarietyStat>>
 
     /** Top 5 thương lái theo doanh thu trong 1 vụ. */
     @Query("""
-        SELECT 
+        SELECT
             traderName,
             SUM(totalAmount) as revenue,
             COUNT(*) as deals
-        FROM cards 
-        WHERE seasonLabel = :season AND traderName != ''
-        GROUP BY traderName 
-        ORDER BY revenue DESC 
+        FROM cards
+        WHERE ownerUid = :uid AND seasonLabel = :season AND traderName != ''
+        GROUP BY traderName
+        ORDER BY revenue DESC
         LIMIT 5
     """)
-    fun getTopTraders(season: String): Flow<List<TraderStat>>
+    fun getTopTraders(season: String, uid: String): Flow<List<TraderStat>>
 
     /**
      * Aggregate cho TẤT CẢ vụ — dùng cho bar chart so sánh giữa các vụ.
      * Trả về list các (season, totalNetWeight, totalRevenue) — sort newest first.
      */
     @Query("""
-        SELECT 
+        SELECT
             seasonLabel as season,
             COUNT(*) as cardCount,
             SUM(netWeight) as totalNetWeight,
@@ -135,14 +151,17 @@ interface CardDao {
             AVG(NULLIF(pricePerKg, 0)) as avgPrice,
             AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
             SUM(bagCount) as totalBags,
+            SUM(impurityWeight) as totalImpurity,
+            SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
+            SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount,
             MAX(date) as lastDate
-        FROM cards 
-        WHERE seasonLabel != ''
-        GROUP BY seasonLabel 
+        FROM cards
+        WHERE ownerUid = :uid AND seasonLabel != ''
+        GROUP BY seasonLabel
         ORDER BY lastDate DESC
         LIMIT 6
     """)
-    fun getAllSeasonsComparison(): Flow<List<SeasonStatsWithLabel>>
+    fun getAllSeasonsComparison(uid: String): Flow<List<SeasonStatsWithLabel>>
 
     /**
      * Lịch sử thương lái đã mua ruộng — aggregate toàn bộ cards.
@@ -150,19 +169,59 @@ interface CardDao {
      * COALESCE để trader không có SDT (cards cũ) vẫn group được.
      */
     @Query("""
-        SELECT 
+        SELECT
             traderName,
             COALESCE(traderPhone, '') as traderPhone,
             COUNT(*) as deals,
             SUM(totalAmount) as totalRevenue,
             SUM(netWeight) as totalWeight,
             MAX(date) as lastDealDate
-        FROM cards 
-        WHERE traderName != ''
+        FROM cards
+        WHERE ownerUid = :uid AND traderName != ''
         GROUP BY traderName, traderPhone
         ORDER BY lastDealDate DESC
     """)
-    fun getTraderHistory(): Flow<List<TraderHistoryItem>>
+    fun getTraderHistory(uid: String): Flow<List<TraderHistoryItem>>
+
+    /**
+     * One-shot migration: gán toàn bộ cards "orphan" (ownerUid = '')
+     * cho user đầu tiên đăng nhập sau update v12.
+     *
+     * Phù hợp với app cá nhân 1 user/máy trước đó — user A login lại sau update
+     * sẽ thấy lại đúng data của mình. Sau lần claim đầu tiên, không còn orphan
+     * trên device này, các user kế tiếp đăng nhập (user B, C…) bắt đầu data trắng.
+     */
+    @Query("UPDATE cards SET ownerUid = :uid WHERE ownerUid = ''")
+    suspend fun claimOrphanCards(uid: String): Int
+
+    /**
+     * Đếm cards orphan để CanLuaApplication quyết định có cần claim hay không
+     * (tránh ghi DB không cần thiết mỗi lần app start).
+     */
+    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = ''")
+    suspend fun countOrphanCards(): Int
+
+    // === Phase 4: Cross-device sync (v13) ===
+
+    /** Tìm card local theo Firestore id — dùng dedup khi pull về máy mới. */
+    @Query("SELECT * FROM cards WHERE firestoreId = :fsId LIMIT 1")
+    suspend fun getByFirestoreId(fsId: String): Card?
+
+    /** Stamp Firestore doc id sau khi push thành công. */
+    @Query("UPDATE cards SET firestoreId = :fsId WHERE id = :localId")
+    suspend fun updateFirestoreId(localId: Long, fsId: String)
+
+    /** Tất cả cards của user hiện tại — dùng để loop push lên cloud. */
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid")
+    suspend fun getAllCardsForOwnerSync(uid: String): List<Card>
+
+    /**
+     * Đếm số phiếu user tạo từ mốc `sinceMs` (timestamp ms epoch). Dùng cho
+     * Premium gate "tối đa N phiếu/ngày cho free user". `sinceMs` thường là
+     * 00:00 hôm nay theo timezone local.
+     */
+    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND date >= :sinceMs")
+    suspend fun countCardsSince(uid: String, sinceMs: Long): Int
 }
 
 /** Helper data class cho query getAllSeasonsComparison — Room map theo column name. */
@@ -176,6 +235,8 @@ data class SeasonStatsWithLabel(
     val avgPrice: Double? = null,
     val avgMoisture: Double? = null,
     val totalBags: Int = 0,
+    val totalImpurity: Double? = null,
+    val wetCardCount: Int = 0,
+    val dryCardCount: Int = 0,
     val lastDate: Long = 0L
 )
-

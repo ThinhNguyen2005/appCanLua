@@ -3,6 +3,10 @@ package com.GiaThinh.canlua.ui.screen.market
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -51,6 +56,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.GiaThinh.canlua.data.firestore.FirestoreRicePrice
 import com.GiaThinh.canlua.ui.component.market.BidEditorSheet
 import com.GiaThinh.canlua.ui.component.market.MarketSkeletonList
+import com.GiaThinh.canlua.ui.component.market.NativeAdPlaceholder
 import com.GiaThinh.canlua.ui.component.market.NewsSection
 import com.GiaThinh.canlua.ui.component.market.PriceTrendChart
 import com.GiaThinh.canlua.ui.component.market.RicePriceCard
@@ -62,6 +68,7 @@ import com.GiaThinh.canlua.ui.viewmodel.NewsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
+import com.GiaThinh.canlua.util.PremiumState
 import kotlinx.coroutines.launch
 
 /**
@@ -100,6 +107,7 @@ fun MarketScreen(
 
     val profile by profileViewModel.profile.collectAsState(initial = null)
     val isTrader = profile?.role == "TRADER"
+    val isPremium by PremiumState.isPremium.collectAsState()
     val myBids by bidsViewModel.myBids.collectAsState()
     val bidUiState by bidsViewModel.uiState.collectAsState()
 
@@ -143,10 +151,15 @@ fun MarketScreen(
                     },
                     text = { Text("Đăng giá mới", fontWeight = FontWeight.SemiBold) },
                     containerColor = AppColors.GreenPrimary,
-                    contentColor = AppColors.CardBg
+                    contentColor = AppColors.CardBg,
+                    modifier = Modifier.padding(bottom = 88.dp)
                 )
             }
         },
+        // Inner Scaffold — MainScreen đã xử lý status bar / nav bar insets thông qua
+        // TopAppBar + BottomBar overlay. Phải tắt window insets ở đây để không cộng
+        // dồn → tránh dải trắng giữa topbar và Weather widget.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { padding ->
         PullToRefreshBox(
@@ -162,7 +175,7 @@ fun MarketScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
@@ -181,6 +194,19 @@ fun MarketScreen(
                             weatherViewModel.load(forceRefresh = true)
                         }
                     )
+                }
+
+                // Native ad — chỉ hiển thị cho user Free, fade out reactive khi upgrade Premium.
+                // Đặt ngay sau Weather (vị trí #2) để hiện trong viewport đầu tiên không cần scroll.
+                // Sau Weather thay vì sau News vì NewsSection render 8 bài dọc → ad sẽ rơi xuống dưới fold.
+                item(key = "native_ad") {
+                    AnimatedVisibility(
+                        visible = !isPremium,
+                        enter = fadeIn(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        NativeAdPlaceholder(onClick = { /* TODO: deep link landing page */ })
+                    }
                 }
 
                 item {

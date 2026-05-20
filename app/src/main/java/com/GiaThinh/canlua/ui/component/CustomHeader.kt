@@ -165,27 +165,29 @@ fun CustomHeader(
                         )
                     }
 
-                    // // Nút Khóa / Mở khóa
-                    // IconButton(
-                    //     onClick = onToggleLock,
-                    //     modifier = Modifier.size(48.dp)
-                    // ) {
-                    //     if (card.isLocked) {
-                    //         Icon(
-                    //             Icons.Default.Lock,
-                    //             contentDescription = "Mở khóa",
-                    //             tint = Color(0xFFFFCDD2),
-                    //             modifier = Modifier.size(22.dp)
-                    //         )
-                    //     } else {
-                    //         Icon(
-                    //             Icons.Default.LockOpen,
-                    //             contentDescription = "Khóa",
-                    //             tint = Color.White.copy(alpha = 0.8f),
-                    //             modifier = Modifier.size(22.dp)
-                    //         )
-                    //     }
-                    // }
+                    // Nút Khóa / Mở khóa — luôn hiển thị để user mở lại phiếu khi cần.
+                    // Khi đã khoá: icon Lock màu vàng cảnh báo gây chú ý "tap để mở".
+                    // Khi đang mở: icon LockOpen mờ — gợi ý "tap để khoá khi xong".
+                    IconButton(
+                        onClick = onToggleLock,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        if (card.isLocked) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Mở khóa phiếu",
+                                tint = AppColors.GoldAccent,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.LockOpen,
+                                contentDescription = "Khóa phiếu",
+                                tint = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
 
                     // Menu ⋮
                     Box {

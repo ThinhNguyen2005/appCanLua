@@ -45,7 +45,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.platform.LocalContext
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.util.HapticUtil
 import java.util.Locale
 
 /**
@@ -81,6 +83,7 @@ fun CreateCardDialog(
     ) -> Unit,
     mode: CreateCardMode = CreateCardMode.FARMER
 ) {
+    val context = LocalContext.current
     // Label swap theo mode — owner header và input field counterparty.
     val ownerLabel = if (mode == CreateCardMode.FARMER) "Nông dân" else "Thương lái"
     val counterpartyLabel = if (mode == CreateCardMode.FARMER) "thương lái" else "nông dân"
@@ -295,6 +298,7 @@ fun CreateCardDialog(
                     }
                     Button(
                         onClick = {
+                            HapticUtil.confirm(context)
                             onCreate(
                                 counterpartyName.trim(),
                                 counterpartyPhone.trim(),

@@ -212,7 +212,8 @@ fun RiceMapScreen(
                     }
                 },
                 containerColor = AppColors.GreenPrimary,
-                contentColor = Color.White
+                contentColor = Color.White,
+                modifier = Modifier.padding(bottom = 88.dp)
             ) {
                 Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí của tôi")
             }

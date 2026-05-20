@@ -24,7 +24,9 @@ data class Transaction(
     val amount: Double, // Số tiền
     val type: TransactionType,
     val description: String? = null,
-    val date: Date = Date()
+    val date: Date = Date(),
+    /** Firestore doc id — null khi chưa sync lên cloud. */
+    val firestoreId: String? = null
 )
 
 enum class TransactionType {

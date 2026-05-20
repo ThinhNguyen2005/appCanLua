@@ -21,7 +21,11 @@ data class SeasonStatsRaw(
     val totalRemaining: Double? = null,
     val avgPrice: Double? = null,
     val avgMoisture: Double? = null,
-    val totalBags: Int = 0
+    val totalBags: Int = 0,
+    // === NEW: Impurity & moisture classification ===
+    val totalImpurity: Double? = null,    // Tổng tạp chất bị trừ (kg)
+    val wetCardCount: Int = 0,            // Phiếu lúa tươi/ướt (độ ẩm > 14%)
+    val dryCardCount: Int = 0             // Phiếu lúa khô chuẩn (độ ẩm ≤ 14%)
 ) {
     fun toDomain(season: String): SeasonStats = SeasonStats(
         season = season,
@@ -32,7 +36,10 @@ data class SeasonStatsRaw(
         totalRemaining = totalRemaining ?: 0.0,
         avgPricePerKg = avgPrice ?: 0.0,
         avgMoisture = avgMoisture ?: 0.0,
-        totalBags = totalBags
+        totalBags = totalBags,
+        totalImpurity = totalImpurity ?: 0.0,
+        wetCardCount = wetCardCount,
+        dryCardCount = dryCardCount
     )
 }
 
@@ -46,9 +53,21 @@ data class SeasonStats(
     val totalRemaining: Double,
     val avgPricePerKg: Double,
     val avgMoisture: Double,
-    val totalBags: Int
+    val totalBags: Int,
+    // === NEW: Secondary metrics ===
+    val totalImpurity: Double = 0.0,
+    val wetCardCount: Int = 0,
+    val dryCardCount: Int = 0
 ) {
     val isEmpty: Boolean get() = cardCount == 0
+
+    /**
+     * KG trung bình/bao = totalNetWeight / totalBags.
+     * Net Weight đã trừ bao bì + tạp chất, đã quy đổi về độ ẩm chuẩn 14% — phản
+     * ánh đúng lượng gạo thực tế thu hồi trên 1 bao.
+     */
+    val avgKgPerBag: Double
+        get() = if (totalBags > 0) totalNetWeight / totalBags else 0.0
 }
 
 /** Phân bổ giống lúa trong 1 vụ. */

@@ -20,3 +20,5 @@ PROJECT_MEMORY.md
 /app/google-services.json
 .agent
 error.txt
+/app/google-services.json
+.claude

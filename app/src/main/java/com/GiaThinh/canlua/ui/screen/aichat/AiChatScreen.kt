@@ -176,17 +176,25 @@ fun AiChatScreen(
                 )
             }
 
-            InputBar(
-                value = state.input,
-                partial = voice.partial,
-                voice = voice,
-                onValueChange = viewModel::onInputChange,
-                onSend = viewModel::send,
-                onStartVoice = viewModel::startVoice,
-                onStopVoice = viewModel::stopVoice,
-                onCancelVoice = viewModel::cancelVoice,
-                isStreaming = state.isStreaming
-            )
+            // Khi IME đóng, BottomBar overlay (capsule + nav inset) đang chiếm đáy →
+            // InputBar phải nâng 88dp để không bị che. IME mở → BottomBar ẩn ở
+            // MainScreen, imePadding của Column đã đẩy InputBar dán sát bàn phím.
+            val imeOpen = WindowInsets.isImeVisible
+            Box(
+                modifier = Modifier.padding(bottom = if (imeOpen) 0.dp else 88.dp)
+            ) {
+                InputBar(
+                    value = state.input,
+                    partial = voice.partial,
+                    voice = voice,
+                    onValueChange = viewModel::onInputChange,
+                    onSend = viewModel::send,
+                    onStartVoice = viewModel::startVoice,
+                    onStopVoice = viewModel::stopVoice,
+                    onCancelVoice = viewModel::cancelVoice,
+                    isStreaming = state.isStreaming
+                )
+            }
         }
     }
 }

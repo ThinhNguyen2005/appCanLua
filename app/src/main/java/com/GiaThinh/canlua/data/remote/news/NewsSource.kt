@@ -17,38 +17,53 @@ enum class NewsSource(
     val rssUrl: String,
     val defaultTopic: NewsTopic
 ) {
-    /** "giá lúa" OR "thu mua lúa" — chuyên giá thu mua trong nước. */
+    /**
+     * Google News chuyên đề "giá lúa" — tin ngách chính xác cho nông dân,
+     * NHƯNG feed Google News strip ảnh thumbnail. Bài sẽ rơi về Article icon.
+     */
     GOOGLE_RICE_PRICE(
         displayName = "Tin Lúa Gạo",
         rssUrl = "https://news.google.com/rss/search?q=%22gi%C3%A1+l%C3%BAa%22+OR+%22thu+mua+l%C3%BAa%22&hl=vi&gl=VN&ceid=VN:vi",
         defaultTopic = NewsTopic.RICE
     ),
 
-    /** "xuất khẩu gạo" OR "giá gạo" — gạo xuất khẩu, biến động giá quốc tế. */
-    GOOGLE_GRAIN_EXPORT(
-        displayName = "Xuất Khẩu Gạo",
-        rssUrl = "https://news.google.com/rss/search?q=%22xu%E1%BA%A5t+kh%E1%BA%A9u+g%E1%BA%A1o%22+OR+%22gi%C3%A1+g%E1%BA%A1o%22&hl=vi&gl=VN&ceid=VN:vi",
-        defaultTopic = NewsTopic.GRAIN
-    ),
-
-    /** "thời tiết ĐBSCL" OR "mưa lũ miền Tây" — cảnh báo nông nghiệp ĐBSCL. */
-    GOOGLE_WEATHER_MEKONG(
-        displayName = "Thời Tiết Nông Nghiệp",
-        rssUrl = "https://news.google.com/rss/search?q=%22th%E1%BB%9Di+ti%E1%BA%BFt+%C4%90BSCL%22+OR+%22m%C6%B0a+l%C5%A9+mi%E1%BB%81n+T%C3%A2y%22&hl=vi&gl=VN&ceid=VN:vi",
-        defaultTopic = NewsTopic.WEATHER
-    ),
-
-    /** "thị trường nông sản" — biến động giá tổng quát. */
-    GOOGLE_AGRI_MARKET(
-        displayName = "Thị Trường Nông Sản",
-        rssUrl = "https://news.google.com/rss/search?q=%22th%E1%BB%8B+tr%C6%B0%E1%BB%9Dng+n%C3%B4ng+s%E1%BA%A3n%22&hl=vi&gl=VN&ceid=VN:vi",
+    /**
+     * VnExpress Kinh doanh — feed có `<enclosure type="image/jpeg" url="..."/>`
+     * và description CDATA chứa `<img>` HTTPS sẵn → ảnh load tốt qua Coil.
+     */
+    VNEXPRESS_BUSINESS(
+        displayName = "VnExpress Kinh Doanh",
+        rssUrl = "https://vnexpress.net/rss/kinh-doanh.rss",
         defaultTopic = NewsTopic.MARKET
     ),
 
-    /** Báo Nông Nghiệp Việt Nam — kinh tế nông nghiệp chính thống. */
-    NONGNGHIEP_VN(
-        displayName = "Báo Nông Nghiệp",
-        rssUrl = "https://nongnghiep.vn/rss/kinh-te-nong-nghiep.rss",
+    /**
+     * Tuổi Trẻ Kinh doanh — description CDATA bọc `<img>` HTTPS, nhiều bài
+     * nông nghiệp/giá nông sản hơn VnExpress.
+     */
+    TUOITRE_BUSINESS(
+        displayName = "Tuổi Trẻ Kinh Doanh",
+        rssUrl = "https://tuoitre.vn/rss/kinh-doanh.rss",
+        defaultTopic = NewsTopic.MARKET
+    ),
+
+    /**
+     * Thanh Niên Kinh tế — feed có namespace `media:` và CDATA `<img>`,
+     * cập nhật nhanh tin xuất khẩu gạo, biến động giá.
+     */
+    THANHNIEN_ECONOMY(
+        displayName = "Thanh Niên Kinh Tế",
+        rssUrl = "https://thanhnien.vn/rss/kinh-te.rss",
+        defaultTopic = NewsTopic.GRAIN
+    ),
+
+    /**
+     * CafeF Thị trường chứng khoán — bao gồm cả tin nông sản, lúa gạo
+     * dưới góc nhìn thị trường. CDN cafefcdn.com phục vụ ảnh HTTPS.
+     */
+    CAFEF_MARKET(
+        displayName = "CafeF Thị Trường",
+        rssUrl = "https://cafef.vn/thi-truong-chung-khoan.rss",
         defaultTopic = NewsTopic.MARKET
     );
 

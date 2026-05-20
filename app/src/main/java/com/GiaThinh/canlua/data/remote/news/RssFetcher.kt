@@ -76,10 +76,10 @@ class RssFetcher @Inject constructor() {
         while (!(parser.eventType == XmlPullParser.END_TAG && parser.name == "item")) {
             if (parser.eventType == XmlPullParser.START_TAG) {
                 when (parser.name) {
-                    "title" -> title = parser.nextText().orEmpty().trim()
-                    "link" -> link = parser.nextText().orEmpty().trim()
-                    "description" -> description = parser.nextText().orEmpty()
-                    "pubDate" -> pubDate = parser.nextText().orEmpty().trim()
+                    "title" -> title = readTextSafe(parser, "title").trim()
+                    "link" -> link = readTextSafe(parser, "link").trim()
+                    "description" -> description = readTextSafe(parser, "description")
+                    "pubDate" -> pubDate = readTextSafe(parser, "pubDate").trim()
                     "thumbnail", "content" -> {
                         // media:thumbnail url="..." hoặc media:content url="..."
                         val ns = parser.namespace
@@ -104,8 +104,47 @@ class RssFetcher @Inject constructor() {
             link = link,
             description = description,
             pubDateMs = parseRssDate(pubDate),
-            thumbnail = mediaThumb ?: extractFirstImg(description)
+            // ensureHttps: ép cleartext http:// → https:// để Coil load được trên Android
+            // (manifest mặc định cấm cleartext, nhiều RSS source vẫn trả http://)
+            thumbnail = ensureHttps(mediaThumb ?: extractFirstImg(description))
         )
+    }
+
+    /**
+     * Ép URL về https:// để Coil không bị NetworkSecurityPolicy chặn cleartext.
+     * Hỗ trợ cả URL bắt đầu bằng `//` (protocol-relative) trả về dạng https://.
+     */
+    private fun ensureHttps(url: String?): String? {
+        if (url.isNullOrBlank()) return null
+        val trimmed = url.trim()
+        return when {
+            trimmed.startsWith("https://", ignoreCase = true) -> trimmed
+            trimmed.startsWith("http://", ignoreCase = true) -> "https://" + trimmed.substring(7)
+            trimmed.startsWith("//") -> "https:" + trimmed
+            else -> trimmed
+        }
+    }
+
+    /**
+     * Đọc text + CDATA bên trong tag hiện tại một cách an toàn, bỏ qua mọi thẻ con
+     * lồng nhau (HTML inline trong description, link tracker bọc trong link, v.v.).
+     *
+     * Khác với `parser.nextText()` — vốn ném XmlPullParserException ngay khi gặp
+     * START_TAG con — hàm này chỉ thoát khi gặp END_TAG đúng `tagName`. Một item
+     * RSS với description chứa `<a><img/></a>` sẽ không còn bị runCatching nuốt
+     * âm thầm thành null.
+     */
+    private fun readTextSafe(parser: XmlPullParser, tagName: String): String {
+        val sb = StringBuilder()
+        var event = parser.next()
+        while (!(event == XmlPullParser.END_TAG && parser.name == tagName)) {
+            when (event) {
+                XmlPullParser.TEXT, XmlPullParser.CDSECT -> sb.append(parser.text)
+                XmlPullParser.END_DOCUMENT -> return sb.toString()
+            }
+            event = parser.next()
+        }
+        return sb.toString()
     }
 
     /** RFC-822 phổ biến: "Tue, 19 May 2026 09:30:00 GMT" / "+0700". */

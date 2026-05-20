@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -36,8 +36,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -112,12 +114,27 @@ fun MainScreen() {
     val aiChatDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Mixed scroll behavior — pin TopBar ở các tab giao dịch (Cân Lúa) và Profile
+    // để tránh nhảy ẩn-hiện khi tay dính nước scroll vô tình. Các tab đọc dài
+    // (Market/Dashboard/AI Chat) dùng enterAlways để thu hồi không gian.
+    val pinnedBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val enterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val pinnedRoutes = listOf(
+        BottomNavItem.SCALE.route,
+        BottomNavItem.ACCOUNT.route,
+        BottomNavItem.TRADER_PROFILE.route,
+        "trader_transactions"
+    )
+    val scrollBehavior = if (currentRoute in pinnedRoutes) pinnedBehavior else enterAlwaysBehavior
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (showTopBar) {
-                TopAppBar(
+                CenterAlignedTopAppBar(
+                    scrollBehavior = scrollBehavior,
                     title = {
-                        Column {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = topBarTitle,
                                 style = MaterialTheme.typography.titleLarge,
@@ -166,7 +183,10 @@ fun MainScreen() {
                                 )
                             }
                         }
-                        if (isOnTabScreen) { // Show Settings icon on any main tab for easy access
+                        // Settings chỉ hiện ở tab Hồ sơ — các tab khác giữ topbar tối giản.
+                        val isProfileTab = currentRoute == BottomNavItem.ACCOUNT.route ||
+                                currentRoute == BottomNavItem.TRADER_PROFILE.route
+                        if (isProfileTab) {
                             IconButton(onClick = {
                                 navController.navigate("settings")
                             }) {
@@ -177,41 +197,10 @@ fun MainScreen() {
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
-                )
-            }
-        },
-        bottomBar = {
-            // Slide-up + fade animation khi keyboard hoặc chuyển route không hệ thống.
-            AnimatedVisibility(
-                visible = showBottomBar,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                ModernBottomBar(
-                    items = navItems.map { nav ->
-                        BottomBarItemSpec(
-                            route = nav.route,
-                            icon = nav.icon,
-                            selectedIcon = nav.selectedIcon,
-                            label = nav.label
-                        )
-                    },
-                    currentRoute = currentRoute,
-                    onItemClick = { item ->
-                        if (currentRoute != item.route) {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    }
                 )
             }
         }
@@ -224,7 +213,8 @@ fun MainScreen() {
             // Offline banner
             OfflineStatusBanner(isOffline = isOffline)
 
-            // Main content
+            // Main content + BottomBar overlay lơ lửng (không chiếm slot bottomBar
+            // của Scaffold để tránh "dải solid" che nội dung dưới capsule).
             Box(modifier = Modifier.fillMaxSize()) {
                 AppNavHost(
                     navController = navController,
@@ -232,6 +222,36 @@ fun MainScreen() {
                     modifier = Modifier.fillMaxSize(),
                     aiChatDrawerState = aiChatDrawerState
                 )
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showBottomBar,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    ModernBottomBar(
+                        items = navItems.map { nav ->
+                            BottomBarItemSpec(
+                                route = nav.route,
+                                icon = nav.icon,
+                                selectedIcon = nav.selectedIcon,
+                                label = nav.label
+                            )
+                        },
+                        currentRoute = currentRoute,
+                        onItemClick = { item ->
+                            if (currentRoute != item.route) {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
     }

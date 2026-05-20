@@ -32,5 +32,13 @@ interface WeightEntryDao {
 
     @Query("SELECT COUNT(*) FROM weight_entries WHERE cardId = :cardId")
     suspend fun getBagCountByCardId(cardId: Long): Int
+
+    // === Phase 4: Cross-device sync ===
+
+    @Query("SELECT * FROM weight_entries WHERE firestoreId = :fsId LIMIT 1")
+    suspend fun getByFirestoreId(fsId: String): WeightEntry?
+
+    @Query("UPDATE weight_entries SET firestoreId = :fsId WHERE id = :localId")
+    suspend fun updateFirestoreId(localId: Long, fsId: String)
 }
 

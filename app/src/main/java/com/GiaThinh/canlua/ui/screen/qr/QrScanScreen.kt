@@ -2,7 +2,6 @@ package com.GiaThinh.canlua.ui.screen.qr
 
 import android.Manifest
 import android.util.Log
-import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -54,6 +53,7 @@ fun QrScanScreen(
     viewModel: CardViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
 
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
@@ -160,11 +160,7 @@ fun QrScanScreen(
                                 // để backend rules `lockedByTraderId == request.auth.uid` cho phép ghi.
                                 val traderId = FirebaseAuth.getInstance().currentUser?.uid
                                 if (traderId.isNullOrBlank()) {
-                                    Toast.makeText(
-                                        context,
-                                        "Bạn cần đăng nhập trước khi quét QR",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                    appToast.warning("Bạn cần đăng nhập trước khi quét QR")
                                     HapticUtil.error(context)
                                     isProcessing = false
                                     return@CameraPreview
@@ -177,7 +173,7 @@ fun QrScanScreen(
                                     amount = parts[4]
                                 )
                             } else {
-                                Toast.makeText(context, "Mã QR không hợp lệ", Toast.LENGTH_SHORT).show()
+                                appToast.error("Mã QR không hợp lệ")
                                 HapticUtil.error(context)
                                 isProcessing = false
                             }

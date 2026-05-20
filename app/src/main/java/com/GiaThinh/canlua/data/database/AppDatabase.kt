@@ -34,7 +34,7 @@ import com.GiaThinh.canlua.data.converter.DateConverter
         WeatherCache::class,
         NewsArticle::class
     ],
-    version = 11,
+    version = 14,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -67,7 +67,10 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_7_8,
                     MIGRATION_8_9,
                     MIGRATION_9_10,
-                    MIGRATION_10_11
+                    MIGRATION_10_11,
+                    MIGRATION_11_12,
+                    MIGRATION_12_13,
+                    MIGRATION_13_14
                 ).build()
                 INSTANCE = instance
                 instance
@@ -246,6 +249,63 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * Phase 4 — Per-user data isolation cho `cards`.
+         *
+         * Bảng `cards` cũ KHÔNG có cột `ownerUid` → trên cùng máy, user B đăng nhập
+         * thấy phiếu của user A (data leak nghiêm trọng).
+         *
+         * Migration:
+         *  1. ALTER TABLE thêm `ownerUid TEXT NOT NULL DEFAULT ''`
+         *  2. CREATE INDEX để query `WHERE ownerUid = :uid` chạy nhanh
+         *
+         * Cards cũ có `ownerUid = ''` (orphan) — sẽ được `CardDao.claimOrphanCards()`
+         * gán cho user đầu tiên đăng nhập sau update (xem `CanLuaApplication`).
+         */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE cards ADD COLUMN ownerUid TEXT NOT NULL DEFAULT ''")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_ownerUid` ON `cards` (`ownerUid`)")
+            }
+        }
+
+        /**
+         * Phase 4 — Cross-device sync (Pull from Firestore).
+         *
+         * Thêm cột `firestoreId` vào 3 bảng để làm khoá dedup khi pull về máy mới:
+         * cùng firestoreId → cùng entity. Local Room id (autoincrement) khác nhau
+         * giữa các thiết bị nên không dùng dedup được.
+         *
+         * Index trên firestoreId để query `getByFirestoreId(fsId)` chạy nhanh.
+         */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE cards ADD COLUMN firestoreId TEXT")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_firestoreId` ON `cards` (`firestoreId`)")
+                database.execSQL("ALTER TABLE weight_entries ADD COLUMN firestoreId TEXT")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_firestoreId` ON `weight_entries` (`firestoreId`)")
+                database.execSQL("ALTER TABLE transactions ADD COLUMN firestoreId TEXT")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_firestoreId` ON `transactions` (`firestoreId`)")
+            }
+        }
+
+        /**
+         * Phase 4 — Conflict resolution: thêm `lastModifiedMs` cho Card.
+         *
+         * Trước đây pull cards = cloud wins blanket (overwrite local). Khi user
+         * sửa card offline rồi pull về thì mất sửa. Bây giờ so sánh
+         * `lastModifiedMs` local vs `syncTimestamp` cloud — bản mới hơn thắng.
+         *
+         * Default = `date.time` (mili giây tạo card) cho cards cũ — đủ tốt cho
+         * lần đầu, các update sau sẽ tự stamp.
+         */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE cards ADD COLUMN lastModifiedMs INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("UPDATE cards SET lastModifiedMs = date WHERE lastModifiedMs = 0")
             }
         }
     }

@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import android.widget.Toast
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -78,6 +77,7 @@ fun WeightInputScreen(
 
     // State cho việc tự thêm bảng nhập thủ công
     var manualTableCount by remember { mutableIntStateOf(0) }
+    var showLockConfirmDialog by remember { mutableStateOf(false) }
 
     // Sắp xếp dữ liệu theo dạng Cột từ trên xuống (Column-Major)
     val tables = remember(weightEntries, manualTableCount) { 
@@ -221,7 +221,14 @@ fun WeightInputScreen(
                     }
 
                     IconButton(
-                        onClick = { viewModel.toggleCardLock(card.id) }
+                        onClick = {
+                            if (card.isLocked) {
+                                viewModel.toggleCardLock(card.id)
+                                HapticUtil.confirm(context)
+                            } else {
+                                showLockConfirmDialog = true
+                            }
+                        }
                     ) {
                         if (card.isLocked) {
                             Icon(Icons.Default.Lock, "Mở khóa", tint = Color.Red)
@@ -437,6 +444,54 @@ fun WeightInputScreen(
             }
         }
     }
+
+    if (showLockConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showLockConfirmDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = AppColors.Error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Chốt giao dịch (Khóa phiếu)?",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = "CẢNH BÁO: Phiếu cân sau khi khóa sẽ KHÔNG thể chỉnh sửa khối lượng hay đơn giá nữa để bảo mật giao dịch, chống sửa lén số liệu lúa. Bạn có chắc chắn toàn bộ thông số đã chính xác?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextPrimary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.toggleCardLock(card.id)
+                        HapticUtil.confirm(context)
+                        showLockConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
+                ) {
+                    Text("Đồng ý Khóa", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLockConfirmDialog = false }) {
+                    Text("Hủy", color = AppColors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
+        )
+    }
 }
 
 // =============================================================================
@@ -539,6 +594,7 @@ private fun GridCell(
     var text by remember(value) { mutableStateOf(displayValue) }
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
 
     Box(
         modifier = modifier
@@ -557,7 +613,7 @@ private fun GridCell(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
+                        appToast.warning("Vui lòng mở khóa bảng trước khi chỉnh sửa")
                     }
                 } else Modifier
             ),

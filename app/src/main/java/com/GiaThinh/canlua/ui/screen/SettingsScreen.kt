@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
+import com.GiaThinh.canlua.util.PremiumState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,6 +60,8 @@ fun SettingsScreen(
     val lastBackupTime by syncViewModel.lastBackupTime.collectAsState()
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsState()
+    val premiumInfo by PremiumState.info.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Scaffold(
         topBar = {
@@ -102,6 +107,88 @@ fun SettingsScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // ── Premium Card — luôn hiển thị; trạng thái ACTIVE hay UPGRADE
+                //    quyết định gradient + nội dung. Tap → mở PremiumScreen.
+                SettingsCard {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            IconTile(
+                                bg = AppColors.GoldLight,
+                                tint = AppColors.GoldDark,
+                                icon = { tint, mod ->
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = null,
+                                        tint = tint,
+                                        modifier = mod
+                                    )
+                                }
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Gói Premium",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AppColors.TextPrimary
+                                    )
+                                    if (premiumInfo.isActive) {
+                                        Spacer(Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(AppColors.GreenPrimary)
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "ACTIVE",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    }
+                                }
+                                val subtitle = if (premiumInfo.isActive) {
+                                    val plan = premiumInfo.plan?.takeIf { it.isNotBlank() } ?: "Đã kích hoạt"
+                                    val sinceLabel = if (premiumInfo.sinceMs > 0L) {
+                                        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
+                                        " · từ ${sdf.format(Date(premiumInfo.sinceMs))}"
+                                    } else ""
+                                    "$plan$sinceLabel"
+                                } else {
+                                    "Bỏ quảng cáo · AI không giới hạn · Heatmap giá"
+                                }
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextHint,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                        TextButton(
+                            onClick = { navController.navigate("premium") },
+                            colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
+                        ) {
+                            Text(
+                                text = if (premiumInfo.isActive) "Quản lý" else "Nâng cấp",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
                 // ── TTS Card ──
                 SettingsCard {
                     Row(

@@ -47,14 +47,15 @@ data class BottomNavItem(
         val AI_CHAT = BottomNavItem(
             "ai_chat", Icons.Outlined.SmartToy, Icons.Filled.SmartToy, "Hỏi đáp AI"
         )
-        val DASHBOARD = BottomNavItem(
-            "dashboard", Icons.Outlined.BarChart, Icons.Filled.BarChart, "Mùa vụ"
-        )
         val ACCOUNT = BottomNavItem(
             "account", Icons.Outlined.Person, Icons.Filled.Person, "Tài khoản"
         )
 
-        val farmerNavItems = listOf(SCALE, MARKET, AI_CHAT, DASHBOARD, ACCOUNT)
+        // Tab "Mùa vụ" (DASHBOARD) đã được loại bỏ — toàn bộ KPI / chart / AI insights
+        // hiện đặt trong FarmerProfileScreen + TraderProfileScreen (Tier 2-7) để tránh
+        // trùng lặp. Component folder `ui/component/dashboard` + DashboardViewModel
+        // vẫn giữ để Profile reuse.
+        val farmerNavItems = listOf(SCALE, MARKET, AI_CHAT, ACCOUNT)
 
         // Mirror farmer 5 tabs: SCALE / MARKET / AI_CHAT / MAP / PROFILE.
         // Reuse cùng route key với farmer để chuyển role không reset state vô tội vạ.

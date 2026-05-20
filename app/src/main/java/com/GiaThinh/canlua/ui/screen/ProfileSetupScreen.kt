@@ -92,6 +92,19 @@ fun ProfileSetupScreen(
                     onClick = { navController.navigate("role_request") }
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Helper giải thích lộ trình lên Thương lái — để user không tưởng bị chặn
+            // và biết rằng đây là quyết định có thể đổi sau khi đã tạo tài khoản.
+            Text(
+                text = "Bạn có thể yêu cầu nâng cấp lên Thương lái sau khi tạo tài khoản, " +
+                        "trong tab Tài khoản → Đổi vai trò.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
             
             Spacer(modifier = Modifier.height(32.dp))
             
@@ -171,17 +184,6 @@ fun ProfileSetupScreen(
                 Icon(Icons.Default.CheckCircle, contentDescription = null)
                 Spacer(modifier = Modifier.size(8.dp))
                 Text("Hoàn tất thiết lập", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextButton(
-                onClick = { navController.navigate("role_request") }
-            ) {
-                Text(
-                    "Tôi muốn trở thành thương lái →",
-                    style = MaterialTheme.typography.bodyMedium
-                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))

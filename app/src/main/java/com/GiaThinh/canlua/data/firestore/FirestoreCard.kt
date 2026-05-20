@@ -33,6 +33,13 @@ data class FirestoreCard(
     val userId: String? = null, // Firebase user ID
     val deviceId: String? = null, // Device identifier
     val syncTimestamp: Long = System.currentTimeMillis(),
+    /**
+     * Mirror của `Card.lastModifiedMs` — thời điểm sửa đổi gần nhất ở client.
+     * Dùng cho conflict resolution khi pull về máy khác:
+     * cloud thắng nếu `lastModifiedMs cloud > lastModifiedMs local`.
+     * `syncTimestamp` là thời điểm push lên cloud, có thể trễ hơn lastModifiedMs.
+     */
+    val lastModifiedMs: Long = 0L,
     val localId: Long? = null, // Local Room database ID for mapping
 
     // === PHASE 2.6: GPS location ===

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -76,6 +77,24 @@ class CardViewModel @Inject constructor(
 
     val availableSeasons: StateFlow<List<String>> = repository.getDistinctSeasons()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Số phiếu user đã tạo HÔM NAY (00:00 local timezone → bây giờ).
+     * Reactive từ `getAllCards()` flow — tự động cập nhật khi user tạo/xoá phiếu.
+     * UI dùng để check Premium quota (free user: 3 phiếu/ngày).
+     */
+    val cardsCreatedTodayCount: StateFlow<Int> = repository.getAllCards()
+        .map { all ->
+            val cal = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val startOfDay = cal.timeInMillis
+            all.count { it.date.time >= startOfDay }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     init {
         ttsManager.initialize()

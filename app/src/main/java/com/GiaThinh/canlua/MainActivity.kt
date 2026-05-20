@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
             val authState by authViewModel.uiState.collectAsState()
 
             CanLuaTheme(fontScale = fontScale) {
+                com.GiaThinh.canlua.ui.feedback.AppToastHost {
                 val rootNavController = rememberNavController()
 
                 // Tính start destination dựa trên cả 2 flag.
@@ -107,6 +108,7 @@ class MainActivity : ComponentActivity() {
                     composable("main") {
                         MainScreen()
                     }
+                }
                 }
             }
         }

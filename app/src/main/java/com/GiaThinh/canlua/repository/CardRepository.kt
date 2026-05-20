@@ -14,44 +14,78 @@ import com.GiaThinh.canlua.data.model.VarietyStat
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.util.RiceCalculator
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Repository cho phiếu cân.
+ *
+ * **Per-user isolation (v12+)**: mọi truy vấn DAO đều forward Firebase UID
+ * của user đang sign-in qua [AuthManager.currentUser]. Khi chưa sign-in,
+ * trả Flow rỗng / null thay vì throw — tránh crash trong khoảng thời gian
+ * AuthState đang chuyển trạng thái (cold start, sign-out → sign-in).
+ *
+ * Mọi `insert*` tự gán `ownerUid` cho card mới. UI không cần biết về uid.
+ */
 @Singleton
 class CardRepository @Inject constructor(
     private val cardDao: CardDao,
     private val weightEntryDao: WeightEntryDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val authManager: AuthManager
 ) {
-    fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards()
+    /** Empty string khi chưa sign-in → DAO query trả empty (không match row nào). */
+    private fun uid(): String = authManager.currentUser?.uid.orEmpty()
 
-    suspend fun getCardById(id: Long): Card? = cardDao.getCardById(id)
+    fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid())
 
-    suspend fun insertCard(card: Card): Long = cardDao.insertCard(card)
+    suspend fun getCardById(id: Long): Card? = cardDao.getCardById(id, uid())
 
-    suspend fun updateCard(card: Card) = cardDao.updateCard(card)
+    /**
+     * Insert card mới. Tự stamp `ownerUid` từ session hiện tại + `lastModifiedMs`
+     * từ system clock trước khi ghi DB. UI/ViewModel chỉ chuyển business data.
+     */
+    suspend fun insertCard(card: Card): Long {
+        val now = System.currentTimeMillis()
+        val owned = card.copy(
+            ownerUid = if (card.ownerUid.isBlank()) uid() else card.ownerUid,
+            lastModifiedMs = if (card.lastModifiedMs == 0L) now else card.lastModifiedMs
+        )
+        return cardDao.insertCard(owned)
+    }
+
+    /**
+     * Update card. Tự stamp lại `lastModifiedMs` để conflict resolver biết
+     * bản local mới hơn cloud (cloud sẽ chỉ overwrite local nếu cloud mới hơn).
+     */
+    suspend fun updateCard(card: Card) {
+        cardDao.updateCard(card.copy(lastModifiedMs = System.currentTimeMillis()))
+    }
 
     suspend fun deleteCard(card: Card) = cardDao.deleteCard(card)
 
-    // Weight Entry operations
-    fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>> = 
+    // Weight Entry operations — không cần filter uid vì FK CASCADE qua cardId,
+    // và caller chỉ truy cập sau khi đã có cardId từ getAllCards (đã filter).
+    fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>> =
         weightEntryDao.getWeightEntriesByCardId(cardId)
 
-    suspend fun insertWeightEntry(weightEntry: WeightEntry): Long = 
+    suspend fun insertWeightEntry(weightEntry: WeightEntry): Long =
         weightEntryDao.insertWeightEntry(weightEntry)
 
-    suspend fun updateWeightEntry(weightEntry: WeightEntry) = 
+    suspend fun updateWeightEntry(weightEntry: WeightEntry) =
         weightEntryDao.updateWeightEntry(weightEntry)
 
-    suspend fun deleteWeightEntry(weightEntry: WeightEntry) = 
+    suspend fun deleteWeightEntry(weightEntry: WeightEntry) =
         weightEntryDao.deleteWeightEntry(weightEntry)
 
     // Transaction operations
-    fun getTransactionsByCardId(cardId: Long): Flow<List<Transaction>> = 
+    fun getTransactionsByCardId(cardId: Long): Flow<List<Transaction>> =
         transactionDao.getTransactionsByCardId(cardId)
 
-    suspend fun insertTransaction(transaction: Transaction): Long = 
+    suspend fun insertTransaction(transaction: Transaction): Long =
         transactionDao.insertTransaction(transaction)
 
     // Calculation methods — uses RiceCalculator with moisture adjustment
@@ -80,7 +114,7 @@ class CardRepository @Inject constructor(
      * `WeightEntry` và đúng chuẩn ngành (quy đổi về độ ẩm chuẩn 14%).
      */
     suspend fun updateCardCalculations(cardId: Long) {
-        val card = cardDao.getCardById(cardId) ?: return
+        val card = cardDao.getCardById(cardId, uid()) ?: return
         val calculation = calculateCardTotals(cardId)
 
         val totalRaw = calculation.totalRawWeight
@@ -122,6 +156,9 @@ class CardRepository @Inject constructor(
     }
 
     // === Phase 1: QR Handshake ===
+    // QR query KHÔNG filter ownerUid: trader (uid khác farmer) phải tìm được
+    // card qua qrToken để xác thực giao dịch chéo. Token đã đủ entropy + được
+    // bảo vệ bởi Firestore rule.
 
     suspend fun findByQrToken(token: String): Card? = cardDao.findByQrToken(token)
 
@@ -132,32 +169,32 @@ class CardRepository @Inject constructor(
     // === Phase 1: Filter ===
 
     fun getCardsByRiceVariety(variety: String): Flow<List<Card>> =
-        cardDao.getCardsByRiceVariety(variety)
+        cardDao.getCardsByRiceVariety(variety, uid())
 
     fun getDistinctRiceVarieties(): Flow<List<String>> =
-        cardDao.getDistinctRiceVarieties()
+        cardDao.getDistinctRiceVarieties(uid())
 
     // === Phase 3: Season Statistics Dashboard ===
 
-    fun getDistinctSeasons(): Flow<List<String>> = cardDao.getDistinctSeasons()
+    fun getDistinctSeasons(): Flow<List<String>> = cardDao.getDistinctSeasons(uid())
 
     /** Stats cho 1 vụ → map raw → domain. */
     fun getSeasonStats(season: String): Flow<SeasonStats> =
-        cardDao.getSeasonStats(season).map { it.toDomain(season) }
+        cardDao.getSeasonStats(season, uid()).map { it.toDomain(season) }
 
     /** Stats tổng toàn bộ data — dùng khi chưa có vụ nào hoặc fallback. */
     fun getOverallStats(): Flow<SeasonStats> =
-        cardDao.getOverallStats().map { it.toDomain(season = "Tất cả") }
+        cardDao.getOverallStats(uid()).map { it.toDomain(season = "Tất cả") }
 
     fun getVarietyBreakdown(season: String): Flow<List<VarietyStat>> =
-        cardDao.getVarietyBreakdown(season)
+        cardDao.getVarietyBreakdown(season, uid())
 
     fun getTopTraders(season: String): Flow<List<TraderStat>> =
-        cardDao.getTopTraders(season)
+        cardDao.getTopTraders(season, uid())
 
     /** So sánh giữa nhiều vụ — map từng row Raw → SeasonStats. */
     fun getAllSeasonsComparison(): Flow<List<SeasonStats>> =
-        cardDao.getAllSeasonsComparison().map { rows ->
+        cardDao.getAllSeasonsComparison(uid()).map { rows ->
             rows.map { row ->
                 SeasonStatsRaw(
                     cardCount = row.cardCount,
@@ -167,13 +204,46 @@ class CardRepository @Inject constructor(
                     totalRemaining = row.totalRemaining,
                     avgPrice = row.avgPrice,
                     avgMoisture = row.avgMoisture,
-                    totalBags = row.totalBags
+                    totalBags = row.totalBags,
+                    totalImpurity = row.totalImpurity,
+                    wetCardCount = row.wetCardCount,
+                    dryCardCount = row.dryCardCount
                 ).toDomain(row.season)
             }
         }
 
     /** Lịch sử thương lái đã mua — reactive Flow từ cards table. */
-    fun getTraderHistory(): Flow<List<TraderHistoryItem>> = cardDao.getTraderHistory()
+    fun getTraderHistory(): Flow<List<TraderHistoryItem>> = cardDao.getTraderHistory(uid())
+
+    /**
+     * One-shot migration: gán toàn bộ cards orphan (ownerUid='') cho user đang
+     * đăng nhập. Gọi từ `CanLuaApplication` sau lần đầu sign-in sau update v12.
+     * Idempotent — gọi nhiều lần cũng an toàn (không có row orphan thì noop).
+     *
+     * @return số rows đã claim. 0 = không cần làm gì.
+     */
+    suspend fun claimOrphanCardsForCurrentUser(): Int {
+        val u = uid()
+        if (u.isBlank()) return 0
+        if (cardDao.countOrphanCards() == 0) return 0
+        return cardDao.claimOrphanCards(u)
+    }
+    /**
+     * Đếm số phiếu user hiện tại đã tạo trong ngày hôm nay (00:00 local timezone
+     * → bây giờ). Phục vụ Premium gate "free user tối đa N phiếu/ngày".
+     * Trả 0 nếu chưa sign-in (uid blank).
+     */
+    suspend fun countCardsCreatedToday(): Int {
+        val u = uid()
+        if (u.isBlank()) return 0
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        return cardDao.countCardsSince(u, cal.timeInMillis)
+    }
 }
 
 data class CardCalculationResult(

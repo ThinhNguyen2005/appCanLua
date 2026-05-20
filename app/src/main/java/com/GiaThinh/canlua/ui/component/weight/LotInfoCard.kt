@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
+import com.GiaThinh.canlua.ui.component.ExplainingPopover
 import com.GiaThinh.canlua.ui.theme.AppColors
 
 /**
@@ -35,6 +36,9 @@ fun LotInfoCard(
     var moistureText by remember(moisturePercent) {
         mutableStateOf(if (moisturePercent > 0) "%.1f".format(moisturePercent) else "")
     }
+
+    var showVarietyInfo by remember { mutableStateOf(false) }
+    var showMoistureInfo by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -64,12 +68,29 @@ fun LotInfoCard(
                 shape = RoundedCornerShape(10.dp)
             )
 
-            // Giống lúa
-            RiceVarietyDropdown(
-                selected = riceVariety,
-                onSelect = { if (!isLocked) onVarietyChange(it) },
+            // Giống lúa + Icon giải thích
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
-            )
+            ) {
+                RiceVarietyDropdown(
+                    selected = riceVariety,
+                    onSelect = { if (!isLocked) onVarietyChange(it) },
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = { showVarietyInfo = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Grass,
+                        contentDescription = "Tìm hiểu về giống lúa",
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
 
             // Độ ẩm + Vụ mùa
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -82,7 +103,19 @@ fun LotInfoCard(
                         }
                     },
                     label = { Text("Độ ẩm (%)") },
-                    leadingIcon = { Icon(Icons.Outlined.WaterDrop, null, modifier = Modifier.size(18.dp)) },
+                    leadingIcon = {
+                        IconButton(
+                            onClick = { showMoistureInfo = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.WaterDrop,
+                                contentDescription = "Tìm hiểu độ ẩm",
+                                tint = AppColors.Info,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    },
                     enabled = !isLocked,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -101,4 +134,20 @@ fun LotInfoCard(
             }
         }
     }
+
+    // Explaining popovers
+    ExplainingPopover(
+        visible = showVarietyInfo,
+        title = "🌾 Giống Lúa & Vụ Mùa",
+        description = "Mỗi giống lúa (như ST25, OM18) có đặc tính hạt, tỷ lệ khô/ướt và đơn giá thu mua khác nhau. Lựa chọn đúng giống lúa giúp AI khuyến nông hỗ trợ kỹ thuật canh tác chính xác.",
+        onDismiss = { showVarietyInfo = false }
+    )
+
+    ExplainingPopover(
+        visible = showMoistureInfo,
+        title = "💧 Độ Ẩm Hạt Lúa",
+        description = "Tỷ lệ nước trong hạt lúa đo bằng máy. Độ ẩm tiêu chuẩn thương mại thường là 14%. Nếu lúa ướt hơn (>14%), thương lái sẽ tính thêm khấu trừ trọng lượng trừ bì theo thỏa thuận thực tế.",
+        onDismiss = { showMoistureInfo = false }
+    )
 }
+

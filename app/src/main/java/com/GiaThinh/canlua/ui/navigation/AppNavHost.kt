@@ -14,12 +14,13 @@ import com.GiaThinh.canlua.ui.screen.CardListScreen
 import com.GiaThinh.canlua.ui.screen.FarmerProfileScreen
 import com.GiaThinh.canlua.ui.screen.SettingsScreen
 import com.GiaThinh.canlua.ui.screen.SyncStatusScreen
+import com.GiaThinh.canlua.ui.screen.TraderHistoryScreen
 import com.GiaThinh.canlua.ui.screen.WeightInputScreen
 import com.GiaThinh.canlua.ui.screen.RoleRequestScreen
 import com.GiaThinh.canlua.ui.screen.aichat.AiChatScreen
-import com.GiaThinh.canlua.ui.screen.dashboard.DashboardScreen
 import com.GiaThinh.canlua.ui.screen.market.MarketScreen
 import com.GiaThinh.canlua.ui.screen.map.RiceMapScreen
+import com.GiaThinh.canlua.ui.screen.profile.PremiumScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrGenerateScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrScanScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderProfileScreen
@@ -96,14 +97,18 @@ fun AppNavHost(
             AiChatScreen(drawerState = aiChatDrawerState)
         }
 
-        // === Tab 4: Thống Kê ===
-        composable(BottomNavItem.DASHBOARD.route) {
-            DashboardScreen()
+        // === Tab 4: Tài khoản (FARMER) ===
+        composable(BottomNavItem.ACCOUNT.route) {
+            FarmerProfileScreen(navController = navController)
         }
 
-        // === Tab 5: Tài khoản (FARMER) ===
-        composable(BottomNavItem.ACCOUNT.route) {
-            FarmerProfileScreen()
+        // === Premium upgrade screen — share cho cả farmer & trader ===
+        composable("premium") {
+            PremiumScreen(navController = navController)
+        }
+
+        composable("trader_history") {
+            TraderHistoryScreen(navController = navController)
         }
 
         // === Trader-only routes ===

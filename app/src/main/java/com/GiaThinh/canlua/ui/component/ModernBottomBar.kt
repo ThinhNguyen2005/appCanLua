@@ -35,10 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.util.HapticUtil
+
 
 /**
  * Modern Floating Pill Navigation Bar.
@@ -112,7 +114,7 @@ private fun PillNavItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
     val interactionSource = remember { MutableInteractionSource() }
 
     // Selected: pill bg = green primary | Idle: transparent
@@ -134,7 +136,7 @@ private fun PillNavItem(
                 interactionSource = interactionSource,
                 indication = null
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                HapticUtil.tick(context)
                 onClick()
             }
     ) {

@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
+import com.GiaThinh.canlua.ui.component.ExplainingPopover
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
 import java.util.Locale
@@ -54,6 +57,10 @@ fun WeightMetricsCard(
     var priceText by remember(pricePerKg) {
         mutableStateOf(if (pricePerKg > 0) "%.0f".format(pricePerKg) else "")
     }
+
+    var showBagInfo by remember { mutableStateOf(false) }
+    var showImpurityInfo by remember { mutableStateOf(false) }
+    var showMoistureInfo by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -129,6 +136,19 @@ fun WeightMetricsCard(
                         }
                     },
                     label = { Text("Bì (kg/bao)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = { showBagInfo = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Info,
+                                contentDescription = "Tìm hiểu trọng lượng bì",
+                                tint = AppColors.GreenPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    },
                     enabled = !isLocked,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -144,6 +164,19 @@ fun WeightMetricsCard(
                         }
                     },
                     label = { Text("Tạp chất (kg)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = { showImpurityInfo = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Info,
+                                contentDescription = "Tìm hiểu tạp chất",
+                                tint = AppColors.GreenPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    },
                     enabled = !isLocked,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -159,6 +192,19 @@ fun WeightMetricsCard(
                         }
                     },
                     label = { Text("Độ ẩm (%)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = { showMoistureInfo = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.WaterDrop,
+                                contentDescription = "Tìm hiểu khấu trừ độ ẩm",
+                                tint = AppColors.Info,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    },
                     enabled = !isLocked,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -211,4 +257,27 @@ fun WeightMetricsCard(
             }
         }
     }
+
+    // Interactive Explaining Popovers
+    ExplainingPopover(
+        visible = showBagInfo,
+        title = "⚖️ Trọng Lượng Bì",
+        description = "Trọng lượng trung bình của vỏ bao đựng lúa (thường khoảng 0.5kg - 1.2kg tùy loại bao). Tổng trọng lượng bì (Bì × Số bao) sẽ được khấu trừ trực tiếp khỏi tổng khối lượng lúa.",
+        onDismiss = { showBagInfo = false }
+    )
+
+    ExplainingPopover(
+        visible = showImpurityInfo,
+        title = "🍂 Khấu Trừ Tạp Chất",
+        description = "Khối lượng tạp chất (rơm rạ, đất cát, hạt lép) có trong lô lúa được hai bên thỏa thuận trừ trực tiếp bằng số kg cố định để đảm bảo công bằng cho người mua lúa sạch.",
+        onDismiss = { showImpurityInfo = false }
+    )
+
+    ExplainingPopover(
+        visible = showMoistureInfo,
+        title = "💧 Khấu Trừ Độ Ẩm",
+        description = "Độ ẩm lúa thực tế đo tại ruộng. Độ ẩm tiêu chuẩn thương mại là 14%. Nếu độ ẩm cao hơn, một tỷ lệ hao hụt sấy sẽ được khấu trừ vào khối lượng thực tế theo thỏa thuận.",
+        onDismiss = { showMoistureInfo = false }
+    )
 }
+

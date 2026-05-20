@@ -4,10 +4,20 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date
 
-@Entity(tableName = "cards")
+@Entity(
+    tableName = "cards",
+    indices = [androidx.room.Index(value = ["ownerUid"])]
+)
 data class Card(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    /**
+     * Firebase UID của chủ phiếu — khoá cô lập data per-user trên cùng device.
+     * Empty string = card "orphan" tạo trước khi migration v12; sẽ được
+     * `claimOrphanCards()` gán cho user đầu tiên đăng nhập sau update.
+     * Mọi DAO query lọc theo field này → user A login máy chung không thấy phiếu của B.
+     */
+    val ownerUid: String = "",
     val name: String,
     val cccd: String? = null,
     val traderName: String = "",
@@ -37,5 +47,22 @@ data class Card(
 
     // === PHASE 2.8: Contact + field address ===
     val traderPhone: String = "",          // SĐT thương lái (tap để gọi)
-    val fieldAddress: String = ""          // Địa chỉ ruộng (reverse geocode → tap mở map)
+    val fieldAddress: String = "",          // Địa chỉ ruộng (reverse geocode → tap mở map)
+
+    // === PHASE 4: Cross-device sync (v13) ===
+    /**
+     * Firestore document ID — null khi chưa từng được push lên cloud.
+     * Dùng làm khoá dedup khi pull về máy mới: cùng `firestoreId` → same card.
+     * Local Room id (autoincrement) khác nhau giữa các thiết bị nên không dùng được.
+     */
+    val firestoreId: String? = null,
+
+    // === PHASE 4 (v14): Conflict resolution timestamp ===
+    /**
+     * Thời điểm sửa đổi gần nhất (ms epoch). Repository tự stamp mỗi lần
+     * insert/update. Khi pull từ Firestore, so sánh `lastModifiedMs` local vs
+     * `syncTimestamp` cloud → bản nào mới hơn thắng. Tránh ghi đè sửa offline
+     * của 1 máy bằng bản cloud cũ hơn (cloud-wins blanket trước đây).
+     */
+    val lastModifiedMs: Long = 0L
 )

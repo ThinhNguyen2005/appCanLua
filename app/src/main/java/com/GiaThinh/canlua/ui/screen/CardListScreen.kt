@@ -27,6 +27,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Grass
 import androidx.compose.material.icons.outlined.Scale
@@ -69,6 +71,11 @@ import com.GiaThinh.canlua.ui.util.isScrollingUp
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
+import com.GiaThinh.canlua.util.HapticUtil
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -91,7 +98,13 @@ fun CardListScreen(
     val availableSeasons by viewModel.availableSeasons.collectAsState()
     val profileState by profileViewModel.profile.collectAsState(initial = null)
     val syncStatus by syncViewModel.syncStatus.collectAsState()
+    val isPremium by com.GiaThinh.canlua.util.PremiumState.isPremium.collectAsState()
+    val cardsToday by com.GiaThinh.canlua.util.PremiumState.dailyCreated.collectAsState()
+    val context = LocalContext.current
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showPremiumGate by remember { mutableStateOf(false) }
+    var cardToDelete by remember { mutableStateOf<com.GiaThinh.canlua.data.model.Card?>(null) }
     var manualRefreshing by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val fabVisible = listState.isScrollingUp() || cards.isEmpty()
@@ -353,8 +366,10 @@ fun CardListScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                horizontal = 16.dp,
-                                vertical = 8.dp
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 8.dp,
+                                bottom = 96.dp
                             ),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -381,7 +396,8 @@ fun CardListScreen(
                                             navController.navigate("card_detail/${card.id}")
                                         },
                                         onDelete = {
-                                            viewModel.deleteCard(card)
+                                            cardToDelete = card
+                                            showDeleteConfirmDialog = true
                                         }
                                     )
                                 }
@@ -399,10 +415,18 @@ fun CardListScreen(
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(end = 16.dp, bottom = 88.dp)
         ) {
             FloatingActionButton(
-                onClick = { showCreateDialog = true },
+                onClick = {
+                    // Premium gate: free user tối đa FREE_CARDS_PER_DAY phiếu/ngày.
+                    // Đếm reactive từ cardsToday → nếu vượt mở dialog upsell thay vì tạo.
+                    if (!isPremium && cardsToday >= com.GiaThinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY) {
+                        showPremiumGate = true
+                    } else {
+                        showCreateDialog = true
+                    }
+                },
                 containerColor = AppColors.GreenPrimary,
                 contentColor = AppColors.CardBg,
                 shape = CircleShape
@@ -435,7 +459,123 @@ fun CardListScreen(
                     seasonLabel = season,
                     traderPhone = cardTraderPhone
                 )
+                // Tăng counter chống gian lận. Counter chỉ tăng — xoá phiếu cũ
+                // KHÔNG giảm → user free không thể bypass quota 3 phiếu/ngày.
+                if (!isPremium) {
+                    com.GiaThinh.canlua.util.PremiumState.incrementDailyCreated(context)
+                }
             }
+        )
+    }
+
+    if (showDeleteConfirmDialog && cardToDelete != null) {
+        val targetCard = cardToDelete!!
+        AlertDialog(
+            onDismissRequest = { 
+                showDeleteConfirmDialog = false
+                cardToDelete = null
+            },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = AppColors.Error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Xóa phiếu cân?",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            },
+            text = {
+                val displayName = targetCard.traderName.ifBlank { targetCard.name }
+                Text(
+                    text = "Bạn có chắc chắn muốn xóa phiếu cân của \"$displayName\" không? Hành động này sẽ xóa dữ liệu trên thiết bị của bạn và không thể hoàn tác.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextPrimary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteCard(targetCard)
+                        HapticUtil.error(context)
+                        showDeleteConfirmDialog = false
+                        cardToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
+                ) {
+                    Text("Đồng ý Xóa", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showDeleteConfirmDialog = false
+                        cardToDelete = null
+                    }
+                ) {
+                    Text("Hủy", color = AppColors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
+        )
+    }
+
+    // Dialog Premium gate — vượt quota free 3 phiếu/ngày.
+    // Hai option: nâng cấp Premium (mở PremiumScreen) hoặc đóng và đợi sang ngày mai.
+    if (showPremiumGate) {
+        AlertDialog(
+            onDismissRequest = { showPremiumGate = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = AppColors.GoldDark,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Đã đạt giới hạn miễn phí",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = "Tài khoản miễn phí giới hạn ${com.GiaThinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY} phiếu cân mỗi ngày. " +
+                            "Hôm nay bạn đã tạo $cardsToday phiếu. " +
+                            "Nâng cấp Premium để cân lúa không giới hạn, không quảng cáo, " +
+                            "kèm AI khuyến nông và heatmap giá vùng.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextPrimary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPremiumGate = false
+                        navController.navigate("premium")
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GoldDark)
+                ) {
+                    Text("Nâng cấp Premium", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPremiumGate = false }) {
+                    Text("Để sau", color = AppColors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
         )
     }
 }

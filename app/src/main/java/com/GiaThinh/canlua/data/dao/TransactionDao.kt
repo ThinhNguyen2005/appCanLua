@@ -26,5 +26,13 @@ interface TransactionDao {
 
     @Query("SELECT SUM(amount) FROM transactions WHERE cardId = :cardId AND type = 'DEPOSIT'")
     suspend fun getTotalDepositAmountByCardId(cardId: Long): Double?
+
+    // === Phase 4: Cross-device sync ===
+
+    @Query("SELECT * FROM transactions WHERE firestoreId = :fsId LIMIT 1")
+    suspend fun getByFirestoreId(fsId: String): Transaction?
+
+    @Query("UPDATE transactions SET firestoreId = :fsId WHERE id = :localId")
+    suspend fun updateFirestoreId(localId: Long, fsId: String)
 }
 

@@ -24,5 +24,7 @@ data class WeightEntry(
     val bagWeight: Double = 0.0, // Khối lượng bao bì
     val impurityWeight: Double = 0.0, // Khối lượng tạp chất
     val netWeight: Double = 0.0, // Khối lượng thực tế (weight - bagWeight - impurityWeight)
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    /** Firestore doc id — null khi chưa sync lên cloud. Dùng dedup khi pull. */
+    val firestoreId: String? = null
 )
