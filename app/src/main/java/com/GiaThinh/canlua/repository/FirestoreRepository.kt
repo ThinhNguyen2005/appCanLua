@@ -91,6 +91,36 @@ class FirestoreRepository @Inject constructor(
         }
     }
 
+    /**
+     * Trader xác thực QR thành công → cập nhật trên Firestore
+     * để TraderTransactionsScreen (observe lockedByTraderId) thấy được giao dịch.
+     *
+     * Tìm card theo qrToken (do farmer generate), không theo localId
+     * vì 2 thiết bị (farmer/trader) dùng Room ID khác nhau.
+     */
+    suspend fun lockCardByQrToken(qrToken: String, traderId: String): Result<String?> {
+        return try {
+            val snapshot = cardsCollection
+                .whereEqualTo("qrToken", qrToken)
+                .limit(1)
+                .get()
+                .await()
+
+            val doc = snapshot.documents.firstOrNull()
+                ?: return Result.success(null) // Không tìm thấy → farmer chưa sync card này lên cloud
+
+            val updates = mapOf(
+                "lockedByTraderId" to traderId,
+                "isLocked" to true,
+                "syncTimestamp" to System.currentTimeMillis()
+            )
+            doc.reference.update(updates).await()
+            Result.success(doc.id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ========== Weight Entry Operations ==========
 
     suspend fun syncWeightEntry(weightEntry: FirestoreWeightEntry): Result<String> {

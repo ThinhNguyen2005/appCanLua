@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Agriculture
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -80,13 +81,15 @@ fun ProfileSetupScreen(
                     isSelected = role == UserRole.FARMER,
                     onClick = { role = UserRole.FARMER }
                 )
-                
+
                 RoleSelectionCard(
                     modifier = Modifier.weight(1f),
                     title = "Thương Lái",
                     icon = Icons.Default.Storefront,
-                    isSelected = role == UserRole.TRADER,
-                    onClick = { role = UserRole.TRADER }
+                    isSelected = false,
+                    locked = true,
+                    subtitle = "Cần duyệt",
+                    onClick = { navController.navigate("role_request") }
                 )
             }
             
@@ -170,6 +173,17 @@ fun ProfileSetupScreen(
                 Text("Hoàn tất thiết lập", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = { navController.navigate("role_request") }
+            ) {
+                Text(
+                    "Tôi muốn trở thành thương lái →",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -181,11 +195,25 @@ fun RoleSelectionCard(
     title: String,
     icon: ImageVector,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    locked: Boolean = false,
+    subtitle: String? = null
 ) {
-    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val backgroundColor = when {
+        locked -> MaterialTheme.colorScheme.surfaceVariant
+        isSelected -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val contentColor = when {
+        locked -> MaterialTheme.colorScheme.onSurfaceVariant
+        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val borderColor = when {
+        locked -> MaterialTheme.colorScheme.outlineVariant
+        isSelected -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.outlineVariant
+    }
 
     Card(
         modifier = modifier
@@ -196,26 +224,47 @@ fun RoleSelectionCard(
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.size(48.dp),
-                tint = contentColor
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = contentColor
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    modifier = Modifier.size(44.dp),
+                    tint = contentColor
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+                if (subtitle != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            if (locked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Cần duyệt",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(18.dp),
+                    tint = contentColor.copy(alpha = 0.7f)
+                )
+            }
         }
     }
 }

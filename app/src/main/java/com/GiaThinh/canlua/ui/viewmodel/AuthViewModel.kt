@@ -3,6 +3,7 @@ package com.GiaThinh.canlua.ui.viewmodel
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.GiaThinh.canlua.auth.GoogleAccount
 import com.GiaThinh.canlua.repository.AuthManager
 import com.GiaThinh.canlua.repository.ChatSessionStore
 import com.GiaThinh.canlua.repository.ProfileRepository
@@ -189,12 +190,30 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun signInWithGoogle(idToken: String) {
+    /**
+     * Sign-in bằng Google + pre-fill Profile lần đầu từ thông tin Google trả về.
+     * Nếu user đã có Profile (Room) thì giữ nguyên — chỉ pre-fill khi blank.
+     */
+    fun signInWithGoogle(account: GoogleAccount) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
-            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
+            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(account.idToken, null)
             try {
                 firebaseAuth.signInWithCredential(credential).await()
+                // Pre-fill Profile lần đầu nếu chưa có name (FirstSetup state).
+                val existing = profileRepository.latestProfile().first()
+                if (existing?.name.isNullOrBlank()) {
+                    saveProfileLocal(
+                        name = account.displayName,
+                        phone = account.phoneNumber,
+                        region = null,
+                        note = null,
+                        role = "FARMER",
+                        cccd = null,
+                        username = null,
+                        email = account.email
+                    )
+                }
                 _uiState.value = AuthUiState(
                     isSignedIn = true,
                     userLabel = getUserLabel(),
@@ -295,6 +314,7 @@ class AuthViewModel @Inject constructor(
         if (safeName.isBlank()) return
         profileRepository.saveProfile(
             com.GiaThinh.canlua.data.model.Profile(
+                uid = "", // ProfileRepository sẽ tự gán uid của user đang đăng nhập
                 name = safeName,
                 phone = phone?.trim().orEmpty(),
                 region = region?.trim().orEmpty(),
@@ -305,6 +325,18 @@ class AuthViewModel @Inject constructor(
                 email = email?.trim().orEmpty()
             )
         )
+    }
+
+    /**
+     * Phân biệt user gõ email hay số điện thoại trong field đầu tiên ở AuthScreen.
+     * - Phone: chỉ chứa digits/+/space, length ≥ 9 sau khi strip.
+     * - Email: có ký tự '@'.
+     */
+    fun looksLikePhone(input: String): Boolean {
+        val cleaned = input.trim().filter { !it.isWhitespace() }
+        if (cleaned.contains('@')) return false
+        val digits = cleaned.filter { it.isDigit() || it == '+' }
+        return digits.length >= 9 && digits == cleaned
     }
 
     private fun normalizePhone(raw: String): String? {

@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "id": "trader_price_dx",
+      "title": "Giá lúa vụ Đông Xuân (ĐBSCL)",
+      "keywords": ["dong xuan", "đông xuân", "vụ đông xuân", "giá đông xuân", "lúa khô", "lúa tươi"],
+      "content": "Vụ Đông Xuân (gieo 11-12, thu hoạch 2-3) là vụ chính, năng suất cao nhất 6.5-7.5 tấn/ha. Lúa tươi tại ruộng IR50404 dao động 7,200-7,800 đ/kg, OM18 khoảng 7,500-8,200 đ/kg, ST24/ST25 9,500-11,000 đ/kg. Lúa khô (độ ẩm <14%) cộng thêm 1,000-1,400 đ/kg. Thương lái cần khảo sát 2-3 ruộng cùng giống để định giá thực tế trước khi đặt cọc."
+    },
+    {
+      "id": "trader_price_ht",
+      "title": "Giá lúa vụ Hè Thu",
+      "keywords": ["he thu", "hè thu", "vụ hè thu", "lúa hè thu", "thu đông"],
+      "content": "Vụ Hè Thu (gieo 4-5, thu hoạch 7-8) thường gặp mưa nhiều, tỷ lệ lúa lép cao 8-15%. Giá lúa tươi thấp hơn Đông Xuân 800-1,500 đ/kg. Cảnh giác bao có ẩm trên 25% — phơi/sấy thêm 200-400 đ/kg. Thương lái nên kiểm tra hàm lượng tạp chất bằng máy đo nhanh trước khi cân để tránh lỗ."
+    },
+    {
+      "id": "trader_moisture_check",
+      "title": "Đo độ ẩm lúa bằng máy điện tử",
+      "keywords": ["do am", "độ ẩm", "máy đo ẩm", "moisture", "ẩm lúa", "kenwei", "hayata"],
+      "content": "Máy đo ẩm cầm tay (Kenwei KM-380, Hayata HMD-1) cho kết quả chuẩn ±0.5%. Đo 3 mẫu khác nhau trong cùng đống lúa, lấy trung bình. Lúa tươi vừa gặt 22-28% ẩm, sau phơi nắng 1-2 ngày còn 16-18%, sấy đạt chuẩn xuất khẩu <14%. Mỗi 1% ẩm vượt chuẩn trừ tiền 100-150 đ/kg. Hiệu chuẩn máy 1 lần/tháng bằng mẫu chuẩn."
+    },
+    {
+      "id": "trader_impurity",
+      "title": "Kiểm định tạp chất và lúa lép",
+      "keywords": ["tap chat", "tạp chất", "lúa lép", "lép", "lúa hạt", "kiểm định"],
+      "content": "Tiêu chuẩn xuất khẩu: tạp chất <1%, lúa lép <8%, gãy <15%. Sàng tách thử 1kg mẫu, cân riêng phần lép + rơm + sạn. Lúa lép trên 12% trừ giá 200-300 đ/kg. Tạp chất trên 2% (do gặt máy thiếu chỉnh) yêu cầu nông dân sàng lại hoặc giảm 100-200 đ/kg/% vượt."
+    },
+    {
+      "id": "trader_storage",
+      "title": "Bảo quản lúa kho mát ngắn hạn",
+      "keywords": ["bao quan", "bảo quản", "kho", "kho lúa", "trữ lúa", "phosphine"],
+      "content": "Kho thông thường: lúa khô <14% ẩm, đảo bao 7 ngày/lần, xông phosphine (PH3) khi có mọt 1.5g/m³ kín 5 ngày. Kho mát 18-22°C giữ chất lượng 6-9 tháng, chi phí điện ~80 đ/kg/tháng. Tránh chất bao trực tiếp lên nền — kê palette gỗ cách sàn 12cm. Kiểm tra mọt 2 tuần/lần bằng bẫy pheromone."
+    },
+    {
+      "id": "trader_logistics",
+      "title": "Logistics sà lan ĐBSCL",
+      "keywords": ["sa lan", "sà lan", "vận chuyển", "ghe", "tàu", "logistics", "cảng cái cui"],
+      "content": "Sà lan 200-500 tấn là phương tiện rẻ nhất chở lúa từ ruộng về kho/cảng. Cước trung bình 80-120 đ/kg/100km tuyến nội ĐBSCL, 150-200 đ/kg đi cảng Cát Lái. Booking sà lan trước 3-5 ngày qua HTX hoặc trực tiếp chủ ghe. Hợp đồng nên ghi rõ tỷ lệ hao hụt cho phép (thường 0.3-0.5%) và bảo hiểm hàng hóa."
+    },
+    {
+      "id": "trader_negotiation",
+      "title": "Đàm phán giá thu mua tại ruộng",
+      "keywords": ["dam phan", "đàm phán", "thương lượng", "đặt cọc", "hợp đồng", "thu mua"],
+      "content": "Quy trình chuẩn: 1) Khảo sát giống + diện tích + ngày gặt dự kiến, 2) Đo ẩm 3 điểm, ước lượng năng suất, 3) Báo giá theo mặt bằng vùng có biên ±100 đ/kg, 4) Đặt cọc 10-20% tổng tiền (1-3 triệu/ha), 5) Hợp đồng giấy ghi rõ ngày cân, giá tối thiểu. Tránh chốt cứng 100% trước gặt — rủi ro biến động giá thị trường 200-500 đ/kg trong 10-14 ngày."
+    },
+    {
+      "id": "trader_export_codes",
+      "title": "Mã giống và tiêu chuẩn xuất khẩu",
+      "keywords": ["xuat khau", "xuất khẩu", "mã giống", "OM", "ST", "Jasmine", "DT8", "tiêu chuẩn"],
+      "content": "Giống xuất khẩu cao cấp: ST24, ST25 (gạo thơm, sang Trung Đông + EU), Jasmine 85, DT8 (Philippines, Châu Phi). Giống xuất khẩu phổ thông: OM5451, OM18, IR50404 (gạo trắng cấp thấp). Tiêu chuẩn TCVN 5644: gạo lứt thuần >95%, hạt nguyên >60%, tấm <10%. Hợp đồng FOB cảng Cái Mép phải có chứng nhận VietGAP hoặc Global GAP để vào EU/Nhật."
+    },
+    {
+      "id": "trader_margin",
+      "title": "Biên lợi nhuận thương lái",
+      "keywords": ["loi nhuan", "lợi nhuận", "biên", "margin", "chi phí", "phí"],
+      "content": "Biên thương lái lúa tươi tại ruộng → bán cho nhà máy xay: 200-400 đ/kg gross. Trừ chi phí: vận chuyển 100-150 đ/kg, bốc xếp 30-50 đ/kg, hao hụt 0.5% (~35 đ/kg), tài chính 20-40 đ/kg. Lợi nhuận ròng 50-150 đ/kg = 500-1,500 đ/100kg. Quy mô khả thi: tối thiểu 50 tấn/đợt để bù chi phí cố định. Khuyến nghị giữ vốn xoay 200-500 triệu cho 1 chuyến 100 tấn."
+    },
+    {
+      "id": "trader_low_quality_signs",
+      "title": "Dấu hiệu lúa chất lượng kém",
+      "keywords": ["chat luong kem", "chất lượng kém", "lúa hư", "lúa mốc", "vàng hạt", "đốm đen"],
+      "content": "Dấu hiệu loại bỏ: hạt vàng úa (do bệnh đạo ôn cổ bông) > 5%, đốm đen (nấm), hạt nứt do sấy quá nhiệt > 10%, mùi mốc/chua (đã ủ nóng). Lúa ngập nước trên 3 ngày: hạt nảy mầm trong vỏ trấu, mất phôi → giảm giá 30-40% hoặc từ chối. Lúa phun thuốc cận ngày gặt (<7 ngày) có dư lượng → không qua kiểm test xuất khẩu, chỉ bán nội địa giá thấp."
+    }
+  ]
+}

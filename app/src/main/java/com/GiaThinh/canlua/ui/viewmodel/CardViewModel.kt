@@ -6,6 +6,7 @@ import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.repository.CardRepository
+import com.GiaThinh.canlua.repository.FirestoreRepository
 import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.util.TextToSpeechManager
@@ -30,7 +31,8 @@ class CardViewModel @Inject constructor(
     private val repository: CardRepository,
     private val ttsManager: TextToSpeechManager,
     private val settingsRepository: SettingsRepository,
-    private val locationProvider: LocationProvider
+    private val locationProvider: LocationProvider,
+    private val firestoreRepository: FirestoreRepository
 ) : ViewModel() {
 
     private val _currentCard = MutableStateFlow<Card?>(null)
@@ -315,8 +317,19 @@ class CardViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Trader quét QR → lock card cả ở Firestore (để Sổ thương nhân thấy)
+     * và ở Room local (để hiển thị trạng thái đồng bộ ngay).
+     *
+     * Nếu card chưa có ở local DB của trader (case thương lái khác máy với farmer),
+     * vẫn cập nhật Firestore để Sổ thương nhân nhận diện qua observeMyTraderCards.
+     */
     fun verifyAndLockTransaction(scannedToken: String, traderId: String) {
         viewModelScope.launch {
+            // 1) Push lock state lên Firestore — bắt buộc, vì Sổ thương nhân query trực tiếp Firestore
+            firestoreRepository.lockCardByQrToken(scannedToken, traderId)
+
+            // 2) Update local Room nếu card có sẵn trong DB của thiết bị này
             val card = repository.findByQrToken(scannedToken)
             if (card != null && !card.isLocked) {
                 repository.lockCard(cardId = card.id, traderId = traderId)
