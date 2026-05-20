@@ -1,6 +1,7 @@
 package com.GiaThinh.canlua.ui.screen.trader
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,11 +42,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.screen.profile.PersonalInfoCard
 import com.GiaThinh.canlua.ui.screen.profile.ProfileHeader
 import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 
@@ -61,12 +67,15 @@ import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
  */
 @Composable
 fun TraderProfileScreen(
+    navController: NavController,
     bidsViewModel: TraderBidsViewModel = hiltViewModel(),
     profileViewModel: ProfileViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    cardViewModel: CardViewModel = hiltViewModel()
 ) {
     val profile by profileViewModel.profile.collectAsState(initial = null)
     val bids by bidsViewModel.myBids.collectAsState()
+    val cards by cardViewModel.cards.collectAsState()
 
     var editing by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
@@ -75,7 +84,7 @@ fun TraderProfileScreen(
     var cccd by remember { mutableStateOf("") }
     var pendingRole by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(profile?.id) {
+    LaunchedEffect(profile?.uid) {
         profile?.let {
             name = it.name
             phone = it.phone
@@ -141,6 +150,16 @@ fun TraderProfileScreen(
                         }
                         editing = !editing
                     }
+                )
+            }
+
+            // Row "Sổ giao dịch" — mở sub-screen TraderTransactionsScreen.
+            item {
+                NavigationRow(
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
+                    title = "Sổ giao dịch",
+                    subtitle = "${cards.size} phiếu đã đối soát",
+                    onClick = { navController.navigate("trader_transactions") }
                 )
             }
 
@@ -222,6 +241,65 @@ private fun StatBox(label: String, value: String, color: Color, modifier: Modifi
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.TextHint
+            )
+        }
+    }
+}
+
+/**
+ * Row điều hướng generic — dùng cho "Sổ giao dịch" và các sub-screen khác của Profile.
+ */
+@Composable
+private fun NavigationRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppColors.GreenSurface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.TextPrimary
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextHint
+                )
+            }
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = AppColors.TextHint
             )
         }
     }

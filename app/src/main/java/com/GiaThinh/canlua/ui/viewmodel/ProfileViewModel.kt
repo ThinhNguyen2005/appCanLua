@@ -48,6 +48,7 @@ class ProfileViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val profile = Profile(
+                uid = "", // ProfileRepository.saveProfile() tự gán từ FirebaseAuth
                 name = name.trim(),
                 phone = phone?.trim().orEmpty(),
                 region = region?.trim().orEmpty(),
@@ -63,9 +64,8 @@ class ProfileViewModel @Inject constructor(
 
     /**
      * Update profile hiện tại — dùng cho FarmerProfileScreen / TraderProfileScreen.
-     *
-     * Vì ProfileDao.insert() có OnConflictStrategy.REPLACE và profile có @PrimaryKey
-     * autoGenerate, cách an toàn để update là copy() từ current rồi insert lại VỚI cùng id.
+     * `current` đã có UID đúng (load từ DAO theo UID), copy() giữ nguyên UID nên insert REPLACE
+     * sẽ ghi đè đúng row của user hiện tại.
      */
     fun updateProfile(
         current: Profile,

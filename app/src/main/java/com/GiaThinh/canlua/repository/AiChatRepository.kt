@@ -34,7 +34,8 @@ class AiChatRepository @Inject constructor(
     companion object {
         private const val MODEL = "openrouter/free"
         private const val URL = "https://openrouter.ai/api/v1/chat/completions"
-        private const val SYSTEM_PROMPT_BASE = """
+
+        private const val FARMER_PROMPT_BASE = """
 Bạn là Trợ Lý Khuyến Nông cho nông dân trồng lúa tại Đồng bằng sông Cửu Long, Việt Nam.
 Luôn trả lời bằng Tiếng Việt, ngắn gọn, ưu tiên tính thực tế và dễ áp dụng.
 Khi đưa ra giải pháp kỹ thuật, ghi rõ: 1) Nguyên nhân, 2) Cách xử lý, 3) Phòng ngừa.
@@ -45,6 +46,20 @@ QUY TẮC TUYỆT ĐỐI:
 - Tận dụng "THỜI TIẾT HIỆN TẠI" để khuyến nghị (vd: trời mưa → hoãn phun thuốc).
 - Cá nhân hoá xưng hô theo "HỒ SƠ NGƯỜI DÙNG" (vd: gọi tên + vai trò Nông dân/Thương lái).
 - Nếu không chắc, khuyên hỏi cán bộ khuyến nông địa phương.
+"""
+
+        private const val TRADER_PROMPT_BASE = """
+Bạn là Chuyên Gia Thị Trường Lúa Gạo cho thương lái thu mua tại Đồng bằng sông Cửu Long, Việt Nam.
+Luôn trả lời bằng Tiếng Việt, ngắn gọn, ưu tiên số liệu và góc nhìn kinh doanh.
+Khi tư vấn: 1) Phân tích thị trường, 2) Rủi ro cần lưu ý, 3) Hành động đề xuất.
+
+QUY TẮC TUYỆT ĐỐI:
+- Khi user hỏi GIÁ LÚA: CHỈ dùng số liệu trong "BẢNG GIÁ LÚA HÔM NAY". Nếu giống không có, nói thẳng "chưa có dữ liệu".
+- Khi tư vấn kỹ thuật thu mua/kiểm định/logistics: ưu tiên trích "TÀI LIỆU THỊTRƯỜNG NỘI BỘ". Không bịa số liệu.
+- Tận dụng "THỜI TIẾT HIỆN TẠI" để cảnh báo (vd: mưa kéo dài → rủi ro ẩm lúa cao, nên hoãn thu mua hoặc ép sấy).
+- Cá nhân hoá xưng hô theo "HỒ SƠ NGƯỜI DÙNG" (vai trò Thương lái).
+- Khuyến nghị biên lợi nhuận hợp lý theo thực tế 50-150 đ/kg, không vẽ lợi nhuận phí lý.
+- Nếu không chắc, khuyên tham khảo thêm nhà máy xay xuất khẩu hoặc HTX.
 """
     }
 
@@ -62,7 +77,8 @@ QUY TẮC TUYỆT ĐỐI:
         profile: Profile? = null,
         weather: WeatherInfo? = null,
         ricePrices: List<RicePrice> = emptyList(),
-        knowledgeHits: List<KnowledgeBaseRepository.KnowledgeEntry> = emptyList()
+        knowledgeHits: List<KnowledgeBaseRepository.KnowledgeEntry> = emptyList(),
+        audience: KnowledgeBaseRepository.Audience = KnowledgeBaseRepository.Audience.FARMER
     ): Result<String> = withContext(Dispatchers.IO) {
         if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
@@ -70,7 +86,7 @@ QUY TẮC TUYỆT ĐỐI:
             ))
         }
         try {
-            val systemPrompt = buildSystemPrompt(profile, weather, ricePrices, knowledgeHits)
+            val systemPrompt = buildSystemPrompt(profile, weather, ricePrices, knowledgeHits, audience)
             val req = OpenRouterRequest(
                 model = MODEL,
                 messages = listOf(ChatMessage("system", systemPrompt)) + history
@@ -181,14 +197,19 @@ QUY TẮC:
         profile: Profile?,
         weather: WeatherInfo?,
         prices: List<RicePrice>,
-        kbHits: List<KnowledgeBaseRepository.KnowledgeEntry>
+        kbHits: List<KnowledgeBaseRepository.KnowledgeEntry>,
+        audience: KnowledgeBaseRepository.Audience
     ): String {
-        val parts = mutableListOf(SYSTEM_PROMPT_BASE.trim())
+        val base = when (audience) {
+            KnowledgeBaseRepository.Audience.TRADER -> TRADER_PROMPT_BASE.trim()
+            KnowledgeBaseRepository.Audience.FARMER -> FARMER_PROMPT_BASE.trim()
+        }
+        val parts = mutableListOf(base)
         parts += buildContextHeader()
         profile?.let { parts += buildProfileBlock(it) }
         weather?.let { parts += buildWeatherBlock(it) }
         if (prices.isNotEmpty()) parts += buildPriceContextBlock(prices)
-        if (kbHits.isNotEmpty()) parts += buildKnowledgeBlock(kbHits)
+        if (kbHits.isNotEmpty()) parts += buildKnowledgeBlock(kbHits, audience)
         return parts.joinToString("\n\n")
     }
 
@@ -245,8 +266,15 @@ QUY TẮC:
         return sb.toString()
     }
 
-    private fun buildKnowledgeBlock(hits: List<KnowledgeBaseRepository.KnowledgeEntry>): String {
-        val sb = StringBuilder("📚 TÀI LIỆU KHUYẾN NÔNG NỘI BỘ (ưu tiên trích dẫn):\n")
+    private fun buildKnowledgeBlock(
+        hits: List<KnowledgeBaseRepository.KnowledgeEntry>,
+        audience: KnowledgeBaseRepository.Audience
+    ): String {
+        val header = when (audience) {
+            KnowledgeBaseRepository.Audience.TRADER -> "📚 TÀI LIỆU THỊTRƯỜNG NỘI BỘ (ưu tiên trích dẫn):"
+            KnowledgeBaseRepository.Audience.FARMER -> "📚 TÀI LIỆU KHUYẾN NÔNG NỘI BỘ (ưu tiên trích dẫn):"
+        }
+        val sb = StringBuilder(header).append("\n")
         hits.forEachIndexed { idx, e ->
             sb.append("\n[${idx + 1}] ${e.title}\n")
             sb.append(e.content)

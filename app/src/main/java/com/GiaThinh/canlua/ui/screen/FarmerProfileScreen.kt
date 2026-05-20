@@ -104,7 +104,7 @@ fun FarmerProfileScreen(
     var pendingRole by remember { mutableStateOf<String?>(null) }
 
     // Sync state khi profile load lần đầu — chạy mỗi lần profile id đổi
-    LaunchedEffect(profile?.id) {
+    LaunchedEffect(profile?.uid) {
         profile?.let {
             name = it.name
             phone = it.phone

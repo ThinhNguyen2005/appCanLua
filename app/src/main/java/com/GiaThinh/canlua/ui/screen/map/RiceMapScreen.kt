@@ -1,6 +1,11 @@
 package com.GiaThinh.canlua.ui.screen.map
 
 import android.Manifest
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,25 +17,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.BuildConfig
+import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
@@ -66,6 +82,10 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -74,11 +94,11 @@ import java.util.Locale
 /**
  * Bản đồ vệ tinh hiển thị các thẻ đã quét/cân lúa thực địa.
  *
- * Tính năng:
- * - Hybrid map (vệ tinh + đường) để nhìn rõ cánh đồng.
- * - Marker xanh cho mỗi card có toạ độ; tự động cluster khi zoom out.
- * - Bottom sheet hiển thị tên + KL + bao + nút đi đến nhập cân.
- * - Permission flow: yêu cầu FINE/COARSE location nếu chưa có.
+ * v2.9 (Trader UX restructure):
+ * - Default camera = vị trí GPS user (không còn cố định Cần Thơ).
+ * - Search bar: lọc theo tên nông dân + giống lúa (đối sánh không dấu).
+ * - Filter chip: ngưỡng giá (`>0`, `≥7k`, `≥8k`, `≥9k đ/kg`) + giống phổ biến.
+ * - Toggle bộ lọc → ẩn/hiện hàng filter để giải phóng không gian map.
  *
  * @param navController điều hướng đến `weight_input/{cardId}`.
  */
@@ -88,22 +108,31 @@ fun RiceMapScreen(
     navController: NavController,
     viewModel: CardViewModel = hiltViewModel()
 ) {
-    // Guard: chưa cấu hình Maps API key → hiển thị placeholder, không khởi tạo GoogleMap
-    // để tránh crash "AuthFailure" + RuntimeException khi SDK chưa được cấp quyền.
     if (BuildConfig.MAPS_API_KEY.isBlank() ||
         BuildConfig.MAPS_API_KEY == "YOUR_GOOGLE_MAPS_API_KEY_HERE"
     ) {
         MapComingSoonPlaceholder()
         return
     }
+
     val cards by viewModel.cards.collectAsState()
-    // Mặc định: ĐBSCL (Cần Thơ) — zoom 10 đủ thấy hầu hết tỉnh.
-    val defaultLatLng = remember { LatLng(10.0452, 105.7469) }
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLatLng, 10f)
+    val context = LocalContext.current
+    // Hilt entry-point để inject LocationProvider trong @Composable mà không
+    // cần thay đổi viewmodel signature.
+    val locationProvider = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            LocationEntryPoint::class.java
+        ).locationProvider()
     }
 
-    // ── Permission ──
+    // Mặc định: ĐBSCL (fallback nếu chưa có permission/GPS).
+    val fallbackLatLng = remember { LatLng(10.0452, 105.7469) }
+    var userLatLng by remember { mutableStateOf<LatLng?>(null) }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(fallbackLatLng, 10f)
+    }
+
     val permissionState = rememberMultiplePermissionsState(
         permissions = listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -116,12 +145,56 @@ fun RiceMapScreen(
         }
     }
 
-    // Lọc các card có GPS hợp lệ
+    // Khi có permission → lấy GPS thật, animate camera tới vị trí user.
+    LaunchedEffect(permissionState.allPermissionsGranted) {
+        if (permissionState.allPermissionsGranted && userLatLng == null) {
+            locationProvider.getCurrentLocation()?.let { gp ->
+                val ll = LatLng(gp.lat, gp.lon)
+                userLatLng = ll
+                cameraPositionState.animate(
+                    update = CameraUpdateFactory.newLatLngZoom(ll, 13f),
+                    durationMs = 700
+                )
+            }
+        }
+    }
+
+    // === Filter state ===
+    var query by remember { mutableStateOf("") }
+    var showFilters by remember { mutableStateOf(false) }
+    var priceFilter by remember { mutableStateOf(PriceFilter.ALL) }
+    var varietyFilter by remember { mutableStateOf<String?>(null) }
+
     val mappable = remember(cards) {
         cards.filter { it.latitude != null && it.longitude != null }
     }
 
-    // ── Bottom sheet state ──
+    val filtered = remember(mappable, query, priceFilter, varietyFilter) {
+        val nq = query.normalizeForSearch()
+        mappable.filter { c ->
+            val matchesQuery = nq.isBlank() ||
+                c.name.normalizeForSearch().contains(nq) ||
+                c.riceVariety.normalizeForSearch().contains(nq) ||
+                c.fieldAddress.normalizeForSearch().contains(nq)
+            val matchesPrice = when (priceFilter) {
+                PriceFilter.ALL -> true
+                PriceFilter.HAS_PRICE -> c.pricePerKg > 0
+                PriceFilter.MIN_7K -> c.pricePerKg >= 7000
+                PriceFilter.MIN_8K -> c.pricePerKg >= 8000
+                PriceFilter.MIN_9K -> c.pricePerKg >= 9000
+            }
+            val matchesVariety = varietyFilter == null ||
+                c.riceVariety.equals(varietyFilter, ignoreCase = true)
+            matchesQuery && matchesPrice && matchesVariety
+        }
+    }
+
+    val varieties = remember(mappable) {
+        mappable.mapNotNull { it.riceVariety.takeIf { v -> v.isNotBlank() } }
+            .distinct()
+            .sorted()
+    }
+
     var selectedCard by remember { mutableStateOf<Card?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -130,10 +203,10 @@ fun RiceMapScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // Quay về vị trí mặc định ĐBSCL
+                    val target = userLatLng ?: fallbackLatLng
                     scope.launch {
                         cameraPositionState.animate(
-                            update = CameraUpdateFactory.newLatLngZoom(defaultLatLng, 10f),
+                            update = CameraUpdateFactory.newLatLngZoom(target, 13f),
                             durationMs = 600
                         )
                     }
@@ -141,55 +214,88 @@ fun RiceMapScreen(
                 containerColor = AppColors.GreenPrimary,
                 contentColor = Color.White
             ) {
-                Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí mặc định")
+                Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí của tôi")
             }
         },
         containerColor = AppColors.Surface
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            MapContent(
-                cards = mappable,
-                cameraPositionState = cameraPositionState,
-                hasLocationPermission = permissionState.allPermissionsGranted,
-                onCardSelected = { selectedCard = it },
-                onClusterTap = { items ->
-                    // Cluster có nhiều item → mở sheet cho item đầu (hoặc mở danh sách)
-                    if (items.size == 1) {
-                        selectedCard = items.first().card
-                    } else {
-                        // Zoom in tự nhiên — Maps utility tự handle, nhưng nếu cần force:
-                        scope.launch {
-                            val current = cameraPositionState.position.zoom
-                            cameraPositionState.animate(
-                                CameraUpdateFactory.zoomTo((current + 2f).coerceAtMost(18f)),
-                                durationMs = 350
-                            )
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // === Top control: search + filter (đặt NGOÀI map, không overlay) ===
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.Surface)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                SearchAndFilterBar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    onClear = { query = "" },
+                    showFilters = showFilters,
+                    onToggleFilters = { showFilters = !showFilters },
+                    activeFilters = (priceFilter != PriceFilter.ALL) || varietyFilter != null,
+                    matchCount = filtered.size,
+                    totalCount = mappable.size
+                )
+
+                AnimatedVisibility(
+                    visible = showFilters,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    FilterChipsRow(
+                        priceFilter = priceFilter,
+                        onPriceChange = { priceFilter = it },
+                        varieties = varieties,
+                        selectedVariety = varietyFilter,
+                        onVarietyChange = { varietyFilter = it }
+                    )
+                }
+            }
+
+            // === Map area: chiếm phần còn lại, có viền bo và padding ===
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(20.dp))
+            ) {
+                MapContent(
+                    cards = filtered,
+                    cameraPositionState = cameraPositionState,
+                    hasLocationPermission = permissionState.allPermissionsGranted,
+                    onCardSelected = { selectedCard = it },
+                    onClusterTap = { items ->
+                        if (items.size == 1) {
+                            selectedCard = items.first().card
+                        } else {
+                            scope.launch {
+                                val current = cameraPositionState.position.zoom
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.zoomTo((current + 2f).coerceAtMost(18f)),
+                                    durationMs = 350
+                                )
+                            }
                         }
                     }
-                }
-            )
-
-            // Header overlay (legend)
-            HeaderLegend(
-                total = mappable.size,
-                modifier = Modifier
-                    .padding(12.dp)
-                    .align(Alignment.TopCenter)
-            )
-
-            // Empty hint khi chưa có card nào có GPS
-            if (mappable.isEmpty()) {
-                EmptyMapHint(
-                    permissionGranted = permissionState.allPermissionsGranted,
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .align(Alignment.BottomCenter)
                 )
+
+                if (filtered.isEmpty()) {
+                    EmptyMapHint(
+                        permissionGranted = permissionState.allPermissionsGranted,
+                        hasFilters = query.isNotBlank() ||
+                            priceFilter != PriceFilter.ALL ||
+                            varietyFilter != null,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .align(Alignment.BottomCenter)
+                    )
+                }
             }
         }
     }
 
-    // ── Bottom Sheet ──
     selectedCard?.let { card ->
         ModalBottomSheet(
             onDismissRequest = { selectedCard = null },
@@ -205,6 +311,190 @@ fun RiceMapScreen(
             )
         }
     }
+}
+
+// ────────────────────── Search + Filter ──────────────────────
+
+private enum class PriceFilter { ALL, HAS_PRICE, MIN_7K, MIN_8K, MIN_9K }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchAndFilterBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+    showFilters: Boolean,
+    onToggleFilters: () -> Unit,
+    activeFilters: Boolean,
+    matchCount: Int,
+    totalCount: Int
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(AppColors.CardBg.copy(alpha = 0.96f))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = {
+                Text(
+                    "Tìm tên / giống lúa / địa chỉ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextHint
+                )
+            },
+            leadingIcon = {
+                Icon(Icons.Filled.Search, contentDescription = null, tint = AppColors.TextHint)
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = onClear) {
+                        Icon(Icons.Filled.Close, contentDescription = "Xoá")
+                    }
+                }
+            },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .height(54.dp)
+        )
+
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(
+                    if (activeFilters || showFilters)
+                        AppColors.GreenPrimary.copy(alpha = 0.18f)
+                    else
+                        Color.Transparent
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            IconButton(onClick = onToggleFilters) {
+                Icon(
+                    Icons.Filled.FilterList,
+                    contentDescription = "Bộ lọc",
+                    tint = if (activeFilters) AppColors.GreenPrimary else AppColors.TextSecondary
+                )
+            }
+        }
+    }
+
+    if (totalCount > 0 && (query.isNotBlank() || activeFilters)) {
+        Spacer(Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Black.copy(alpha = 0.55f))
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(
+                "Hiện $matchCount / $totalCount điểm",
+                color = Color.White,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterChipsRow(
+    priceFilter: PriceFilter,
+    onPriceChange: (PriceFilter) -> Unit,
+    varieties: List<String>,
+    selectedVariety: String?,
+    onVarietyChange: (String?) -> Unit
+) {
+    Column(modifier = Modifier.padding(top = 8.dp)) {
+        Text(
+            "Giá lúa",
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.TextHint,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(PriceFilter.entries.size) { idx ->
+                val pf = PriceFilter.entries[idx]
+                FilterChip(
+                    selected = priceFilter == pf,
+                    onClick = { onPriceChange(pf) },
+                    label = { Text(pf.label()) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AppColors.GreenPrimary,
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+        }
+
+        if (varieties.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Giống lúa",
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.TextHint,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(varieties.size + 1) { i ->
+                    if (i == 0) {
+                        FilterChip(
+                            selected = selectedVariety == null,
+                            onClick = { onVarietyChange(null) },
+                            label = { Text("Tất cả") }
+                        )
+                    } else {
+                        val v = varieties[i - 1]
+                        FilterChip(
+                            selected = selectedVariety == v,
+                            onClick = {
+                                onVarietyChange(if (selectedVariety == v) null else v)
+                            },
+                            label = { Text(v) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun PriceFilter.label(): String = when (this) {
+    PriceFilter.ALL -> "Tất cả"
+    PriceFilter.HAS_PRICE -> "Đã có giá"
+    PriceFilter.MIN_7K -> "≥ 7,000 đ"
+    PriceFilter.MIN_8K -> "≥ 8,000 đ"
+    PriceFilter.MIN_9K -> "≥ 9,000 đ"
+}
+
+private fun String.normalizeForSearch(): String {
+    val lowered = lowercase()
+    val noDiacritics = java.text.Normalizer.normalize(lowered, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+        .replace("đ", "d")
+    return noDiacritics
+}
+
+// LazyRow needs items() — import shim
+private inline fun androidx.compose.foundation.lazy.LazyListScope.items(
+    count: Int,
+    crossinline itemContent: @Composable (Int) -> Unit
+) {
+    items(count = count) { idx -> itemContent(idx) }
 }
 
 // ────────────────────── Map Content ──────────────────────
@@ -234,12 +524,11 @@ private fun MapContent(
         ),
         uiSettings = MapUiSettings(
             zoomControlsEnabled = false,
-            myLocationButtonEnabled = true,
+            myLocationButtonEnabled = false,
             mapToolbarEnabled = false,
             compassEnabled = true
         )
     ) {
-        // Clustering — built-in của maps-compose-utils
         com.google.maps.android.compose.clustering.Clustering(
             items = items,
             onClusterClick = { cluster ->
@@ -250,9 +539,7 @@ private fun MapContent(
                 onCardSelected(item.card)
                 true
             },
-            clusterContent = { cluster ->
-                ClusterBubble(count = cluster.size)
-            }
+            clusterContent = { cluster -> ClusterBubble(count = cluster.size) }
         )
     }
 }
@@ -289,7 +576,6 @@ private fun CardSummaryBottomSheet(
             .padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Header — avatar + name
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -323,7 +609,6 @@ private fun CardSummaryBottomSheet(
             }
         }
 
-        // Stats row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -342,23 +627,44 @@ private fun CardSummaryBottomSheet(
             )
         }
 
-        if (card.riceVariety.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AppColors.Info.copy(alpha = 0.12f))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
+        if (card.pricePerKg > 0 || card.riceVariety.isNotBlank()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    "Giống: ${card.riceVariety}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.Info
-                )
+                if (card.riceVariety.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(AppColors.Info.copy(alpha = 0.12f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            "Giống: ${card.riceVariety}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.Info
+                        )
+                    }
+                }
+                if (card.pricePerKg > 0) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(AppColors.GreenPrimary.copy(alpha = 0.14f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            "Giá: ${formatNumber(card.pricePerKg)} đ/kg",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.GreenPrimary
+                        )
+                    }
+                }
             }
         }
 
-        // Địa chỉ ruộng (reverse-geocoded khi tạo thẻ) — quan trọng cho thương lái
         if (card.fieldAddress.isNotBlank()) {
             ContactInfoRow(
                 icon = Icons.Filled.LocationOn,
@@ -368,11 +674,10 @@ private fun CardSummaryBottomSheet(
             )
         }
 
-        // SDT thương lái — hiển thị nếu có
         if (card.traderPhone.isNotBlank()) {
             ContactInfoRow(
                 icon = Icons.Filled.Phone,
-                label = "SDT thương lái",
+                label = "SĐT thương lái",
                 value = card.traderPhone,
                 tint = AppColors.Info
             )
@@ -382,9 +687,7 @@ private fun CardSummaryBottomSheet(
 
         Button(
             onClick = onWeighClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
+            modifier = Modifier.fillMaxWidth().height(54.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
             shape = RoundedCornerShape(14.dp)
         ) {
@@ -413,12 +716,7 @@ private fun MapStatBox(
             .padding(vertical = 12.dp, horizontal = 12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = AppColors.TextHint,
-                modifier = Modifier.size(16.dp)
-            )
+            Icon(icon, null, tint = AppColors.TextHint, modifier = Modifier.size(16.dp))
             Spacer(Modifier.size(6.dp))
             Text(label, style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint)
         }
@@ -432,10 +730,6 @@ private fun MapStatBox(
     }
 }
 
-/**
- * Row liệt kê thông tin liên hệ — địa chỉ ruộng / SDT thương lái.
- * Hiển thị leading icon bên trái, label nhỏ bên trên, value đậm bên dưới.
- */
 @Composable
 private fun ContactInfoRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -458,22 +752,13 @@ private fun ContactInfoRow(
                 .background(tint.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.size(10.dp))
         Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint)
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = AppColors.TextHint
-            )
-            Text(
-                text = value,
+                value,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.TextPrimary,
@@ -484,37 +769,10 @@ private fun ContactInfoRow(
     }
 }
 
-// ────────────────────── Overlays ──────────────────────
-
-@Composable
-private fun HeaderLegend(total: Int, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.Black.copy(alpha = 0.55f))
-            .padding(horizontal = 14.dp, vertical = 8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.GreenLight)
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = "$total điểm cân lúa",
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
 @Composable
 private fun EmptyMapHint(
     permissionGranted: Boolean,
+    hasFilters: Boolean,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -534,20 +792,22 @@ private fun EmptyMapHint(
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (permissionGranted)
-                        "Chưa có thẻ cân nào có toạ độ GPS"
-                    else
-                        "Cần quyền vị trí để hiển thị bản đồ",
+                    text = when {
+                        !permissionGranted -> "Cần quyền vị trí để hiển thị bản đồ"
+                        hasFilters -> "Không có điểm nào khớp bộ lọc"
+                        else -> "Chưa có thẻ cân nào có toạ độ GPS"
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = if (permissionGranted)
-                        "Tạo thẻ cân mới ngoài đồng — toạ độ sẽ tự ghi nhận."
-                    else
-                        "Cấp quyền vị trí trong Cài đặt rồi quay lại.",
+                    text = when {
+                        !permissionGranted -> "Cấp quyền vị trí trong Cài đặt rồi quay lại."
+                        hasFilters -> "Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm."
+                        else -> "Tạo thẻ cân mới ngoài đồng — toạ độ sẽ tự ghi nhận."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextSecondary,
                     textAlign = TextAlign.Start
@@ -559,10 +819,6 @@ private fun EmptyMapHint(
 
 // ────────────────────── Helpers ──────────────────────
 
-/**
- * Cluster item wrapper — mỗi card 1 vị trí trên map.
- * Title/snippet để Maps SDK có info nội bộ; UI chính dùng bottom sheet.
- */
 data class RiceClusterItem(
     val card: Card,
     private val latLng: LatLng
@@ -582,14 +838,15 @@ private fun formatNumber(value: Double): String =
 
 private fun formatDate(date: java.util.Date): String = dateFormat.format(date)
 
+// === Hilt entry-point để inject LocationProvider trong @Composable ===
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+private interface LocationEntryPoint {
+    fun locationProvider(): LocationProvider
+}
+
 // ────────────────────── Placeholder khi thiếu Maps API key ──────────────────────
 
-/**
- * Hiển thị khi `BuildConfig.MAPS_API_KEY` rỗng — tránh khởi tạo `GoogleMap`
- * (sẽ throw `RuntimeException`/AuthFailure → văng app).
- *
- * Thiết kế premium, đồng bộ với theme: gradient xanh + icon map + hint text.
- */
 @Composable
 private fun MapComingSoonPlaceholder() {
     Box(
@@ -610,7 +867,6 @@ private fun MapComingSoonPlaceholder() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(32.dp)
         ) {
-            // Icon container
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -618,33 +874,22 @@ private fun MapComingSoonPlaceholder() {
                     .background(AppColors.GreenPrimary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Map,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(48.dp)
-                )
+                Icon(Icons.Filled.Map, null, tint = AppColors.GreenPrimary, modifier = Modifier.size(48.dp))
             }
-
             Text(
-                text = "Bản đồ thu mua",
+                "Bản đồ thu mua",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary,
                 textAlign = TextAlign.Center
             )
-
             Text(
-                text = "Tính năng đang trong giai đoạn phát triển.\nSẽ sớm ra mắt trong bản cập nhật tiếp theo.",
+                "Tính năng đang trong giai đoạn phát triển.\nSẽ sớm ra mắt trong bản cập nhật tiếp theo.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-
-            Spacer(Modifier.height(8.dp))
-
-            // Badge "Coming soon"
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
@@ -652,7 +897,7 @@ private fun MapComingSoonPlaceholder() {
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "🚧  Sắp ra mắt",
+                    "🚧  Sắp ra mắt",
                     style = MaterialTheme.typography.labelMedium,
                     color = AppColors.GreenPrimary,
                     fontWeight = FontWeight.SemiBold
@@ -661,4 +906,3 @@ private fun MapComingSoonPlaceholder() {
         }
     }
 }
-

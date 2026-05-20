@@ -61,6 +61,7 @@ import androidx.navigation.NavController
 import com.GiaThinh.canlua.repository.SyncStatus
 import com.GiaThinh.canlua.ui.component.CardItem
 import com.GiaThinh.canlua.ui.component.CreateCardDialog
+import com.GiaThinh.canlua.ui.component.CreateCardMode
 import com.GiaThinh.canlua.ui.component.SkeletonList
 import com.GiaThinh.canlua.ui.component.SyncStatusPulse
 import com.GiaThinh.canlua.ui.theme.AppColors
@@ -103,7 +104,9 @@ fun CardListScreen(
         }
     }
 
-    val farmerName = profileState?.name ?: "Nông dân"
+    // Owner = người đang đăng nhập; counterparty tùy theo role (farmer vs trader).
+    val isTrader = profileState?.role == "TRADER"
+    val ownerName = profileState?.name ?: if (isTrader) "Thương lái" else "Nông dân"
 
     val numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
     val today = Calendar.getInstance()
@@ -409,22 +412,28 @@ fun CardListScreen(
         }
     }
 
-    // Create Dialog
+    // Create Dialog — reuse cho cả farmer & trader (mode swap label).
     if (showCreateDialog) {
         CreateCardDialog(
-            farmerName = farmerName,
+            ownerName = ownerName,
+            mode = if (isTrader) CreateCardMode.TRADER else CreateCardMode.FARMER,
             onDismiss = { showCreateDialog = false },
-            onCreate = { traderName, traderPhone, variety, season, moisture, price, deposit ->
+            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit ->
+                // FARMER: name=farmer (owner), traderName=counterparty.
+                // TRADER: name=farmer (counterparty), traderName=trader (owner).
+                val cardName = if (isTrader) counterpartyName else ownerName
+                val cardTraderName = if (isTrader) ownerName else counterpartyName
+                val cardTraderPhone = if (isTrader) profileState?.phone.orEmpty() else counterpartyPhone
                 viewModel.createNewCard(
-                    name = farmerName,
+                    name = cardName,
                     cccd = "",
-                    traderName = traderName,
+                    traderName = cardTraderName,
                     pricePerKg = price,
                     depositAmount = deposit,
                     riceVariety = variety,
                     moisturePercent = moisture,
                     seasonLabel = season,
-                    traderPhone = traderPhone
+                    traderPhone = cardTraderPhone
                 )
             }
         )

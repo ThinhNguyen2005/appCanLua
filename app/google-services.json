@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "197777602230-jv6f3bi5m87ol5nalgv6qojelncl1d6u.apps.googleusercontent.com",
+          "client_id": "197777602230-sjrv1fr708k836jir3dhmdhbcomnsads.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.GiaThinh.canlua",
-            "certificate_hash": "b35fc2a03bb76920b9d63848a4090c665eefc3c0"
+            "certificate_hash": "9ecc998d1474c7c2bb5736260d6162b342fb3b2a"
           }
         },
         {

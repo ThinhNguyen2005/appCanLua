@@ -19,6 +19,7 @@ import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.ui.MainScreen
 import com.GiaThinh.canlua.ui.screen.AuthScreen
 import com.GiaThinh.canlua.ui.screen.ProfileSetupScreen
+import com.GiaThinh.canlua.ui.screen.RoleRequestScreen
 import com.GiaThinh.canlua.ui.theme.CanLuaTheme
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
@@ -49,7 +50,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Khi state thay đổi (login mới, profile vừa save, signOut), điều hướng lại.
+                // Bỏ qua khi đang ở route phụ ('role_request') để tránh popup ngược về profile_setup.
                 LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup) {
+                    val currentRoute = rootNavController.currentDestination?.route
+                    if (currentRoute == "role_request") return@LaunchedEffect
+
                     val target = when {
                         !authState.isSignedIn -> "login"
                         authState.needsProfileSetup == null -> null // chờ
@@ -57,7 +62,7 @@ class MainActivity : ComponentActivity() {
                         else -> "main"
                     } ?: return@LaunchedEffect
 
-                    if (rootNavController.currentDestination?.route != target) {
+                    if (currentRoute != target) {
                         rootNavController.navigate(target) {
                             popUpTo(rootNavController.graph.id) { inclusive = true }
                         }
@@ -91,6 +96,12 @@ class MainActivity : ComponentActivity() {
                                 authViewModel.markProfileCompleted()
                             }
                         )
+                    }
+
+                    // Route 'role_request' phải nằm trong root NavHost vì được trigger
+                    // từ ProfileSetupScreen (chưa vào 'main' → AppNavHost chưa tồn tại).
+                    composable("role_request") {
+                        RoleRequestScreen(navController = rootNavController)
                     }
 
                     composable("main") {

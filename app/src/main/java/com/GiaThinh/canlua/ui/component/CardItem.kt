@@ -66,38 +66,20 @@ fun CardItem(
         }
     )
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(AppColors.Error.copy(alpha = 0.9f))
-                    .padding(end = 24.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = "Xoá",
-                    tint = AppColors.CardBg,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        },
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = !card.isLocked,
-        modifier = modifier
-    ) {
+    // Card content tách riêng để tái sử dụng cho 2 nhánh (locked / unlocked).
+    // Locked → render thẳng Card không qua SwipeToDismissBox để tránh
+    // backgroundContent màu đỏ hắt qua các cạnh (gây "shadow leak" 3 góc).
+    val cardContent = @Composable {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (card.isLocked) 0.dp else 2.dp
+            ),
             colors = CardDefaults.cardColors(
-                containerColor = if (card.isLocked) AppColors.LockedBg.copy(alpha = 0.3f)
+                containerColor = if (card.isLocked) AppColors.LockedBg
                 else AppColors.CardBg
             )
         ) {
@@ -236,6 +218,39 @@ fun CardItem(
                     }
                 }
             }
+        }
+    }
+
+    // Locked → render trực tiếp, không có swipe-to-delete (vì swipe đã disabled).
+    // Tránh backgroundContent đỏ hắt qua các cạnh khi user vô tình kéo nhẹ.
+    if (card.isLocked) {
+        Box(modifier = modifier) { cardContent() }
+    } else {
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(AppColors.Error.copy(alpha = 0.9f))
+                        .padding(end = 24.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Xoá",
+                        tint = AppColors.CardBg,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            },
+            enableDismissFromStartToEnd = false,
+            enableDismissFromEndToStart = true,
+            modifier = modifier
+        ) {
+            cardContent()
         }
     }
 }

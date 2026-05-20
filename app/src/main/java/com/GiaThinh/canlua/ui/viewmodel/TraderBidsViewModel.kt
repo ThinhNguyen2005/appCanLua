@@ -33,6 +33,15 @@ class TraderBidsViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    /** Bảng giá thị trường — Room đã merge mock + Firestore của tất cả thương lái. */
+    val marketPrices: StateFlow<List<com.GiaThinh.canlua.data.model.RicePrice>> =
+        marketRepository.getAllPrices()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+
     val profile = profileRepository.latestProfile()
         .stateIn(
             scope = viewModelScope,
@@ -42,6 +51,12 @@ class TraderBidsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(TraderBidUiState())
     val uiState: StateFlow<TraderBidUiState> = _uiState.asStateFlow()
+
+    init {
+        // Đảm bảo Trader thấy được bảng giá thị trường (mock + bid của các thương lái khác)
+        // ngay khi mở tab Rao mua, không cần đợi MarketViewModel bị mount.
+        marketRepository.startFirestoreSync()
+    }
 
     fun submitBid(
         variety: String,

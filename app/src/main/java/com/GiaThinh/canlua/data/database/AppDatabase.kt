@@ -34,7 +34,7 @@ import com.GiaThinh.canlua.data.converter.DateConverter
         WeatherCache::class,
         NewsArticle::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -66,7 +66,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_6_7,
                     MIGRATION_7_8,
                     MIGRATION_8_9,
-                    MIGRATION_9_10
+                    MIGRATION_9_10,
+                    MIGRATION_10_11
                 ).build()
                 INSTANCE = instance
                 instance
@@ -214,6 +215,37 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE cards ADD COLUMN traderPhone TEXT NOT NULL DEFAULT ''")
                 database.execSQL("ALTER TABLE cards ADD COLUMN fieldAddress TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        /**
+         * Phase 3 — Profile keyed by Firebase UID.
+         * Bảng cũ dùng `id INTEGER autoGenerate` + DAO `LIMIT 1` → các tài khoản trên cùng máy
+         * ghi đè role của nhau. Drop & recreate là cách duy nhất chữa triệt để vì không có
+         * đường map row cũ sang UID đúng (1 máy có thể từng login nhiều UID khác nhau).
+         * Trade-off: user vào lại ProfileSetup 1 lần — chấp nhận được vì đây là bug fix.
+         */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("DROP TABLE IF EXISTS profiles")
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `profiles` (
+                        `uid` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `phone` TEXT NOT NULL,
+                        `region` TEXT NOT NULL,
+                        `note` TEXT NOT NULL,
+                        `role` TEXT NOT NULL,
+                        `cccd` TEXT NOT NULL,
+                        `username` TEXT NOT NULL,
+                        `email` TEXT NOT NULL,
+                        `roleGrantedBy` TEXT NOT NULL DEFAULT 'self',
+                        `roleGrantedAt` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`uid`)
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

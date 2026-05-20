@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -88,18 +90,23 @@ fun MainScreen() {
     // Các route con mà vẫn hiển thị bottom bar (detail, weight input...)
     val showBottomBar = (isOnTabScreen || currentRoute in listOf("sync_status")) && !isImeVisible
 
-    // Title theo tab/route — riêng AI Chat dùng tên brand thay cho label tab.
+    // Title theo tab/route — riêng AI Chat đổi theo audience để truyền tải đúng identity của bot.
     val topBarTitle = when (currentRoute) {
-        BottomNavItem.AI_CHAT.route -> "Trợ Lý Khuyến Nông"
+        BottomNavItem.AI_CHAT.route ->
+            if (isTrader) "Chuyên Gia Thị Trường" else "Trợ Lý Khuyến Nông"
         "settings" -> "Cài Đặt"
         "sync_status" -> "Trạng Thái Đồng Bộ"
+        "trader_transactions" -> "Sổ Giao Dịch"
         else -> currentTab?.label ?: "Cân Lúa"
     }
 
-    // Subtitle hiện chỉ dành cho AI Chat
-    val topBarSubtitle = if (currentRoute == BottomNavItem.AI_CHAT.route) "Được hỗ trợ bởi Gemini" else null
+    // Subtitle — AI Chat hiện brand, các route khác ẩn.
+    val topBarSubtitle = when (currentRoute) {
+        BottomNavItem.AI_CHAT.route -> "Được hỗ trợ bởi Gemini"
+        else -> null
+    }
 
-    val showTopBar = currentRoute in navItems.map { it.route }
+    val showTopBar = currentRoute in navItems.map { it.route } || currentRoute == "trader_transactions"
 
     // Drawer state cho AI Chat (lifted lên đây để TopBar có thể mở drawer).
     val aiChatDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -126,18 +133,39 @@ fun MainScreen() {
                         }
                     },
                     navigationIcon = {
-                        if (currentRoute == BottomNavItem.AI_CHAT.route) {
-                            IconButton(onClick = {
-                                scope.launch { aiChatDrawerState.open() }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Menu,
-                                    contentDescription = "Mở danh sách phiên chat"
-                                )
+                        when {
+                            currentRoute == BottomNavItem.AI_CHAT.route -> {
+                                IconButton(onClick = {
+                                    scope.launch { aiChatDrawerState.open() }
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Menu,
+                                        contentDescription = "Mở danh sách phiên chat"
+                                    )
+                                }
+                            }
+                            currentRoute == "trader_transactions" -> {
+                                IconButton(onClick = { navController.popBackStack() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Quay lại"
+                                    )
+                                }
                             }
                         }
                     },
                     actions = {
+                        // Trader ở tab Cân Lúa → icon QR scan để verify giao dịch nhanh.
+                        if (isTrader && currentRoute == BottomNavItem.SCALE.route) {
+                            IconButton(onClick = {
+                                navController.navigate("qr_scan")
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.QrCodeScanner,
+                                    contentDescription = "Quét mã QR"
+                                )
+                            }
+                        }
                         if (isOnTabScreen) { // Show Settings icon on any main tab for easy access
                             IconButton(onClick = {
                                 navController.navigate("settings")

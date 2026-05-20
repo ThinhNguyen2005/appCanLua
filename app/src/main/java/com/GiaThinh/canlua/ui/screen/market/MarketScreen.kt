@@ -14,36 +14,55 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.GiaThinh.canlua.data.firestore.FirestoreRicePrice
+import com.GiaThinh.canlua.ui.component.market.BidEditorSheet
 import com.GiaThinh.canlua.ui.component.market.MarketSkeletonList
 import com.GiaThinh.canlua.ui.component.market.NewsSection
 import com.GiaThinh.canlua.ui.component.market.PriceTrendChart
 import com.GiaThinh.canlua.ui.component.market.RicePriceCard
 import com.GiaThinh.canlua.ui.component.market.WeatherWidget
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.util.isScrollingUp
 import com.GiaThinh.canlua.ui.viewmodel.MarketViewModel
 import com.GiaThinh.canlua.ui.viewmodel.NewsViewModel
+import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
+import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Module 2 — Bảng Tin Giá Lúa & Thị Trường
@@ -57,7 +76,9 @@ import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
 fun MarketScreen(
     viewModel: MarketViewModel = hiltViewModel(),
     weatherViewModel: WeatherViewModel = hiltViewModel(),
-    newsViewModel: NewsViewModel = hiltViewModel()
+    newsViewModel: NewsViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    bidsViewModel: TraderBidsViewModel = hiltViewModel()
 ) {
     val prices by viewModel.prices.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -77,93 +98,152 @@ fun MarketScreen(
         if (granted.values.any { it }) weatherViewModel.onPermissionGranted()
     }
 
+    val profile by profileViewModel.profile.collectAsState(initial = null)
+    val isTrader = profile?.role == "TRADER"
+    val myBids by bidsViewModel.myBids.collectAsState()
+    val bidUiState by bidsViewModel.uiState.collectAsState()
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val pullState = rememberPullToRefreshState()
+    val listState = rememberLazyListState()
+    val fabExpanded = listState.isScrollingUp() || myBids.isEmpty()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    PullToRefreshBox(
-        modifier = Modifier.fillMaxSize(),
-        state = pullState,
-        isRefreshing = isLoading && prices.isNotEmpty(), // ẩn indicator nếu chưa có data, để Shimmer lo
-        onRefresh = {
-            viewModel.refresh()
-            weatherViewModel.load(forceRefresh = true)
-            newsViewModel.refresh()
+    // State đóng/mở editor sheet — null = closed; FirestoreRicePrice() = create; existing = edit.
+    var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
+    var showEditor by remember { mutableStateOf(false) }
+
+    // Hiển thị snackbar khi có message từ bidsViewModel.
+    LaunchedEffect(bidUiState.successMessage, bidUiState.errorMessage) {
+        bidUiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            bidsViewModel.clearMessage()
+            showEditor = false
         }
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        bidUiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            bidsViewModel.clearMessage()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            if (isTrader) {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        editingBid = null
+                        showEditor = true
+                    },
+                    expanded = fabExpanded,
+                    icon = {
+                        Icon(Icons.Filled.Add, contentDescription = "Đăng giá mới")
+                    },
+                    text = { Text("Đăng giá mới", fontWeight = FontWeight.SemiBold) },
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = AppColors.CardBg
+                )
+            }
+        },
+        containerColor = Color.Transparent
+    ) { padding ->
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            state = pullState,
+            isRefreshing = isLoading && prices.isNotEmpty(),
+            onRefresh = {
+                viewModel.refresh()
+                weatherViewModel.load(forceRefresh = true)
+                newsViewModel.refresh()
+            }
         ) {
-            // Weather widget
-            item {
-                WeatherWidget(
-                    weather = weatherState.weather,
-                    isLoading = weatherState.isLoading,
-                    errorMessage = weatherState.errorMessage,
-                    isStale = weatherState.isStale,
-                    onRefresh = {
-                        permissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
-                            )
-                        )
-                        weatherViewModel.load(forceRefresh = true)
-                    }
-                )
-            }
-
-            // News section — tình hình lúa/gạo/thời tiết từ báo chí
-            item {
-                NewsSection(
-                    articles = newsArticles,
-                    selectedTopic = newsTopic,
-                    isRefreshing = newsUi.isRefreshing,
-                    errorMessage = newsUi.errorMessage,
-                    onSelectTopic = newsViewModel::selectTopic,
-                    onRefresh = newsViewModel::refresh,
-                    onDismissError = newsViewModel::clearError
-                )
-            }
-
-            // Section title
-            item {
-                SectionTitle(
-                    title = "Bảng giá thu mua",
-                    subtitle = "Cập nhật từ thương lái uy tín · ${prices.size} kết quả"
-                )
-            }
-
-            // Filter chips
-            item {
-                FilterChipsRow(
-                    selectedTrend = filter.trend,
-                    onSelectTrend = { viewModel.setTrendFilter(it) }
-                )
-            }
-
-            // Price cards — Shimmer skeleton khi mạng yếu / lần đầu
-            if (isLoading && prices.isEmpty()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 item {
-                    MarketSkeletonList(items = 4)
-                }
-            } else {
-                items(prices, key = { it.id }) { price ->
-                    RicePriceCard(
-                        price = price,
-                        onClick = {
-                            viewModel.selectVariety(price.variety)
+                    WeatherWidget(
+                        weather = weatherState.weather,
+                        isLoading = weatherState.isLoading,
+                        errorMessage = weatherState.errorMessage,
+                        isStale = weatherState.isStale,
+                        onRefresh = {
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                            weatherViewModel.load(forceRefresh = true)
                         }
                     )
                 }
-            }
 
-            // Footer note
-            item {
-                FooterNote()
-                Spacer(Modifier.height(80.dp))
+                item {
+                    NewsSection(
+                        articles = newsArticles,
+                        selectedTopic = newsTopic,
+                        isRefreshing = newsUi.isRefreshing,
+                        errorMessage = newsUi.errorMessage,
+                        onSelectTopic = newsViewModel::selectTopic,
+                        onRefresh = newsViewModel::refresh,
+                        onDismissError = newsViewModel::clearError
+                    )
+                }
+
+                // Section "Giá rao của bạn" — chỉ hiện cho TRADER đã có bids.
+                if (isTrader && myBids.isNotEmpty()) {
+                    item {
+                        SectionTitle(
+                            title = "Giá rao của bạn",
+                            subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
+                        )
+                    }
+                    items(myBids, key = { "mine_${it.id}" }) { bid ->
+                        MyBidCard(
+                            bid = bid,
+                            onEdit = {
+                                editingBid = bid
+                                showEditor = true
+                            },
+                            onDelete = { bidsViewModel.deleteBid(bid.id) }
+                        )
+                    }
+                }
+
+                item {
+                    SectionTitle(
+                        title = "Bảng giá thu mua",
+                        subtitle = "Cập nhật từ thương lái uy tín · ${prices.size} kết quả"
+                    )
+                }
+
+                item {
+                    FilterChipsRow(
+                        selectedTrend = filter.trend,
+                        onSelectTrend = { viewModel.setTrendFilter(it) }
+                    )
+                }
+
+                if (isLoading && prices.isEmpty()) {
+                    item { MarketSkeletonList(items = 4) }
+                } else {
+                    items(prices, key = { it.id }) { price ->
+                        RicePriceCard(
+                            price = price,
+                            onClick = { viewModel.selectVariety(price.variety) }
+                        )
+                    }
+                }
+
+                item {
+                    FooterNote()
+                    Spacer(Modifier.height(80.dp))
+                }
             }
         }
     }
@@ -194,6 +274,24 @@ fun MarketScreen(
                     onTimeRangeChange = { viewModel.setTimeRange(it) }
                 )
             }
+        }
+    }
+
+    // Bid editor sheet — chỉ hiện cho trader.
+    if (showEditor && isTrader) {
+        ModalBottomSheet(
+            onDismissRequest = { showEditor = false },
+            sheetState = editorSheetState,
+            containerColor = AppColors.Surface
+        ) {
+            BidEditorSheet(
+                existing = editingBid,
+                isSaving = bidUiState.isSaving,
+                onSubmit = { variety, pMin, pMax, region, trend, note, existingId ->
+                    bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
+                },
+                onDismiss = { showEditor = false }
+            )
         }
     }
 }
@@ -267,6 +365,100 @@ private fun FilterChipsRow(
                     fontWeight = FontWeight.SemiBold,
                     color = if (selected) color else AppColors.TextSecondary
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Card hiển thị bid riêng của trader trong section "Giá rao của bạn".
+ * Tap → edit; long-press / icon delete → xoá.
+ */
+@Composable
+private fun MyBidCard(
+    bid: FirestoreRicePrice,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val numberFormat = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
+    val trendColor = when (bid.trend) {
+        "UP" -> AppColors.Success
+        "DOWN" -> AppColors.Error
+        else -> AppColors.Info
+    }
+    val trendLabel = when (bid.trend) {
+        "UP" -> "Đang tăng"
+        "DOWN" -> "Đang giảm"
+        else -> "Ổn định"
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(AppColors.GreenSurface)
+            .clickable(onClick = onEdit)
+            .padding(16.dp)
+    ) {
+        Column {
+            androidx.compose.foundation.layout.Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = bid.variety.ifBlank { "—" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(trendColor.copy(alpha = 0.16f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = trendLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = trendColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "${numberFormat.format(bid.priceMin.toLong())} – ${numberFormat.format(bid.priceMax.toLong())} đ/kg",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.GreenPrimary
+            )
+            if (bid.region.isNotBlank()) {
+                Text(
+                    text = "Khu vực: ${bid.region}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextSecondary
+                )
+            }
+            if (bid.note.isNotBlank()) {
+                Text(
+                    text = bid.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextHint,
+                    maxLines = 2
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, androidx.compose.ui.Alignment.End)
+            ) {
+                androidx.compose.material3.TextButton(onClick = onDelete) {
+                    Text("Xoá", color = AppColors.Error)
+                }
+                androidx.compose.material3.TextButton(onClick = onEdit) {
+                    Text("Sửa", color = AppColors.GreenPrimary, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

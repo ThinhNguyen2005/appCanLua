@@ -15,13 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
@@ -62,8 +57,13 @@ fun WeightMetricsCard(
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isLocked) AppColors.LockedBg else AppColors.CardBg
+        ),
+        // Locked state: bỏ elevation để tránh shadow chồng chéo gây ảo giác "shadow quá đà".
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isLocked) 0.dp else 2.dp
+        ),
         modifier = Modifier.fillMaxWidth().animateContentSize()
     ) {
         Column(
@@ -116,99 +116,55 @@ fun WeightMetricsCard(
                 }
             }
 
-            val context = LocalContext.current
-            // Trừ bì + Tạp chất + Độ ẩm
+            // Trừ bì + Tạp chất + Độ ẩm — OutlinedTextField đã có `enabled = !isLocked`,
+            // không cần overlay Box .clickable rườm rà (gây cảm giác "mờ và shadow quá đà").
+            // Khi locked, người dùng vẫn nhìn thấy giá trị nhưng không tap được — clean & predictable.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Trừ bì
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = bagText,
-                        onValueChange = {
-                            if (!isLocked) {
-                                bagText = it
-                                onBagWeightChange(it.toDoubleOrNull() ?: 0.0)
-                            }
-                        },
-                        label = { Text("Bì (kg/bao)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        enabled = !isLocked,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    if (isLocked) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
-                                }
-                        )
-                    }
-                }
-                // Tạp chất
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = impText,
-                        onValueChange = {
-                            if (!isLocked) {
-                                impText = it
-                                onImpurityWeightChange(it.toDoubleOrNull() ?: 0.0)
-                            }
-                        },
-                        label = { Text("Tạp chất (kg)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        enabled = !isLocked,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    if (isLocked) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
-                                }
-                        )
-                    }
-                }
-                // Độ ẩm
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = moistureText,
-                        onValueChange = {
-                            if (!isLocked) {
-                                moistureText = it
-                                onMoistureChange(it.toDoubleOrNull() ?: 0.0)
-                            }
-                        },
-                        label = { Text("Độ ẩm (%)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        enabled = !isLocked,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    if (isLocked) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    Toast.makeText(context, "Vui lòng mở khóa bảng trước khi chỉnh sửa!", Toast.LENGTH_SHORT).show()
-                                }
-                        )
-                    }
-                }
+                OutlinedTextField(
+                    value = bagText,
+                    onValueChange = {
+                        if (!isLocked) {
+                            bagText = it
+                            onBagWeightChange(it.toDoubleOrNull() ?: 0.0)
+                        }
+                    },
+                    label = { Text("Bì (kg/bao)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    enabled = !isLocked,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                OutlinedTextField(
+                    value = impText,
+                    onValueChange = {
+                        if (!isLocked) {
+                            impText = it
+                            onImpurityWeightChange(it.toDoubleOrNull() ?: 0.0)
+                        }
+                    },
+                    label = { Text("Tạp chất (kg)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    enabled = !isLocked,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                OutlinedTextField(
+                    value = moistureText,
+                    onValueChange = {
+                        if (!isLocked) {
+                            moistureText = it
+                            onMoistureChange(it.toDoubleOrNull() ?: 0.0)
+                        }
+                    },
+                    label = { Text("Độ ẩm (%)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    enabled = !isLocked,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp)
+                )
             }
 
             // KL thực (after deductions) - High Contrast

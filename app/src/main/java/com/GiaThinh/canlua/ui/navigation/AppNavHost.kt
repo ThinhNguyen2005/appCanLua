@@ -15,17 +15,15 @@ import com.GiaThinh.canlua.ui.screen.FarmerProfileScreen
 import com.GiaThinh.canlua.ui.screen.SettingsScreen
 import com.GiaThinh.canlua.ui.screen.SyncStatusScreen
 import com.GiaThinh.canlua.ui.screen.WeightInputScreen
+import com.GiaThinh.canlua.ui.screen.RoleRequestScreen
 import com.GiaThinh.canlua.ui.screen.aichat.AiChatScreen
 import com.GiaThinh.canlua.ui.screen.dashboard.DashboardScreen
 import com.GiaThinh.canlua.ui.screen.market.MarketScreen
 import com.GiaThinh.canlua.ui.screen.map.RiceMapScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrGenerateScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrScanScreen
-import com.GiaThinh.canlua.ui.screen.trader.TraderBidsScreen
-import com.GiaThinh.canlua.ui.screen.trader.TraderManualWeighScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderProfileScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderTransactionsScreen
-import com.GiaThinh.canlua.ui.screen.trader.TraderWeighScreen
 
 /**
  * NavHost chính cho app — bao gồm cả 4 tab và các sub-screens.
@@ -108,29 +106,25 @@ fun AppNavHost(
             FarmerProfileScreen()
         }
 
-        // === Tab Thương Lái ===
-        composable("trader_bids") {
-            TraderBidsScreen()
-        }
-        
-        composable("trader_transactions") {
-            TraderTransactionsScreen()
-        }
-        
+        // === Trader-only routes ===
+        // SCALE / MARKET / AI_CHAT route được share với farmer (xem ở trên).
+        // Các screen tự đọc profile.role để render UI phù hợp.
         composable("trader_map") {
             RiceMapScreen(navController = navController)
         }
-        
+
         composable("trader_profile") {
-            TraderProfileScreen()
+            TraderProfileScreen(navController = navController)
         }
 
-        composable("trader_weigh") {
-            TraderWeighScreen(navController = navController)
+        // Sub-screen của trader_profile (mở qua row "Sổ giao dịch").
+        composable("trader_transactions") {
+            TraderTransactionsScreen(navController = navController)
         }
 
-        composable("trader_manual_weigh") {
-            TraderManualWeighScreen(navController = navController)
+        // === Màn yêu cầu nâng cấp Role TRADER ===
+        composable("role_request") {
+            RoleRequestScreen(navController = navController)
         }
     }
 }

@@ -110,7 +110,7 @@ class AiChatViewModel @Inject constructor(
 
     init {
         if (sessionStore.sessions.value.isEmpty()) {
-            sessionStore.createNew(welcome = welcomeMessages())
+            sessionStore.createNew(welcome = welcomeMessages(currentAudience()))
         } else if (sessionStore.currentId.value == null) {
             sessionStore.sessions.value.firstOrNull()?.let { sessionStore.switchTo(it.id) }
         }
@@ -128,6 +128,12 @@ class AiChatViewModel @Inject constructor(
             }
         }
     }
+
+    private fun currentAudience(): KnowledgeBaseRepository.Audience =
+        if (profile.value?.role.equals("TRADER", ignoreCase = true))
+            KnowledgeBaseRepository.Audience.TRADER
+        else
+            KnowledgeBaseRepository.Audience.FARMER
 
     fun onInputChange(text: String) {
         _state.value = _state.value.copy(input = text, errorMessage = null)
@@ -155,15 +161,16 @@ class AiChatViewModel @Inject constructor(
                 ?.map { ChatMessage(role = it.role, content = it.content) }
                 .orEmpty()
 
-            // Tra knowledge base theo câu user vừa gõ.
-            val kbHits = knowledgeBase.search(text, maxResults = 2)
+            val audience = currentAudience()
+            val kbHits = knowledgeBase.search(text, audience = audience, maxResults = 2)
 
             val result = aiChatRepository.chat(
                 history = history,
                 profile = profile.value,
                 weather = weather.value,
                 ricePrices = ricePrices.value,
-                knowledgeHits = kbHits
+                knowledgeHits = kbHits,
+                audience = audience
             )
             val reply = if (result.isSuccess) {
                 UiMessage(role = "assistant", content = result.getOrNull().orEmpty())
@@ -185,7 +192,7 @@ class AiChatViewModel @Inject constructor(
     }
 
     fun newSession() {
-        sessionStore.createNew(welcome = welcomeMessages())
+        sessionStore.createNew(welcome = welcomeMessages(currentAudience()))
         _state.value = _state.value.copy(input = "")
     }
 
@@ -213,12 +220,19 @@ class AiChatViewModel @Inject constructor(
         super.onCleared()
     }
 
-    private fun welcomeMessages(): List<UiMessage> = listOf(
-        UiMessage(
-            role = "assistant",
-            content = "Xin chào! Tôi là Trợ Lý Khuyến Nông của bạn. " +
-                "Tôi đã biết tên, vị trí và thời tiết hiện tại của bạn nên có thể tư vấn sát hơn. " +
-                "Hãy hỏi tôi về **giá lúa**, sâu bệnh, lịch bón phân, hoặc kỹ thuật canh tác."
-        )
-    )
+    private fun welcomeMessages(
+        audience: KnowledgeBaseRepository.Audience = KnowledgeBaseRepository.Audience.FARMER
+    ): List<UiMessage> {
+        val content = when (audience) {
+            KnowledgeBaseRepository.Audience.TRADER ->
+                "Xin chào! Tôi là **Chuyên Gia Thị Trường Lúa Gạo** của bạn. " +
+                    "Hỏi tôi về **giá thu mua**, kiểm định ẩm/tạp chất, logistics sà lan, biên lợi nhuận, " +
+                    "hay cách đàm phán giao dịch với nông dân."
+            KnowledgeBaseRepository.Audience.FARMER ->
+                "Xin chào! Tôi là Trợ Lý Khuyến Nông của bạn. " +
+                    "Tôi đã biết tên, vị trí và thời tiết hiện tại của bạn nên có thể tư vấn sát hơn. " +
+                    "Hãy hỏi tôi về **giá lúa**, sâu bệnh, lịch bón phân, hoặc kỹ thuật canh tác."
+        }
+        return listOf(UiMessage(role = "assistant", content = content))
+    }
 }

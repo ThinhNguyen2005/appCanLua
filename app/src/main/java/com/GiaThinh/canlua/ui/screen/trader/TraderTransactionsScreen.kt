@@ -68,6 +68,7 @@ import java.util.Locale
  */
 @Composable
 fun TraderTransactionsScreen(
+    navController: androidx.navigation.NavController,
     viewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()

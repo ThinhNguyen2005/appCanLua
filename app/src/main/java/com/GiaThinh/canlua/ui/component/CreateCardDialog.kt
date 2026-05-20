@@ -49,26 +49,44 @@ import com.GiaThinh.canlua.ui.theme.AppColors
 import java.util.Locale
 
 /**
- * Dialog tạo phiếu cân mới — v2.1
- * Tối ưu diện tích hiển thị, tích hợp Dynamic Theme, tự động định dạng tiền tệ.
+ * Mode điều khiển lại layout của dialog cho cả nhữ vai trò:
+ * - FARMER: nông dân tạo phiếu → owner = nông dân, counterparty = thương lái.
+ * - TRADER: thương lái tạo phiếu đối chiếu → owner = thương lái, counterparty = nông dân.
+ */
+enum class CreateCardMode { FARMER, TRADER }
+
+/**
+ * Dialog tạo phiếu cân mới — v2.2
+ * Hỗ trợ cả hai vai trò (farmer / trader) qua param `mode`.
+ * Owner (người tạo phiếu, luôn đọc từ profile) hiển thị read-only ở header,
+ * counterparty (đối tác giao dịch) được nhập tay vào form.
+ *
+ * @param ownerName Tên người đang đăng nhập — hiển thị read-only.
+ * @param mode FARMER (default) hoặc TRADER — quyết định label/role swap.
+ * @param onCreate Callback nhận (counterpartyName, counterpartyPhone, riceVariety, season, moisture, price, deposit).
+ *                 Caller tự map: farmer mode → counterparty = trader; trader mode → counterparty = farmer.
  */
 @Composable
 fun CreateCardDialog(
-    farmerName: String,            // Lấy tự động từ profile, hiển thị read-only
+    ownerName: String,
     onDismiss: () -> Unit,
     onCreate: (
-        traderName: String,
-        traderPhone: String,
+        counterpartyName: String,
+        counterpartyPhone: String,
         riceVariety: String,
         seasonLabel: String,
         moisturePercent: Double,
         pricePerKg: Double,
         depositAmount: Double
-    ) -> Unit
+    ) -> Unit,
+    mode: CreateCardMode = CreateCardMode.FARMER
 ) {
+    // Label swap theo mode — owner header và input field counterparty.
+    val ownerLabel = if (mode == CreateCardMode.FARMER) "Nông dân" else "Thương lái"
+    val counterpartyLabel = if (mode == CreateCardMode.FARMER) "thương lái" else "nông dân"
     // ── State ───────────────────────────────────────────────────────────────────────
-    var traderName      by remember { mutableStateOf("") }
-    var traderPhone     by remember { mutableStateOf("") }
+    var counterpartyName  by remember { mutableStateOf("") }
+    var counterpartyPhone by remember { mutableStateOf("") }
     var riceVariety     by remember { mutableStateOf("") }
     // Pre-fill vụ theo lịch nông nghiệp hiện tại — user có thể đổi qua dropdown
     var seasonLabel     by remember { mutableStateOf(com.GiaThinh.canlua.data.model.SeasonHelper.suggestFromDate()) }
@@ -78,8 +96,8 @@ fun CreateCardDialog(
     var priceRaw        by remember { mutableStateOf("") }   // "8200" -> 8.200 đ
     var depositRaw      by remember { mutableStateOf("") }   // "500000" -> 500.000 đ
 
-    // Validation: Yêu cầu tối thiểu tên thương lái và giống lúa
-    val isValid = traderName.isNotBlank() && riceVariety.isNotBlank()
+    // Validation: Yêu cầu tối thiểu tên counterparty và giống lúa
+    val isValid = counterpartyName.isNotBlank() && riceVariety.isNotBlank()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -125,7 +143,7 @@ fun CreateCardDialog(
                                 tint = AppColors.TextSecondary
                             )
                             Text(
-                                text = "Nông dân: $farmerName",
+                                text = "$ownerLabel: $ownerName",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = AppColors.TextSecondary,
                                 fontWeight = FontWeight.Medium
@@ -169,23 +187,23 @@ fun CreateCardDialog(
                         }
                     }
 
-                    // Row 2: Tên thương lái — full width
+                    // Row 2: Tên counterparty — full width
                     FormTextField(
-                        value = traderName,
-                        onValueChange = { traderName = it },
-                        label = "Tên thương lái *",
-                        placeholder = "Nhập tên thương lái mua lúa",
+                        value = counterpartyName,
+                        onValueChange = { counterpartyName = it },
+                        label = "Tên ${counterpartyLabel} *",
+                        placeholder = "Nhập tên ${counterpartyLabel}",
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Row 2.1: SĐT thương lái — tùy chọn, kí tự số + dấu
+                    // Row 2.1: SĐT counterparty — tùy chọn, kí tự số + dấu
                     OutlinedTextField(
-                        value = traderPhone,
+                        value = counterpartyPhone,
                         onValueChange = { input ->
                             val filtered = input.filter { it.isDigit() || it == '+' || it == ' ' || it == '-' }
-                            if (filtered.length <= 15) traderPhone = filtered
+                            if (filtered.length <= 15) counterpartyPhone = filtered
                         },
-                        label = { Text("SĐT thương lái") },
+                        label = { Text("SĐT ${counterpartyLabel}") },
                         placeholder = { Text("Tuỳ chọn — VD: 0901 234 567", style = MaterialTheme.typography.bodySmall) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         singleLine = true,
@@ -278,8 +296,8 @@ fun CreateCardDialog(
                     Button(
                         onClick = {
                             onCreate(
-                                traderName.trim(),
-                                traderPhone.trim(),
+                                counterpartyName.trim(),
+                                counterpartyPhone.trim(),
                                 riceVariety,
                                 seasonLabel.trim(),
                                 moistureRaw.toDoubleOrNull() ?: 0.0,

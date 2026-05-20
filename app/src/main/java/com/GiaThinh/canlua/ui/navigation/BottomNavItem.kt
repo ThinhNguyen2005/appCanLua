@@ -56,33 +56,21 @@ data class BottomNavItem(
 
         val farmerNavItems = listOf(SCALE, MARKET, AI_CHAT, DASHBOARD, ACCOUNT)
 
+        // Mirror farmer 5 tabs: SCALE / MARKET / AI_CHAT / MAP / PROFILE.
+        // Reuse cùng route key với farmer để chuyển role không reset state vô tội vạ.
+        val TRADER_MAP = BottomNavItem(
+            "trader_map", Icons.Outlined.Map, Icons.Filled.Map, "Bản đồ"
+        )
+        val TRADER_PROFILE = BottomNavItem(
+            "trader_profile", Icons.Outlined.Person, Icons.Filled.Person, "Cá nhân"
+        )
+
         val traderNavItems = listOf(
-            BottomNavItem("trader_bids", Icons.Outlined.Sell, Icons.Filled.Sell, "Rao mua"),
-            BottomNavItem("trader_map", Icons.Outlined.Map, Icons.Filled.Map, "Bản đồ"),
-            BottomNavItem(
-                "qr_scan",
-                Icons.Outlined.QrCodeScanner,
-                Icons.Filled.QrCodeScanner,
-                "Quét QR"
-            ),
-            BottomNavItem(
-                "trader_weigh",
-                Icons.Outlined.Scale,
-                Icons.Filled.Scale,
-                "Cân lúa"
-            ),
-            BottomNavItem(
-                "trader_transactions",
-                Icons.Outlined.Storefront,
-                Icons.Filled.Storefront,
-                "Sổ"
-            ),
-            BottomNavItem(
-                "trader_profile",
-                Icons.Outlined.Person,
-                Icons.Filled.Person,
-                "Cá nhân"
-            )
+            SCALE,           // Cân Lúa — reuse CardListScreen ở trader mode
+            MARKET,          // Thị Trường — reuse MarketScreen + FAB đăng giá cho trader
+            AI_CHAT,         // Hỏi đáp AI — reuse AiChatScreen, audience đã route theo profile.role
+            TRADER_MAP,
+            TRADER_PROFILE
         )
     }
 }
