@@ -20,7 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
 /**
@@ -46,13 +48,13 @@ fun OfflineStatusBanner(isOffline: Boolean) {
             ) {
                 Icon(
                     imageVector = Icons.Outlined.CloudOff,
-                    contentDescription = "Offline",
+                    contentDescription = stringResource(R.string.offline_content_description),
                     tint = AppColors.OfflineText,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "Đang offline — dữ liệu lưu tại máy, tự đồng bộ khi có mạng",
+                    text = stringResource(R.string.offline_banner_message),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.OfflineText
                 )

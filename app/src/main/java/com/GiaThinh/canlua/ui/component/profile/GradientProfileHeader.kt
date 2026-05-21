@@ -51,41 +51,48 @@ fun GradientProfileHeader(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-        // Role badge subtle với tint xanh lá nhẹ — đồng bộ với theme nông nghiệp
+        // Tên + role badge cùng hàng — name chiếm phần lớn, badge auto-fit phải.
         Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(AppColors.GreenSurface)
-                .padding(horizontal = 10.dp, vertical = 5.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = roleIcon,
-                contentDescription = null,
-                tint = AppColors.GreenPrimary,
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(Modifier.size(6.dp))
             Text(
-                text = roleLabel,
-                color = AppColors.GreenPrimary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold
+                text = name.ifBlank { if (isTrader) "Thương lái" else "Nông dân" },
+                color = AppColors.TextPrimary,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.weight(1f, fill = false),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
+            Spacer(Modifier.size(10.dp))
+            // Role badge — nhỏ gọn, tint xanh lá nông nghiệp
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AppColors.GreenSurface)
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = roleIcon,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    text = roleLabel,
+                    color = AppColors.GreenPrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
 
-        Spacer(Modifier.height(10.dp))
-
-        Text(
-            text = name.ifBlank { if (isTrader) "Thương lái" else "Nông dân" },
-            color = AppColors.TextPrimary,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.ExtraBold,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
         if (email.isNotBlank()) {
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = email,
                 color = AppColors.TextHint,

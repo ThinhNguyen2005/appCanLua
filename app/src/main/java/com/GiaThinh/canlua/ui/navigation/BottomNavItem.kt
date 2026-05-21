@@ -19,7 +19,9 @@ import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.Storefront
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.GiaThinh.canlua.R
 
 /**
  * Định nghĩa từng tab trong BottomNavigation.
@@ -32,23 +34,23 @@ data class BottomNavItem(
     val route: String,
     val icon: ImageVector,
     val selectedIcon: ImageVector,
-    val label: String
+    @param:StringRes val labelRes: Int
 ) {
     companion object {
         val SCALE = BottomNavItem(
-            "scale", Icons.Outlined.Scale, Icons.Filled.Scale, "Cân Lúa"
+            "scale", Icons.Outlined.Scale, Icons.Filled.Scale, R.string.nav_scale
         )
         val MARKET = BottomNavItem(
             "market",
             Icons.AutoMirrored.Outlined.TrendingUp,
             Icons.AutoMirrored.Filled.TrendingUp,
-            "Thị Trường"
+            R.string.nav_market
         )
         val AI_CHAT = BottomNavItem(
-            "ai_chat", Icons.Outlined.SmartToy, Icons.Filled.SmartToy, "Hỏi đáp AI"
+            "ai_chat", Icons.Outlined.SmartToy, Icons.Filled.SmartToy, R.string.nav_ai_chat
         )
         val ACCOUNT = BottomNavItem(
-            "account", Icons.Outlined.Person, Icons.Filled.Person, "Tài khoản"
+            "account", Icons.Outlined.Person, Icons.Filled.Person, R.string.nav_account
         )
 
         // Tab "Mùa vụ" (DASHBOARD) đã được loại bỏ — toàn bộ KPI / chart / AI insights
@@ -60,10 +62,10 @@ data class BottomNavItem(
         // Mirror farmer 5 tabs: SCALE / MARKET / AI_CHAT / MAP / PROFILE.
         // Reuse cùng route key với farmer để chuyển role không reset state vô tội vạ.
         val TRADER_MAP = BottomNavItem(
-            "trader_map", Icons.Outlined.Map, Icons.Filled.Map, "Bản đồ"
+            "trader_map", Icons.Outlined.Map, Icons.Filled.Map, R.string.nav_map
         )
         val TRADER_PROFILE = BottomNavItem(
-            "trader_profile", Icons.Outlined.Person, Icons.Filled.Person, "Cá nhân"
+            "trader_profile", Icons.Outlined.Person, Icons.Filled.Person, R.string.nav_account
         )
 
         val traderNavItems = listOf(

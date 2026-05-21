@@ -19,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.util.RiceVarieties
 
 /**
@@ -43,8 +45,8 @@ fun RiceVarietyDropdown(
         OutlinedTextField(
             value = selected,
             onValueChange = { onSelect(it) },
-            label = { Text("Giống lúa") },
-            placeholder = { Text("VD: ST25...") },
+            label = { Text(stringResource(R.string.detail_info_rice_variety)) },
+            placeholder = { Text(stringResource(R.string.dropdown_rice_variety_placeholder)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)

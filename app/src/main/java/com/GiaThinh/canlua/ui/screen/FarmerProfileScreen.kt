@@ -61,11 +61,14 @@ import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.TraderHistoryItem
 import com.GiaThinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.GiaThinh.canlua.ui.component.dashboard.ChartMetric
-import com.GiaThinh.canlua.ui.component.dashboard.KpiCard
+import com.GiaThinh.canlua.ui.component.dashboard.KpiGrid
+import com.GiaThinh.canlua.ui.component.dashboard.KpiGridItem
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.GiaThinh.canlua.ui.component.dashboard.TopTradersCard
 import com.GiaThinh.canlua.ui.component.profile.GradientProfileHeader
+import com.GiaThinh.canlua.ui.component.profile.ProfileNavigationRow
+import com.GiaThinh.canlua.ui.component.profile.ProfileSectionTitle
 import com.GiaThinh.canlua.ui.component.profile.QuickStatsGlassGrid
 import com.GiaThinh.canlua.ui.component.profile.SecondaryStatsRow
 import com.GiaThinh.canlua.ui.screen.profile.PersonalInfoCard
@@ -100,7 +103,6 @@ import java.util.Locale
 fun FarmerProfileScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel(),
     dashboardViewModel: DashboardViewModel = hiltViewModel()
 ) {
     val profile by profileViewModel.profile.collectAsState(initial = null)
@@ -129,7 +131,6 @@ fun FarmerProfileScreen(
     var phone by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
     var cccd by remember { mutableStateOf("") }
-    var pendingRole by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(profile?.uid) {
         profile?.let {
@@ -174,8 +175,8 @@ fun FarmerProfileScreen(
             // Section title cho phần thống kê mùa vụ
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SectionTitle(
-                        title = "📊 Thống kê mùa vụ",
+                    ProfileSectionTitle(
+                        title = "Thống kê mùa vụ",
                         subtitle = "Số liệu chi tiết theo từng vụ canh tác"
                     )
                 }
@@ -251,48 +252,21 @@ fun FarmerProfileScreen(
                 }
             }
 
+            // ─── Lịch sử thương lái — gọn lại 1 row, tap mở TraderHistoryScreen ───
+            // Trước đây render top 5 inline + nút "Xem tất cả" làm Profile dài 600+dp.
+            // Giờ chỉ 1 navigation row thông tin tổng + chevron, đầy đủ list ở route riêng.
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    TraderHistorySection(history = traderHistory)
-                }
-            }
-
-            items(traderHistory.take(5), key = { "${it.traderName}-${it.traderPhone}" }) { item ->
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    TraderHistoryRow(item)
-                }
-            }
-
-            // "Xem tất cả" — chỉ hiện khi có > 5 thương lái, tránh Profile dài lê thê.
-            if (traderHistory.size > 5) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        ViewAllTradersButton(
-                            remaining = traderHistory.size - 5,
-                            onClick = { navController.navigate("trader_history") }
-                        )
-                    }
-                }
-            }
-
-            if (traderHistory.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        EmptyHistoryHint()
-                    }
-                }
-            }
-
-            // ─── TIER 8: Account Operations ───
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SectionTitle(
-                        title = "⚙️ Tài khoản",
-                        subtitle = "Quản lý thông tin và vai trò"
+                    ProfileNavigationRow(
+                        icon = Icons.Filled.History,
+                        title = "Lịch sử thương lái",
+                        subtitle = if (traderHistory.isEmpty()) "Chưa có giao dịch nào" else "${traderHistory.size} đối tác đã từng giao dịch",
+                        onClick = { navController.navigate("trader_history") }
                     )
                 }
             }
 
+            // ─── Personal info ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     PersonalInfoCard(
@@ -319,15 +293,7 @@ fun FarmerProfileScreen(
                 }
             }
 
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    RoleSwitcher(
-                        currentRole = profile?.role ?: "FARMER",
-                        onRequestChange = { newRole -> pendingRole = newRole }
-                    )
-                }
-            }
-
+            // ─── Premium card (active hoặc upsell) ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsState()
@@ -335,6 +301,7 @@ fun FarmerProfileScreen(
                         PremiumStatusCard(
                             plan = premiumInfo.plan,
                             sinceMs = premiumInfo.sinceMs,
+                            isEarlyAdopter = premiumInfo.isEarlyAdopter,
                             onClick = { navController.navigate("premium") }
                         )
                     } else {
@@ -345,55 +312,13 @@ fun FarmerProfileScreen(
                 }
             }
 
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Button(
-                        onClick = { authViewModel.signOut() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.Error.copy(alpha = 0.1f),
-                            contentColor = AppColors.Error
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text("Đăng xuất", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+            // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
+            // Profile giờ tập trung vào "tôi là ai + thống kê của tôi", không còn
+            // mix thao tác hành vi app (đổi role, signout) — gọn và đỡ duplicate.
         }
     }
 
-    // Confirm dialog đổi role
-    pendingRole?.let { newRole ->
-        AlertDialog(
-            onDismissRequest = { pendingRole = null },
-            title = { Text("Đổi vai trò?", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    when (newRole) {
-                        "TRADER" -> "Bạn sẽ chuyển sang giao diện THƯƠNG LÁI với các chức năng đăng giá, sổ giao dịch, bản đồ nguồn cung. Có thể đổi lại bất cứ lúc nào."
-                        else -> "Bạn sẽ quay lại giao diện NÔNG DÂN với các chức năng cân lúa, mùa vụ, AI khuyến nông."
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    profile?.let { current ->
-                        profileViewModel.updateProfile(current = current, role = newRole)
-                    }
-                    pendingRole = null
-                }) { Text("Đổi vai trò", fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingRole = null }) { Text("Hủy") }
-            },
-            shape = RoundedCornerShape(20.dp)
-        )
-    }
+    // RoleSwitcher đã chuyển sang SettingsScreen — Profile không còn dialog đổi role.
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -405,27 +330,6 @@ private data class LifetimeStats(
     val totalNetWeight: Double,
     val totalRevenue: Double
 )
-
-// ─────────────────────────────────────────────────────────────
-// Section Title
-// ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun SectionTitle(title: String, subtitle: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            fontWeight = FontWeight.ExtraBold,
-            color = AppColors.TextPrimary,
-            style = MaterialTheme.typography.titleMedium
-        )
-        Text(
-            text = subtitle,
-            color = AppColors.TextHint,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Primary KPI Grid (Farmer): Sản lượng / Doanh thu / KG-bao / Số bao
@@ -444,10 +348,9 @@ private fun FarmerPrimaryKpiGrid(
     }
     val deltaLabel = previous?.season?.let { "vs $it" }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiCard(
-                modifier = Modifier.weight(1f),
+    KpiGrid(
+        items = listOf(
+            KpiGridItem(
                 icon = Icons.Outlined.Scale,
                 label = "Sản lượng đã bán",
                 value = DashboardFormatter.weight(stats.totalNetWeight),
@@ -455,9 +358,8 @@ private fun FarmerPrimaryKpiGrid(
                 deltaPercent = weightDelta,
                 deltaLabel = deltaLabel,
                 highlight = true
-            )
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.Wallet,
                 label = "Doanh thu",
                 value = DashboardFormatter.money(stats.totalRevenue),
@@ -465,27 +367,21 @@ private fun FarmerPrimaryKpiGrid(
                 deltaPercent = revenueDelta,
                 deltaLabel = deltaLabel,
                 highlight = true
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.Inventory,
                 label = "KG/bao TB",
-                value = if (stats.avgKgPerBag > 0)
-                    "${DashboardFormatter.weight(stats.avgKgPerBag)}/bao"
-                else "—",
+                value = if (stats.avgKgPerBag > 0) "${DashboardFormatter.weight(stats.avgKgPerBag)}/bao" else "—",
                 accentColor = Color(0xFF8D6E63)
-            )
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.Receipt,
                 label = "Số bao thu",
                 value = "${stats.totalBags}",
                 accentColor = AppColors.Info
             )
-        }
-    }
+        )
+    )
 }
 
 // ─────────────────────────────────────────────────────────────

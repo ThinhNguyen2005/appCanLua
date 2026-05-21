@@ -43,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.parseInlineMarkdown
 import com.GiaThinh.canlua.ui.viewmodel.AiAnalysisState
@@ -144,17 +146,17 @@ private fun HeaderRow(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Phân tích AI",
+                text = stringResource(R.string.ai_insights_title),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
             )
             Text(
                 text = when (state) {
-                    is AiAnalysisState.Loading -> "Đang phân tích dữ liệu vụ..."
-                    is AiAnalysisState.Success -> "Insights từ Trợ Lý Khuyến Nông"
-                    is AiAnalysisState.Error -> "Đã xảy ra lỗi"
-                    else -> "Hiểu nhanh vụ mùa của bạn"
+                    is AiAnalysisState.Loading -> stringResource(R.string.ai_insights_loading)
+                    is AiAnalysisState.Success -> stringResource(R.string.ai_insights_success_subtitle)
+                    is AiAnalysisState.Error -> stringResource(R.string.ai_insights_error_subtitle)
+                    else -> stringResource(R.string.ai_insights_idle_subtitle)
                 },
                 fontSize = 11.sp,
                 color = AppColors.TextSecondary
@@ -173,7 +175,7 @@ private fun HeaderRow(
                     horizontal = 10.dp, vertical = 4.dp
                 )
             ) {
-                Text("Đóng", fontSize = 11.sp)
+                Text(stringResource(R.string.ai_insights_close), fontSize = 11.sp)
             }
         }
     }
@@ -187,8 +189,7 @@ private fun IdleContent(
 ) {
     Column {
         Text(
-            text = "Để AI đọc số liệu của vụ này và đưa ra insights về sản lượng, " +
-                    "doanh thu, giống lúa hiệu quả, cùng khuyến nghị cho vụ tới.",
+            text = stringResource(R.string.ai_insights_idle_body),
             fontSize = 12.sp,
             color = AppColors.TextSecondary,
             lineHeight = 18.sp
@@ -210,7 +211,7 @@ private fun IdleContent(
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "Phân tích vụ này bằng AI",
+                text = stringResource(R.string.ai_insights_analyze_action),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -284,7 +285,7 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(8.dp))
-            Text("Thử lại", fontSize = 13.sp)
+            Text(stringResource(R.string.ai_insights_retry), fontSize = 13.sp)
         }
     }
 }

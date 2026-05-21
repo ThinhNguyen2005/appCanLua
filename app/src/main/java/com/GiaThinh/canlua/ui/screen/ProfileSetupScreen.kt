@@ -17,7 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.GiaThinh.canlua.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -52,7 +54,7 @@ fun ProfileSetupScreen(
             Spacer(modifier = Modifier.height(48.dp))
             
             Text(
-                text = "Chào mừng bạn mới!",
+                text = stringResource(R.string.profile_setup_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -61,7 +63,7 @@ fun ProfileSetupScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Vui lòng cho biết bạn là ai để chúng tôi tuỳ chỉnh ứng dụng phù hợp nhất.",
+                text = stringResource(R.string.profile_setup_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -76,7 +78,7 @@ fun ProfileSetupScreen(
             ) {
                 RoleSelectionCard(
                     modifier = Modifier.weight(1f),
-                    title = "Nông Dân",
+                    title = stringResource(R.string.role_farmer),
                     icon = Icons.Default.Agriculture,
                     isSelected = role == UserRole.FARMER,
                     onClick = { role = UserRole.FARMER }
@@ -84,22 +86,17 @@ fun ProfileSetupScreen(
 
                 RoleSelectionCard(
                     modifier = Modifier.weight(1f),
-                    title = "Thương Lái",
+                    title = stringResource(R.string.role_trader),
                     icon = Icons.Default.Storefront,
-                    isSelected = false,
-                    locked = true,
-                    subtitle = "Cần duyệt",
-                    onClick = { navController.navigate("role_request") }
+                    isSelected = role == UserRole.TRADER,
+                    onClick = { role = UserRole.TRADER }
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Helper giải thích lộ trình lên Thương lái — để user không tưởng bị chặn
-            // và biết rằng đây là quyết định có thể đổi sau khi đã tạo tài khoản.
             Text(
-                text = "Bạn có thể yêu cầu nâng cấp lên Thương lái sau khi tạo tài khoản, " +
-                        "trong tab Tài khoản → Đổi vai trò.",
+                text = stringResource(R.string.profile_setup_role_hint),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -112,7 +109,7 @@ fun ProfileSetupScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Họ tên (bắt buộc)") },
+                label = { Text(stringResource(R.string.profile_setup_name_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
                 singleLine = true
@@ -123,7 +120,7 @@ fun ProfileSetupScreen(
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Số điện thoại (tùy chọn)") },
+                label = { Text(stringResource(R.string.profile_setup_phone_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
                 singleLine = true
@@ -134,7 +131,7 @@ fun ProfileSetupScreen(
             OutlinedTextField(
                 value = region,
                 onValueChange = { region = it },
-                label = { Text("Khu vực (Tỉnh/Huyện)") },
+                label = { Text(stringResource(R.string.profile_setup_region_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
                 singleLine = true
@@ -145,7 +142,7 @@ fun ProfileSetupScreen(
             OutlinedTextField(
                 value = cccd,
                 onValueChange = { cccd = it },
-                label = { Text("CCCD (tùy chọn)") },
+                label = { Text(stringResource(R.string.profile_setup_cccd_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
                 singleLine = true
@@ -183,7 +180,7 @@ fun ProfileSetupScreen(
             ) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null)
                 Spacer(modifier = Modifier.size(8.dp))
-                Text("Hoàn tất thiết lập", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.profile_setup_complete), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -259,7 +256,7 @@ fun RoleSelectionCard(
             if (locked) {
                 Icon(
                     imageVector = Icons.Default.Lock,
-                    contentDescription = "Cần duyệt",
+                    contentDescription = stringResource(R.string.profile_setup_locked_content),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)

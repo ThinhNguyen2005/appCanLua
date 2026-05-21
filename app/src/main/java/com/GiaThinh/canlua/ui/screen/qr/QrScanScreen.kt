@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,8 +30,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.QrVerificationState
 import com.GiaThinh.canlua.util.HapticUtil
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -56,8 +59,54 @@ fun QrScanScreen(
     val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
 
+    val qrVerificationState by viewModel.qrVerificationState.collectAsState()
+    var pendingResult by remember { mutableStateOf<ScanResult?>(null) }
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(qrVerificationState) {
+        when (qrVerificationState) {
+            is QrVerificationState.Success -> {
+                pendingResult?.let { scanResult = it }
+                pendingResult = null
+                isProcessing = false
+                HapticUtil.confirm(context)
+                appToast.success(context.getString(R.string.qr_scan_confirmed))
+                viewModel.resetQrVerificationState()
+            }
+            is QrVerificationState.AlreadyConfirmed -> {
+                pendingResult?.let { scanResult = it }
+                pendingResult = null
+                isProcessing = false
+                HapticUtil.confirm(context)
+                appToast.info(context.getString(R.string.qr_scan_already_confirmed))
+                viewModel.resetQrVerificationState()
+            }
+            QrVerificationState.NotFound -> {
+                pendingResult = null
+                isProcessing = false
+                HapticUtil.error(context)
+                appToast.error(context.getString(R.string.qr_scan_not_found))
+                viewModel.resetQrVerificationState()
+            }
+            QrVerificationState.LockedByOtherTrader -> {
+                pendingResult = null
+                isProcessing = false
+                HapticUtil.error(context)
+                appToast.error(context.getString(R.string.qr_scan_locked_by_other))
+                viewModel.resetQrVerificationState()
+            }
+            is QrVerificationState.Error -> {
+                pendingResult = null
+                isProcessing = false
+                HapticUtil.error(context)
+                appToast.error(context.getString(R.string.qr_scan_error))
+                viewModel.resetQrVerificationState()
+            }
+            QrVerificationState.Idle,
+            QrVerificationState.Loading -> Unit
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (!cameraPermission.status.isGranted) {
@@ -78,16 +127,16 @@ fun QrScanScreen(
             ) {
                 Icon(Icons.Outlined.CameraAlt, null, modifier = Modifier.size(64.dp), tint = AppColors.TextHint)
                 Spacer(Modifier.height(16.dp))
-                Text("Cần quyền Camera", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.qr_scan_camera_permission_title), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Cho phép ứng dụng sử dụng camera để quét mã QR",
+                    stringResource(R.string.qr_scan_camera_permission_message),
                     textAlign = TextAlign.Center,
                     color = AppColors.TextSecondary
                 )
                 Spacer(Modifier.height(16.dp))
                 Button(onClick = { cameraPermission.launchPermissionRequest() }) {
-                    Text("Cấp quyền Camera")
+                    Text(stringResource(R.string.qr_scan_camera_permission_action))
                 }
             }
         } else if (scanResult != null) {
@@ -106,7 +155,7 @@ fun QrScanScreen(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "Xác Thực Thành Công!",
+                    stringResource(R.string.qr_scan_success_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.Success
@@ -119,9 +168,9 @@ fun QrScanScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        InfoRow("Nông dân", result.farmerName)
-                        InfoRow("Khối lượng", "${result.weight} kg")
-                        InfoRow("Thành tiền", "${result.amount} đ")
+                        InfoRow(stringResource(R.string.qr_scan_farmer), result.farmerName)
+                        InfoRow(stringResource(R.string.weight_label_weight), stringResource(R.string.weight_format_kg_lower, result.weight))
+                        InfoRow(stringResource(R.string.weight_metrics_total_amount), stringResource(R.string.card_list_money_vnd, result.amount))
                     }
                 }
 
@@ -130,18 +179,20 @@ fun QrScanScreen(
                     OutlinedButton(
                         onClick = {
                             scanResult = null
+                            pendingResult = null
                             isProcessing = false
+                            viewModel.resetQrVerificationState()
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Quét tiếp")
+                        Text(stringResource(R.string.qr_scan_continue))
                     }
                     Button(
                         onClick = { navController.navigate("trader_transactions") },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
                     ) {
-                        Text("Xem sổ")
+                        Text(stringResource(R.string.qr_scan_view_book))
                     }
                 }
             }
@@ -152,28 +203,24 @@ fun QrScanScreen(
                     onQrScanned = { rawValue ->
                         if (!isProcessing) {
                             isProcessing = true
-                            // Parse: CANLUA|cardId|name|weight|amount|token
                             val parts = rawValue.split("|")
                             if (parts.size >= 6 && parts[0] == "CANLUA") {
                                 val token = parts[5]
-                                // Lấy traderId từ FirebaseAuth — phải đúng UID của tài khoản hiện hành
-                                // để backend rules `lockedByTraderId == request.auth.uid` cho phép ghi.
                                 val traderId = FirebaseAuth.getInstance().currentUser?.uid
                                 if (traderId.isNullOrBlank()) {
-                                    appToast.warning("Bạn cần đăng nhập trước khi quét QR")
+                                    appToast.warning(context.getString(R.string.qr_scan_login_required))
                                     HapticUtil.error(context)
                                     isProcessing = false
                                     return@CameraPreview
                                 }
-                                viewModel.verifyAndLockTransaction(token, traderId)
-                                HapticUtil.confirm(context)
-                                scanResult = ScanResult(
+                                pendingResult = ScanResult(
                                     farmerName = parts[2],
                                     weight = parts[3],
                                     amount = parts[4]
                                 )
+                                viewModel.verifyAndLockTransaction(token, traderId)
                             } else {
-                                appToast.error("Mã QR không hợp lệ")
+                                appToast.error(context.getString(R.string.qr_scan_invalid_code))
                                 HapticUtil.error(context)
                                 isProcessing = false
                             }
@@ -197,7 +244,7 @@ fun QrScanScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "Hướng camera vào mã QR của nông dân",
+                    stringResource(R.string.qr_scan_instruction),
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.TextSecondary,

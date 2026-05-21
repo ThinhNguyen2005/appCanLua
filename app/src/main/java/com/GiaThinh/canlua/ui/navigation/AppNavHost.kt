@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.GiaThinh.canlua.ui.screen.CardDetailScreen
 import com.GiaThinh.canlua.ui.screen.CardListScreen
+import com.GiaThinh.canlua.ui.screen.DeletedCardsScreen
 import com.GiaThinh.canlua.ui.screen.FarmerProfileScreen
 import com.GiaThinh.canlua.ui.screen.SettingsScreen
 import com.GiaThinh.canlua.ui.screen.SyncStatusScreen
@@ -109,6 +110,10 @@ fun AppNavHost(
 
         composable("trader_history") {
             TraderHistoryScreen(navController = navController)
+        }
+
+        composable("deleted_cards") {
+            DeletedCardsScreen(navController = navController)
         }
 
         // === Trader-only routes ===

@@ -7,6 +7,7 @@ import com.GiaThinh.canlua.auth.GoogleAccount
 import com.GiaThinh.canlua.repository.AuthManager
 import com.GiaThinh.canlua.repository.ChatSessionStore
 import com.GiaThinh.canlua.repository.ProfileRepository
+import com.GiaThinh.canlua.util.AnalyticsHelper
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -80,14 +81,17 @@ class AuthViewModel @Inject constructor(
     }
 
     /**
-     * Đọc Profile mới nhất từ Room để quyết định user có cần màn hình ProfileSetup hay không.
-     * Gọi sau mọi sign-in success, và trong init khi cold start.
+     * Đọc Profile của user hiện tại để quyết định user có cần màn hình ProfileSetup hay không.
+     * Nếu Room chưa có dữ liệu, repository sẽ thử khôi phục từ Firestore trước khi kết luận setup mới.
      */
     private fun refreshProfileSetupFlag() {
         viewModelScope.launch {
-            val profile = profileRepository.latestProfile().first()
+            val profile = profileRepository.ensureCurrentProfile()
             val needsSetup = profile?.name?.isBlank() ?: true
             _uiState.value = _uiState.value.copy(needsProfileSetup = needsSetup)
+            // Telemetry: gắn user identity vào Analytics + Crashlytics. Sau bước này
+            // mọi event/non-fatal gắn kèm uid + role để filter trong console.
+            AnalyticsHelper.setUser(authManager.currentUser?.uid, profile?.role)
         }
     }
 
@@ -298,6 +302,7 @@ class AuthViewModel @Inject constructor(
             info = "Đã đăng xuất",
             needsProfileSetup = false
         )
+        AnalyticsHelper.setUser(null, null)
     }
 
     private suspend fun saveProfileLocal(

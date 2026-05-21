@@ -61,6 +61,11 @@ object DatabaseModule {
     }
 
     @Provides
+    fun provideDeletedCardDao(database: AppDatabase): com.GiaThinh.canlua.data.dao.DeletedCardDao {
+        return database.deletedCardDao()
+    }
+
+    @Provides
     @Singleton
     fun provideTextToSpeechManager(@ApplicationContext context: Context): TextToSpeechManager {
         return TextToSpeechManager(context)

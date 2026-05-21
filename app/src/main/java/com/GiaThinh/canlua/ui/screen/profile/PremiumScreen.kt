@@ -347,6 +347,7 @@ fun PremiumScreen(
             // Flip cờ Premium reactive — quảng cáo trên MarketScreen sẽ fade out ngay.
             // Lưu kèm tên gói để hiển thị trên huy hiệu Premium ở Profile + Settings.
             PremiumState.setPremium(context, true, plan = selectedPackage.title)
+            com.GiaThinh.canlua.util.AnalyticsHelper.premiumPurchased(selectedPackage.title)
             showSuccessDialog = true
             HapticUtil.confirm(context)
         }

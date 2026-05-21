@@ -1,6 +1,7 @@
 package com.GiaThinh.canlua.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,8 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,11 +25,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.stringResource
+import com.GiaThinh.canlua.R
+import com.GiaThinh.canlua.data.model.AppLanguage
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.BackupStatus
 import com.GiaThinh.canlua.repository.SyncStatus
+import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
 import com.GiaThinh.canlua.util.PremiumState
@@ -53,6 +61,7 @@ fun SettingsScreen(
 ) {
     val isTtsEnabled by viewModel.isTtsEnabled.collectAsState()
     val fontScale by viewModel.fontScale.collectAsState()
+    val language by viewModel.language.collectAsState()
     val syncViewModel: SyncViewModel = hiltViewModel()
     val syncStatus by syncViewModel.syncStatus.collectAsState()
     val lastSyncTime by syncViewModel.lastSyncTime.collectAsState()
@@ -60,15 +69,17 @@ fun SettingsScreen(
     val lastBackupTime by syncViewModel.lastBackupTime.collectAsState()
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsState()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val profile by profileViewModel.profile.collectAsState(initial = null)
     val premiumInfo by PremiumState.info.collectAsState()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    var pendingRole by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Cài đặt",
+                        stringResource(R.string.topbar_settings),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
@@ -78,7 +89,7 @@ fun SettingsScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = stringResource(R.string.content_back),
                             tint = AppColors.TextPrimary
                         )
                     }
@@ -103,6 +114,8 @@ fun SettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .imePadding()
+                    .navigationBarsPadding()
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -137,7 +150,7 @@ fun SettingsScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "Gói Premium",
+                                        text = stringResource(R.string.settings_premium_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = AppColors.TextPrimary
@@ -147,11 +160,18 @@ fun SettingsScreen(
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(6.dp))
-                                                .background(AppColors.GreenPrimary)
+                                                .background(
+                                                    if (premiumInfo.isEarlyAdopter) AppColors.GoldAccent
+                                                    else AppColors.GreenPrimary
+                                                )
                                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                                         ) {
                                             Text(
-                                                text = "ACTIVE",
+                                                text = if (premiumInfo.isEarlyAdopter) {
+                                                    stringResource(R.string.settings_premium_early_adopter)
+                                                } else {
+                                                    stringResource(R.string.settings_premium_active)
+                                                },
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = Color.White,
                                                 fontWeight = FontWeight.ExtraBold
@@ -159,15 +179,22 @@ fun SettingsScreen(
                                         }
                                     }
                                 }
+                                val activatedLabel = stringResource(R.string.settings_premium_activated)
+                                val earlyAdopterLabel = stringResource(R.string.settings_premium_early_adopter)
                                 val subtitle = if (premiumInfo.isActive) {
-                                    val plan = premiumInfo.plan?.takeIf { it.isNotBlank() } ?: "Đã kích hoạt"
+                                    val plan = premiumInfo.plan?.takeIf { it.isNotBlank() }
+                                        ?: if (premiumInfo.isEarlyAdopter) earlyAdopterLabel
+                                        else activatedLabel
                                     val sinceLabel = if (premiumInfo.sinceMs > 0L) {
-                                        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
-                                        " · từ ${sdf.format(Date(premiumInfo.sinceMs))}"
+                                        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                        stringResource(
+                                            R.string.settings_premium_since,
+                                            sdf.format(Date(premiumInfo.sinceMs))
+                                        )
                                     } else ""
                                     "$plan$sinceLabel"
                                 } else {
-                                    "Bỏ quảng cáo · AI không giới hạn · Heatmap giá"
+                                    stringResource(R.string.settings_premium_subtitle)
                                 }
                                 Text(
                                     text = subtitle,
@@ -182,7 +209,11 @@ fun SettingsScreen(
                             colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
                         ) {
                             Text(
-                                text = if (premiumInfo.isActive) "Quản lý" else "Nâng cấp",
+                                text = if (premiumInfo.isActive) {
+                                    stringResource(R.string.settings_premium_manage)
+                                } else {
+                                    stringResource(R.string.settings_premium_upgrade)
+                                },
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -218,13 +249,13 @@ fun SettingsScreen(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Đọc số khi nhập",
+                                    text = stringResource(R.string.settings_tts_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.TextPrimary
                                 )
                                 Text(
-                                    text = "Bật/tắt tính năng đọc số khi nhập cân",
+                                    text = stringResource(R.string.settings_tts_subtitle),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.TextHint,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -271,22 +302,18 @@ fun SettingsScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Đồng bộ & Backup",
+                                    text = stringResource(R.string.settings_sync_backup_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.TextPrimary
                                 )
-                                Text(
-                                    text = syncStatusText(syncStatus),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.TextHint
-                                )
+                                SyncStatusText(syncStatus)
                             }
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            StatusRow("Lần đồng bộ cuối", lastSyncTime)
-                            StatusRow("Lần backup cuối", lastBackupTime)
+                            StatusRow(stringResource(R.string.settings_last_sync), lastSyncTime)
+                            StatusRow(stringResource(R.string.settings_last_backup), lastBackupTime)
                         }
 
                         Row(
@@ -320,7 +347,7 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 }
-                                Text("Backup", fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.settings_backup_action), fontWeight = FontWeight.SemiBold)
                             }
 
                             Spacer(modifier = Modifier.width(12.dp))
@@ -351,7 +378,7 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 }
-                                Text("Đồng bộ", fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.settings_sync_action), fontWeight = FontWeight.SemiBold)
                             }
                         }
 
@@ -368,8 +395,54 @@ fun SettingsScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Xem chi tiết trạng thái")
+                            Text(stringResource(R.string.settings_sync_detail))
                         }
+                    }
+                }
+
+                SettingsCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            IconTile(
+                                bg = AppColors.GreenSurface,
+                                tint = AppColors.GreenPrimary,
+                                icon = { tint, mod ->
+                                    Icon(
+                                        Icons.Default.Language,
+                                        contentDescription = null,
+                                        tint = tint,
+                                        modifier = mod
+                                    )
+                                }
+                            )
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.settings_language_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.TextPrimary
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_language_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextHint,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+
+                        LanguageOptions(
+                            selected = language,
+                            onSelect = { viewModel.setLanguage(it) }
+                        )
                     }
                 }
 
@@ -382,13 +455,13 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Kích thước chữ",
+                            text = stringResource(R.string.settings_font_size_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.TextPrimary
                         )
                         Text(
-                            text = "Chọn mức chữ dễ đọc cho toàn bộ ứng dụng",
+                            text = stringResource(R.string.settings_font_size_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextHint
                         )
@@ -397,6 +470,65 @@ fun SettingsScreen(
                             selected = fontScale,
                             onSelect = { viewModel.setFontScale(it) }
                         )
+                    }
+                }
+
+                // ── Phiếu đã xoá (history + restore) ──
+                // Đổi vai trò (FARMER ↔ TRADER) là setting hành vi app, đặt ở Settings
+                // hợp lý hơn trong Profile. Bao bọc trong dialog confirm vì tác động
+                // mạnh: đổi nav graph + permission set.
+                SettingsCard {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { navController.navigate("deleted_cards") }
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        IconTile(
+                            bg = AppColors.Error.copy(alpha = 0.12f),
+                            tint = AppColors.Error,
+                            icon = { tint, mod ->
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = tint,
+                                    modifier = mod
+                                )
+                            }
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_deleted_cards_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AppColors.TextPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_deleted_cards_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.TextHint,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                // ── Role switcher Card ──
+                profile?.let { p ->
+                    SettingsCard {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RoleSwitcher(
+                                currentRole = p.role,
+                                onRequestChange = { newRole -> pendingRole = newRole }
+                            )
+                        }
                     }
                 }
 
@@ -409,13 +541,13 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Tài khoản",
+                            text = stringResource(R.string.settings_account_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.TextPrimary
                         )
                         Text(
-                            text = authState.userLabel ?: "Chưa đăng nhập",
+                            text = authState.userLabel ?: stringResource(R.string.settings_not_signed_in),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextHint
                         )
@@ -434,12 +566,40 @@ fun SettingsScreen(
                                 disabledContentColor = AppColors.TextHint
                             )
                         ) {
-                            Text("Đăng xuất", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
+    }
+
+    // Confirm dialog đổi role — đối xứng với flow cũ ở Profile.
+    pendingRole?.let { newRole ->
+        AlertDialog(
+            onDismissRequest = { pendingRole = null },
+            title = { Text(stringResource(R.string.settings_change_role_title), fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    when (newRole) {
+                        "TRADER" -> stringResource(R.string.settings_change_role_to_trader)
+                        else -> stringResource(R.string.settings_change_role_to_farmer)
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    profile?.let { current ->
+                        profileViewModel.updateProfile(current = current, role = newRole)
+                    }
+                    pendingRole = null
+                }) { Text(stringResource(R.string.settings_change_role_confirm), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRole = null }) { Text(stringResource(R.string.action_cancel)) }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 }
 
@@ -474,6 +634,54 @@ private fun IconTile(
     ) {
         Box(contentAlignment = Alignment.Center) {
             icon(tint, Modifier.size(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun LanguageOptions(
+    selected: AppLanguage,
+    onSelect: (AppLanguage) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AppLanguage.entries.forEach { language ->
+            val isSelected = language == selected
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                onClick = { onSelect(language) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(language.labelRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                        )
+                        Text(
+                            text = stringResource(language.nativeLabelRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.TextHint
+                        )
+                    }
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { onSelect(language) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = AppColors.GreenPrimary,
+                            unselectedColor = AppColors.TextHint
+                        )
+                    )
+                }
+            }
         }
     }
 }
@@ -525,7 +733,7 @@ private fun StatusRow(label: String, time: Long?) {
     val formatter = remember {
         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     }
-    val value = time?.let { formatter.format(Date(it)) } ?: "Chưa có"
+    val value = time?.let { formatter.format(Date(it)) } ?: stringResource(R.string.settings_empty_time)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -545,9 +753,17 @@ private fun StatusRow(label: String, time: Long?) {
     }
 }
 
-private fun syncStatusText(status: SyncStatus): String = when (status) {
-    is SyncStatus.Syncing -> "Đang đồng bộ..."
-    is SyncStatus.Success -> "Đồng bộ thành công"
-    is SyncStatus.Error -> "Lỗi đồng bộ: ${status.message}"
-    SyncStatus.Idle -> "Chưa đồng bộ"
+@Composable
+private fun SyncStatusText(status: SyncStatus) {
+    val text = when (status) {
+        is SyncStatus.Syncing -> stringResource(R.string.settings_sync_status_syncing)
+        is SyncStatus.Success -> stringResource(R.string.settings_sync_status_success)
+        is SyncStatus.Error -> stringResource(R.string.settings_sync_status_error, status.message)
+        SyncStatus.Idle -> stringResource(R.string.settings_sync_status_idle)
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = AppColors.TextHint
+    )
 }

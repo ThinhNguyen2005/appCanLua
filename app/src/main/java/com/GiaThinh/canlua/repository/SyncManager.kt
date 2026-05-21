@@ -19,6 +19,7 @@ import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.TransactionType
 import com.GiaThinh.canlua.data.model.WeightEntry
+import com.GiaThinh.canlua.util.AnalyticsHelper
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,6 +101,7 @@ class SyncManager @Inject constructor(
 
         return try {
             _syncStatus.value = SyncStatus.Syncing
+            val startedAt = System.currentTimeMillis()
 
             // Sync cards - get first value from Flow
             val localCards = cardRepository.getAllCards().first()
@@ -124,6 +126,7 @@ class SyncManager @Inject constructor(
                     syncedCount++
                 }.onFailure {
                     errorCount++
+                    AnalyticsHelper.logNonFatal(it, tag = "sync_card")
                 }
             }
 
@@ -133,14 +136,21 @@ class SyncManager @Inject constructor(
 
             if (errorCount > 0 && syncedCount == 0) {
                 _syncStatus.value = SyncStatus.Error("Không thể đồng bộ dữ liệu. Vui lòng thử lại.")
+                AnalyticsHelper.syncFailed(stage = "push_all", errorClass = "AllCardsFailed")
                 Result.failure(Exception("Sync failed for all cards"))
             } else {
                 _syncStatus.value = SyncStatus.Success
                 _lastSyncTime.value = System.currentTimeMillis()
+                AnalyticsHelper.syncSuccess(
+                    durationMs = System.currentTimeMillis() - startedAt,
+                    cardCount = syncedCount
+                )
                 Result.success(Unit)
             }
         } catch (e: Exception) {
             _syncStatus.value = SyncStatus.Error(e.message ?: "Lỗi đồng bộ")
+            AnalyticsHelper.syncFailed(stage = "exception", errorClass = e.javaClass.simpleName)
+            AnalyticsHelper.logNonFatal(e, tag = "sync_all")
             Result.failure(e)
         }
     }
@@ -246,22 +256,53 @@ class SyncManager @Inject constructor(
             val firestoreToLocalId = mutableMapOf<String, Long>()
 
             firestoreCards.forEach { fsCard ->
-                if (fsCard.id.isBlank()) return@forEach
-                val existing = cardDao.getByFirestoreId(fsCard.id)
-                val localId = if (existing != null) {
-                    // Conflict resolution: chỉ overwrite local khi cloud mới hơn.
-                    // `lastModifiedMs` là source of truth — `syncTimestamp` chỉ là
-                    // "lúc nào push" (có thể bị skew clock máy khác).
-                    val cloudNewer = fsCard.lastModifiedMs > existing.lastModifiedMs
-                    if (cloudNewer) {
-                        cardDao.updateCard(fsCard.toLocalCard(currentUid, existingId = existing.id))
-                    }
-                    // Local mới hơn → giữ. SyncWorker push sẽ đẩy bản local lên cloud.
-                    existing.id
-                } else {
-                    cardDao.insertCard(fsCard.toLocalCard(currentUid, existingId = 0L))
+                // Skip nếu user đã xoá phiếu này (có tombstone). Tránh bug
+                // phiếu xoá rồi quay về sau pull. Background sẽ retry delete cloud.
+                if (fsCard.id.isNotBlank() &&
+                    cardRepository.isCardTombstoned(currentUid, fsCard.id)) {
+                    return@forEach
                 }
-                firestoreToLocalId[fsCard.id] = localId
+                val byFsId = if (fsCard.id.isNotBlank()) cardDao.getByFirestoreId(fsCard.id) else null
+                val action = PullDedupResolver.resolve(fsCard, byFsId) {
+                    cardDao.findOrphanFirestoreMatch(
+                        uid = currentUid,
+                        date = fsCard.date.time,
+                        name = fsCard.name,
+                        totalWeight = fsCard.totalWeight
+                    )
+                }
+                val localId = when (action) {
+                    is PullDedupResolver.Action.Insert ->
+                        cardDao.insertCard(action.fsCard.toLocalCard(currentUid, existingId = 0L))
+
+                    is PullDedupResolver.Action.Update -> {
+                        cardDao.updateCard(
+                            action.fsCard.toLocalCard(currentUid, existingId = action.localId)
+                        )
+                        if (action.reason == PullDedupResolver.Reason.COMPOSITE_KEY_MATCH) {
+                            AnalyticsHelper.breadcrumb("pull_dedup_composite cardId=${action.localId}")
+                        }
+                        action.localId
+                    }
+
+                    is PullDedupResolver.Action.Skip -> action.localId
+                }
+                if (fsCard.id.isNotBlank() && localId > 0) {
+                    firestoreToLocalId[fsCard.id] = localId
+                }
+            }
+
+            // Retry pending cloud deletes — tombstone từ delete khi offline.
+            cardRepository.getPendingCloudDeletes(currentUid).forEach { tomb ->
+                val fsId = tomb.firestoreId ?: return@forEach
+                val ok = runCatching {
+                    firestoreRepository.getWeightEntriesByCardId(fsId).getOrNull().orEmpty()
+                        .forEach { e -> if (e.id.isNotBlank()) firestoreRepository.deleteWeightEntry(e.id) }
+                    firestoreRepository.getTransactionsByCardId(fsId).getOrNull().orEmpty()
+                        .forEach { t -> if (t.id.isNotBlank()) firestoreRepository.deleteTransaction(t.id) }
+                    firestoreRepository.deleteCard(fsId).getOrNull()
+                }.isSuccess
+                if (ok) cardRepository.markTombstoneCloudDeleted(tomb.id)
             }
 
             // Pull weight entries + transactions cho từng card đã pull.

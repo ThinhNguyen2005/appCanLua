@@ -20,6 +20,7 @@ import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +77,7 @@ fun AuthScreen(
 
             Icon(
                 imageVector = Icons.Default.Eco,
-                contentDescription = "Logo Cân Lúa",
+                contentDescription = stringResource(R.string.auth_logo_content),
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -84,7 +85,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Đăng nhập hoặc đăng ký",
+                text = stringResource(R.string.auth_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -93,7 +94,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Quản lý dữ liệu thông minh, lưu trữ an toàn và đồng bộ mọi lúc.",
+                text = stringResource(R.string.auth_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -117,7 +118,7 @@ fun AuthScreen(
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
-                    text = "HOẶC",
+                    text = stringResource(R.string.auth_or),
                     modifier = Modifier.padding(horizontal = 16.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -142,14 +143,14 @@ fun AuthScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = "Điều khoản sử dụng • Chính sách quyền riêng tư",
+                text = stringResource(R.string.auth_terms_privacy),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textDecoration = TextDecoration.Underline,
                 modifier = Modifier
                     .padding(vertical = 24.dp)
                     .clickable {
-                        scope.launch { snackbarHostState.showSnackbar("Tính năng đang hoàn thiện.") }
+                        scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.auth_feature_in_progress)) }
                     }
             )
         }
@@ -168,6 +169,7 @@ private fun AuthEmailForm(
     var password by remember { mutableStateOf("") }
     var otp by remember { mutableStateOf("") }
     var isRegister by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     // Detect phone vs email theo input thật-time → đổi keyboard + autofill hint phù hợp.
     val isPhoneMode = remember(identifier) { viewModel.looksLikePhone(identifier) }
@@ -186,8 +188,8 @@ private fun AuthEmailForm(
         onValueChange = { identifier = it },
         placeholder = {
             Text(
-                if (isPhoneMode) "Số điện thoại (VD: 0901234567)"
-                else "Email hoặc số điện thoại",
+                if (isPhoneMode) stringResource(R.string.auth_phone_placeholder)
+                else stringResource(R.string.auth_identifier_placeholder),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
@@ -221,7 +223,7 @@ private fun AuthEmailForm(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            placeholder = { Text("Mật khẩu (≥ 6 ký tự)", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            placeholder = { Text(stringResource(R.string.auth_password_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier
@@ -247,7 +249,7 @@ private fun AuthEmailForm(
         OutlinedTextField(
             value = otp,
             onValueChange = { input -> otp = input.filter { it.isDigit() }.take(6) },
-            placeholder = { Text("Nhập mã OTP (6 số)", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            placeholder = { Text(stringResource(R.string.auth_otp_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -273,7 +275,7 @@ private fun AuthEmailForm(
     ) {
         if (!isRegister && !isPhoneMode) {
             Text(
-                text = "Quên mật khẩu?",
+                text = stringResource(R.string.auth_forgot_password),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
@@ -287,7 +289,7 @@ private fun AuthEmailForm(
             Spacer(modifier = Modifier.width(1.dp))
         }
         Text(
-            text = if (isRegister) "Đã có tài khoản? Đăng nhập" else "Chưa có tài khoản? Đăng ký",
+            text = if (isRegister) stringResource(R.string.auth_toggle_login) else stringResource(R.string.auth_toggle_register),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Medium,
@@ -307,13 +309,13 @@ private fun AuthEmailForm(
             if (isPhoneMode) {
                 if (showOtpField) {
                     if (otp.length < 6) {
-                        scope.launch { snackbarHostState.showSnackbar("Nhập đủ 6 chữ số OTP.") }
+                        scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.auth_error_otp_length)) }
                         return@Button
                     }
                     viewModel.verifyOtp(otp)
                 } else {
                     if (activity == null) {
-                        scope.launch { snackbarHostState.showSnackbar("Lỗi context. Khởi động lại app.") }
+                        scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.auth_error_context)) }
                         return@Button
                     }
                     viewModel.sendOtp(activity, idTrim)
@@ -328,7 +330,7 @@ private fun AuthEmailForm(
                 isRegister = isRegister
             )
             if (validation != null) {
-                scope.launch { snackbarHostState.showSnackbar(validation) }
+                scope.launch { snackbarHostState.showSnackbar(context.getString(validation)) }
                 return@Button
             }
             if (isRegister) {
@@ -361,10 +363,10 @@ private fun AuthEmailForm(
         } else {
             Text(
                 text = when {
-                    isPhoneMode && showOtpField -> "Xác nhận OTP"
-                    isPhoneMode -> "Gửi mã OTP"
-                    isRegister -> "Đăng ký"
-                    else -> "Đăng nhập"
+                    isPhoneMode && showOtpField -> stringResource(R.string.auth_confirm_otp)
+                    isPhoneMode -> stringResource(R.string.auth_send_otp)
+                    isRegister -> stringResource(R.string.auth_register)
+                    else -> stringResource(R.string.auth_login)
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
@@ -380,10 +382,10 @@ private fun validateAuthForm(
     email: String,
     password: String,
     isRegister: Boolean
-): String? {
-    if (email.isBlank()) return "Vui lòng nhập email hoặc số điện thoại."
-    if (!email.matches(EMAIL_REGEX)) return "Email không đúng định dạng."
-    if (password.length < 6) return "Mật khẩu phải có ít nhất 6 ký tự."
+): Int? {
+    if (email.isBlank()) return R.string.auth_error_identifier_required
+    if (!email.matches(EMAIL_REGEX)) return R.string.auth_error_email_invalid
+    if (password.length < 6) return R.string.auth_error_password_length
     @Suppress("UNUSED_PARAMETER")
     val _r = isRegister
     return null
@@ -411,6 +413,6 @@ private fun GoogleSignInButton(onClick: () -> Unit) {
             tint = Color.Unspecified
         )
         Spacer(modifier = Modifier.width(12.dp))
-        Text("Tiếp tục với Google", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        Text(stringResource(R.string.auth_continue_google), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
     }
 }

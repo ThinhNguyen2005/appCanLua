@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -93,18 +94,19 @@ fun MainScreen() {
     val showBottomBar = (isOnTabScreen || currentRoute in listOf("sync_status")) && !isImeVisible
 
     // Title theo tab/route — riêng AI Chat đổi theo audience để truyền tải đúng identity của bot.
+    val defaultScaleTitle = stringResource(com.GiaThinh.canlua.R.string.nav_scale)
     val topBarTitle = when (currentRoute) {
         BottomNavItem.AI_CHAT.route ->
-            if (isTrader) "Chuyên Gia Thị Trường" else "Trợ Lý Khuyến Nông"
-        "settings" -> "Cài Đặt"
-        "sync_status" -> "Trạng Thái Đồng Bộ"
-        "trader_transactions" -> "Sổ Giao Dịch"
-        else -> currentTab?.label ?: "Cân Lúa"
+            stringResource(if (isTrader) com.GiaThinh.canlua.R.string.topbar_ai_trader else com.GiaThinh.canlua.R.string.topbar_ai_farmer)
+        "settings" -> stringResource(com.GiaThinh.canlua.R.string.topbar_settings)
+        "sync_status" -> stringResource(com.GiaThinh.canlua.R.string.topbar_sync_status)
+        "trader_transactions" -> stringResource(com.GiaThinh.canlua.R.string.topbar_trader_transactions)
+        else -> currentTab?.let { stringResource(it.labelRes) } ?: defaultScaleTitle
     }
 
     // Subtitle — AI Chat hiện brand, các route khác ẩn.
     val topBarSubtitle = when (currentRoute) {
-        BottomNavItem.AI_CHAT.route -> "Được hỗ trợ bởi Gemini"
+        BottomNavItem.AI_CHAT.route -> stringResource(com.GiaThinh.canlua.R.string.topbar_ai_subtitle)
         else -> null
     }
 
@@ -157,7 +159,7 @@ fun MainScreen() {
                                 }) {
                                     Icon(
                                         imageVector = Icons.Filled.Menu,
-                                        contentDescription = "Mở danh sách phiên chat"
+                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_open_chat_sessions)
                                     )
                                 }
                             }
@@ -165,7 +167,7 @@ fun MainScreen() {
                                 IconButton(onClick = { navController.popBackStack() }) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Quay lại"
+                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_back)
                                     )
                                 }
                             }
@@ -179,7 +181,7 @@ fun MainScreen() {
                             }) {
                                 Icon(
                                     imageVector = Icons.Filled.QrCodeScanner,
-                                    contentDescription = "Quét mã QR"
+                                    contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_scan_qr)
                                 )
                             }
                         }
@@ -192,7 +194,7 @@ fun MainScreen() {
                             }) {
                                 Icon(
                                     imageVector = Icons.Filled.Settings,
-                                    contentDescription = "Cài đặt"
+                                    contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_settings)
                                 )
                             }
                         }
@@ -235,7 +237,7 @@ fun MainScreen() {
                                 route = nav.route,
                                 icon = nav.icon,
                                 selectedIcon = nav.selectedIcon,
-                                label = nav.label
+                                label = stringResource(nav.labelRes)
                             )
                         },
                         currentRoute = currentRoute,

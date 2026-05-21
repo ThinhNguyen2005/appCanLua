@@ -8,12 +8,14 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Configuration
+import android.content.Context
+import android.content.pm.PackageManager
 import com.GiaThinh.canlua.repository.AuthManager
 import com.GiaThinh.canlua.repository.CardRepository
 import com.GiaThinh.canlua.repository.ProfileRepository
-import com.GiaThinh.canlua.repository.RoleRequestRepository
 import com.GiaThinh.canlua.repository.SyncManager
 import com.GiaThinh.canlua.repository.SyncWorker
+import com.GiaThinh.canlua.util.AnalyticsHelper
 import com.GiaThinh.canlua.util.PremiumState
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -45,9 +47,6 @@ class CanLuaApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var profileRepository: ProfileRepository
 
-    @Inject
-    lateinit var roleRequestRepository: RoleRequestRepository
-
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // --- ĐOẠN ĐÃ SỬA ---
@@ -60,11 +59,29 @@ class CanLuaApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        AnalyticsHelper.init(this)
         PremiumState.init(this)
+        applyEarlyAdopterPremium()
         scheduleOrphanClaim()
         scheduleAutoPullOnSignIn()
-        scheduleAutoApplyRoleApproval()
         schedulePeriodicSync()
+    }
+
+    /**
+     * Apply Early Adopter Premium nếu user cài app trước ngày cutoff.
+     * Lấy firstInstallTime từ PackageManager để đảm bảo không bị fake được.
+     */
+    private fun applyEarlyAdopterPremium() {
+        try {
+            val firstInstallTime = packageManager.getPackageInfo(packageName, 0).firstInstallTime
+            PremiumState.applyEarlyAdopterIfEligible(
+                context = applicationContext,
+                firstInstallTimeMs = firstInstallTime,
+                earlyAdopterEnabled = true, // TODO: thay = giá trị từ Firebase Remote Config
+            )
+        } catch (e: PackageManager.NameNotFoundException) {
+            // Không xác định được first install time → bỏ qua early adopter
+        }
     }
 
     /**
@@ -103,45 +120,6 @@ class CanLuaApplication : Application(), Configuration.Provider {
                 .collect { uid ->
                     if (uid != null && syncManager.isOnline()) {
                         syncManager.pullAllForCurrentUser()
-                    }
-                }
-        }
-    }
-
-    /**
-     * Auto-apply TRADER role khi admin duyệt `roleRequests/{uid}.status = APPROVED`.
-     *
-     * Flow:
-     *  1. User submit form RoleRequestScreen → Firestore doc tạo với status = PENDING.
-     *  2. Admin xem Firebase Console, đổi status = APPROVED + cập nhật reviewerNote.
-     *  3. App đang chạy → observer dưới phát hiện thay đổi → cập nhật local
-     *     `Profile.role = "TRADER"` → MainScreen reactive đổi nav graph sang trader.
-     *
-     * Idempotent: nếu profile đã là TRADER thì không update lại.
-     * App offline lúc admin duyệt: lần next online + tap RoleRequestScreen sẽ
-     * thấy status APPROVED và observer trigger.
-     */
-    private fun scheduleAutoApplyRoleApproval() {
-        appScope.launch {
-            authManager.authStateFlow
-                .map { it?.uid }
-                .distinctUntilChanged()
-                .collect { uid ->
-                    if (uid == null) return@collect
-                    roleRequestRepository.observeMyRequest().collect { request ->
-                        if (request?.status == RoleRequestRepository.Status.APPROVED.name) {
-                            // Đọc profile hiện tại để giữ nguyên các field khác
-                            val current = profileRepository.latestProfile().first()
-                            if (current != null && current.role != "TRADER") {
-                                profileRepository.saveProfile(
-                                    current.copy(
-                                        role = "TRADER",
-                                        roleGrantedBy = "admin",
-                                        roleGrantedAt = request.reviewedAt ?: System.currentTimeMillis()
-                                    )
-                                )
-                            }
-                        }
                     }
                 }
         }

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 import java.util.Properties
@@ -41,11 +42,18 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 minify + shrink resources cho APK gọn 60-70% và obfuscate code.
+            // Hilt/Room/Firestore/Coil/Compose có rules trong proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            // Tắt minify cho debug build nhanh + Crashlytics symbols mapping rõ ràng.
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -98,6 +106,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 

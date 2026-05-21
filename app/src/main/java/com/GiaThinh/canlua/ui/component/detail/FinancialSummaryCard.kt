@@ -15,8 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
@@ -52,7 +54,7 @@ fun FinancialSummaryCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Tài chính",
+                    stringResource(R.string.detail_financial_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
@@ -63,7 +65,7 @@ fun FinancialSummaryCard(
 
             FluentStatRow(
                 icon = Icons.Outlined.AttachMoney,
-                label = "Đơn giá",
+                label = stringResource(R.string.detail_financial_price),
                 trailing = {
                     AnimatedNumber(
                         value = pricePerKg,
@@ -76,7 +78,7 @@ fun FinancialSummaryCard(
             )
             FluentStatRow(
                 icon = Icons.Outlined.Calculate,
-                label = "Thành tiền",
+                label = stringResource(R.string.detail_financial_total_amount),
                 trailing = {
                     AnimatedNumber(
                         value = totalAmount,
@@ -89,7 +91,7 @@ fun FinancialSummaryCard(
             )
             FluentStatRow(
                 icon = Icons.Outlined.CreditCard,
-                label = "Tiền cọc",
+                label = stringResource(R.string.detail_financial_deposit),
                 trailing = {
                     AnimatedNumber(
                         value = depositAmount,
@@ -102,7 +104,7 @@ fun FinancialSummaryCard(
             )
             FluentStatRow(
                 icon = Icons.Outlined.CheckCircle,
-                label = "Đã trả",
+                label = stringResource(R.string.detail_financial_paid),
                 trailing = {
                     AnimatedNumber(
                         value = paidAmount,
@@ -138,7 +140,7 @@ fun FinancialSummaryCard(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Còn lại",
+                            stringResource(R.string.detail_financial_remaining),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GoldDark

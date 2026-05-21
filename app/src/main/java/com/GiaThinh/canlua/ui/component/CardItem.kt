@@ -32,7 +32,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.GiaThinh.canlua.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.data.model.Card as CardModel
@@ -96,7 +98,7 @@ fun CardItem(
                         if (card.isLocked) {
                             Icon(
                                 imageVector = Icons.Filled.Lock,
-                                contentDescription = "Đã khoá",
+                                contentDescription = stringResource(R.string.card_item_locked_content),
                                 tint = AppColors.LockedText,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -152,7 +154,10 @@ fun CardItem(
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    text = "Ẩm ${"%.1f".format(card.moisturePercent)}%",
+                                    text = stringResource(
+                                        R.string.card_item_moisture,
+                                        "%.1f".format(card.moisturePercent)
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.Info
                                 )
@@ -171,13 +176,13 @@ fun CardItem(
                 ) {
                     Column {
                         Text(
-                            text = "${numberFormat.format(card.totalWeight)} kg",
+                            text = stringResource(R.string.card_list_weight_kg, numberFormat.format(card.totalWeight)),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                         if (card.bagCount > 0) {
                             Text(
-                                text = "${card.bagCount} lần cân",
+                                text = stringResource(R.string.card_item_weigh_count, card.bagCount),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.TextSecondary
                             )
@@ -185,14 +190,17 @@ fun CardItem(
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "${numberFormat.format(card.totalAmount)} đ",
+                            text = stringResource(R.string.card_list_money_vnd, numberFormat.format(card.totalAmount)),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GreenPrimary
                         )
                         if (card.remainingAmount > 0) {
                             Text(
-                                text = "Còn: ${numberFormat.format(card.remainingAmount)} đ",
+                                text = stringResource(
+                                    R.string.card_item_remaining_amount,
+                                    numberFormat.format(card.remainingAmount)
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.Warning
                             )
@@ -210,7 +218,7 @@ fun CardItem(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "✓ QR đã xác thực",
+                            text = stringResource(R.string.card_item_qr_verified),
                             style = MaterialTheme.typography.labelSmall,
                             color = AppColors.Success,
                             fontWeight = FontWeight.Medium
@@ -240,7 +248,7 @@ fun CardItem(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Delete,
-                        contentDescription = "Xoá",
+                        contentDescription = stringResource(R.string.card_item_delete_content),
                         tint = AppColors.CardBg,
                         modifier = Modifier.size(28.dp)
                     )

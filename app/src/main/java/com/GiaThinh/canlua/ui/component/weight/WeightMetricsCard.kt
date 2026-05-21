@@ -15,7 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.GiaThinh.canlua.R
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -81,7 +83,7 @@ fun WeightMetricsCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Scale, null, tint = AppColors.GreenPrimary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Chỉ Số Cân", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.weight_metrics_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
                 Surface(
                     color = AppColors.GreenSurface,
@@ -89,7 +91,7 @@ fun WeightMetricsCard(
                 ) {
                     AnimatedNumber(
                         value = bagCount,
-                        formatter = { "$it bao" },
+                        formatter = { count -> "$count bao" },
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = AppColors.GreenPrimary
@@ -107,16 +109,16 @@ fun WeightMetricsCard(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Tổng khối lượng", style = MaterialTheme.typography.bodyMedium, color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.weight_label_total_weight), style = MaterialTheme.typography.bodyMedium, color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
                     AnimatedNumber(
                         value = totalWeight,
                         formatter = { "${"%.1f".format(it)} kg" },
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFB71C1C) // Đỏ đậm cực kỳ nổi bật
+                        color = AppColors.RemainingHighlight // Auto-adapt dark/light
                     )
                     Text(
-                        "Chưa trừ bì",
+                        stringResource(R.string.weight_label_before_tare),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextHint
                     )
@@ -126,6 +128,11 @@ fun WeightMetricsCard(
             // Trừ bì + Tạp chất + Độ ẩm — OutlinedTextField đã có `enabled = !isLocked`,
             // không cần overlay Box .clickable rườm rà (gây cảm giác "mờ và shadow quá đà").
             // Khi locked, người dùng vẫn nhìn thấy giá trị nhưng không tap được — clean & predictable.
+            //
+            // Layout 2 hàng theo mental model nông dân:
+            //  - Row 1: Bì + Tạp chất — cặp khấu trừ VẬT LÝ (cùng nhóm)
+            //  - Row 2: Độ ẩm — khấu trừ KỸ THUẬT (full width, đủ chỗ hiển thị label)
+            // Trước đây 3 trường 1 hàng → label clip "B..." "T..." trên màn nhỏ.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = bagText,
@@ -135,7 +142,7 @@ fun WeightMetricsCard(
                             onBagWeightChange(it.toDoubleOrNull() ?: 0.0)
                         }
                     },
-                    label = { Text("Bì (kg/bao)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    label = { Text(stringResource(R.string.weight_metrics_bag_label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     trailingIcon = {
                         IconButton(
                             onClick = { showBagInfo = true },
@@ -143,7 +150,7 @@ fun WeightMetricsCard(
                         ) {
                             Icon(
                                 Icons.Outlined.Info,
-                                contentDescription = "Tìm hiểu trọng lượng bì",
+                                contentDescription = stringResource(R.string.weight_metrics_bag_info_content),
                                 tint = AppColors.GreenPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -163,7 +170,7 @@ fun WeightMetricsCard(
                             onImpurityWeightChange(it.toDoubleOrNull() ?: 0.0)
                         }
                     },
-                    label = { Text("Tạp chất (kg)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    label = { Text(stringResource(R.string.weight_metrics_impurity_label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     trailingIcon = {
                         IconButton(
                             onClick = { showImpurityInfo = true },
@@ -171,36 +178,8 @@ fun WeightMetricsCard(
                         ) {
                             Icon(
                                 Icons.Outlined.Info,
-                                contentDescription = "Tìm hiểu tạp chất",
+                                contentDescription = stringResource(R.string.weight_metrics_impurity_info_content),
                                 tint = AppColors.GreenPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    },
-                    enabled = !isLocked,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                OutlinedTextField(
-                    value = moistureText,
-                    onValueChange = {
-                        if (!isLocked) {
-                            moistureText = it
-                            onMoistureChange(it.toDoubleOrNull() ?: 0.0)
-                        }
-                    },
-                    label = { Text("Độ ẩm (%)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    trailingIcon = {
-                        IconButton(
-                            onClick = { showMoistureInfo = true },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.WaterDrop,
-                                contentDescription = "Tìm hiểu khấu trừ độ ẩm",
-                                tint = AppColors.Info,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -213,6 +192,45 @@ fun WeightMetricsCard(
                 )
             }
 
+            // Row 2: Độ ẩm — full width vì đây là chỉ số quan trọng nhất (quy đổi tiền)
+            // và label "Độ ẩm (%)" + leading icon WaterDrop cần đủ space hiển thị.
+            OutlinedTextField(
+                value = moistureText,
+                onValueChange = {
+                    if (!isLocked) {
+                        moistureText = it
+                        onMoistureChange(it.toDoubleOrNull() ?: 0.0)
+                    }
+                },
+                label = { Text(stringResource(R.string.weight_metrics_moisture_label)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.WaterDrop,
+                        contentDescription = null,
+                        tint = AppColors.Info,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                trailingIcon = {
+                    IconButton(
+                        onClick = { showMoistureInfo = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Info,
+                            contentDescription = stringResource(R.string.weight_metrics_moisture_info_content),
+                            tint = AppColors.Info,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                },
+                enabled = !isLocked,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp)
+            )
+
             // KL thực (after deductions) - High Contrast
             Box(
                 modifier = Modifier
@@ -223,16 +241,16 @@ fun WeightMetricsCard(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Khối lượng thực", style = MaterialTheme.typography.bodyMedium, color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.weight_label_net_weight), style = MaterialTheme.typography.bodyMedium, color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
                     AnimatedNumber(
                         value = netWeight,
                         formatter = { "${"%.1f".format(it)} kg" },
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF1B5E20) // Xanh lá đậm tương phản cao
+                        color = AppColors.GreenPrimary // Auto-adapt: xanh đậm light, xanh sáng dark
                     )
                     Text(
-                        "Khối lượng thực tế",
+                        stringResource(R.string.weight_metrics_net_subtitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = AppColors.GreenDark
                     )
@@ -246,13 +264,13 @@ fun WeightMetricsCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Thành tiền", style = MaterialTheme.typography.titleMedium, color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.weight_metrics_total_amount), style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
                 AnimatedNumber(
                     value = totalAmount,
                     formatter = { "${fmt.format(it)} đ" },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF1B5E20) // Xanh lá đậm tương phản mạnh
+                    color = AppColors.GreenPrimary // Auto-adapt theo dark/light mode
                 )
             }
         }
@@ -261,22 +279,22 @@ fun WeightMetricsCard(
     // Interactive Explaining Popovers
     ExplainingPopover(
         visible = showBagInfo,
-        title = "⚖️ Trọng Lượng Bì",
-        description = "Trọng lượng trung bình của vỏ bao đựng lúa (thường khoảng 0.5kg - 1.2kg tùy loại bao). Tổng trọng lượng bì (Bì × Số bao) sẽ được khấu trừ trực tiếp khỏi tổng khối lượng lúa.",
+        title = stringResource(R.string.weight_metrics_bag_info_title),
+        description = stringResource(R.string.weight_metrics_bag_info_description),
         onDismiss = { showBagInfo = false }
     )
 
     ExplainingPopover(
         visible = showImpurityInfo,
-        title = "🍂 Khấu Trừ Tạp Chất",
-        description = "Khối lượng tạp chất (rơm rạ, đất cát, hạt lép) có trong lô lúa được hai bên thỏa thuận trừ trực tiếp bằng số kg cố định để đảm bảo công bằng cho người mua lúa sạch.",
+        title = stringResource(R.string.weight_metrics_impurity_info_title),
+        description = stringResource(R.string.weight_metrics_impurity_info_description),
         onDismiss = { showImpurityInfo = false }
     )
 
     ExplainingPopover(
         visible = showMoistureInfo,
-        title = "💧 Khấu Trừ Độ Ẩm",
-        description = "Độ ẩm lúa thực tế đo tại ruộng. Độ ẩm tiêu chuẩn thương mại là 14%. Nếu độ ẩm cao hơn, một tỷ lệ hao hụt sấy sẽ được khấu trừ vào khối lượng thực tế theo thỏa thuận.",
+        title = stringResource(R.string.weight_metrics_moisture_info_title),
+        description = stringResource(R.string.weight_metrics_moisture_info_description),
         onDismiss = { showMoistureInfo = false }
     )
 }

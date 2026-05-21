@@ -22,6 +22,7 @@ import com.GiaThinh.canlua.ui.screen.ProfileSetupScreen
 import com.GiaThinh.canlua.ui.screen.RoleRequestScreen
 import com.GiaThinh.canlua.ui.theme.CanLuaTheme
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.GiaThinh.canlua.util.LocaleUtil
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -35,7 +36,9 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val authViewModel: AuthViewModel = hiltViewModel()
             val fontScale by settingsViewModel.fontScale.collectAsState(FontScale.NORMAL)
+            val language by settingsViewModel.language.collectAsState()
             val authState by authViewModel.uiState.collectAsState()
+            LocaleUtil.applyLanguage(this, language)
 
             CanLuaTheme(fontScale = fontScale) {
                 com.GiaThinh.canlua.ui.feedback.AppToastHost {

@@ -12,8 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
@@ -60,7 +62,7 @@ fun RemainingHeroCard(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        "Còn lại",
+                        stringResource(R.string.detail_financial_remaining),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White.copy(alpha = 0.92f)
@@ -76,7 +78,7 @@ fun RemainingHeroCard(
                 )
 
                 Text(
-                    "Số tiền chưa thanh toán",
+                    stringResource(R.string.detail_remaining_subtitle),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White.copy(alpha = 0.75f)
                 )

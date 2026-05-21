@@ -19,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.SeasonHelper
 
 /**
@@ -46,8 +48,8 @@ fun SeasonDropdown(
         OutlinedTextField(
             value = selected,
             onValueChange = { onSelect(it) },
-            label = { Text("Vụ mùa") },
-            placeholder = { Text("VD: Đông Xuân 2026") },
+            label = { Text(stringResource(R.string.weight_lot_season_label)) },
+            placeholder = { Text(stringResource(R.string.dropdown_season_placeholder)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)

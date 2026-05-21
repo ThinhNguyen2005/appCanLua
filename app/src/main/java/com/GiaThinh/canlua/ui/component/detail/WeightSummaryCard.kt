@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.GiaThinh.canlua.R
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.theme.AppColors
@@ -51,7 +53,7 @@ fun WeightSummaryCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Khối lượng",
+                    stringResource(R.string.weight_label_weight),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
@@ -69,7 +71,7 @@ fun WeightSummaryCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        "Tổng khối lượng",
+                        stringResource(R.string.weight_label_total_weight),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextSecondary,
                         fontWeight = FontWeight.Medium
@@ -83,7 +85,7 @@ fun WeightSummaryCard(
                         color = AppColors.RemainingHighlight
                     )
                     Text(
-                        "Chưa trừ bì",
+                        stringResource(R.string.weight_label_before_tare),
                         style = MaterialTheme.typography.labelSmall,
                         color = AppColors.TextHint
                     )
@@ -93,11 +95,11 @@ fun WeightSummaryCard(
             // Stat rows
             FluentStatRow(
                 icon = Icons.Outlined.ShoppingBag,
-                label = "Số bao",
+                label = stringResource(R.string.weight_label_bag_count),
                 trailing = {
                     AnimatedNumber(
                         value = bagCount,
-                        formatter = { "$it bao" },
+                        formatter = { count -> "$count bao" },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary
@@ -106,7 +108,7 @@ fun WeightSummaryCard(
             )
             FluentStatRow(
                 icon = Icons.Outlined.Inventory2,
-                label = "Trừ bì",
+                label = stringResource(R.string.weight_label_tare),
                 trailing = {
                     AnimatedNumber(
                         value = bagWeight,
@@ -119,7 +121,7 @@ fun WeightSummaryCard(
             )
             FluentStatRow(
                 icon = Icons.Outlined.Scale,
-                label = "Tạp chất",
+                label = stringResource(R.string.weight_label_impurity),
                 trailing = {
                     AnimatedNumber(
                         value = impurityWeight,
@@ -155,7 +157,7 @@ fun WeightSummaryCard(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Khối lượng thực",
+                            stringResource(R.string.weight_label_net_weight),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GreenPrimary

@@ -2,6 +2,7 @@ package com.GiaThinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.GiaThinh.canlua.data.model.AppLanguage
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +28,14 @@ class SettingsViewModel @Inject constructor(
             started = SharingStarted.Eagerly,
             initialValue = settingsRepository.getFontScale()
         )
-    
+
+    val language: StateFlow<AppLanguage> = settingsRepository.language
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = settingsRepository.getLanguage()
+        )
+
     fun setTtsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setTtsEnabled(enabled)
@@ -38,6 +46,12 @@ class SettingsViewModel @Inject constructor(
     fun setFontScale(scale: FontScale) {
         viewModelScope.launch {
             settingsRepository.setFontScale(scale)
+        }
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        viewModelScope.launch {
+            settingsRepository.setLanguage(language)
         }
     }
 }

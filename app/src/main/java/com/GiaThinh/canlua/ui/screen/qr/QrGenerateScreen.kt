@@ -16,11 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.util.HapticUtil
@@ -71,10 +73,10 @@ fun QrGenerateScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mã QR Giao Dịch") },
+                title = { Text(stringResource(R.string.qr_generate_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.content_back))
                     }
                 }
             )
@@ -100,17 +102,17 @@ fun QrGenerateScreen(
                     Spacer(Modifier.height(4.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Khối lượng", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                            Text(stringResource(R.string.weight_label_weight), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                             Text("${"%.1f".format(card.totalWeight)} kg", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Thành tiền", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                            Text(stringResource(R.string.weight_metrics_total_amount), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                             Text("${fmt.format(card.totalAmount)} đ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = AppColors.GreenPrimary)
                         }
                     }
                     if (card.riceVariety.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
-                        Text("Giống: ${card.riceVariety}", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                        Text(stringResource(R.string.qr_generate_variety, card.riceVariety), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                     }
                 }
             }
@@ -130,14 +132,14 @@ fun QrGenerateScreen(
                     ) {
                         Image(
                             bitmap = qrBitmap!!.asImageBitmap(),
-                            contentDescription = "Mã QR giao dịch",
+                            contentDescription = stringResource(R.string.qr_generate_content_description),
                             modifier = Modifier
                                 .size(240.dp)
                                 .clip(RoundedCornerShape(12.dp))
                         )
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            "Đưa mã này cho thương lái quét",
+                            stringResource(R.string.qr_generate_instruction),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextSecondary,
                             textAlign = TextAlign.Center
@@ -160,7 +162,7 @@ fun QrGenerateScreen(
             ) {
                 Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Tạo mã mới")
+                Text(stringResource(R.string.qr_generate_refresh))
             }
 
             Spacer(Modifier.height(12.dp))
@@ -177,7 +179,7 @@ fun QrGenerateScreen(
                     ) {
                         Text("✓ ", style = MaterialTheme.typography.titleMedium, color = AppColors.Success)
                         Text(
-                            "Giao dịch đã được xác thực",
+                            stringResource(R.string.qr_generate_verified),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.Success,
                             fontWeight = FontWeight.Medium
@@ -191,7 +193,7 @@ fun QrGenerateScreen(
             // Token info (small)
             currentToken?.let { token ->
                 Text(
-                    "Token: ${token.take(12)}...",
+                    stringResource(R.string.qr_generate_token, token.take(12)),
                     style = MaterialTheme.typography.labelSmall,
                     color = AppColors.TextHint
                 )

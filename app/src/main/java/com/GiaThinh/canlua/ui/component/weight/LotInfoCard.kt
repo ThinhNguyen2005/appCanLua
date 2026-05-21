@@ -11,9 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
 import com.GiaThinh.canlua.ui.component.ExplainingPopover
 import com.GiaThinh.canlua.ui.theme.AppColors
@@ -54,14 +56,14 @@ fun LotInfoCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Person, null, tint = AppColors.GreenPrimary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Thông Tin Lô", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.weight_lot_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
             // Tên nông dân
             OutlinedTextField(
                 value = farmerName,
                 onValueChange = { if (!isLocked) onNameChange(it) },
-                label = { Text("Tên nông dân") },
+                label = { Text(stringResource(R.string.weight_lot_farmer_name)) },
                 enabled = !isLocked,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -85,7 +87,7 @@ fun LotInfoCard(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Grass,
-                        contentDescription = "Tìm hiểu về giống lúa",
+                        contentDescription = stringResource(R.string.weight_lot_variety_info_content),
                         tint = AppColors.GreenPrimary,
                         modifier = Modifier.size(22.dp)
                     )
@@ -102,7 +104,7 @@ fun LotInfoCard(
                             it.toDoubleOrNull()?.let { v -> onMoistureChange(v) }
                         }
                     },
-                    label = { Text("Độ ẩm (%)") },
+                    label = { Text(stringResource(R.string.weight_lot_moisture_label)) },
                     leadingIcon = {
                         IconButton(
                             onClick = { showMoistureInfo = true },
@@ -110,7 +112,7 @@ fun LotInfoCard(
                         ) {
                             Icon(
                                 Icons.Outlined.WaterDrop,
-                                contentDescription = "Tìm hiểu độ ẩm",
+                                contentDescription = stringResource(R.string.weight_lot_moisture_info_content),
                                 tint = AppColors.Info,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -125,7 +127,7 @@ fun LotInfoCard(
                 OutlinedTextField(
                     value = seasonLabel,
                     onValueChange = { if (!isLocked) onSeasonChange(it) },
-                    label = { Text("Vụ mùa") },
+                    label = { Text(stringResource(R.string.weight_lot_season_label)) },
                     enabled = !isLocked,
                     modifier = Modifier.weight(1f),
                     singleLine = true,
@@ -138,15 +140,15 @@ fun LotInfoCard(
     // Explaining popovers
     ExplainingPopover(
         visible = showVarietyInfo,
-        title = "🌾 Giống Lúa & Vụ Mùa",
-        description = "Mỗi giống lúa (như ST25, OM18) có đặc tính hạt, tỷ lệ khô/ướt và đơn giá thu mua khác nhau. Lựa chọn đúng giống lúa giúp AI khuyến nông hỗ trợ kỹ thuật canh tác chính xác.",
+        title = stringResource(R.string.weight_lot_variety_info_title),
+        description = stringResource(R.string.weight_lot_variety_info_description),
         onDismiss = { showVarietyInfo = false }
     )
 
     ExplainingPopover(
         visible = showMoistureInfo,
-        title = "💧 Độ Ẩm Hạt Lúa",
-        description = "Tỷ lệ nước trong hạt lúa đo bằng máy. Độ ẩm tiêu chuẩn thương mại thường là 14%. Nếu lúa ướt hơn (>14%), thương lái sẽ tính thêm khấu trừ trọng lượng trừ bì theo thỏa thuận thực tế.",
+        title = stringResource(R.string.weight_lot_moisture_info_title),
+        description = stringResource(R.string.weight_lot_moisture_info_description),
         onDismiss = { showMoistureInfo = false }
     )
 }

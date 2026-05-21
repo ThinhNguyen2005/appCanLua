@@ -37,9 +37,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
 /**
@@ -96,7 +98,7 @@ fun CardInfoCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Thông tin phiếu",
+                    stringResource(R.string.detail_info_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary,
@@ -107,15 +109,15 @@ fun CardInfoCard(
             // ── Thương lái ─────────────────────────────────────────────
             InfoRow(
                 icon = Icons.Outlined.Person,
-                label = "Thương lái",
-                value = traderName.ifBlank { "—" }
+                label = stringResource(R.string.detail_info_trader),
+                value = traderName.ifBlank { stringResource(R.string.detail_info_empty_value) }
             )
 
             // ── SĐT thương lái (tap-to-call) ──────────────────────────
             ActionRow(
                 icon = Icons.Outlined.Phone,
-                label = "Số điện thoại",
-                value = traderPhone.ifBlank { "Chưa có" },
+                label = stringResource(R.string.detail_info_phone),
+                value = traderPhone.ifBlank { stringResource(R.string.detail_info_missing_phone) },
                 actionEnabled = traderPhone.isNotBlank(),
                 actionTint = AppColors.GreenPrimary,
                 onClick = onCallTrader
@@ -126,17 +128,17 @@ fun CardInfoCard(
             // ── Giống lúa ──────────────────────────────────────────────
             InfoRow(
                 icon = Icons.Outlined.Grass,
-                label = "Giống lúa",
+                label = stringResource(R.string.detail_info_rice_variety),
                 value = listOfNotNull(
                     riceVariety.takeIf { it.isNotBlank() },
                     seasonLabel.takeIf { it.isNotBlank() }
-                ).joinToString(" · ").ifBlank { "—" }
+                ).joinToString(" · ").ifBlank { stringResource(R.string.detail_info_empty_value) }
             )
 
             // ── Ngày tạo ───────────────────────────────────────────────
             InfoRow(
                 icon = Icons.Outlined.CalendarMonth,
-                label = "Ngày tạo",
+                label = stringResource(R.string.detail_info_created_date),
                 value = createdDateLabel
             )
 
@@ -335,13 +337,13 @@ private fun FieldAddressRow(
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Địa chỉ ruộng",
+                    stringResource(R.string.detail_info_field_address),
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.TextSecondary
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    address.ifBlank { "Chưa xác định vị trí" },
+                    address.ifBlank { stringResource(R.string.detail_info_unknown_location) },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = if (hasCoordinates) AppColors.GreenPrimary
@@ -374,7 +376,7 @@ private fun FieldAddressRow(
             ) {
                 Icon(
                     Icons.Outlined.MyLocation,
-                    contentDescription = "Cập nhật vị trí",
+                    contentDescription = stringResource(R.string.detail_info_refresh_location),
                     tint = AppColors.GreenPrimary,
                     modifier = Modifier.size(20.dp)
                 )

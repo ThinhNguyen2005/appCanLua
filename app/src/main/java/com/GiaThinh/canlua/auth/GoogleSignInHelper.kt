@@ -65,9 +65,9 @@ class GoogleSignInHelper(private val context: Context) {
             val response = credentialManager.getCredential(context, request)
             val account = extractAccount(response.credential)
             if (account != null) onSuccess(account)
-            else onError("Không lấy được Google ID Token.")
+            else onError(context.getString(R.string.auth_google_missing_id_token))
         } catch (e: NoCredentialException) {
-            onError("Thiết bị chưa có tài khoản Google nào. Hãy thêm tài khoản trong Cài đặt.")
+            onError(context.getString(R.string.auth_google_no_account))
         } catch (e: GetCredentialCancellationException) {
             Log.i(TAG, "User cancelled Google sign-in: ${e.message}")
             onCancel()
@@ -76,10 +76,10 @@ class GoogleSignInHelper(private val context: Context) {
             onError(humanizeError(e))
         } catch (e: GoogleIdTokenParsingException) {
             Log.e(TAG, "Parse ID token failed", e)
-            onError("Token Google không hợp lệ.")
+            onError(context.getString(R.string.auth_google_invalid_token))
         } catch (e: Exception) {
             Log.e(TAG, "Unknown error", e)
-            onError(e.message ?: "Đăng nhập Google thất bại.")
+            onError(e.message ?: context.getString(R.string.auth_google_failed))
         }
     }
 
@@ -103,8 +103,8 @@ class GoogleSignInHelper(private val context: Context) {
         val msg = e.message.orEmpty()
         return when {
             msg.contains("DEVELOPER_ERROR", ignoreCase = true) ->
-                "Cấu hình Google Sign-In sai (SHA-1 / package). Kiểm tra Firebase Console."
-            else -> msg.ifBlank { "Đăng nhập Google thất bại." }
+                context.getString(R.string.auth_google_developer_error)
+            else -> msg.ifBlank { context.getString(R.string.auth_google_failed) }
         }
     }
 

@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -330,7 +331,7 @@ fun PremiumUpsellCard(onClick: () -> Unit) {
                     colors = listOf(AppColors.GoldLight, AppColors.GoldAccent)
                 )
             )
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -370,11 +371,13 @@ fun PremiumUpsellCard(onClick: () -> Unit) {
 /**
  * Card huy hiệu Premium đang active — hiển thị thay UpsellCard khi user đã mua.
  * Gradient xanh primary + viền gold + ngôi sao + tên gói + thời điểm kích hoạt.
+ * Nếu là Early Adopter → badge đặc biệt màu vàng gold lúa chín.
  */
 @Composable
 fun PremiumStatusCard(
     plan: String?,
     sinceMs: Long,
+    isEarlyAdopter: Boolean = false,
     onClick: () -> Unit
 ) {
     val sinceLabel = remember(sinceMs) {
@@ -390,10 +393,14 @@ fun PremiumStatusCard(
             .clip(RoundedCornerShape(18.dp))
             .background(
                 Brush.linearGradient(
-                    colors = listOf(AppColors.GreenPrimary, AppColors.GreenDark)
+                    colors = if (isEarlyAdopter) {
+                        listOf(AppColors.GoldAccent, AppColors.GoldDark)
+                    } else {
+                        listOf(AppColors.GreenPrimary, AppColors.GreenDark)
+                    }
                 )
             )
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -401,13 +408,13 @@ fun PremiumStatusCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(AppColors.GoldAccent.copy(alpha = 0.25f)),
+                    .background(Color.White.copy(alpha = 0.25f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Filled.Star,
                     contentDescription = null,
-                    tint = AppColors.GoldAccent,
+                    tint = Color.White,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -424,13 +431,16 @@ fun PremiumStatusCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppColors.GoldAccent)
+                            .background(
+                                if (isEarlyAdopter) Color.White
+                                else AppColors.GoldAccent
+                            )
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "ACTIVE",
+                            text = if (isEarlyAdopter) "EARLY ADOPTER" else "ACTIVE",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
+                            color = if (isEarlyAdopter) AppColors.GoldDark else Color.White,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -446,6 +456,15 @@ fun PremiumStatusCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.75f)
                 )
+                if (isEarlyAdopter) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Cảm ơn bạn đã đồng hành từ những ngày đầu!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

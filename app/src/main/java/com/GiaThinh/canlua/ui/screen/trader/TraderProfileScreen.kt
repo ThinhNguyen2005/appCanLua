@@ -50,11 +50,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.GiaThinh.canlua.ui.component.dashboard.ChartMetric
-import com.GiaThinh.canlua.ui.component.dashboard.KpiCard
+import com.GiaThinh.canlua.ui.component.dashboard.KpiGrid
+import com.GiaThinh.canlua.ui.component.dashboard.KpiGridItem
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.GiaThinh.canlua.ui.component.dashboard.VarietyPieChart
 import com.GiaThinh.canlua.ui.component.profile.GradientProfileHeader
+import com.GiaThinh.canlua.ui.component.profile.ProfileNavigationRow
+import com.GiaThinh.canlua.ui.component.profile.ProfileSectionTitle
 import com.GiaThinh.canlua.ui.component.profile.QuickStatsGlassGrid
 import com.GiaThinh.canlua.ui.component.profile.SecondaryStatsRow
 import com.GiaThinh.canlua.ui.screen.profile.PersonalInfoCard
@@ -64,9 +67,9 @@ import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
+import com.GiaThinh.canlua.ui.viewmodel.TraderTransactionsViewModel
 
 /**
  * Tab "Tài khoản" cho THƯƠNG LÁI — phiên bản Premium 2026.
@@ -86,12 +89,11 @@ import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 fun TraderProfileScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel(),
-    cardViewModel: CardViewModel = hiltViewModel(),
-    dashboardViewModel: DashboardViewModel = hiltViewModel()
+    dashboardViewModel: DashboardViewModel = hiltViewModel(),
+    traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
     val profile by profileViewModel.profile.collectAsState(initial = null)
-    val cards by cardViewModel.cards.collectAsState()
+    val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsState()
 
     // Dashboard data
     val seasons by dashboardViewModel.seasons.collectAsState()
@@ -102,12 +104,11 @@ fun TraderProfileScreen(
     val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsState()
     val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsState()
 
-    // Lifetime stats — cho Trader: dùng totalPaid (tổng đã chi) thay vì revenue
-    val lifetimeStats = remember(seasonsComparison) {
-        if (seasonsComparison.isEmpty()) null else TraderLifetimeStats(
-            seasonCount = seasonsComparison.size,
-            totalNetWeight = seasonsComparison.sumOf { it.totalNetWeight },
-            totalPaid = seasonsComparison.sumOf { it.totalPaid }
+    val lifetimeStats = remember(traderTransactionsState) {
+        TraderLifetimeStats(
+            cardCount = traderTransactionsState.totalCards,
+            totalNetWeight = traderTransactionsState.totalNetWeight,
+            totalPaid = traderTransactionsState.totalPaid
         )
     }
 
@@ -116,7 +117,6 @@ fun TraderProfileScreen(
     var phone by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
     var cccd by remember { mutableStateOf("") }
-    var pendingRole by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(profile?.uid) {
         profile?.let {
@@ -147,21 +147,19 @@ fun TraderProfileScreen(
             }
 
             // ─── TIER 1: Quick Stats Glass Grid ───
-            if (lifetimeStats != null) {
-                item {
-                    QuickStatsGlassGrid(
-                        seasonCount = lifetimeStats.seasonCount,
-                        totalNetWeight = lifetimeStats.totalNetWeight,
-                        totalRevenue = lifetimeStats.totalPaid,
-                        revenueLabel = "Đã chi"
-                    )
-                }
+            item {
+                QuickStatsGlassGrid(
+                    seasonCount = lifetimeStats.cardCount,
+                    totalNetWeight = lifetimeStats.totalNetWeight,
+                    totalRevenue = lifetimeStats.totalPaid,
+                    revenueLabel = "Đã chi"
+                )
             }
 
             // Section title
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SectionTitle(
+                    ProfileSectionTitle(
                         title = "📊 Sổ thu mua mùa vụ",
                         subtitle = "Số liệu chi tiết từng vụ thu mua"
                     )
@@ -240,10 +238,10 @@ fun TraderProfileScreen(
 
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    NavigationRow(
+                    ProfileNavigationRow(
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         title = "Sổ giao dịch",
-                        subtitle = "${cards.size} phiếu đã đối soát",
+                        subtitle = "${traderTransactionsState.totalCards} phiếu đã đối soát",
                         onClick = { navController.navigate("trader_transactions") }
                     )
                 }
@@ -252,7 +250,7 @@ fun TraderProfileScreen(
             // ─── TIER 8: Account Operations ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SectionTitle(
+                    ProfileSectionTitle(
                         title = "⚙️ Tài khoản",
                         subtitle = "Quản lý thông tin và vai trò"
                     )
@@ -287,20 +285,12 @@ fun TraderProfileScreen(
 
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    RoleSwitcher(
-                        currentRole = profile?.role ?: "TRADER",
-                        onRequestChange = { newRole -> pendingRole = newRole }
-                    )
-                }
-            }
-
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsState()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
                             plan = premiumInfo.plan,
                             sinceMs = premiumInfo.sinceMs,
+                            isEarlyAdopter = premiumInfo.isEarlyAdopter,
                             onClick = { navController.navigate("premium") }
                         )
                     } else {
@@ -311,55 +301,12 @@ fun TraderProfileScreen(
                 }
             }
 
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Button(
-                        onClick = { authViewModel.signOut() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.Error.copy(alpha = 0.1f),
-                            contentColor = AppColors.Error
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                        Spacer(Modifier.padding(4.dp))
-                        Text("Đăng xuất", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
+            // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
+            // Profile giờ tập trung vào "tôi là ai + thống kê của tôi".
         }
     }
 
-    // Confirm dialog đổi role
-    pendingRole?.let { newRole ->
-        AlertDialog(
-            onDismissRequest = { pendingRole = null },
-            title = { Text("Đổi vai trò?", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    when (newRole) {
-                        "TRADER" -> "Bạn sẽ chuyển sang giao diện THƯƠNG LÁI với các chức năng đăng giá, sổ giao dịch, bản đồ nguồn cung."
-                        else -> "Bạn sẽ quay lại giao diện NÔNG DÂN với các chức năng cân lúa, mùa vụ, AI khuyến nông. Các bảng giá đã đăng vẫn được giữ."
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    profile?.let { current ->
-                        profileViewModel.updateProfile(current = current, role = newRole)
-                    }
-                    pendingRole = null
-                }) { Text("Đổi vai trò", fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingRole = null }) { Text("Hủy") }
-            },
-            shape = RoundedCornerShape(20.dp)
-        )
-    }
+    // RoleSwitcher đã chuyển sang SettingsScreen — Profile không còn dialog đổi role.
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -367,27 +314,10 @@ fun TraderProfileScreen(
 // ─────────────────────────────────────────────────────────────
 
 private data class TraderLifetimeStats(
-    val seasonCount: Int,
+    val cardCount: Int,
     val totalNetWeight: Double,
     val totalPaid: Double
 )
-
-@Composable
-private fun SectionTitle(title: String, subtitle: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            fontWeight = FontWeight.ExtraBold,
-            color = AppColors.TextPrimary,
-            style = MaterialTheme.typography.titleMedium
-        )
-        Text(
-            text = subtitle,
-            color = AppColors.TextHint,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Primary KPI Grid (Trader): Đã mua / Đã chi / KG-bao TB / Số bao
@@ -406,10 +336,9 @@ private fun TraderPrimaryKpiGrid(
     }
     val deltaLabel = previous?.season?.let { "vs $it" }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiCard(
-                modifier = Modifier.weight(1f),
+    KpiGrid(
+        items = listOf(
+            KpiGridItem(
                 icon = Icons.Outlined.Scale,
                 label = "Đã thu mua",
                 value = DashboardFormatter.weight(stats.totalNetWeight),
@@ -417,9 +346,8 @@ private fun TraderPrimaryKpiGrid(
                 deltaPercent = weightDelta,
                 deltaLabel = deltaLabel,
                 highlight = true
-            )
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.AccountBalanceWallet,
                 label = "Đã chi trả",
                 value = DashboardFormatter.money(stats.totalPaid),
@@ -427,100 +355,31 @@ private fun TraderPrimaryKpiGrid(
                 deltaPercent = paidDelta,
                 deltaLabel = deltaLabel,
                 highlight = true
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.Inventory,
                 label = "KG/bao TB",
-                value = if (stats.avgKgPerBag > 0)
-                    "${DashboardFormatter.weight(stats.avgKgPerBag)}/bao"
-                else "—",
+                value = if (stats.avgKgPerBag > 0) "${DashboardFormatter.weight(stats.avgKgPerBag)}/bao" else "—",
                 accentColor = Color(0xFF8D6E63)
-            )
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.AccountBalance,
                 label = "Còn nợ NCC",
                 value = DashboardFormatter.money(stats.totalRemaining),
                 accentColor = AppColors.Error
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.Receipt,
                 label = "Số phiếu",
                 value = "${stats.cardCount}",
                 accentColor = AppColors.Info
-            )
-            KpiCard(
-                modifier = Modifier.weight(1f),
+            ),
+            KpiGridItem(
                 icon = Icons.Outlined.Inventory,
                 label = "Tổng bao",
                 value = "${stats.totalBags}",
                 accentColor = Color(0xFF8D6E63)
             )
-        }
-    }
-}
-
-/**
- * Row điều hướng generic — dùng cho "Sổ giao dịch" và các sub-screen khác.
- */
-@Composable
-private fun NavigationRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.GreenSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.TextHint
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = AppColors.TextHint
-            )
-        }
-    }
+        )
+    )
 }

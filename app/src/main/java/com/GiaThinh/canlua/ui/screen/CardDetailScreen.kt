@@ -45,6 +45,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import com.GiaThinh.canlua.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -116,8 +118,13 @@ fun CardDetailScreen(
     var entryActionTarget by remember { mutableStateOf<WeightEntry?>(null) }
     var entryActionGlobalIndex by remember { mutableStateOf(0) }
 
-    val collapseRangePx = with(density) { heights.expanded.toPx() }
-    val collapseFraction by remember {
+    // Cache pixel range thay vì tính `with(density){ … }.toPx()` mỗi recompose.
+    // Header height + collapseFraction là 2 hot path scroll — phải tránh
+    // recompute trong composition phase.
+    val collapseRangePx = remember(density, heights.expanded) {
+        with(density) { heights.expanded.toPx() }
+    }
+    val collapseFraction by remember(collapseRangePx) {
         derivedStateOf {
             if (scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset < 50) {
                 0f
@@ -132,8 +139,8 @@ fun CardDetailScreen(
         }
     }
 
-    val clampedFraction = collapseFraction.coerceIn(0f, 1f)
-    val headerHeight = lerp(heights.expanded, heights.collapsed, clampedFraction)
+    // collapseFraction đã coerce trong derivedStateOf — không cần coerce lại.
+    val headerHeight = lerp(heights.expanded, heights.collapsed, collapseFraction)
 
     var showOverflow by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -155,7 +162,7 @@ fun CardDetailScreen(
                     ExtendedFloatingActionButton(
                         onClick = {
                             if (c.isLocked) {
-                                appToast.warning("Vui lòng mở khóa phiếu trước khi cân")
+                                appToast.warning(context.getString(R.string.card_detail_unlock_card_first))
                             } else {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 navController.navigate("weight_input/${cardId}")
@@ -170,7 +177,7 @@ fun CardDetailScreen(
                         },
                         text = {
                             Text(
-                                "Cân lúa",
+                                stringResource(R.string.card_detail_weigh_action),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
@@ -222,21 +229,7 @@ fun CardDetailScreen(
                     initialPage = 0,
                     pageCount = { tables.size.coerceAtLeast(1) }
                 )
-                var selectedTableIndex by remember(tables.size) { mutableStateOf(0) }
-                val activeTableIndex = selectedTableIndex.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
-
-                LaunchedEffect(pagerState.currentPage) {
-                    if (selectedTableIndex != pagerState.currentPage) {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        selectedTableIndex = pagerState.currentPage
-                    }
-                }
-
-                LaunchedEffect(activeTableIndex) {
-                    if (pagerState.currentPage != activeTableIndex && activeTableIndex < tables.size) {
-                        pagerState.animateScrollToPage(activeTableIndex)
-                    }
-                }
+                val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
 
                 val lastEntryTime = weightEntries.maxOfOrNull { it.timestamp }
 
@@ -290,30 +283,30 @@ fun CardDetailScreen(
                                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                             context.startActivity(intent)
                                         }.onFailure {
-                                            appToast.error("Không mở được ứng dụng gọi điện")
+                                            appToast.error(context.getString(R.string.card_detail_call_app_error))
                                         }
                                     },
                                     onOpenMap = {
                                         val lat = card.latitude
                                         val lon = card.longitude
                                         if (lat == null || lon == null) {
-                                            appToast.error("Chưa có tọa độ GPS")
+                                            appToast.error(context.getString(R.string.card_detail_missing_gps))
                                             return@CardInfoCard
                                         }
-                                        val label = card.fieldAddress.ifBlank { card.name.ifBlank { "Ruộng lúa" } }
+                                        val label = card.fieldAddress.ifBlank { card.name.ifBlank { context.getString(R.string.card_detail_default_field_label) } }
                                         val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(${Uri.encode(label)})")
                                         runCatching {
                                             val intent = Intent(Intent.ACTION_VIEW, uri)
                                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                             context.startActivity(intent)
                                         }.onFailure {
-                                            appToast.error("Không tìm thấy ứng dụng bản đồ")
+                                            appToast.error(context.getString(R.string.card_detail_map_app_error))
                                         }
                                     },
                                     onRefreshLocation = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         viewModel.refreshFieldLocation(cardId)
-                                        appToast.info("Đang cập nhật vị trí…")
+                                        appToast.info(context.getString(R.string.card_detail_updating_location))
                                     }
                                 )
                             }
@@ -358,13 +351,15 @@ fun CardDetailScreen(
                                     pagerState = pagerState,
                                     activeTableIndex = activeTableIndex,
                                     isLocked = card.isLocked,
-                                    onTableSelected = {
+                                    onTableSelected = { index ->
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        selectedTableIndex = it
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
                                     },
                                     onAddFirstBag = {
                                         if (card.isLocked) {
-                                            appToast.warning("Vui lòng mở khóa bảng trước khi chỉnh sửa")
+                                            appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
                                         } else {
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             navController.navigate("weight_input/${cardId}")
@@ -372,7 +367,7 @@ fun CardDetailScreen(
                                     },
                                     onEntryLongPress = { entry, globalIdx ->
                                         if (card.isLocked) {
-                                            appToast.warning("Phiếu cân đang khóa")
+                                            appToast.warning(context.getString(R.string.card_detail_card_locked))
                                         } else {
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             entryActionGlobalIndex = globalIdx
@@ -388,8 +383,8 @@ fun CardDetailScreen(
                 if (showDeleteConfirm) {
                     AlertDialog(
                         onDismissRequest = { showDeleteConfirm = false },
-                        title = { Text("Xóa phiếu?") },
-                        text = { Text("Hành động này sẽ xóa phiếu và các cân nặng liên quan.") },
+                        title = { Text(stringResource(R.string.card_detail_delete_title)) },
+                        text = { Text(stringResource(R.string.card_detail_delete_message)) },
                         confirmButton = {
                             TextButton(onClick = {
                                 showDeleteConfirm = false
@@ -398,11 +393,11 @@ fun CardDetailScreen(
                                     navController.popBackStack()
                                 }
                             }) {
-                                Text("Xóa", color = AppColors.Error)
+                                Text(stringResource(R.string.card_detail_delete_confirm), color = AppColors.Error)
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showDeleteConfirm = false }) { Text("Hủy") }
+                            TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
                         }
                     )
                 }
@@ -414,7 +409,7 @@ fun CardDetailScreen(
                         onConfirm = { updatedCard ->
                             viewModel.updateCard(updatedCard)
                             showEditDialog = false
-                            appToast.success("Đã cập nhật thông tin phiếu cân")
+                            appToast.success(context.getString(R.string.card_detail_update_success))
                         }
                     )
                 }
@@ -430,7 +425,7 @@ fun CardDetailScreen(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.deleteWeightEntry(entry)
                             entryActionTarget = null
-                            appToast.success("Đã xóa bao #$entryActionGlobalIndex")
+                            appToast.success(context.getString(R.string.card_detail_deleted_bag, entryActionGlobalIndex))
                         }
                     )
                 }
@@ -442,14 +437,14 @@ fun CardDetailScreen(
             // chỉ Text bên trong recompose (rẻ), view tree không tear down/rebuild.
             CustomHeader(
                 card = displayCard,
-                collapseFraction = clampedFraction,
+                collapseFraction = collapseFraction,
                 lastEntryTime = if (isLoading) null else weightEntries.maxOfOrNull { it.timestamp },
                 modifier = Modifier.height(headerHeight),
                 onBack = { navController.popBackStack() },
                 onAdd = {
                     if (isLoading) return@CustomHeader
                     if (displayCard.isLocked) {
-                        appToast.warning("Vui lòng mở khóa bảng trước khi chỉnh sửa")
+                        appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
                     } else {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigate("weight_input/${cardId}")
@@ -460,7 +455,7 @@ fun CardDetailScreen(
                 onEditCard = {
                     if (isLoading) return@CustomHeader
                     if (displayCard.isLocked) {
-                        appToast.warning("Vui lòng mở khóa bảng trước khi chỉnh sửa")
+                        appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
                     } else {
                         showEditDialog = true
                     }
@@ -468,13 +463,48 @@ fun CardDetailScreen(
                 onDeleteCard = {
                     if (isLoading) return@CustomHeader
                     if (displayCard.isLocked) {
-                        appToast.warning("Vui lòng mở khóa bảng trước khi chỉnh sửa")
+                        appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
                     } else {
                         showDeleteConfirm = true
                     }
                 },
                 onCreateQr = { if (!isLoading) navController.navigate("qr_generate/${displayCard.id}") },
                 onScanQr = { if (!isLoading) navController.navigate("qr_scan") },
+                onExportPdf = {
+                    if (isLoading) return@CustomHeader
+                    if (!com.GiaThinh.canlua.util.PremiumState.isPremium.value) {
+                        appToast.warning(context.getString(R.string.card_detail_pdf_premium_required))
+                        navController.navigate("premium")
+                        return@CustomHeader
+                    }
+                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        runCatching {
+                            val file = com.GiaThinh.canlua.util.PdfExporter.export(
+                                context = context,
+                                card = displayCard,
+                                entries = weightEntries
+                            )
+                            val uri = com.GiaThinh.canlua.util.PdfExporter.shareUri(context, file)
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/pdf"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.card_detail_pdf_subject, displayCard.id))
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(
+                                Intent.createChooser(intent, context.getString(R.string.card_detail_pdf_share_title))
+                            )
+                        }.onFailure {
+                            com.GiaThinh.canlua.util.AnalyticsHelper.logNonFatal(it, tag = "pdf_export")
+                            appToast.error(
+                                context.getString(
+                                    R.string.card_detail_pdf_error,
+                                    it.message ?: context.getString(R.string.card_detail_unknown_error)
+                                )
+                            )
+                        }
+                    }
+                },
                 onToggleLock = {
                     if (isLoading) return@CustomHeader
                     if (displayCard.isLocked) {
@@ -483,7 +513,7 @@ fun CardDetailScreen(
                     } else {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         viewModel.toggleCardLock(displayCard.id)
-                        appToast.success("Đã khóa phiếu cân")
+                        appToast.success(context.getString(R.string.card_detail_locked_success))
                     }
                 }
             )
@@ -501,7 +531,7 @@ fun CardDetailScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "Mở khóa phiếu cân?",
+                                text = stringResource(R.string.card_detail_unlock_title),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -509,9 +539,7 @@ fun CardDetailScreen(
                     },
                     text = {
                         Text(
-                            text = "Phiếu đang được khóa để bảo vệ số liệu giao dịch. " +
-                                    "Mở khóa sẽ cho phép chỉnh sửa lại khối lượng, đơn giá, " +
-                                    "và xóa các bao đã cân. Bạn có chắc?",
+                            text = stringResource(R.string.card_detail_unlock_message),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextPrimary
                         )
@@ -521,17 +549,17 @@ fun CardDetailScreen(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.toggleCardLock(displayCard.id)
-                                appToast.success("Đã mở khóa phiếu cân")
+                                appToast.success(context.getString(R.string.card_detail_unlocked_success))
                                 showUnlockConfirm = false
                             },
                             colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GoldDark)
                         ) {
-                            Text("Đồng ý mở khóa", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.card_detail_unlock_confirm), fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showUnlockConfirm = false }) {
-                            Text("Hủy", color = AppColors.TextSecondary)
+                            Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
                         }
                     },
                     shape = RoundedCornerShape(20.dp),
@@ -615,7 +643,7 @@ fun EditCardDialog(
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     Text(
-                        text = "Sửa Phiếu Cân",
+                        text = stringResource(R.string.card_detail_edit_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.GreenPrimary
@@ -632,8 +660,8 @@ fun EditCardDialog(
                     FormTextField(
                         value = farmerName,
                         onValueChange = { farmerName = it },
-                        label = "Tên nông dân *",
-                        placeholder = "Nhập tên nông dân"
+                        label = stringResource(R.string.card_detail_farmer_name_label),
+                        placeholder = stringResource(R.string.card_detail_farmer_name_placeholder)
                     )
 
                     Row(
@@ -650,8 +678,8 @@ fun EditCardDialog(
                         FormTextField(
                             value = seasonLabel,
                             onValueChange = { seasonLabel = it },
-                            label = "Vụ mùa",
-                            placeholder = "VD: Đông Xuân 26",
+                            label = stringResource(R.string.card_detail_season_label),
+                            placeholder = stringResource(R.string.card_detail_season_placeholder),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -659,8 +687,8 @@ fun EditCardDialog(
                     FormTextField(
                         value = traderName,
                         onValueChange = { traderName = it },
-                        label = "Tên thương lái *",
-                        placeholder = "Nhập tên thương lái mua lúa"
+                        label = stringResource(R.string.card_detail_trader_name_label),
+                        placeholder = stringResource(R.string.card_detail_trader_name_placeholder)
                     )
 
                     Row(
@@ -670,7 +698,7 @@ fun EditCardDialog(
                         OutlinedTextField(
                             value = moisturePercent,
                             onValueChange = { moisturePercent = it },
-                            label = { Text("Độ ẩm (%)") },
+                            label = { Text(stringResource(R.string.create_card_moisture_label)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
                             modifier = Modifier.weight(1f),
@@ -679,7 +707,7 @@ fun EditCardDialog(
                         OutlinedTextField(
                             value = pricePerKg,
                             onValueChange = { pricePerKg = it },
-                            label = { Text("Đơn giá (đ/kg)") },
+                            label = { Text(stringResource(R.string.create_card_price_label)) },
                             visualTransformation = ThousandSeparatorTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
@@ -695,7 +723,7 @@ fun EditCardDialog(
                         OutlinedTextField(
                             value = depositAmount,
                             onValueChange = { depositAmount = it },
-                            label = { Text("Tiền cọc (đ)") },
+                            label = { Text(stringResource(R.string.create_card_deposit_label)) },
                             visualTransformation = ThousandSeparatorTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
@@ -705,7 +733,7 @@ fun EditCardDialog(
                         OutlinedTextField(
                             value = paidAmount,
                             onValueChange = { paidAmount = it },
-                            label = { Text("Đã trả (đ)") },
+                            label = { Text(stringResource(R.string.card_detail_paid_amount_label)) },
                             visualTransformation = ThousandSeparatorTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
@@ -724,7 +752,7 @@ fun EditCardDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Huỷ", color = AppColors.TextSecondary)
+                        Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
                     }
                     Button(
                         onClick = {
@@ -744,7 +772,7 @@ fun EditCardDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Lưu thay đổi", color = Color.White)
+                        Text(stringResource(R.string.card_detail_save_changes), color = Color.White)
                     }
                 }
             }

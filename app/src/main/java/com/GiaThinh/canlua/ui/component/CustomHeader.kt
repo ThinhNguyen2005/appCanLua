@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
@@ -35,6 +37,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.Card
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -94,6 +97,7 @@ fun CustomHeader(
     onDeleteCard: () -> Unit = {},
     onCreateQr: () -> Unit = {},
     onScanQr: () -> Unit = {},
+    onExportPdf: () -> Unit = {},
     onToggleLock: () -> Unit = {}
 ) {
     // Title: luôn hiển thị info trọng lượng — đã bỏ farmer name khỏi header
@@ -104,7 +108,7 @@ fun CustomHeader(
         val totalbagCount = fmt.format(card.bagCount)
         "$totalWeightFormatted KG · $totalbagCount bao"
     } else {
-        "Phiếu cân"
+        stringResource(R.string.header_default_title)
     }
 
     Box(
@@ -130,7 +134,7 @@ fun CustomHeader(
                     IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = stringResource(R.string.content_back),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -159,7 +163,7 @@ fun CustomHeader(
                     ) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Chỉnh sửa phiếu",
+                            contentDescription = stringResource(R.string.header_edit_card_content),
                             tint = Color.White.copy(alpha = if (card.isLocked) 0.5f else 0.95f),
                             modifier = Modifier.size(22.dp)
                         )
@@ -175,14 +179,14 @@ fun CustomHeader(
                         if (card.isLocked) {
                             Icon(
                                 Icons.Default.Lock,
-                                contentDescription = "Mở khóa phiếu",
+                                contentDescription = stringResource(R.string.header_unlock_card_content),
                                 tint = AppColors.GoldAccent,
                                 modifier = Modifier.size(22.dp)
                             )
                         } else {
                             Icon(
                                 Icons.Default.LockOpen,
-                                contentDescription = "Khóa phiếu",
+                                contentDescription = stringResource(R.string.header_lock_card_content),
                                 tint = Color.White.copy(alpha = 0.8f),
                                 modifier = Modifier.size(22.dp)
                             )
@@ -197,7 +201,7 @@ fun CustomHeader(
                         ) {
                             Icon(
                                 Icons.Default.MoreVert,
-                                "Menu",
+                                stringResource(R.string.header_menu_content),
                                 tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -214,7 +218,7 @@ fun CustomHeader(
                                 .background(AppColors.SurfaceContainer, RoundedCornerShape(14.dp))
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Xóa phiếu", fontSize = 15.sp, color = AppColors.Error) },
+                                text = { Text(stringResource(R.string.header_delete_card), fontSize = 15.sp, color = AppColors.Error) },
                                 leadingIcon = {
                                     Icon(Icons.Default.Delete, null, tint = AppColors.Error)
                                 },
@@ -225,18 +229,29 @@ fun CustomHeader(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                             )
                             DropdownMenuItem(
-                                text = { Text("Tạo mã QR", fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_create_qr), fontSize = 15.sp, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.QrCode2, null, tint = HeaderGreen)
                                 },
                                 onClick = { onOverflowChange(false); onCreateQr() }
                             )
                             DropdownMenuItem(
-                                text = { Text("Quét QR (Thương lái)", fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_scan_qr_trader), fontSize = 15.sp, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.CameraAlt, null, tint = HeaderGreen)
                                 },
                                 onClick = { onOverflowChange(false); onScanQr() }
+                            )
+                            HorizontalDivider(
+                                color = AppColors.Divider,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.header_export_pdf), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.PictureAsPdf, null, tint = HeaderGreen)
+                                },
+                                onClick = { onOverflowChange(false); onExportPdf() }
                             )
                         }
                     }

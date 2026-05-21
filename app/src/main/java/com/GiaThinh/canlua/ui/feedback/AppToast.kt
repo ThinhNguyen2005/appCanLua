@@ -45,6 +45,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.theme.AppColors
@@ -149,6 +155,14 @@ private fun ToastPill(message: AppToastMessage, onDismiss: () -> Unit) {
             .shadow(elevation = 12.dp, shape = RoundedCornerShape(14.dp))
             .clip(RoundedCornerShape(14.dp))
             .background(bg)
+            .semantics {
+                // TalkBack đọc text trước rồi báo "Nhấn đúp để đóng" — gợi action.
+                role = Role.Button
+                contentDescription = "${message.text}. Nhấn để đóng thông báo."
+                // LiveRegion.Polite để TalkBack tự đọc khi toast xuất hiện mà
+                // không ngắt lời user đang nói.
+                liveRegion = LiveRegionMode.Polite
+            }
             .clickable(onClick = onDismiss)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

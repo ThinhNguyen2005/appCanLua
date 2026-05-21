@@ -5,8 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.data.model.WeightEntry
-import com.GiaThinh.canlua.repository.CardRepository
 import com.GiaThinh.canlua.repository.FirestoreRepository
+import com.GiaThinh.canlua.repository.SyncableCardRepository
+import com.GiaThinh.canlua.repository.QrLockResult
 import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.util.TextToSpeechManager
@@ -26,10 +27,20 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
 
+sealed class QrVerificationState {
+    data object Idle : QrVerificationState()
+    data object Loading : QrVerificationState()
+    data class Success(val firestoreId: String) : QrVerificationState()
+    data class AlreadyConfirmed(val firestoreId: String) : QrVerificationState()
+    data object NotFound : QrVerificationState()
+    data object LockedByOtherTrader : QrVerificationState()
+    data class Error(val message: String?) : QrVerificationState()
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CardViewModel @Inject constructor(
-    private val repository: CardRepository,
+    private val repository: SyncableCardRepository,
     private val ttsManager: TextToSpeechManager,
     private val settingsRepository: SettingsRepository,
     private val locationProvider: LocationProvider,
@@ -47,6 +58,9 @@ class CardViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _qrVerificationState = MutableStateFlow<QrVerificationState>(QrVerificationState.Idle)
+    val qrVerificationState: StateFlow<QrVerificationState> = _qrVerificationState.asStateFlow()
 
     // === Filter state — cả 2 filter combine với nhau ===
     private val _selectedVarietyFilter = MutableStateFlow<String?>(null)
@@ -260,7 +274,7 @@ class CardViewModel @Inject constructor(
             val netWeight = RiceCalculator.calcNetWeight(
                 rawWeight = weight,
                 bagWeight = bagWeight,
-                impurityWeight = impurityWeight,
+                impurityWeight = 0.0,
                 moisturePercent = moisture
             )
 
@@ -268,7 +282,7 @@ class CardViewModel @Inject constructor(
                 cardId = cardId,
                 weight = weight,
                 bagWeight = bagWeight,
-                impurityWeight = impurityWeight,
+                impurityWeight = 0.0,
                 netWeight = netWeight
             )
             repository.insertWeightEntry(weightEntry)
@@ -345,15 +359,33 @@ class CardViewModel @Inject constructor(
      */
     fun verifyAndLockTransaction(scannedToken: String, traderId: String) {
         viewModelScope.launch {
-            // 1) Push lock state lên Firestore — bắt buộc, vì Sổ thương nhân query trực tiếp Firestore
-            firestoreRepository.lockCardByQrToken(scannedToken, traderId)
-
-            // 2) Update local Room nếu card có sẵn trong DB của thiết bị này
-            val card = repository.findByQrToken(scannedToken)
-            if (card != null && !card.isLocked) {
-                repository.lockCard(cardId = card.id, traderId = traderId)
-                _currentCard.value = repository.getCardById(card.id)
+            _qrVerificationState.value = QrVerificationState.Loading
+            val result = firestoreRepository.lockCardByQrToken(scannedToken, traderId)
+            _qrVerificationState.value = when (result) {
+                is QrLockResult.Success -> {
+                    lockLocalCardIfPresent(scannedToken, traderId)
+                    QrVerificationState.Success(result.firestoreId)
+                }
+                is QrLockResult.AlreadyLockedByCurrentTrader -> {
+                    lockLocalCardIfPresent(scannedToken, traderId)
+                    QrVerificationState.AlreadyConfirmed(result.firestoreId)
+                }
+                QrLockResult.NotFound -> QrVerificationState.NotFound
+                QrLockResult.AlreadyLockedByOtherTrader -> QrVerificationState.LockedByOtherTrader
+                is QrLockResult.Error -> QrVerificationState.Error(result.message)
             }
+        }
+    }
+
+    fun resetQrVerificationState() {
+        _qrVerificationState.value = QrVerificationState.Idle
+    }
+
+    private suspend fun lockLocalCardIfPresent(scannedToken: String, traderId: String) {
+        val card = repository.findByQrToken(scannedToken)
+        if (card != null && !card.isLocked) {
+            repository.lockCard(cardId = card.id, traderId = traderId)
+            _currentCard.value = repository.getCardById(card.id)
         }
     }
 
@@ -524,14 +556,14 @@ class CardViewModel @Inject constructor(
                 val netWeight = RiceCalculator.calcNetWeight(
                     rawWeight = weight,
                     bagWeight = it.bagWeight,
-                    impurityWeight = it.impurityWeight,
+                    impurityWeight = 0.0,
                     moisturePercent = it.moisturePercent
                 )
                 val weightEntry = WeightEntry(
                     cardId = cardId,
                     weight = weight,
                     bagWeight = it.bagWeight,
-                    impurityWeight = it.impurityWeight,
+                    impurityWeight = 0.0,
                     netWeight = netWeight
                 )
                 repository.insertWeightEntry(weightEntry)

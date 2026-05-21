@@ -32,9 +32,10 @@ import com.GiaThinh.canlua.data.converter.DateConverter
         RicePrice::class,
         PricePoint::class,
         WeatherCache::class,
-        NewsArticle::class
+        NewsArticle::class,
+        com.GiaThinh.canlua.data.model.DeletedCard::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -46,6 +47,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ricePriceDao(): RicePriceDao
     abstract fun weatherCacheDao(): WeatherCacheDao
     abstract fun newsArticleDao(): NewsArticleDao
+    abstract fun deletedCardDao(): com.GiaThinh.canlua.data.dao.DeletedCardDao
 
     companion object {
         @Volatile
@@ -70,7 +72,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_10_11,
                     MIGRATION_11_12,
                     MIGRATION_12_13,
-                    MIGRATION_13_14
+                    MIGRATION_13_14,
+                    MIGRATION_14_15
                 ).build()
                 INSTANCE = instance
                 instance
@@ -306,6 +309,42 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE cards ADD COLUMN lastModifiedMs INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("UPDATE cards SET lastModifiedMs = date WHERE lastModifiedMs = 0")
+            }
+        }
+
+        /**
+         * Phase 5 — Tombstone table cho phiếu đã xoá.
+         *
+         * Fix bug: phiếu xoá rồi quay về sau pull (cloud doc tồn tại + local
+         * không match nữa → INSERT lại). Tombstone lưu firestoreId của phiếu
+         * đã xoá để pull dedup skip.
+         *
+         * Bonus: data tombstone = "Lịch sử phiếu đã xoá" cho user khôi phục.
+         */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `deleted_cards` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `ownerUid` TEXT NOT NULL,
+                        `firestoreId` TEXT,
+                        `localId` INTEGER,
+                        `cardJson` TEXT NOT NULL,
+                        `deletedAt` INTEGER NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `traderName` TEXT NOT NULL,
+                        `totalWeight` REAL NOT NULL,
+                        `totalAmount` REAL NOT NULL,
+                        `cardDate` INTEGER NOT NULL,
+                        `seasonLabel` TEXT NOT NULL,
+                        `riceVariety` TEXT NOT NULL,
+                        `cloudDeleted` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_deleted_cards_ownerUid` ON `deleted_cards` (`ownerUid`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_deleted_cards_firestoreId` ON `deleted_cards` (`firestoreId`)")
             }
         }
     }

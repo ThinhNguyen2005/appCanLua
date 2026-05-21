@@ -22,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.repository.SyncStatus
 import com.GiaThinh.canlua.ui.theme.AppColors
 
@@ -40,10 +42,10 @@ fun SyncStatusPulse(
     showLabel: Boolean = true,
 ) {
     val (dotColor, label) = when (status) {
-        is SyncStatus.Syncing -> AppColors.GreenPrimary to "Đang đồng bộ"
-        is SyncStatus.Success -> AppColors.GreenPrimary to "Đã đồng bộ"
-        is SyncStatus.Error   -> Color(0xFFE53935) to "Lỗi đồng bộ"
-        else                  -> AppColors.GreenLight to "Sẵn sàng"
+        is SyncStatus.Syncing -> AppColors.GreenPrimary to stringResource(R.string.sync_status_syncing)
+        is SyncStatus.Success -> AppColors.GreenPrimary to stringResource(R.string.sync_status_success)
+        is SyncStatus.Error   -> Color(0xFFE53935) to stringResource(R.string.sync_status_error)
+        else                  -> AppColors.GreenLight to stringResource(R.string.sync_status_ready)
     }
 
     val infinite = rememberInfiniteTransition(label = "sync_pulse")

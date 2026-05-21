@@ -6,13 +6,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -46,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.util.HapticUtil
 import java.util.Locale
@@ -85,8 +89,16 @@ fun CreateCardDialog(
 ) {
     val context = LocalContext.current
     // Label swap theo mode — owner header và input field counterparty.
-    val ownerLabel = if (mode == CreateCardMode.FARMER) "Nông dân" else "Thương lái"
-    val counterpartyLabel = if (mode == CreateCardMode.FARMER) "thương lái" else "nông dân"
+    val ownerLabel = if (mode == CreateCardMode.FARMER) {
+        stringResource(R.string.role_farmer)
+    } else {
+        stringResource(R.string.role_trader)
+    }
+    val counterpartyLabel = if (mode == CreateCardMode.FARMER) {
+        stringResource(R.string.role_trader).lowercase()
+    } else {
+        stringResource(R.string.role_farmer).lowercase()
+    }
     // ── State ───────────────────────────────────────────────────────────────────────
     var counterpartyName  by remember { mutableStateOf("") }
     var counterpartyPhone by remember { mutableStateOf("") }
@@ -111,7 +123,9 @@ fun CreateCardDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.97f)         // Tăng chiều rộng lên 97% màn hình
-                .wrapContentHeight(),
+                .fillMaxHeight(0.9f)
+                .imePadding()
+                .navigationBarsPadding(),
             shape = RoundedCornerShape(24.dp),
             color = AppColors.CardBg,        // Tương thích với Dynamic Theme
             tonalElevation = 6.dp
@@ -127,7 +141,7 @@ fun CreateCardDialog(
                 ) {
                     Column {
                         Text(
-                            text = "Tạo Phiếu Cân Mới",
+                            text = stringResource(R.string.create_card_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GreenPrimary
@@ -146,7 +160,7 @@ fun CreateCardDialog(
                                 tint = AppColors.TextSecondary
                             )
                             Text(
-                                text = "$ownerLabel: $ownerName",
+                                text = stringResource(R.string.create_card_owner_line, ownerLabel, ownerName),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = AppColors.TextSecondary,
                                 fontWeight = FontWeight.Medium
@@ -159,14 +173,14 @@ fun CreateCardDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f, fill = false)          // Không chiếm toàn bộ chiều cao màn hình
+                        .weight(1f)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
 
                     // Section: Thông tin lô hàng
-                    SectionLabel("THÔNG TIN LÔ HÀNG")
+                    SectionLabel(stringResource(R.string.create_card_section_lot))
 
                     // Row 1: [Giống lúa ▼] [Vụ mùa ▼] — 2 dropdown chuẩn hóa
                     Row(
@@ -194,8 +208,8 @@ fun CreateCardDialog(
                     FormTextField(
                         value = counterpartyName,
                         onValueChange = { counterpartyName = it },
-                        label = "Tên ${counterpartyLabel} *",
-                        placeholder = "Nhập tên ${counterpartyLabel}",
+                        label = stringResource(R.string.create_card_counterparty_name_label, counterpartyLabel),
+                        placeholder = stringResource(R.string.create_card_counterparty_name_placeholder, counterpartyLabel),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -206,8 +220,8 @@ fun CreateCardDialog(
                             val filtered = input.filter { it.isDigit() || it == '+' || it == ' ' || it == '-' }
                             if (filtered.length <= 15) counterpartyPhone = filtered
                         },
-                        label = { Text("SĐT ${counterpartyLabel}") },
-                        placeholder = { Text("Tuỳ chọn — VD: 0901 234 567", style = MaterialTheme.typography.bodySmall) },
+                        label = { Text(stringResource(R.string.create_card_counterparty_phone_label, counterpartyLabel)) },
+                        placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodySmall) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
@@ -218,7 +232,16 @@ fun CreateCardDialog(
                     Spacer(Modifier.height(4.dp))
 
                     // Section: Giá & Thanh toán
-                    SectionLabel("GIÁ & THANH TOÁN")
+                    SectionLabel(stringResource(R.string.create_card_section_payment))
+
+                    // Helper giải thích vì sao chỉ nhập độ ẩm ở đây — Bì + Tạp chất
+                    // chỉ biết khi cân thực tế nên sẽ nhập ở màn Cân Lúa.
+                    Text(
+                        text = stringResource(R.string.create_card_weight_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.TextHint,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
 
                     // Row 3: [Độ ẩm %] [Đơn giá đ/kg] — BẰNG NHAU (weight = 1f cả 2)
                     Row(
@@ -232,8 +255,8 @@ fun CreateCardDialog(
                                 val filtered = input.filter { it.isDigit() || it == '.' }
                                 if (filtered.length <= 4) moistureRaw = filtered
                             },
-                            label = { Text("Độ ẩm (%)") },
-                            placeholder = { Text("VD: 18.5", style = MaterialTheme.typography.bodySmall) },
+                            label = { Text(stringResource(R.string.create_card_moisture_label)) },
+                            placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodySmall) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
                             modifier = Modifier.weight(1f).heightIn(min = 60.dp),
@@ -248,8 +271,8 @@ fun CreateCardDialog(
                                 val digits = input.filter { it.isDigit() }
                                 if (digits.length <= 7) priceRaw = digits  // Giới hạn hợp lý dưới 10 triệu/kg
                             },
-                            label = { Text("Đơn giá (đ/kg)") },
-                            placeholder = { Text("VD: 8.200", style = MaterialTheme.typography.bodySmall) },
+                            label = { Text(stringResource(R.string.create_card_price_label)) },
+                            placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodySmall) },
                             visualTransformation = ThousandSeparatorTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
@@ -266,8 +289,8 @@ fun CreateCardDialog(
                             val digits = input.filter { it.isDigit() }
                             if (digits.length <= 10) depositRaw = digits
                         },
-                        label = { Text("Tiền cọc (đ)") },
-                        placeholder = { Text("Tuỳ chọn — VD: 500.000", style = MaterialTheme.typography.bodySmall) },
+                        label = { Text(stringResource(R.string.create_card_deposit_label)) },
+                        placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodySmall) },
                         visualTransformation = ThousandSeparatorTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -291,7 +314,7 @@ fun CreateCardDialog(
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text(
-                            text = "Huỷ",
+                            text = stringResource(R.string.action_cancel),
                             color = AppColors.TextSecondary,
                             fontWeight = FontWeight.Medium
                         )
@@ -318,7 +341,7 @@ fun CreateCardDialog(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "Tạo Phiếu",
+                            text = stringResource(R.string.create_card_submit),
                             fontWeight = FontWeight.Bold,
                             color = AppColors.CardBg
                         )

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,9 +53,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
@@ -107,7 +114,7 @@ fun BagEntriesCard(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Chi tiết các bao cân",
+                        stringResource(R.string.detail_bag_entries_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
@@ -118,7 +125,7 @@ fun BagEntriesCard(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "$bagCountTotal bao",
+                        stringResource(R.string.detail_bag_entries_count, bagCountTotal),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.GreenPrimary,
@@ -136,7 +143,7 @@ fun BagEntriesCard(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "Chưa có bao cân nào được nhập.",
+                        stringResource(R.string.detail_bag_entries_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextHint,
                         textAlign = TextAlign.Center
@@ -149,7 +156,7 @@ fun BagEntriesCard(
                     ) {
                         Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Thêm bao cân đầu tiên", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.detail_bag_entries_add_first), fontWeight = FontWeight.SemiBold)
                     }
                 }
             } else {
@@ -173,7 +180,7 @@ fun BagEntriesCard(
                             modifier = Modifier.padding(horizontal = 2.dp)
                         ) {
                             Text(
-                                text = "Bảng ${index + 1}",
+                                text = stringResource(R.string.detail_bag_entries_table, index + 1),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Normal,
                                 color = if (isActive) AppColors.GreenPrimary else AppColors.TextSecondary,
@@ -207,8 +214,8 @@ fun BagEntriesCard(
 }
 
 /**
- * Row-major 5×5 grid: index 0..24 = (row=idx/5, col=idx%5).
- * Đọc trái-phải, trên-xuống — tự nhiên với người dùng.
+ * Column-major 5×5 grid: index 0..24 = (col=idx/5, row=idx%5).
+ * Khớp với thứ tự nhập ở WeightInputScreen.
  */
 @Composable
 private fun BagGrid(
@@ -224,7 +231,7 @@ private fun BagGrid(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 for (c in 0 until 5) {
-                    val entryIdx = r * 5 + c
+                    val entryIdx = c * 5 + r
                     val entry = entries.getOrNull(entryIdx)
                     val globalIndex = globalOffset + entryIdx + 1
                     if (entry != null) {
@@ -254,11 +261,28 @@ private fun BagCell(
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
-    val weightText = if (weight % 1.0 == 0.0) "%.0f".format(weight) else "%.1f".format(weight)
+    val weightText = "%.1f".format(weight)
+    val cellContentDescription = stringResource(
+        R.string.detail_bag_entries_semantics,
+        indexLabel,
+        weightText
+    ) + if (!isLocked) {
+        stringResource(R.string.detail_bag_entries_semantics_delete_hint)
+    } else {
+        ""
+    }
     Box(
         modifier = modifier
+            // Đảm bảo touch target ≥48dp (chuẩn Material/A11y) ngay cả khi grid
+            // 5 cột chia đều màn nhỏ. Compose không tự enforce — phải khai báo
+            // explicit minimumInteractiveComponentSize hoặc heightIn.
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(AppColors.GreenSurface)
+            .semantics(mergeDescendants = true) {
+                role = if (isLocked) Role.Image else Role.Button
+                contentDescription = cellContentDescription
+            }
             .combinedClickable(
                 onClick = { /* reserved for future quick edit */ },
                 onLongClick = if (!isLocked) {
@@ -337,13 +361,13 @@ fun BagEntryActionSheet(
                 }
                 Column {
                     Text(
-                        "Bao cân #$globalIndex",
+                        stringResource(R.string.detail_bag_entries_sheet_title, globalIndex),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        "${numberFormat.format(entry.weight)} kg",
+                        stringResource(R.string.weight_format_kg_lower, "%.1f".format(entry.weight)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextSecondary
                     )
@@ -371,7 +395,7 @@ fun BagEntryActionSheet(
                         tint = AppColors.Error
                     )
                     Text(
-                        "Xóa bao cân này",
+                        stringResource(R.string.detail_bag_entries_delete_action),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.Error
@@ -386,16 +410,23 @@ fun BagEntryActionSheet(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Xóa bao #$globalIndex?") },
-            text = { Text("Hành động này không thể hoàn tác. Bao ${numberFormat.format(entry.weight)} kg sẽ bị xóa khỏi bảng.") },
+            title = { Text(stringResource(R.string.detail_bag_entries_delete_title, globalIndex)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.detail_bag_entries_delete_message,
+                        "%.1f".format(entry.weight)
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     onDelete()
-                }) { Text("Xóa", color = AppColors.Error, fontWeight = FontWeight.Bold) }
+                }) { Text(stringResource(R.string.card_detail_delete_confirm), color = AppColors.Error, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Hủy") }
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) }
             },
             containerColor = AppColors.CardBg
         )

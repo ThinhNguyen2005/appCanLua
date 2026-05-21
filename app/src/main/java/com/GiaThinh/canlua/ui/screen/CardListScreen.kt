@@ -27,11 +27,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Grass
 import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +41,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -65,7 +68,12 @@ import com.GiaThinh.canlua.ui.component.CardItem
 import com.GiaThinh.canlua.ui.component.CreateCardDialog
 import com.GiaThinh.canlua.ui.component.CreateCardMode
 import com.GiaThinh.canlua.ui.component.SkeletonList
-import com.GiaThinh.canlua.ui.component.SyncStatusPulse
+import com.GiaThinh.canlua.ui.component.cardlist.CardListEmptyState
+import com.GiaThinh.canlua.ui.component.cardlist.CardListFilterBar
+import com.GiaThinh.canlua.ui.component.cardlist.CardListFilterSheet
+import com.GiaThinh.canlua.ui.component.cardlist.CardListSummaryCard
+import com.GiaThinh.canlua.ui.component.cardlist.DeleteCardConfirmDialog
+import com.GiaThinh.canlua.ui.component.cardlist.PremiumQuotaDialog
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.isScrollingUp
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
@@ -104,6 +112,7 @@ fun CardListScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPremiumGate by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
     var cardToDelete by remember { mutableStateOf<com.GiaThinh.canlua.data.model.Card?>(null) }
     var manualRefreshing by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -136,149 +145,7 @@ fun CardListScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // === Summary Header ===
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = AppColors.GreenSurface
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Hôm nay: ${todayCards.size} phiếu",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AppColors.TextSecondary
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            SyncStatusPulse(
-                                status = syncStatus,
-                                showLabel = false
-                            )
-                        }
-                        Text(
-                            text = "${numberFormat.format(todayTotalKg)} kg",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.TextPrimary
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "Tổng thu",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.TextSecondary
-                        )
-                        Text(
-                            text = "${numberFormat.format(todayTotalAmount)} đ",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.GreenPrimary
-                        )
-                    }
-                }
-            }
-
-            // === Season Filter Chips — vai trò chính trong cách tổ chức dữ liệu theo mùa vụ ===
-            if (availableSeasons.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedSeason == null,
-                        onClick = { viewModel.setSeasonFilter(null) },
-                        label = { Text("Mọi vụ") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.CalendarMonth,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AppColors.GreenPrimary,
-                            selectedLabelColor = AppColors.CardBg,
-                            selectedLeadingIconColor = AppColors.CardBg
-                        )
-                    )
-                    availableSeasons.forEach { season ->
-                        FilterChip(
-                            selected = selectedSeason == season,
-                            onClick = {
-                                viewModel.setSeasonFilter(
-                                    if (selectedSeason == season) null else season
-                                )
-                            },
-                            label = { Text(season) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.GreenPrimary,
-                                selectedLabelColor = AppColors.CardBg
-                            )
-                        )
-                    }
-                }
-            }
-
-            // === Variety Filter Chips ===
-            if (availableVarieties.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedFilter == null,
-                        onClick = { viewModel.setVarietyFilter(null) },
-                        label = { Text("Tất cả") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AppColors.GreenPrimary,
-                            selectedLabelColor = AppColors.CardBg
-                        )
-                    )
-                    availableVarieties.forEach { variety ->
-                        FilterChip(
-                            selected = selectedFilter == variety,
-                            onClick = {
-                                viewModel.setVarietyFilter(
-                                    if (selectedFilter == variety) null else variety
-                                )
-                            },
-                            label = { Text(variety) },
-                            leadingIcon = {
-                                if (selectedFilter == variety) {
-                                    Icon(
-                                        Icons.Outlined.Grass,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = AppColors.GreenPrimary,
-                                selectedLabelColor = AppColors.CardBg
-                            )
-                        )
-                    }
-                }
-            }
-
-            // === Card List ===
+            // === Card List (chứa cả Summary + Filter chips để cuộn theo) ===
             AnimatedVisibility(
                 visible = isLoading,
                 enter = fadeIn(),
@@ -319,60 +186,55 @@ fun CardListScreen(
                         )
                     }
                 ) {
-                    if (cards.isEmpty()) {
-                        // Empty state
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(48.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .background(AppColors.GreenSurface),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Scale,
-                                    contentDescription = null,
-                                    tint = AppColors.GreenLight,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                text = "Chưa có phiếu cân nào",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = AppColors.TextSecondary
+                    // Group cards by date — fallback empty list nếu chưa có phiếu nào
+                    // (vẫn render summary + filter chips trong LazyColumn để user đọc trước khi tạo).
+                    val groupedCards = cards.groupBy { card ->
+                        dateFormat.format(card.date)
+                    }
+
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 8.dp,
+                            bottom = 96.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item(key = "summary_header") {
+                            CardListSummaryCard(
+                                cardCount = todayCards.size,
+                                totalKg = todayTotalKg,
+                                totalAmount = todayTotalAmount,
+                                syncStatus = syncStatus
                             )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = "Nhấn nút + để tạo phiếu cân mới",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AppColors.TextHint,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
-                        // Group cards by date
-                        val groupedCards = cards.groupBy { card ->
-                            dateFormat.format(card.date)
                         }
 
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 8.dp,
-                                bottom = 96.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        // ─── Compact filter bar — 1 row gọn ~44dp ───
+                        // Thay vì 2 hàng chips chiếm ~90dp như trước.
+                        // Nút "Bộ lọc" + chips active inline. Tap nút mở bottom sheet
+                        // chọn full filter chips. Active filter clear nhanh bằng × ngay tại chỗ.
+                        if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
+                            item(key = "filter_bar") {
+                                CardListFilterBar(
+                                    selectedSeason = selectedSeason,
+                                    selectedVariety = selectedFilter,
+                                    onOpenFilter = { showFilterSheet = true },
+                                    onClearSeason = { viewModel.setSeasonFilter(null) },
+                                    onClearVariety = { viewModel.setVarietyFilter(null) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        // ─── Empty state hoặc danh sách phiếu ───
+                        if (cards.isEmpty()) {
+                            item(key = "empty") {
+                                CardListEmptyState()
+                            }
+                        } else {
                             groupedCards.forEach { (date, cardsInDay) ->
                                 item(key = "header_$date") {
                                     Text(
@@ -423,6 +285,7 @@ fun CardListScreen(
                     // Đếm reactive từ cardsToday → nếu vượt mở dialog upsell thay vì tạo.
                     if (!isPremium && cardsToday >= com.GiaThinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY) {
                         showPremiumGate = true
+                        com.GiaThinh.canlua.util.AnalyticsHelper.premiumGateShown(cardsToday)
                     } else {
                         showCreateDialog = true
                     }
@@ -464,118 +327,52 @@ fun CardListScreen(
                 if (!isPremium) {
                     com.GiaThinh.canlua.util.PremiumState.incrementDailyCreated(context)
                 }
+                com.GiaThinh.canlua.util.AnalyticsHelper.cardCreated(
+                    role = if (isTrader) "TRADER" else "FARMER",
+                    hasGps = profileState?.region?.isNotBlank() == true
+                )
             }
         )
     }
 
     if (showDeleteConfirmDialog && cardToDelete != null) {
         val targetCard = cardToDelete!!
-        AlertDialog(
-            onDismissRequest = { 
+        DeleteCardConfirmDialog(
+            card = targetCard,
+            onConfirm = {
+                viewModel.deleteCard(targetCard)
+                HapticUtil.error(context)
                 showDeleteConfirmDialog = false
                 cardToDelete = null
             },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = AppColors.Error,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Xóa phiếu cân?",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-            },
-            text = {
-                val displayName = targetCard.traderName.ifBlank { targetCard.name }
-                Text(
-                    text = "Bạn có chắc chắn muốn xóa phiếu cân của \"$displayName\" không? Hành động này sẽ xóa dữ liệu trên thiết bị của bạn và không thể hoàn tác.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.TextPrimary
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteCard(targetCard)
-                        HapticUtil.error(context)
-                        showDeleteConfirmDialog = false
-                        cardToDelete = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
-                ) {
-                    Text("Đồng ý Xóa", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { 
-                        showDeleteConfirmDialog = false
-                        cardToDelete = null
-                    }
-                ) {
-                    Text("Hủy", color = AppColors.TextSecondary)
-                }
-            },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = AppColors.Surface
+            onDismiss = {
+                showDeleteConfirmDialog = false
+                cardToDelete = null
+            }
         )
     }
 
-    // Dialog Premium gate — vượt quota free 3 phiếu/ngày.
-    // Hai option: nâng cấp Premium (mở PremiumScreen) hoặc đóng và đợi sang ngày mai.
     if (showPremiumGate) {
-        AlertDialog(
-            onDismissRequest = { showPremiumGate = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = AppColors.GoldDark,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Đã đạt giới hạn miễn phí",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
+        PremiumQuotaDialog(
+            cardsToday = cardsToday,
+            freeLimit = com.GiaThinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY,
+            onUpgrade = {
+                showPremiumGate = false
+                navController.navigate("premium")
             },
-            text = {
-                Text(
-                    text = "Tài khoản miễn phí giới hạn ${com.GiaThinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY} phiếu cân mỗi ngày. " +
-                            "Hôm nay bạn đã tạo $cardsToday phiếu. " +
-                            "Nâng cấp Premium để cân lúa không giới hạn, không quảng cáo, " +
-                            "kèm AI khuyến nông và heatmap giá vùng.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.TextPrimary
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showPremiumGate = false
-                        navController.navigate("premium")
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GoldDark)
-                ) {
-                    Text("Nâng cấp Premium", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPremiumGate = false }) {
-                    Text("Để sau", color = AppColors.TextSecondary)
-                }
-            },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = AppColors.Surface
+            onDismiss = { showPremiumGate = false }
+        )
+    }
+
+    if (showFilterSheet) {
+        CardListFilterSheet(
+            availableSeasons = availableSeasons,
+            availableVarieties = availableVarieties,
+            selectedSeason = selectedSeason,
+            selectedVariety = selectedFilter,
+            onSelectSeason = viewModel::setSeasonFilter,
+            onSelectVariety = viewModel::setVarietyFilter,
+            onDismiss = { showFilterSheet = false }
         )
     }
 }

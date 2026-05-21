@@ -14,6 +14,14 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
+sealed class QrLockResult {
+    data class Success(val firestoreId: String) : QrLockResult()
+    data class AlreadyLockedByCurrentTrader(val firestoreId: String) : QrLockResult()
+    data object NotFound : QrLockResult()
+    data object AlreadyLockedByOtherTrader : QrLockResult()
+    data class Error(val message: String?) : QrLockResult()
+}
+
 @Singleton
 class FirestoreRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
@@ -98,7 +106,7 @@ class FirestoreRepository @Inject constructor(
      * Tìm card theo qrToken (do farmer generate), không theo localId
      * vì 2 thiết bị (farmer/trader) dùng Room ID khác nhau.
      */
-    suspend fun lockCardByQrToken(qrToken: String, traderId: String): Result<String?> {
+    suspend fun lockCardByQrToken(qrToken: String, traderId: String): QrLockResult {
         return try {
             val snapshot = cardsCollection
                 .whereEqualTo("qrToken", qrToken)
@@ -107,17 +115,29 @@ class FirestoreRepository @Inject constructor(
                 .await()
 
             val doc = snapshot.documents.firstOrNull()
-                ?: return Result.success(null) // Không tìm thấy → farmer chưa sync card này lên cloud
+                ?: return QrLockResult.NotFound
 
-            val updates = mapOf(
-                "lockedByTraderId" to traderId,
-                "isLocked" to true,
-                "syncTimestamp" to System.currentTimeMillis()
-            )
-            doc.reference.update(updates).await()
-            Result.success(doc.id)
+            firestore.runTransaction { transaction ->
+                val fresh = transaction.get(doc.reference)
+                val lockedBy = fresh.getString("lockedByTraderId").orEmpty()
+                when {
+                    lockedBy == traderId -> QrLockResult.AlreadyLockedByCurrentTrader(doc.id)
+                    lockedBy.isNotBlank() -> QrLockResult.AlreadyLockedByOtherTrader
+                    else -> {
+                        transaction.update(
+                            doc.reference,
+                            mapOf(
+                                "lockedByTraderId" to traderId,
+                                "isLocked" to true,
+                                "syncTimestamp" to System.currentTimeMillis()
+                            )
+                        )
+                        QrLockResult.Success(doc.id)
+                    }
+                }
+            }.await()
         } catch (e: Exception) {
-            Result.failure(e)
+            QrLockResult.Error(e.message)
         }
     }
 
@@ -246,8 +266,8 @@ class FirestoreRepository @Inject constructor(
     }
 
     /**
-     * Realtime stream transactions thuộc về một list cardId.
-     * Firestore `whereIn` tối đa 30 ID per query — đủ cho use case TRADER.
+     * Realtime stream transactions thuộc về list cardId của trader.
+     * Firestore `whereIn` tối đa 30 ID/query, nên phải listen theo nhiều chunk.
      */
     fun observeTransactionsForCards(cardIds: List<String>): Flow<List<FirestoreTransaction>> = callbackFlow {
         if (cardIds.isEmpty()) {
@@ -255,24 +275,28 @@ class FirestoreRepository @Inject constructor(
             close()
             return@callbackFlow
         }
-        // Firestore whereIn limit = 30 — chunk nếu cần
-        val chunk = cardIds.take(30)
-        // NOTE: whereIn + orderBy(field khác) cũng yêu cầu composite index.
-        // Sort client-side để tránh phụ thuộc cấu hình Console.
-        val registration: ListenerRegistration = transactionsCollection
-            .whereIn("cardId", chunk)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
+
+        val chunks = cardIds.distinct().chunked(30)
+        val latestByChunk = MutableList(chunks.size) { emptyList<FirestoreTransaction>() }
+        val registrations = mutableListOf<ListenerRegistration>()
+
+        chunks.forEachIndexed { index, chunk ->
+            val registration = transactionsCollection
+                .whereIn("cardId", chunk)
+                .addSnapshotListener { snapshot, error ->
+                    latestByChunk[index] = if (error != null) {
+                        emptyList()
+                    } else {
+                        snapshot?.documents
+                            ?.mapNotNull { it.toObject(FirestoreTransaction::class.java) }
+                            .orEmpty()
+                    }
+                    trySend(latestByChunk.flatten().sortedByDescending { it.date })
                 }
-                val list = snapshot?.documents
-                    ?.mapNotNull { it.toObject(FirestoreTransaction::class.java) }
-                    .orEmpty()
-                    .sortedByDescending { it.date }
-                trySend(list)
-            }
-        awaitClose { registration.remove() }
+            registrations += registration
+        }
+
+        awaitClose { registrations.forEach { it.remove() } }
     }
 }
 

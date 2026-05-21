@@ -222,6 +222,33 @@ interface CardDao {
      */
     @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND date >= :sinceMs")
     suspend fun countCardsSince(uid: String, sinceMs: Long): Int
+
+    /**
+     * Fallback dedup khi pull về cloud: tìm card local chưa có `firestoreId`
+     * (sync trước v13) khớp với composite key (ownerUid + date + name + totalWeight).
+     * Tránh tạo duplicate khi user logout/login lại trên cùng máy.
+     *
+     * Trả về card đầu tiên match — caller stamp `firestoreId` cho row đó.
+     */
+    @Query("""
+        SELECT * FROM cards
+        WHERE ownerUid = :uid
+          AND firestoreId IS NULL
+          AND date = :date
+          AND name = :name
+          AND ABS(totalWeight - :totalWeight) < 0.01
+        LIMIT 1
+    """)
+    suspend fun findOrphanFirestoreMatch(
+        uid: String,
+        date: Long,
+        name: String,
+        totalWeight: Double
+    ): Card?
+
+    /** Cards của user chưa từng sync lên Firestore — dùng cho backfill push. */
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND firestoreId IS NULL")
+    suspend fun getUnsyncedCards(uid: String): List<Card>
 }
 
 /** Helper data class cho query getAllSeasonsComparison — Room map theo column name. */

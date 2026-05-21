@@ -12,9 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
 import java.util.Locale
@@ -57,7 +59,7 @@ fun PaymentResultCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Payments, null, tint = AppColors.GoldDark, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Thanh Toán", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.weight_payment_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
             // Tiền cọc + Đã trả
@@ -69,8 +71,8 @@ fun PaymentResultCard(
                         onDepositChange(it.toDoubleOrNull() ?: 0.0)
                     }
                 },
-                label = { Text("Tiền đặt cọc") },
-                suffix = { Text("đ") },
+                label = { Text(stringResource(R.string.weight_payment_deposit)) },
+                suffix = { Text(stringResource(R.string.currency_vnd_symbol)) },
                 enabled = !isLocked,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -86,8 +88,8 @@ fun PaymentResultCard(
                         onPaidChange(it.toDoubleOrNull() ?: 0.0)
                     }
                 },
-                label = { Text("Tiền đã trả") },
-                suffix = { Text("đ") },
+                label = { Text(stringResource(R.string.weight_payment_paid)) },
+                suffix = { Text(stringResource(R.string.currency_vnd_symbol)) },
                 enabled = !isLocked,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -109,23 +111,32 @@ fun PaymentResultCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        if (isPaidFull) "ĐÃ THANH TOÁN ĐỦ ✓" else "TIỀN CÒN LẠI",
+                        if (isPaidFull) {
+                            stringResource(R.string.weight_payment_paid_full)
+                        } else {
+                            stringResource(R.string.weight_payment_remaining)
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (isPaidFull) Color(0xFF1B5E20) else Color.Black
+                        color = if (isPaidFull) AppColors.GreenPrimary else AppColors.TextPrimary
                     )
                     if (!isPaidFull) {
                         Text(
-                            "${fmt.format(remainingAmount)} đ",
+                            stringResource(R.string.card_list_money_vnd, fmt.format(remainingAmount)),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFD32F2F) // Đỏ tươi tương phản cao trên nền vàng nhạt
+                            color = AppColors.RemainingHighlight // Auto-adapt dark/light
                         )
                     }
                     Text(
-                        "= ${fmt.format(totalAmount)} - ${fmt.format(depositAmount)} - ${fmt.format(paidAmount)}",
+                        stringResource(
+                            R.string.weight_payment_formula,
+                            fmt.format(totalAmount),
+                            fmt.format(depositAmount),
+                            fmt.format(paidAmount)
+                        ),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Black,
+                        color = AppColors.TextPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -137,7 +148,7 @@ fun PaymentResultCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Đã trả đủ tiền", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.weight_payment_paid_full_toggle), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 Switch(
                     checked = isPaidFull,
                     onCheckedChange = { if (!isLocked) onPaidFullToggle(it) },

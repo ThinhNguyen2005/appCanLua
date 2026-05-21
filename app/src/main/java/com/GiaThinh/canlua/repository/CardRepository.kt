@@ -35,6 +35,7 @@ class CardRepository @Inject constructor(
     private val cardDao: CardDao,
     private val weightEntryDao: WeightEntryDao,
     private val transactionDao: TransactionDao,
+    private val deletedCardDao: com.GiaThinh.canlua.data.dao.DeletedCardDao,
     private val authManager: AuthManager
 ) {
     /** Empty string khi chưa sign-in → DAO query trả empty (không match row nào). */
@@ -65,7 +66,156 @@ class CardRepository @Inject constructor(
         cardDao.updateCard(card.copy(lastModifiedMs = System.currentTimeMillis()))
     }
 
-    suspend fun deleteCard(card: Card) = cardDao.deleteCard(card)
+    /**
+     * Xoá card local + ghi tombstone trước khi xoá để chống bug "phiếu phục sinh"
+     * sau pull. Tombstone lưu snapshot full card data (JSON) để user khôi phục.
+     *
+     * Caller (SyncableCardRepository) sẽ chịu trách nhiệm xoá Firestore — nếu
+     * fail (offline), tombstone giữ flag `cloudDeleted = false` để background
+     * worker retry.
+     */
+    suspend fun deleteCard(card: Card) {
+        // 1. Ghi tombstone trước. Nếu app crash giữa chừng, lần khởi động sau
+        //    pull sync sẽ skip restore phiếu này (đã có tombstone với firestoreId).
+        val ownerUid = card.ownerUid.ifBlank { uid() }
+        if (ownerUid.isNotBlank()) {
+            deletedCardDao.insert(
+                com.GiaThinh.canlua.data.model.DeletedCard(
+                    ownerUid = ownerUid,
+                    firestoreId = card.firestoreId,
+                    localId = card.id,
+                    cardJson = serializeCard(card),
+                    name = card.name,
+                    traderName = card.traderName,
+                    totalWeight = card.totalWeight,
+                    totalAmount = card.totalAmount,
+                    cardDate = card.date.time,
+                    seasonLabel = card.seasonLabel,
+                    riceVariety = card.riceVariety,
+                    // Nếu card chưa từng sync (firestoreId null), không cần xoá cloud.
+                    cloudDeleted = card.firestoreId == null
+                )
+            )
+        }
+        // 2. Xoá Room — FK CASCADE tự xoá weight_entries + transactions con.
+        cardDao.deleteCard(card)
+    }
+
+    /**
+     * Khôi phục phiếu từ tombstone — recreate card với lastModifiedMs = now
+     * để force push lên cloud (cloud có thể đã xoá do delete sync trước đó).
+     * Sau khôi phục thành công, purge tombstone.
+     */
+    suspend fun restoreFromTombstone(tombstoneId: Long): Long? {
+        val tombstone = deletedCardDao.getById(tombstoneId) ?: return null
+        val card = deserializeCard(tombstone.cardJson) ?: return null
+        // Insert card mới — Room auto generate id mới (id cũ có thể đã collide).
+        // Reset firestoreId để push tạo doc mới (doc cũ đã bị delete sync).
+        val now = System.currentTimeMillis()
+        val newId = cardDao.insertCard(
+            card.copy(
+                id = 0L,
+                firestoreId = null,
+                lastModifiedMs = now,
+                ownerUid = tombstone.ownerUid
+            )
+        )
+        deletedCardDao.purge(tombstoneId)
+        return newId
+    }
+
+    suspend fun getDeletedCards(uid: String) = deletedCardDao.observe(uid)
+
+    suspend fun isCardTombstoned(uid: String, firestoreId: String): Boolean =
+        deletedCardDao.isTombstoned(uid, firestoreId)
+
+    suspend fun getPendingCloudDeletes(uid: String) =
+        deletedCardDao.getPendingCloudDeletes(uid)
+
+    suspend fun markTombstoneCloudDeleted(id: Long) = deletedCardDao.markCloudDeleted(id)
+
+    suspend fun purgeTombstone(id: Long) = deletedCardDao.purge(id)
+
+    /**
+     * Serialize card → JSON minimal cho tombstone restore.
+     * Dùng key=value đơn giản thay vì Gson để tránh thêm dep + giữ schema control.
+     */
+    private fun serializeCard(card: Card): String {
+        val sb = StringBuilder("{")
+        sb.append("\"name\":${jsonString(card.name)},")
+        sb.append("\"cccd\":${jsonNullable(card.cccd)},")
+        sb.append("\"traderName\":${jsonString(card.traderName)},")
+        sb.append("\"date\":${card.date.time},")
+        sb.append("\"totalWeight\":${card.totalWeight},")
+        sb.append("\"bagWeight\":${card.bagWeight},")
+        sb.append("\"impurityWeight\":${card.impurityWeight},")
+        sb.append("\"netWeight\":${card.netWeight},")
+        sb.append("\"depositAmount\":${card.depositAmount},")
+        sb.append("\"pricePerKg\":${card.pricePerKg},")
+        sb.append("\"totalAmount\":${card.totalAmount},")
+        sb.append("\"paidAmount\":${card.paidAmount},")
+        sb.append("\"remainingAmount\":${card.remainingAmount},")
+        sb.append("\"bagCount\":${card.bagCount},")
+        sb.append("\"isLocked\":${card.isLocked},")
+        sb.append("\"riceVariety\":${jsonString(card.riceVariety)},")
+        sb.append("\"moisturePercent\":${card.moisturePercent},")
+        sb.append("\"seasonLabel\":${jsonString(card.seasonLabel)},")
+        sb.append("\"qrToken\":${jsonNullable(card.qrToken)},")
+        sb.append("\"lockedByTraderId\":${jsonNullable(card.lockedByTraderId)},")
+        sb.append("\"latitude\":${card.latitude ?: "null"},")
+        sb.append("\"longitude\":${card.longitude ?: "null"},")
+        sb.append("\"traderPhone\":${jsonString(card.traderPhone)},")
+        sb.append("\"fieldAddress\":${jsonString(card.fieldAddress)}")
+        sb.append("}")
+        return sb.toString()
+    }
+
+    private fun deserializeCard(json: String): Card? = runCatching {
+        val map = parseSimpleJson(json)
+        Card(
+            ownerUid = "",
+            name = map["name"]?.toString().orEmpty(),
+            cccd = map["cccd"] as? String,
+            traderName = map["traderName"]?.toString().orEmpty(),
+            date = java.util.Date((map["date"] as? Number)?.toLong() ?: 0L),
+            totalWeight = (map["totalWeight"] as? Number)?.toDouble() ?: 0.0,
+            bagWeight = (map["bagWeight"] as? Number)?.toDouble() ?: 0.0,
+            impurityWeight = (map["impurityWeight"] as? Number)?.toDouble() ?: 0.0,
+            netWeight = (map["netWeight"] as? Number)?.toDouble() ?: 0.0,
+            depositAmount = (map["depositAmount"] as? Number)?.toDouble() ?: 0.0,
+            pricePerKg = (map["pricePerKg"] as? Number)?.toDouble() ?: 0.0,
+            totalAmount = (map["totalAmount"] as? Number)?.toDouble() ?: 0.0,
+            paidAmount = (map["paidAmount"] as? Number)?.toDouble() ?: 0.0,
+            remainingAmount = (map["remainingAmount"] as? Number)?.toDouble() ?: 0.0,
+            bagCount = (map["bagCount"] as? Number)?.toInt() ?: 0,
+            isLocked = map["isLocked"] as? Boolean ?: false,
+            riceVariety = map["riceVariety"]?.toString().orEmpty(),
+            moisturePercent = (map["moisturePercent"] as? Number)?.toDouble() ?: 0.0,
+            seasonLabel = map["seasonLabel"]?.toString().orEmpty(),
+            qrToken = map["qrToken"] as? String,
+            lockedByTraderId = map["lockedByTraderId"] as? String,
+            latitude = (map["latitude"] as? Number)?.toDouble(),
+            longitude = (map["longitude"] as? Number)?.toDouble(),
+            traderPhone = map["traderPhone"]?.toString().orEmpty(),
+            fieldAddress = map["fieldAddress"]?.toString().orEmpty()
+        )
+    }.getOrNull()
+
+    private fun jsonString(s: String): String =
+        "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+    private fun jsonNullable(s: String?): String =
+        if (s == null) "null" else jsonString(s)
+
+    /** Parser minimal cho format do `serializeCard` sinh — không general-purpose. */
+    private fun parseSimpleJson(json: String): Map<String, Any?> {
+        val obj = org.json.JSONObject(json)
+        return buildMap {
+            obj.keys().forEach { k ->
+                put(k, if (obj.isNull(k)) null else obj.get(k))
+            }
+        }
+    }
 
     // Weight Entry operations — không cần filter uid vì FK CASCADE qua cardId,
     // và caller chỉ truy cập sau khi đã có cardId từ getAllCards (đã filter).
@@ -116,6 +266,25 @@ class CardRepository @Inject constructor(
     suspend fun updateCardCalculations(cardId: Long) {
         val card = cardDao.getCardById(cardId, uid()) ?: return
         val calculation = calculateCardTotals(cardId)
+
+        val entries = weightEntryDao.getWeightEntriesByCardIdSync(cardId)
+        entries.forEach { entry ->
+            val entryNetWeight = RiceCalculator.calcNetWeight(
+                rawWeight = entry.weight,
+                bagWeight = card.bagWeight,
+                impurityWeight = 0.0,
+                moisturePercent = card.moisturePercent
+            )
+            if (entry.bagWeight != card.bagWeight || entry.impurityWeight != 0.0 || entry.netWeight != entryNetWeight) {
+                weightEntryDao.updateWeightEntry(
+                    entry.copy(
+                        bagWeight = card.bagWeight,
+                        impurityWeight = 0.0,
+                        netWeight = entryNetWeight
+                    )
+                )
+            }
+        }
 
         val totalRaw = calculation.totalRawWeight
         // Tổng khối lượng bao bì = số bao × trọng lượng bao đơn vị

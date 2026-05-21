@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider paths cho PDF export. Cho phép share file PDF từ cacheDir/exports
+  qua Intent.ACTION_SEND tới Zalo/Gmail/Drive mà không cần WRITE_EXTERNAL_STORAGE.
+
+  Authority: ${applicationId}.fileprovider (xem AndroidManifest.xml).
+-->
+<paths>
+    <cache-path
+        name="exports"
+        path="exports/" />
+</paths>
