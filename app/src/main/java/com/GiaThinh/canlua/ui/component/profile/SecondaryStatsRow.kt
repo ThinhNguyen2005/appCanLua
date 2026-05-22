@@ -25,7 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 
@@ -58,14 +60,14 @@ fun SecondaryStatsRow(
         ) {
             SecondaryPill(
                 icon = Icons.Filled.WaterDrop,
-                label = "Độ ẩm TB",
+                label = stringResource(R.string.profile_stats_avg_moisture),
                 value = if (avgMoisture > 0) DashboardFormatter.percent(avgMoisture) else "—",
                 tint = AppColors.Info,
                 modifier = Modifier.weight(1f)
             )
             SecondaryPill(
                 icon = Icons.Filled.CleaningServices,
-                label = "Tạp chất",
+                label = stringResource(R.string.profile_stats_impurity),
                 value = if (totalImpurity > 0) DashboardFormatter.weight(totalImpurity) else "—",
                 tint = AppColors.Warning,
                 modifier = Modifier.weight(1f)
@@ -151,8 +153,8 @@ private fun DryWetSplitPill(
     ) {
         SplitHalf(
             icon = Icons.Filled.Grass,
-            label = "Lúa khô (≤14%)",
-            value = "$dryCount phiếu",
+            label = stringResource(R.string.profile_stats_dry_rice),
+            value = stringResource(R.string.profile_slip_count, dryCount),
             tint = dryColor,
             modifier = Modifier.weight(1f)
         )
@@ -163,8 +165,8 @@ private fun DryWetSplitPill(
         )
         SplitHalf(
             icon = Icons.Filled.Opacity,
-            label = "Lúa ướt (>14%)",
-            value = "$wetCount phiếu",
+            label = stringResource(R.string.profile_stats_wet_rice),
+            value = stringResource(R.string.profile_slip_count, wetCount),
             tint = wetColor,
             modifier = Modifier.weight(1f)
         )

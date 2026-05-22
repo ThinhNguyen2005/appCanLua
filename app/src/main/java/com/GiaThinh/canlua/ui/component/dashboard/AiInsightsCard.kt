@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.util.AiMarkdownText
 import com.GiaThinh.canlua.ui.util.parseInlineMarkdown
 import com.GiaThinh.canlua.ui.viewmodel.AiAnalysisState
 
@@ -260,9 +261,13 @@ private fun ShimmerLine(width: Float, color: Color) {
 
 @Composable
 private fun SuccessContent(markdown: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        MarkdownBlocks(markdown)
-    }
+    AiMarkdownText(
+        markdown = markdown,
+        modifier = Modifier.fillMaxWidth(),
+        textColor = AppColors.TextPrimary,
+        linkColor = AppColors.GreenPrimary,
+        textSizeSp = 12f
+    )
 }
 
 @Composable

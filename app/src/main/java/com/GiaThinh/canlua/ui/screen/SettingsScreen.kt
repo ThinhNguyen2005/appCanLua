@@ -709,7 +709,7 @@ private fun FontScaleOptions(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = scale.label,
+                        text = stringResource(scale.labelRes),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                         color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary

@@ -1,10 +1,21 @@
 package com.GiaThinh.canlua.ui.util
 
+import android.text.method.LinkMovementMethod
+import android.widget.TextView
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.tables.TablePlugin
 
 /**
  * Parser markdown tối giản: chỉ xử lý `**bold**`, `*italic*`, và `` `code` ``.
@@ -12,6 +23,41 @@ import androidx.compose.ui.text.font.FontWeight
  *
  * Không phải parser đầy đủ — đủ tốt cho chat bubble, không edge-case xa xôi.
  */
+@Composable
+fun AiMarkdownText(
+    markdown: String,
+    modifier: Modifier = Modifier,
+    textColor: Color,
+    linkColor: Color = textColor,
+    textSizeSp: Float = 14f
+) {
+    val context = LocalContext.current
+    val markwon = remember(context) {
+        Markwon.builder(context)
+            .usePlugin(TablePlugin.create(context))
+            .build()
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            TextView(ctx).apply {
+                setTextColor(textColor.toArgb())
+                setLinkTextColor(linkColor.toArgb())
+                textSize = textSizeSp
+                movementMethod = LinkMovementMethod.getInstance()
+                setLineSpacing(0f, 1.1f)
+            }
+        },
+        update = { view ->
+            view.setTextColor(textColor.toArgb())
+            view.setLinkTextColor(linkColor.toArgb())
+            view.textSize = textSizeSp
+            markwon.setMarkdown(view, markdown)
+        }
+    )
+}
+
 fun parseInlineMarkdown(text: String): AnnotatedString = buildAnnotatedString {
     var i = 0
     while (i < text.length) {

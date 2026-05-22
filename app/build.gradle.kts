@@ -149,6 +149,10 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
 
+    // Markdown renderer for AI responses, including tables
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+
     // Coil — load thumbnail bài báo trong NewsSection
     implementation("io.coil-kt:coil-compose:2.6.0")
 

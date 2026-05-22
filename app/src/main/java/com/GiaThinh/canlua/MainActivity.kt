@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -108,8 +109,19 @@ class MainActivity : ComponentActivity() {
                         RoleRequestScreen(navController = rootNavController)
                     }
 
-                    composable("main") {
-                        MainScreen()
+                    composable(
+                        route = "main?cardId={cardId}",
+                        deepLinks = listOf(
+                            navDeepLink {
+                                uriPattern = "https://canluavn.web.app/share/{cardId}"
+                            },
+                            navDeepLink {
+                                uriPattern = "https://canluavn.firebaseapp.com/share/{cardId}"
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val cardId = backStackEntry.arguments?.getString("cardId")
+                        MainScreen(deeplinkCardId = cardId)
                     }
                 }
                 }

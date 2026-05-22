@@ -30,8 +30,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.VarietyStat
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
@@ -74,7 +76,7 @@ fun VarietyPieChart(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Phân bổ giống lúa",
+                text = stringResource(R.string.profile_variety_distribution_title),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.TextPrimary
@@ -83,7 +85,7 @@ fun VarietyPieChart(
             Spacer(Modifier.height(16.dp))
 
             if (total == 0.0 || items.isEmpty()) {
-                EmptyChartHint("Chưa có dữ liệu giống lúa")
+                EmptyChartHint(stringResource(R.string.profile_variety_distribution_empty))
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -134,7 +136,7 @@ fun VarietyPieChart(
                                 color = AppColors.TextPrimary
                             )
                             Text(
-                                text = "Tổng",
+                                text = stringResource(R.string.profile_total),
                                 fontSize = 11.sp,
                                 color = AppColors.TextHint
                             )

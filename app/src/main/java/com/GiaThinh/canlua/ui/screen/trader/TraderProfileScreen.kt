@@ -44,9 +44,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.GiaThinh.canlua.R
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.GiaThinh.canlua.ui.component.dashboard.ChartMetric
@@ -140,7 +142,7 @@ fun TraderProfileScreen(
             // ─── TIER 0: Gradient Hero Header ───
             item {
                 GradientProfileHeader(
-                    name = profile?.name?.takeIf { it.isNotBlank() } ?: "Thương lái",
+                    name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_trader_default_name),
                     role = profile?.role ?: "TRADER",
                     email = profile?.email.orEmpty()
                 )
@@ -152,7 +154,7 @@ fun TraderProfileScreen(
                     seasonCount = lifetimeStats.cardCount,
                     totalNetWeight = lifetimeStats.totalNetWeight,
                     totalRevenue = lifetimeStats.totalPaid,
-                    revenueLabel = "Đã chi"
+                    revenueLabel = stringResource(R.string.profile_stats_paid)
                 )
             }
 
@@ -160,8 +162,8 @@ fun TraderProfileScreen(
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     ProfileSectionTitle(
-                        title = "📊 Sổ thu mua mùa vụ",
-                        subtitle = "Số liệu chi tiết từng vụ thu mua"
+                        title = stringResource(R.string.profile_trader_season_book_title),
+                        subtitle = stringResource(R.string.profile_trader_season_book_subtitle)
                     )
                 }
             }
@@ -240,8 +242,11 @@ fun TraderProfileScreen(
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     ProfileNavigationRow(
                         icon = Icons.AutoMirrored.Filled.MenuBook,
-                        title = "Sổ giao dịch",
-                        subtitle = "${traderTransactionsState.totalCards} phiếu đã đối soát",
+                        title = stringResource(R.string.profile_transaction_ledger),
+                        subtitle = stringResource(
+                            R.string.profile_reconciled_slip_count,
+                            traderTransactionsState.totalCards
+                        ),
                         onClick = { navController.navigate("trader_transactions") }
                     )
                 }
@@ -251,8 +256,8 @@ fun TraderProfileScreen(
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     ProfileSectionTitle(
-                        title = "⚙️ Tài khoản",
-                        subtitle = "Quản lý thông tin và vai trò"
+                        title = stringResource(R.string.profile_account_section_title),
+                        subtitle = stringResource(R.string.profile_account_section_subtitle)
                     )
                 }
             }
@@ -334,13 +339,14 @@ private fun TraderPrimaryKpiGrid(
     val paidDelta = previous?.let {
         DashboardFormatter.deltaPercent(stats.totalPaid, it.totalPaid)
     }
-    val deltaLabel = previous?.season?.let { "vs $it" }
+    val deltaLabelPrefix = stringResource(R.string.profile_delta_vs)
+    val deltaLabel = previous?.season?.let { "$deltaLabelPrefix $it" }
 
     KpiGrid(
         items = listOf(
             KpiGridItem(
                 icon = Icons.Outlined.Scale,
-                label = "Đã thu mua",
+                label = stringResource(R.string.profile_kpi_purchased_yield),
                 value = DashboardFormatter.weight(stats.totalNetWeight),
                 accentColor = AppColors.GreenPrimary,
                 deltaPercent = weightDelta,
@@ -349,7 +355,7 @@ private fun TraderPrimaryKpiGrid(
             ),
             KpiGridItem(
                 icon = Icons.Outlined.AccountBalanceWallet,
-                label = "Đã chi trả",
+                label = stringResource(R.string.profile_kpi_paid_amount),
                 value = DashboardFormatter.money(stats.totalPaid),
                 accentColor = Color(0xFFE65100),
                 deltaPercent = paidDelta,
@@ -358,25 +364,28 @@ private fun TraderPrimaryKpiGrid(
             ),
             KpiGridItem(
                 icon = Icons.Outlined.Inventory,
-                label = "KG/bao TB",
-                value = if (stats.avgKgPerBag > 0) "${DashboardFormatter.weight(stats.avgKgPerBag)}/bao" else "—",
+                label = stringResource(R.string.profile_kpi_avg_kg_per_bag),
+                value = if (stats.avgKgPerBag > 0) stringResource(
+                    R.string.profile_kg_per_bag_value,
+                    DashboardFormatter.weight(stats.avgKgPerBag)
+                ) else "—",
                 accentColor = Color(0xFF8D6E63)
             ),
             KpiGridItem(
                 icon = Icons.Outlined.AccountBalance,
-                label = "Còn nợ NCC",
+                label = stringResource(R.string.profile_kpi_supplier_debt),
                 value = DashboardFormatter.money(stats.totalRemaining),
                 accentColor = AppColors.Error
             ),
             KpiGridItem(
                 icon = Icons.Outlined.Receipt,
-                label = "Số phiếu",
+                label = stringResource(R.string.profile_kpi_slip_count),
                 value = "${stats.cardCount}",
                 accentColor = AppColors.Info
             ),
             KpiGridItem(
                 icon = Icons.Outlined.Inventory,
-                label = "Tổng bao",
+                label = stringResource(R.string.profile_kpi_total_bags),
                 value = "${stats.totalBags}",
                 accentColor = Color(0xFF8D6E63)
             )

@@ -44,6 +44,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
 /**
@@ -61,8 +63,8 @@ private data class RoleVisual(
 @Composable
 fun ProfileHeader(name: String, role: String, email: String) {
     val visual = when (role) {
-        "TRADER" -> RoleVisual(Icons.Filled.Storefront, "Tài khoản Thương lái", AppColors.GoldDark, AppColors.GoldLight)
-        else -> RoleVisual(Icons.Filled.Agriculture, "Tài khoản Nông dân", AppColors.GreenDark, AppColors.GreenSurface)
+        "TRADER" -> RoleVisual(Icons.Filled.Storefront, stringResource(R.string.profile_trader_account), AppColors.GoldDark, AppColors.GoldLight)
+        else -> RoleVisual(Icons.Filled.Agriculture, stringResource(R.string.profile_farmer_account), AppColors.GreenDark, AppColors.GreenSurface)
     }
 
     Card(
@@ -132,7 +134,7 @@ fun PersonalInfoCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Thông tin cá nhân",
+                    text = stringResource(R.string.personal_information),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary,
@@ -141,7 +143,7 @@ fun PersonalInfoCard(
                 IconButton(onClick = onToggleEdit) {
                     Icon(
                         imageVector = if (editing) Icons.Filled.Save else Icons.Filled.Edit,
-                        contentDescription = if (editing) "Lưu" else "Chỉnh sửa",
+                        contentDescription = stringResource(if (editing) R.string.save else R.string.edit),
                         tint = AppColors.GreenPrimary
                     )
                 }
@@ -151,14 +153,14 @@ fun PersonalInfoCard(
             EditableRow(
                 editing = editing,
                 icon = Icons.Filled.Person,
-                label = "Họ và tên",
+                label = stringResource(R.string.full_name),
                 value = name,
                 onValueChange = onName
             )
             EditableRow(
                 editing = editing,
                 icon = Icons.Filled.Phone,
-                label = "Số điện thoại",
+                label = stringResource(R.string.phone_number),
                 value = phone,
                 onValueChange = onPhone,
                 keyboardType = KeyboardType.Phone
@@ -166,7 +168,7 @@ fun PersonalInfoCard(
             EditableRow(
                 editing = editing,
                 icon = Icons.Filled.LocationOn,
-                label = "Khu vực",
+                label = stringResource(R.string.region),
                 value = region,
                 onValueChange = onRegion
             )
@@ -225,7 +227,7 @@ private fun EditableRow(
                 )
             } else {
                 Text(
-                    text = value.ifBlank { "Chưa cập nhật" },
+                    text = value.ifBlank { stringResource(R.string.not_updated) },
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (value.isBlank()) AppColors.TextHint else AppColors.TextPrimary,
                     fontWeight = FontWeight.Medium
@@ -244,13 +246,13 @@ fun RoleSwitcher(currentRole: String, onRequestChange: (String) -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Vai trò sử dụng",
+                stringResource(R.string.profile_user_role),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
             )
             Text(
-                "Chuyển đổi giữa giao diện Nông dân và Thương lái",
+                text = stringResource(R.string.profile_user_role_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.TextHint
             )
@@ -265,14 +267,14 @@ fun RoleSwitcher(currentRole: String, onRequestChange: (String) -> Unit) {
             ) {
                 RoleChip(
                     icon = Icons.Filled.Agriculture,
-                    label = "Nông dân",
+                    label = stringResource(R.string.farmer),
                     selected = currentRole != "TRADER",
                     onClick = { if (currentRole != "FARMER") onRequestChange("FARMER") },
                     modifier = Modifier.weight(1f)
                 )
                 RoleChip(
                     icon = Icons.Filled.Storefront,
-                    label = "Thương lái",
+                    label = stringResource(R.string.trader),
                     selected = currentRole == "TRADER",
                     onClick = { if (currentRole != "TRADER") onRequestChange("TRADER") },
                     modifier = Modifier.weight(1f)
@@ -352,13 +354,13 @@ fun PremiumUpsellCard(onClick: () -> Unit) {
             Spacer(Modifier.size(14.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Nâng cấp Cân Lúa Premium",
+                    text = stringResource(R.string.upgrade_to_premium),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = AppColors.GoldDark
                 )
                 Text(
-                    text = "Bỏ quảng cáo · AI khuyến nông không giới hạn · Heatmap giá",
+                    text = stringResource(R.string.profile_premium_upsell_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextSecondary,
                     fontWeight = FontWeight.Medium
@@ -380,11 +382,13 @@ fun PremiumStatusCard(
     isEarlyAdopter: Boolean = false,
     onClick: () -> Unit
 ) {
-    val sinceLabel = remember(sinceMs) {
-        if (sinceMs <= 0L) "Đã kích hoạt"
+    val activatedLabel = stringResource(R.string.activated)
+    val activatedSinceLabel = stringResource(R.string.activated_since)
+    val sinceLabel = remember(sinceMs, activatedLabel, activatedSinceLabel) {
+        if (sinceMs <= 0L) activatedLabel
         else {
-            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.forLanguageTag("vi-VN"))
-            "Kích hoạt từ ${sdf.format(java.util.Date(sinceMs))}"
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+            "$activatedSinceLabel ${sdf.format(java.util.Date(sinceMs))}"
         }
     }
     Box(
@@ -438,7 +442,10 @@ fun PremiumStatusCard(
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = if (isEarlyAdopter) "EARLY ADOPTER" else "ACTIVE",
+                            text = stringResource(
+                                if (isEarlyAdopter) R.string.settings_premium_early_adopter
+                                else R.string.settings_premium_active
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isEarlyAdopter) AppColors.GoldDark else Color.White,
                             fontWeight = FontWeight.ExtraBold
@@ -446,7 +453,7 @@ fun PremiumStatusCard(
                     }
                 }
                 Text(
-                    text = plan?.takeIf { it.isNotBlank() } ?: "Gói đã kích hoạt",
+                    text = plan?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_premium_active_plan),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.95f),
                     fontWeight = FontWeight.SemiBold
@@ -459,7 +466,7 @@ fun PremiumStatusCard(
                 if (isEarlyAdopter) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "Cảm ơn bạn đã đồng hành từ những ngày đầu!",
+                        text = stringResource(R.string.profile_premium_early_adopter_thanks),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.65f),
                         fontWeight = FontWeight.Medium

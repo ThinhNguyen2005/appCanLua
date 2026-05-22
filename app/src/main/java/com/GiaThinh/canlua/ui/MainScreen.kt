@@ -61,7 +61,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(deeplinkCardId: String? = null) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -222,7 +222,8 @@ fun MainScreen() {
                     navController = navController,
                     startDestination = navItems.first().route,
                     modifier = Modifier.fillMaxSize(),
-                    aiChatDrawerState = aiChatDrawerState
+                    aiChatDrawerState = aiChatDrawerState,
+                    deeplinkCardId = deeplinkCardId
                 )
 
                 androidx.compose.animation.AnimatedVisibility(

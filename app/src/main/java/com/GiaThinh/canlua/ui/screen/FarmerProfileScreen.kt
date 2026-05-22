@@ -54,9 +54,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.GiaThinh.canlua.R
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.TraderHistoryItem
 import com.GiaThinh.canlua.ui.component.dashboard.AiInsightsCard
@@ -154,7 +156,7 @@ fun FarmerProfileScreen(
             // ─── TIER 0: Gradient Hero Header ───
             item {
                 GradientProfileHeader(
-                    name = profile?.name?.takeIf { it.isNotBlank() } ?: "Nông dân",
+                    name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_farmer_default_name),
                     role = profile?.role ?: "FARMER",
                     email = profile?.email.orEmpty()
                 )
@@ -167,7 +169,7 @@ fun FarmerProfileScreen(
                         seasonCount = lifetimeStats.seasonCount,
                         totalNetWeight = lifetimeStats.totalNetWeight,
                         totalRevenue = lifetimeStats.totalRevenue,
-                        revenueLabel = "Doanh thu"
+                        revenueLabel = stringResource(R.string.profile_stats_revenue)
                     )
                 }
             }
@@ -176,8 +178,8 @@ fun FarmerProfileScreen(
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     ProfileSectionTitle(
-                        title = "Thống kê mùa vụ",
-                        subtitle = "Số liệu chi tiết theo từng vụ canh tác"
+                        title = stringResource(R.string.profile_season_stats_title),
+                        subtitle = stringResource(R.string.profile_season_stats_subtitle)
                     )
                 }
             }
@@ -259,8 +261,12 @@ fun FarmerProfileScreen(
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     ProfileNavigationRow(
                         icon = Icons.Filled.History,
-                        title = "Lịch sử thương lái",
-                        subtitle = if (traderHistory.isEmpty()) "Chưa có giao dịch nào" else "${traderHistory.size} đối tác đã từng giao dịch",
+                        title = stringResource(R.string.profile_trader_history_title),
+                        subtitle = if (traderHistory.isEmpty()) {
+                            stringResource(R.string.profile_no_transactions)
+                        } else {
+                            stringResource(R.string.profile_trader_partner_count, traderHistory.size)
+                        },
                         onClick = { navController.navigate("trader_history") }
                     )
                 }
@@ -346,13 +352,14 @@ private fun FarmerPrimaryKpiGrid(
     val revenueDelta = previous?.let {
         DashboardFormatter.deltaPercent(stats.totalRevenue, it.totalRevenue)
     }
-    val deltaLabel = previous?.season?.let { "vs $it" }
+    val deltaLabelPrefix = stringResource(R.string.profile_delta_vs)
+    val deltaLabel = previous?.season?.let { "$deltaLabelPrefix $it" }
 
     KpiGrid(
         items = listOf(
             KpiGridItem(
                 icon = Icons.Outlined.Scale,
-                label = "Sản lượng đã bán",
+                label = stringResource(R.string.profile_kpi_sold_yield),
                 value = DashboardFormatter.weight(stats.totalNetWeight),
                 accentColor = AppColors.GreenPrimary,
                 deltaPercent = weightDelta,
@@ -361,7 +368,7 @@ private fun FarmerPrimaryKpiGrid(
             ),
             KpiGridItem(
                 icon = Icons.Outlined.Wallet,
-                label = "Doanh thu",
+                label = stringResource(R.string.profile_stats_revenue),
                 value = DashboardFormatter.money(stats.totalRevenue),
                 accentColor = Color(0xFFF9A825),
                 deltaPercent = revenueDelta,
@@ -370,13 +377,16 @@ private fun FarmerPrimaryKpiGrid(
             ),
             KpiGridItem(
                 icon = Icons.Outlined.Inventory,
-                label = "KG/bao TB",
-                value = if (stats.avgKgPerBag > 0) "${DashboardFormatter.weight(stats.avgKgPerBag)}/bao" else "—",
+                label = stringResource(R.string.profile_kpi_avg_kg_per_bag),
+                value = if (stats.avgKgPerBag > 0) stringResource(
+                    R.string.profile_kg_per_bag_value,
+                    DashboardFormatter.weight(stats.avgKgPerBag)
+                ) else "—",
                 accentColor = Color(0xFF8D6E63)
             ),
             KpiGridItem(
                 icon = Icons.Outlined.Receipt,
-                label = "Số bao thu",
+                label = stringResource(R.string.profile_kpi_total_bags),
                 value = "${stats.totalBags}",
                 accentColor = AppColors.Info
             )

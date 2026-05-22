@@ -292,6 +292,76 @@
     <string name="qr_scan_invalid_code">Mã QR không hợp lệ</string>
     <string name="qr_scan_instruction">Hướng camera vào mã QR của nông dân</string>
 
+    <!-- Vietnamese -->
+    <string name="personal_information">Thông tin cá nhân</string>
+    <string name="save">Lưu</string>
+    <string name="edit">Chỉnh sửa</string>
+    <string name="full_name">Họ và tên</string>
+    <string name="phone_number">Số điện thoại</string>
+    <string name="region">Khu vực</string>
+    <string name="not_updated">Chưa cập nhật</string>
+    <string name="switch_role">Chuyển vai trò Nông dân / Thương lái</string>
+    <string name="farmer">Nông dân</string>
+    <string name="trader">Thương lái</string>
+    <string name="upgrade_to_premium">Nâng cấp Cân Lúa Premium</string>
+    <string name="extended_ai_limit">
+    Không quảng cáo · Sử dụng AI khuyến nông giới hạn lớn hơn
+</string>
+    <string name="activated">Đã kích hoạt</string>
+    <string name="activated_since">Kích hoạt từ</string>
+
+    <string name="font_small">Nhỏ</string>
+    <string name="font_normal">Chuẩn</string>
+    <string name="font_large">Lớn</string>
+    <string name="font_xlarge">Rất lớn</string>
+
+    <string name="profile_farmer_default_name">Nông dân</string>
+    <string name="profile_trader_default_name">Thương lái</string>
+    <string name="profile_farmer_account">Tài khoản Nông dân</string>
+    <string name="profile_trader_account">Tài khoản Thương lái</string>
+    <string name="profile_stats_seasons">Vụ mùa</string>
+    <string name="profile_stats_yield">Sản lượng</string>
+    <string name="profile_stats_revenue">Doanh thu</string>
+    <string name="profile_season_stats_title">Thống kê mùa vụ</string>
+    <string name="profile_season_stats_subtitle">Số liệu chi tiết theo từng vụ canh tác</string>
+    <string name="profile_kpi_sold_yield">Sản lượng đã bán</string>
+    <string name="profile_kpi_avg_kg_per_bag">KG/bao TB</string>
+    <string name="profile_kg_per_bag_value">%1$s/bao</string>
+    <string name="profile_kpi_total_bags">Tổng số bao</string>
+    <string name="profile_stats_avg_moisture">Độ ẩm TB</string>
+    <string name="profile_stats_impurity">Tạp chất</string>
+    <string name="profile_stats_dry_rice">Lúa khô (≤14%)</string>
+    <string name="profile_stats_wet_rice">Lúa ướt (&gt;14%)</string>
+    <string name="profile_slip_count">%1$d phiếu</string>
+    <string name="profile_season_comparison_weight">So sánh sản lượng các vụ</string>
+    <string name="profile_season_comparison_revenue">So sánh doanh thu các vụ</string>
+    <string name="profile_season_comparison_empty">Cần ít nhất 1 vụ để so sánh</string>
+    <string name="profile_top_traders_title">Top thương lái mua</string>
+    <string name="profile_no_deals_this_season">Chưa có giao dịch trong vụ này</string>
+    <string name="profile_trader_history_title">Lịch sử thương lái</string>
+    <string name="profile_no_transactions">Chưa có giao dịch nào</string>
+    <string name="profile_trader_partner_count">%1$d đối tác đã từng giao dịch</string>
+    <string name="profile_delta_vs">so với</string>
+    <string name="profile_user_role">Vai trò người dùng</string>
+    <string name="profile_user_role_subtitle">Chọn vai trò bạn muốn sử dụng trong ứng dụng</string>
+    <string name="profile_premium_upsell_subtitle">Mở giới hạn AI, bỏ quảng cáo và xem bản đồ giá vùng</string>
+    <string name="profile_premium_active_plan">Gói đã kích hoạt</string>
+    <string name="profile_premium_early_adopter_thanks">Cảm ơn bạn đã đồng hành từ những ngày đầu!</string>
+    <string name="profile_stats_paid">Đã chi</string>
+    <string name="profile_trader_season_book_title">Sổ thu mua mùa vụ</string>
+    <string name="profile_trader_season_book_subtitle">Số liệu chi tiết từng vụ thu mua</string>
+    <string name="profile_transaction_ledger">Sổ giao dịch</string>
+    <string name="profile_reconciled_slip_count">%1$d phiếu đã đối soát</string>
+    <string name="profile_account_section_title">Tài khoản</string>
+    <string name="profile_account_section_subtitle">Quản lý thông tin và vai trò</string>
+    <string name="profile_kpi_purchased_yield">Đã thu mua</string>
+    <string name="profile_kpi_paid_amount">Đã chi trả</string>
+    <string name="profile_kpi_supplier_debt">Còn nợ NCC</string>
+    <string name="profile_kpi_slip_count">Số phiếu</string>
+    <string name="profile_variety_distribution_title">Phân bổ giống lúa</string>
+    <string name="profile_variety_distribution_empty">Chưa có dữ liệu giống lúa</string>
+    <string name="profile_total">Tổng</string>
+
     <string name="pdf_section_transaction_info">I. THÔNG TIN GIAO DỊCH</string>
     <string name="pdf_farmer">Nông dân</string>
     <string name="pdf_trader">Thương lái</string>
@@ -344,8 +414,8 @@
     <string name="pdf_footer">Trang %1$d · Tạo bởi Cân Lúa Mobile · Hash %2$s · %3$s</string>
 
     <string name="settings_premium_title">Gói Premium</string>
-    <string name="settings_premium_early_adopter">EARLY ADOPTER</string>
-    <string name="settings_premium_active">ACTIVE</string>
+    <string name="settings_premium_early_adopter">NGƯỜI DÙNG SỚM</string>
+    <string name="settings_premium_active">ĐANG HOẠT ĐỘNG</string>
     <string name="settings_premium_activated">Đã kích hoạt</string>
     <string name="settings_premium_since"> · từ %1$s</string>
     <string name="settings_premium_subtitle">Bỏ quảng cáo · AI không giới hạn · Heatmap giá</string>

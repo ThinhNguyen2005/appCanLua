@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.GiaThinh.canlua",
+      "sha256_cert_fingerprints": [
+        "07:E7:AC:AA:A3:6B:8B:FF:A3:9A:7E:FA:DF:9E:93:B5:94:35:8C:47:66:A5:D2:5C:3F:59:F7:20:4D:B7:D3:33"
+      ]
+    }
+  }
+]

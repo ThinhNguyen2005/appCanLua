@@ -21,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.TraderStat
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
@@ -49,7 +51,7 @@ fun TopTradersCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Top thương lái mua",
+                text = stringResource(R.string.profile_top_traders_title),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.TextPrimary
@@ -65,7 +67,7 @@ fun TopTradersCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Chưa có giao dịch trong vụ này",
+                        text = stringResource(R.string.profile_no_deals_this_season),
                         fontSize = 13.sp,
                         color = AppColors.TextHint
                     )
@@ -149,7 +151,7 @@ private fun TraderRow(rank: Int, trader: TraderStat, relativeWidth: Float) {
                 }
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    text = "${trader.deals} phiếu",
+                    text = stringResource(R.string.profile_slip_count, trader.deals),
                     fontSize = 11.sp,
                     color = AppColors.TextSecondary,
                     fontWeight = FontWeight.Medium

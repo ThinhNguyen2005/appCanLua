@@ -1,14 +1,19 @@
 package com.GiaThinh.canlua.data.model
 
-enum class FontScale(val scale: Float, val label: String) {
-    SMALL(0.9f, "Nhỏ"),
-    NORMAL(1.0f, "Chuẩn"),
-    LARGE(1.1f, "Lớn"),
-    XLARGE(1.2f, "Rất lớn");
+import androidx.annotation.StringRes
+import com.GiaThinh.canlua.R
+
+enum class FontScale(
+    val scale: Float,
+    @StringRes val labelRes: Int
+) {
+    SMALL(0.9f, R.string.font_small),
+    NORMAL(1.0f, R.string.font_normal),
+    LARGE(1.1f, R.string.font_large),
+    XLARGE(1.2f, R.string.font_xlarge);
 
     companion object {
         fun fromName(name: String?): FontScale =
             values().firstOrNull { it.name == name } ?: NORMAL
     }
 }
-

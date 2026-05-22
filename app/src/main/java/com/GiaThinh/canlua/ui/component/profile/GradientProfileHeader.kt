@@ -22,7 +22,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
 /**
@@ -44,7 +46,8 @@ fun GradientProfileHeader(
 ) {
     val isTrader = role.equals("TRADER", ignoreCase = true)
     val roleIcon: ImageVector = if (isTrader) Icons.Filled.Storefront else Icons.Filled.Agriculture
-    val roleLabel = if (isTrader) "Thương lái" else "Nông dân"
+    val roleLabel = stringResource(if (isTrader) R.string.trader else R.string.farmer)
+    val defaultName = stringResource(if (isTrader) R.string.profile_trader_default_name else R.string.profile_farmer_default_name)
 
     Column(
         modifier = modifier
@@ -57,7 +60,7 @@ fun GradientProfileHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = name.ifBlank { if (isTrader) "Thương lái" else "Nông dân" },
+                text = name.ifBlank { defaultName },
                 color = AppColors.TextPrimary,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,

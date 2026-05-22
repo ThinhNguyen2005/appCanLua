@@ -23,7 +23,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.SeasonStats
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
@@ -61,10 +63,12 @@ fun SeasonComparisonBarChart(
                 .padding(16.dp)
         ) {
             Text(
-                text = when (metric) {
-                    ChartMetric.WEIGHT -> "So sánh sản lượng các vụ"
-                    ChartMetric.REVENUE -> "So sánh doanh thu các vụ"
-                },
+                text = stringResource(
+                    when (metric) {
+                        ChartMetric.WEIGHT -> R.string.profile_season_comparison_weight
+                        ChartMetric.REVENUE -> R.string.profile_season_comparison_revenue
+                    }
+                ),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.TextPrimary
@@ -80,7 +84,7 @@ fun SeasonComparisonBarChart(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Cần ít nhất 1 vụ để so sánh",
+                        text = stringResource(R.string.profile_season_comparison_empty),
                         fontSize = 13.sp,
                         color = AppColors.TextHint
                     )

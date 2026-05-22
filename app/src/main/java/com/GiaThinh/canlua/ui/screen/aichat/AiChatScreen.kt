@@ -78,6 +78,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.GiaThinh.canlua.data.model.ChatSession
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.util.AiMarkdownText
 import com.GiaThinh.canlua.ui.util.parseInlineMarkdown
 import com.GiaThinh.canlua.ui.viewmodel.AiChatViewModel
 import com.GiaThinh.canlua.ui.viewmodel.UiMessage
@@ -369,16 +370,25 @@ private fun MessageBubble(msg: UiMessage) {
                 )
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
-            Text(
-                text = if (msg.role == "assistant") parseInlineMarkdown(msg.content)
-                       else androidx.compose.ui.text.AnnotatedString(msg.content),
-                style = MaterialTheme.typography.bodyMedium,
-                color = when {
-                    msg.isError -> AppColors.Error
-                    isUser -> Color.White
-                    else -> AppColors.TextPrimary
-                }
-            )
+            val textColor = when {
+                msg.isError -> AppColors.Error
+                isUser -> Color.White
+                else -> AppColors.TextPrimary
+            }
+            if (msg.role == "assistant" && !msg.isError) {
+                AiMarkdownText(
+                    markdown = msg.content,
+                    textColor = textColor,
+                    linkColor = AppColors.GreenPrimary,
+                    textSizeSp = 14f
+                )
+            } else {
+                Text(
+                    text = msg.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor
+                )
+            }
         }
     }
 }

@@ -293,6 +293,76 @@
     <string name="pdf_status">Status</string>
     <string name="pdf_paid_full">Fully Paid</string>
     <string name="pdf_debt_remaining">Outstanding Debt</string>
+    <!-- English -->
+    <string name="personal_information">Personal Information</string>
+    <string name="save">Save</string>
+    <string name="edit">Edit</string>
+    <string name="full_name">Full Name</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="region">Region</string>
+    <string name="not_updated">Not updated</string>
+    <string name="switch_role">Switch Farmer / Trader Mode</string>
+    <string name="farmer">Farmer</string>
+    <string name="trader">Trader</string>
+    <string name="upgrade_to_premium">Upgrade to Can Lua Premium</string>
+    <string name="extended_ai_limit">
+    Ad-free · Higher agricultural AI usage limits
+</string>
+    <string name="activated">Activated</string>
+    <string name="activated_since">Activated since</string>
+
+    <string name="font_small">Small</string>
+    <string name="font_normal">Normal</string>
+    <string name="font_large">Large</string>
+    <string name="font_xlarge">Extra Large</string>
+
+    <string name="profile_farmer_default_name">Farmer</string>
+    <string name="profile_trader_default_name">Trader</string>
+    <string name="profile_farmer_account">Farmer Account</string>
+    <string name="profile_trader_account">Trader Account</string>
+    <string name="profile_stats_seasons">Seasons</string>
+    <string name="profile_stats_yield">Yield</string>
+    <string name="profile_stats_revenue">Revenue</string>
+    <string name="profile_season_stats_title">Season Statistics</string>
+    <string name="profile_season_stats_subtitle">Detailed data by crop season</string>
+    <string name="profile_kpi_sold_yield">Sold yield</string>
+    <string name="profile_kpi_avg_kg_per_bag">Avg kg/bag</string>
+    <string name="profile_kg_per_bag_value">%1$s/bag</string>
+    <string name="profile_kpi_total_bags">Total bags</string>
+    <string name="profile_stats_avg_moisture">Avg moisture</string>
+    <string name="profile_stats_impurity">Impurity</string>
+    <string name="profile_stats_dry_rice">Dry rice (≤14%)</string>
+    <string name="profile_stats_wet_rice">Wet rice (&gt;14%)</string>
+    <string name="profile_slip_count">%1$d slips</string>
+    <string name="profile_season_comparison_weight">Yield comparison by season</string>
+    <string name="profile_season_comparison_revenue">Revenue comparison by season</string>
+    <string name="profile_season_comparison_empty">At least 1 season is needed for comparison</string>
+    <string name="profile_top_traders_title">Top buying traders</string>
+    <string name="profile_no_deals_this_season">No transactions this season</string>
+    <string name="profile_trader_history_title">Trader History</string>
+    <string name="profile_no_transactions">No transactions yet</string>
+    <string name="profile_trader_partner_count">%1$d partners traded before</string>
+    <string name="profile_delta_vs">vs</string>
+    <string name="profile_user_role">User role</string>
+    <string name="profile_user_role_subtitle">Choose the role you want to use in the app</string>
+    <string name="profile_premium_upsell_subtitle">Unlock higher AI limits, remove ads, and view regional price maps</string>
+    <string name="profile_premium_active_plan">Activated plan</string>
+    <string name="profile_premium_early_adopter_thanks">Thank you for being with us from the early days!</string>
+    <string name="profile_stats_paid">Paid</string>
+    <string name="profile_trader_season_book_title">Season Purchase Ledger</string>
+    <string name="profile_trader_season_book_subtitle">Detailed data by purchase season</string>
+    <string name="profile_transaction_ledger">Transaction Ledger</string>
+    <string name="profile_reconciled_slip_count">%1$d reconciled slips</string>
+    <string name="profile_account_section_title">Account</string>
+    <string name="profile_account_section_subtitle">Manage information and role</string>
+    <string name="profile_kpi_purchased_yield">Purchased yield</string>
+    <string name="profile_kpi_paid_amount">Amount paid</string>
+    <string name="profile_kpi_supplier_debt">Supplier debt</string>
+    <string name="profile_kpi_slip_count">Slip count</string>
+    <string name="profile_variety_distribution_title">Rice Variety Distribution</string>
+    <string name="profile_variety_distribution_empty">No rice variety data yet</string>
+    <string name="profile_total">Total</string>
+
     <string name="pdf_section_bag_details_count">IV. DETAILS OF %1$d WEIGHED BAGS</string>
     <string name="pdf_section_bag_details">IV. WEIGHED BAG DETAILS</string>
     <string name="pdf_no_bags">No weighed bags recorded.</string>

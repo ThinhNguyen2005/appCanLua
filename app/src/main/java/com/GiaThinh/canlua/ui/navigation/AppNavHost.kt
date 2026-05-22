@@ -5,6 +5,7 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -36,8 +37,14 @@ fun AppNavHost(
     navController: NavHostController,
     startDestination: String = BottomNavItem.SCALE.route,
     modifier: Modifier = Modifier,
-    aiChatDrawerState: DrawerState = rememberDrawerState(DrawerValue.Closed)
+    aiChatDrawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
+    deeplinkCardId: String? = null
 ) {
+    LaunchedEffect(deeplinkCardId) {
+        if (!deeplinkCardId.isNullOrBlank()) {
+            navController.navigate("card_detail/$deeplinkCardId")
+        }
+    }
     NavHost(
         navController = navController,
         startDestination = startDestination,

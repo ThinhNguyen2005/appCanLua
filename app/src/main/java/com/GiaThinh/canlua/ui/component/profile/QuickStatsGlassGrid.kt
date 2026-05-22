@@ -25,7 +25,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 
@@ -51,8 +53,9 @@ fun QuickStatsGlassGrid(
     totalNetWeight: Double,
     totalRevenue: Double,
     modifier: Modifier = Modifier,
-    revenueLabel: String = "Doanh thu"
+    revenueLabel: String? = null
 ) {
+    val resolvedRevenueLabel = revenueLabel ?: stringResource(R.string.profile_stats_revenue)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -62,19 +65,19 @@ fun QuickStatsGlassGrid(
         GlassStatCard(
             icon = Icons.Outlined.Eco,
             value = seasonCount.toString(),
-            label = "Vụ mùa",
+            label = stringResource(R.string.profile_stats_seasons),
             modifier = Modifier.weight(1f)
         )
         GlassStatCard(
             icon = Icons.Outlined.Scale,
             value = DashboardFormatter.weight(totalNetWeight),
-            label = "Sản lượng",
+            label = stringResource(R.string.profile_stats_yield),
             modifier = Modifier.weight(1f)
         )
         GlassStatCard(
             icon = Icons.Outlined.AccountBalanceWallet,
             value = DashboardFormatter.money(totalRevenue),
-            label = revenueLabel,
+            label = resolvedRevenueLabel,
             modifier = Modifier.weight(1f)
         )
     }
