@@ -104,7 +104,7 @@ fun WeightMetricsCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.GoldLight)
+                    .background(AppColors.WeightSurface)
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -252,7 +252,7 @@ fun WeightMetricsCard(
                     Text(
                         stringResource(R.string.weight_metrics_net_subtitle),
                         style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.GreenDark
+                        color = AppColors.TextSecondary
                     )
                 }
             }

@@ -39,7 +39,7 @@ fun ExplainingPopover(
         Popup(
             alignment = Alignment.TopCenter,
             onDismissRequest = onDismiss,
-            properties = PopupProperties(focusable = true)
+            properties = PopupProperties(focusable = false)
         ) {
             Box(
                 modifier = modifier

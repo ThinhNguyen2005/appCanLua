@@ -27,6 +27,7 @@ import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.util.QrBitmapGenerator
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -41,6 +42,7 @@ fun QrGenerateScreen(
     navController: NavController,
     viewModel: CardViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("qr_generate")
     val currentCard by viewModel.currentCard.collectAsState()
     val context = LocalContext.current
     val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }

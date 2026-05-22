@@ -20,12 +20,16 @@ class SettingsRepository @Inject constructor(
     private val KEY_TTS_ENABLED = "tts_enabled"
     private val KEY_FONT_SCALE = "font_scale"
     private val KEY_LANGUAGE = "language"
+    private val KEY_AUTO_SYNC_ENABLED = "auto_sync_enabled"
 
     private val _fontScale = MutableStateFlow(readFontScale())
     val fontScale: Flow<FontScale> = _fontScale.asStateFlow()
 
     private val _language = MutableStateFlow(readLanguage())
     val language: Flow<AppLanguage> = _language.asStateFlow()
+
+    private val _autoSyncEnabled = MutableStateFlow(isAutoSyncEnabled())
+    val autoSyncEnabled: Flow<Boolean> = _autoSyncEnabled.asStateFlow()
 
     init {
         prefs.registerOnSharedPreferenceChangeListener { _, key ->
@@ -34,6 +38,9 @@ class SettingsRepository @Inject constructor(
             }
             if (key == KEY_LANGUAGE) {
                 _language.value = readLanguage()
+            }
+            if (key == KEY_AUTO_SYNC_ENABLED) {
+                _autoSyncEnabled.value = isAutoSyncEnabled()
             }
         }
     }
@@ -44,6 +51,15 @@ class SettingsRepository @Inject constructor(
     
     fun setTtsEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_TTS_ENABLED, enabled).apply()
+    }
+
+    fun isAutoSyncEnabled(): Boolean {
+        return prefs.getBoolean(KEY_AUTO_SYNC_ENABLED, false)
+    }
+
+    fun setAutoSyncEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AUTO_SYNC_ENABLED, enabled).apply()
+        _autoSyncEnabled.value = enabled
     }
 
     fun setFontScale(scale: FontScale) {

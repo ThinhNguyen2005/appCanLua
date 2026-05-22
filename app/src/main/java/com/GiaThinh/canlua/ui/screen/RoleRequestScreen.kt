@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.repository.RoleRequestRepository
 import com.GiaThinh.canlua.ui.viewmodel.RoleRequestViewModel
+import com.GiaThinh.canlua.util.TrackScreenRender
 
 /**
  * Form xin nâng cấp role TRADER. Submit ghi vào Firestore `roleRequests/{uid}`.
@@ -53,6 +54,7 @@ fun RoleRequestScreen(
     navController: NavController,
     viewModel: RoleRequestViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("role_request")
     val ui by viewModel.ui.collectAsState()
     val existing by viewModel.myRequest.collectAsState()
 

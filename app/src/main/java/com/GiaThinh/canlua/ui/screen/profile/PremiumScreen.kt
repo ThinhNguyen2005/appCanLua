@@ -37,6 +37,7 @@ import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.util.PremiumState
+import com.GiaThinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.delay
 
 enum class PremiumPackage(
@@ -56,6 +57,7 @@ enum class PremiumPackage(
 fun PremiumScreen(
     navController: NavController
 ) {
+    TrackScreenRender("premium")
     val context = LocalContext.current
     var selectedPackage by remember { mutableStateOf(PremiumPackage.YEARLY) }
     var isPurchasing by remember { mutableStateOf(false) }

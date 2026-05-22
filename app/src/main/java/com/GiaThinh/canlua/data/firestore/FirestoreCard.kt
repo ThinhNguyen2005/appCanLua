@@ -1,6 +1,7 @@
 package com.GiaThinh.canlua.data.firestore
 
 import com.google.firebase.firestore.DocumentId
+import com.google.firebase.firestore.PropertyName
 import java.util.Date
 
 /**
@@ -23,6 +24,8 @@ data class FirestoreCard(
     val paidAmount: Double = 0.0,
     val remainingAmount: Double = 0.0,
     val bagCount: Int = 0,
+    @get:PropertyName("locked")
+    @PropertyName("locked")
     val isLocked: Boolean = false,
     val traderName: String = "",
     val riceVariety: String = "",

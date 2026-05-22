@@ -47,6 +47,7 @@ import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.TraderHistoryItem
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,6 +68,7 @@ fun TraderHistoryScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("trader_history")
     val history by profileViewModel.traderHistory.collectAsState()
 
     Scaffold(

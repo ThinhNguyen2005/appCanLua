@@ -53,6 +53,7 @@ import androidx.navigation.NavController
 import com.GiaThinh.canlua.data.model.DeletedCard
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.DeletedCardsViewModel
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,6 +73,7 @@ fun DeletedCardsScreen(
     navController: NavController,
     viewModel: DeletedCardsViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("deleted_cards")
     val items by viewModel.items.collectAsState()
     val restored by viewModel.restored.collectAsState()
     var pendingPurge by remember { mutableStateOf<DeletedCard?>(null) }

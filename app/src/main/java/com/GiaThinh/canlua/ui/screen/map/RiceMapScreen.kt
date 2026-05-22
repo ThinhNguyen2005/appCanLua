@@ -52,6 +52,7 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.GiaThinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.launch
 
 /**
@@ -76,6 +77,7 @@ fun RiceMapScreen(
     navController: NavController,
     viewModel: CardViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("trader_map")
     if (BuildConfig.MAPS_API_KEY.isBlank() ||
         BuildConfig.MAPS_API_KEY == "YOUR_GOOGLE_MAPS_API_KEY_HERE"
     ) {

@@ -20,6 +20,9 @@ interface RicePriceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(prices: List<RicePrice>)
 
+    @Query("SELECT COUNT(*) FROM rice_prices")
+    suspend fun countPrices(): Int
+
     @Query("DELETE FROM rice_prices")
     suspend fun clear()
 

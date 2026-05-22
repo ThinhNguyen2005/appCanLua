@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
+import com.GiaThinh.canlua.util.TrackScreenRender
 
 enum class UserRole { FARMER, TRADER, STAFF }
 
@@ -35,6 +36,7 @@ fun ProfileSetupScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     onComplete: (() -> Unit)? = null
 ) {
+    TrackScreenRender("profile_setup")
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }

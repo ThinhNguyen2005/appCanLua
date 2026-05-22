@@ -22,6 +22,13 @@ class SettingsViewModel @Inject constructor(
     private val _isTtsEnabled = MutableStateFlow(settingsRepository.isTtsEnabled())
     val isTtsEnabled: StateFlow<Boolean> = _isTtsEnabled.asStateFlow()
 
+    val isAutoSyncEnabled: StateFlow<Boolean> = settingsRepository.autoSyncEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = settingsRepository.isAutoSyncEnabled()
+        )
+
     val fontScale: StateFlow<FontScale> = settingsRepository.fontScale
         .stateIn(
             scope = viewModelScope,
@@ -40,6 +47,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setTtsEnabled(enabled)
             _isTtsEnabled.value = enabled
+        }
+    }
+
+    fun setAutoSyncEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAutoSyncEnabled(enabled)
         }
     }
 

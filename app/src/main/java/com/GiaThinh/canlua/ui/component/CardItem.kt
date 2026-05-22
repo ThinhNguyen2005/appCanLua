@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Grass
@@ -32,8 +33,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,12 +59,14 @@ fun CardItem(
 ) {
     val numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
+    val context = LocalContext.current
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked) {
+                HapticUtil.error(context)
                 onDelete()
-                true
+                false
             } else {
                 false
             }
@@ -113,11 +118,20 @@ fun CardItem(
                             modifier = Modifier.weight(1f, fill = false)
                         )
                     }
-                    Text(
-                        text = dateFormat.format(card.date),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = dateFormat.format(card.date),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.TextSecondary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = AppColors.TextHint,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
 
                 // Rice variety + moisture row

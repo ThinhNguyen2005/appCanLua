@@ -2,7 +2,9 @@ package com.GiaThinh.canlua.ui
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -29,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -63,15 +66,48 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(deeplinkCardId: String? = null) {
     val navController = rememberNavController()
+    
+    // Tự động đo hiệu năng, thời gian tải màn hình, và khung hình cho mọi màn hình chính
+    LaunchedEffect(navController) {
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val route = destination.route
+            if (route != null) {
+                com.GiaThinh.canlua.util.PerformanceTracker.onScreenChanged(route)
+            }
+        }
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     val context = LocalContext.current
     var isOffline by remember { mutableStateOf(!isNetworkAvailable(context)) }
 
-    // Kiểm tra network định kỳ đơn giản
-    DisposableEffect(Unit) {
-        onDispose { }
+    DisposableEffect(context) {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                isOffline = !isNetworkAvailable(context)
+            }
+
+            override fun onLost(network: Network) {
+                isOffline = !isNetworkAvailable(context)
+            }
+
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                isOffline = !networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
+                        !networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            }
+        }
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        connectivityManager.registerNetworkCallback(request, callback)
+        isOffline = !isNetworkAvailable(context)
+
+        onDispose {
+            connectivityManager.unregisterNetworkCallback(callback)
+        }
     }
 
     val profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
@@ -119,6 +155,9 @@ fun MainScreen(deeplinkCardId: String? = null) {
     // Mixed scroll behavior — pin TopBar ở các tab giao dịch (Cân Lúa) và Profile
     // để tránh nhảy ẩn-hiện khi tay dính nước scroll vô tình. Các tab đọc dài
     // (Market/Dashboard/AI Chat) dùng enterAlways để thu hồi không gian.
+    // Tạo scrollBehavior 1 lần, persist qua mọi recomposition.
+    // NẾU KHÔNG có remember → mỗi recomposition tạo instance MỚI →
+    // scroll state bị reset → TopBar nhấp nháy (flicker).
     val pinnedBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val enterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val pinnedRoutes = listOf(
@@ -130,7 +169,11 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val scrollBehavior = if (currentRoute in pinnedRoutes) pinnedBehavior else enterAlwaysBehavior
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (showTopBar) {
+            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else {
+            Modifier
+        },
         topBar = {
             if (showTopBar) {
                 CenterAlignedTopAppBar(

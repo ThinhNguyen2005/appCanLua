@@ -69,6 +69,7 @@ import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
 import com.GiaThinh.canlua.util.PremiumState
+import com.GiaThinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.launch
 
 /**
@@ -87,6 +88,7 @@ fun MarketScreen(
     profileViewModel: ProfileViewModel = hiltViewModel(),
     bidsViewModel: TraderBidsViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("market")
     val prices by viewModel.prices.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val selectedVariety by viewModel.selectedVariety.collectAsState()

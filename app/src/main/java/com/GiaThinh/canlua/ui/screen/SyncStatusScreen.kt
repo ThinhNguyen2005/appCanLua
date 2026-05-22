@@ -19,6 +19,7 @@ import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+import com.GiaThinh.canlua.util.TrackScreenRender
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.navigation.NavController
 
@@ -28,6 +29,7 @@ fun SyncStatusScreen(
     navController: NavController,
     viewModel: SyncViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("sync_status")
     val syncStatus by viewModel.syncStatus.collectAsState()
     val lastSyncTime by viewModel.lastSyncTime.collectAsState()
 

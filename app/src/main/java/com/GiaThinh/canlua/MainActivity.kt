@@ -33,6 +33,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Đăng ký Activity đo hiệu năng và khung hình vẽ UI
+        com.GiaThinh.canlua.util.PerformanceTracker.setActivity(this)
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val authViewModel: AuthViewModel = hiltViewModel()
@@ -44,6 +46,16 @@ class MainActivity : ComponentActivity() {
             CanLuaTheme(fontScale = fontScale) {
                 com.GiaThinh.canlua.ui.feedback.AppToastHost {
                 val rootNavController = rememberNavController()
+
+                // Theo dõi điều hướng và đo hiệu năng cho các màn hình ngoài luồng chính
+                LaunchedEffect(rootNavController) {
+                    rootNavController.addOnDestinationChangedListener { _, destination, _ ->
+                        val route = destination.route
+                        if (route != null && !route.startsWith("main")) {
+                            com.GiaThinh.canlua.util.PerformanceTracker.onScreenChanged(route)
+                        }
+                    }
+                }
 
                 // Tính start destination dựa trên cả 2 flag.
                 // Khi needsProfileSetup == null (đang load) → "splash" để tránh flash sai màn.
@@ -127,5 +139,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        com.GiaThinh.canlua.util.PerformanceTracker.clearActivity()
+        super.onDestroy()
     }
 }

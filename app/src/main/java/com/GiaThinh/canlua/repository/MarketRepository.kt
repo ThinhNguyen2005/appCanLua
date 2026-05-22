@@ -101,6 +101,7 @@ class MarketRepository @Inject constructor(
      * Khi Firestore có data thật, mock sẽ bị overwrite (mock dùng id "mock_*").
      */
     suspend fun seedMockDataIfEmpty() {
+        if (ricePriceDao.countPrices() > 0) return
         val now = System.currentTimeMillis()
         val varieties = listOf(
             VarietyDef("ST25", 8000.0, 8500.0, "UP"),

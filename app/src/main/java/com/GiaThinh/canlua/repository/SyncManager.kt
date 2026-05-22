@@ -21,11 +21,13 @@ import com.GiaThinh.canlua.data.model.TransactionType
 import com.GiaThinh.canlua.data.model.WeightEntry
 import com.GiaThinh.canlua.util.AnalyticsHelper
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,7 +40,8 @@ class SyncManager @Inject constructor(
     private val weightEntryDao: WeightEntryDao,
     private val transactionDao: TransactionDao,
     @param:ApplicationContext private val context: Context,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val settingsRepository: SettingsRepository
 ) {
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
@@ -69,6 +72,8 @@ class SyncManager @Inject constructor(
      * Reuse `SyncWorker` đã có (gọi `syncManager.syncAll()`).
      */
     fun scheduleImmediateSync() {
+        if (!settingsRepository.isAutoSyncEnabled()) return
+
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -89,17 +94,17 @@ class SyncManager @Inject constructor(
         )
     }
 
-    suspend fun syncAll(): Result<Unit> {
+    suspend fun syncAll(): Result<Unit> = withContext(Dispatchers.IO) {
         if (auth.currentUser == null) {
             _syncStatus.value = SyncStatus.Error("Yêu cầu đăng nhập để đồng bộ")
-            return Result.failure(Exception("No user signed in"))
+            return@withContext Result.failure(Exception("No user signed in"))
         }
         if (!isOnline()) {
             _syncStatus.value = SyncStatus.Error("Không có kết nối internet")
-            return Result.failure(Exception("No internet connection"))
+            return@withContext Result.failure(Exception("No internet connection"))
         }
 
-        return try {
+        return@withContext try {
             _syncStatus.value = SyncStatus.Syncing
             val startedAt = System.currentTimeMillis()
 
@@ -240,16 +245,16 @@ class SyncManager @Inject constructor(
      *  - Tự động sau sign-in (CanLuaApplication observe authStateFlow).
      *  - Manual qua nút "Đồng bộ" (gọi `syncAll` → push → pull).
      */
-    suspend fun pullAllForCurrentUser(): Result<Unit> {
-        val currentUid = auth.currentUser?.uid ?: return Result.failure(
+    suspend fun pullAllForCurrentUser(): Result<Unit> = withContext(Dispatchers.IO) {
+        val currentUid = auth.currentUser?.uid ?: return@withContext Result.failure(
             Exception("No user signed in")
         )
-        if (!isOnline()) return Result.failure(Exception("No internet connection"))
+        if (!isOnline()) return@withContext Result.failure(Exception("No internet connection"))
 
-        return try {
+        return@withContext try {
             val cardsResult = firestoreRepository.getAllCards()
             val firestoreCards = cardsResult.getOrElse {
-                return Result.failure(it)
+                return@withContext Result.failure(it)
             }
 
             // Map firestoreId → local Room id để pull entries/transactions sau.

@@ -287,7 +287,8 @@ class CardViewModel @Inject constructor(
             )
             repository.insertWeightEntry(weightEntry)
             repository.updateCardCalculations(cardId)
-            
+            _currentCard.value = repository.getCardById(cardId)
+
             val ttsEnabled = settingsRepository.isTtsEnabled()
             ttsManager.setEnabled(ttsEnabled)
             if (ttsEnabled && ttsManager.isEnabled()) {
@@ -300,6 +301,7 @@ class CardViewModel @Inject constructor(
         viewModelScope.launch {
             repository.updateWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
+            _currentCard.value = repository.getCardById(weightEntry.cardId)
         }
     }
 
@@ -307,6 +309,7 @@ class CardViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
+            _currentCard.value = repository.getCardById(weightEntry.cardId)
         }
     }
 
@@ -568,7 +571,8 @@ class CardViewModel @Inject constructor(
                 )
                 repository.insertWeightEntry(weightEntry)
                 repository.updateCardCalculations(cardId)
-                
+                _currentCard.value = repository.getCardById(cardId)
+
                 val ttsEnabled = settingsRepository.isTtsEnabled()
                 ttsManager.setEnabled(ttsEnabled)
                 if (ttsEnabled && ttsManager.isEnabled()) {

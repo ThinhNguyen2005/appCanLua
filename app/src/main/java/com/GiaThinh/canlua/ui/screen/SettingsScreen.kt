@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.AppLanguage
 import com.GiaThinh.canlua.data.model.FontScale
@@ -38,6 +40,7 @@ import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
 import com.GiaThinh.canlua.util.PremiumState
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,20 +62,24 @@ fun SettingsScreen(
     navController: NavController,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val isTtsEnabled by viewModel.isTtsEnabled.collectAsState()
-    val fontScale by viewModel.fontScale.collectAsState()
-    val language by viewModel.language.collectAsState()
+    TrackScreenRender("settings")
+    val isTtsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
+    val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
+    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
+    val language by viewModel.language.collectAsStateWithLifecycle()
     val syncViewModel: SyncViewModel = hiltViewModel()
-    val syncStatus by syncViewModel.syncStatus.collectAsState()
-    val lastSyncTime by syncViewModel.lastSyncTime.collectAsState()
-    val backupStatus by syncViewModel.backupStatus.collectAsState()
-    val lastBackupTime by syncViewModel.lastBackupTime.collectAsState()
+    val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
+    val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
+    val backupStatus by syncViewModel.backupStatus.collectAsStateWithLifecycle()
+    val lastBackupTime by syncViewModel.lastBackupTime.collectAsStateWithLifecycle()
     val authViewModel: AuthViewModel = hiltViewModel()
-    val authState by authViewModel.uiState.collectAsState()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val profileViewModel: ProfileViewModel = hiltViewModel()
-    val profile by profileViewModel.profile.collectAsState(initial = null)
-    val premiumInfo by PremiumState.info.collectAsState()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val premiumInfo by PremiumState.info.collectAsStateWithLifecycle()
     var pendingRole by remember { mutableStateOf<String?>(null) }
+
+    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
@@ -116,7 +123,7 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .imePadding()
                     .navigationBarsPadding()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -310,6 +317,46 @@ fun SettingsScreen(
                                 SyncStatusText(syncStatus)
                             }
                         }
+
+                        // Switch toggle for Auto-Sync
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Tự động đồng bộ ngầm",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.TextPrimary
+                                )
+                                Text(
+                                    text = "Tự động tải/đẩy dữ liệu Firebase ngầm khi mở app hoặc có thay đổi",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextHint,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                            Switch(
+                                checked = isAutoSyncEnabled,
+                                onCheckedChange = { viewModel.setAutoSyncEnabled(it) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = AppColors.GreenPrimary,
+                                    uncheckedThumbColor = AppColors.TextHint,
+                                    uncheckedTrackColor = AppColors.SurfaceContainer
+                                )
+                            )
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(),
+                            thickness = 1.dp,
+                            color = AppColors.SurfaceContainer
+                        )
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             StatusRow(stringResource(R.string.settings_last_sync), lastSyncTime)

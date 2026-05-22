@@ -72,6 +72,7 @@ import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.TraderTransactionsViewModel
+import com.GiaThinh.canlua.util.TrackScreenRender
 
 /**
  * Tab "Tài khoản" cho THƯƠNG LÁI — phiên bản Premium 2026.
@@ -94,6 +95,7 @@ fun TraderProfileScreen(
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
     traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("trader_profile")
     val profile by profileViewModel.profile.collectAsState(initial = null)
     val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsState()
 

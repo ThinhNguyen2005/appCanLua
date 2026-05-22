@@ -5,10 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -38,8 +37,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -58,6 +55,8 @@ import com.GiaThinh.canlua.ui.component.pressableScale
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.util.HapticUtil
+import com.GiaThinh.canlua.util.TrackScreenRender
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,45 +69,44 @@ fun WeightInputScreen(
     onCreateQr: () -> Unit = {},
     onScanQr: () -> Unit = {}
 ) {
-    val currentCard by viewModel.currentCard.collectAsState()
-    val weightEntries by viewModel.weightEntries.collectAsState()
+    TrackScreenRender("weight_input")
+    
+    // Sử dụng collectAsStateWithLifecycle để tự động giải phóng tài nguyên khi chạy nền
+    val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
+    val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(cardId) { viewModel.loadCardById(cardId) }
 
-    val card = currentCard ?: return
+    // === KHAI BÁO STATE (MANDATORY: Đặt trước check null để bảo toàn Composition Tree) ===
 
-    // State cho việc tự thêm bảng nhập thủ công
     var manualTableCount by remember { mutableIntStateOf(0) }
     var showLockConfirmDialog by remember { mutableStateOf(false) }
 
-    // Sắp xếp dữ liệu theo dạng Cột từ trên xuống (Column-Major)
     val tables = remember(weightEntries, manualTableCount) {
         organizeIntoTables(weightEntries, manualTableCount)
     }
 
-    // === Single source of truth cho active table = pagerState.currentPage ===
-    // Trước đây dùng `selectedTableIndex` riêng + 2 LaunchedEffect đồng bộ 2 chiều.
-    // Khi user vuốt pager → currentPage đổi → state đổi → LaunchedEffect bên kia
-    // gọi animateScrollToPage → interfere với gesture đang scroll → "không cuộn được".
-    // Giờ chip click gọi explicit `scope.launch { animateScrollToPage }`, không có
-    // state trung gian → không có loop.
-    val pagerState = rememberPagerState(
-        initialPage = (tables.size - 1).coerceAtLeast(0),
-        pageCount = { tables.size }
-    )
-    val activeTableIndex = pagerState.currentPage
+    val liveTotalWeight = remember(weightEntries) { weightEntries.sumOf { it.weight } }
+    val liveBagCount = weightEntries.size
+    val liveNetWeight = remember(liveTotalWeight, currentCard?.bagWeight, currentCard?.moisturePercent) {
+        RiceCalculator.calcNetWeight(
+            rawWeight = liveTotalWeight,
+            bagWeight = currentCard?.bagWeight ?: 0.0,
+            impurityWeight = 0.0,
+            moisturePercent = currentCard?.moisturePercent ?: 0.0
+        )
+    }
+    val liveTotalAmount = liveNetWeight * (currentCard?.pricePerKg ?: 0.0)
 
     val lazyListState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
 
-    // Collapsing animation đơn giản: fade theo offset thuần — KHÔNG còn co height
-    // bằng `Modifier.layout` (vốn gây feedback loop scroll mất kiểm soát).
-    // Card "Chỉ số cân" cuộn lên tự nhiên với LazyColumn, alpha mờ dần khi
-    // user scroll xuống. Chỉ Draw phase, 0 layout recomputation.
+
+
+    // Collapse animation fade hoàn toàn sau ~400px scroll
+    // Nếu firstVisibleItemIndex > 0 → card đã cuộn khỏi màn hình → fade = 1.0f ngay
     val scrollFraction by remember {
         derivedStateOf {
-            // Sau ~200px scroll → fully faded. Ease-out để không hard transition.
             val firstOffset = if (lazyListState.firstVisibleItemIndex == 0) {
                 lazyListState.firstVisibleItemScrollOffset.toFloat()
             } else {
@@ -131,6 +129,20 @@ fun WeightInputScreen(
     LaunchedEffect(Unit) {
         delay(150L)
         isAnimationFinished = true
+    }
+
+    // === CHECK NULL DỮ LIỆU (Đặt SAU khi các state remember đã được đăng ký) ===
+    val card = currentCard
+    if (card == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppColors.Surface),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = AppColors.GreenPrimary)
+        }
+        return
     }
 
     Scaffold(
@@ -180,9 +192,9 @@ fun WeightInputScreen(
                         )
 
                         // 2. Chỉ số cân thu gọn (Khi cuộn lên)
-                        val totalWeightStr = "%.1f".format(card.totalWeight).replace(".", ",")
+                        val totalWeightStr = "%.1f".format(liveTotalWeight).replace(".", ",")
                         Text(
-                            text = stringResource(R.string.weight_input_collapsed_title, totalWeightStr, card.bagCount),
+                            text = stringResource(R.string.weight_input_collapsed_title, totalWeightStr, liveBagCount),
                             style = TextStyle(
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -241,14 +253,14 @@ fun WeightInputScreen(
                         }
                 ) {
                     WeightMetricsCard(
-                        totalWeight = card.totalWeight,
+                        totalWeight = liveTotalWeight,
                         bagWeight = card.bagWeight,
                         impurityWeight = card.impurityWeight,
                         moisturePercent = card.moisturePercent,
-                        netWeight = card.netWeight,
+                        netWeight = liveNetWeight,
                         pricePerKg = card.pricePerKg,
-                        totalAmount = card.totalAmount,
-                        bagCount = card.bagCount,
+                        totalAmount = liveTotalAmount,
+                        bagCount = liveBagCount,
                         isLocked = card.isLocked,
                         onBagWeightChange = { viewModel.updateCardBagWeight(cardId, it) },
                         onImpurityWeightChange = { viewModel.updateCardImpurityWeight(cardId, it) },
@@ -278,11 +290,6 @@ fun WeightInputScreen(
                             FilledTonalButton(
                                 onClick = {
                                     manualTableCount++
-                                    // Auto nhảy sang bảng vừa tạo — trigger animate
-                                    // explicit thay vì set state (đã bỏ selectedTableIndex).
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(tables.size)
-                                    }
                                     HapticUtil.confirm(context)
                                 },
                                 colors = ButtonDefaults.filledTonalButtonColors(
@@ -298,68 +305,19 @@ fun WeightInputScreen(
                             }
                         }
                     }
-                    LazyRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp)
-                    ) {
-                        items(tables.size) { index ->
-                            val isSelected = index == activeTableIndex
-                            val tabInteraction = remember { MutableInteractionSource() }
-                            Button(
-                                onClick = {
-                                    // Click chip → explicit animate, không qua state
-                                    // trung gian. Tránh re-trigger animate khi user
-                                    // đang vuốt pager (gây nuốt gesture).
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(index)
-                                    }
-                                    HapticUtil.tick(context)
-                                },
-                                interactionSource = tabInteraction,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) AppColors.GreenPrimary else AppColors.CardBg,
-                                    contentColor = if (isSelected) Color.White else AppColors.TextSecondary.copy(alpha = 0.7f)
-                                ),
-                                border = if (!isSelected) BorderStroke(1.dp, AppColors.Divider) else null,
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                modifier = Modifier
-                                    .heightIn(min = 44.dp)
-                                    .pressableScale(tabInteraction)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.weight_input_table_tab, index + 1),
-                                    fontSize = 16.sp,
-                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
                 }
             }
 
-            // === Bảng dữ liệu hỗ trợ VUỐT NGANG (HorizontalPager) ===
-            // === LAZY GATE ===
-            // Chỉ render Pager + 25 GridCell + 25 FocusRequester sau khi
-            // page transition hoàn tất (isAnimationFinished = true sau 150ms).
-            // Trong lúc đó, hiện placeholder height ổn định (heightIn) để
-            // tránh layout shift khi grid được mở màn.
-            item(key = "selected_table_card") {
-                if (isAnimationFinished) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxWidth()
-                    ) { pageIndex ->
-                        if (pageIndex < tables.size) {
-                            val table = tables[pageIndex]
+            if (isAnimationFinished) {
+                tables.forEachIndexed { pageIndex, table ->
+                    item(key = "weight_table_$pageIndex") {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             WeightTableCard(
                                 tableIndex = pageIndex + 1,
                                 tableData = table,
                                 weightEntries = weightEntries,
                                 tableIndexInList = pageIndex,
+                                onNeedNextTable = { manualTableCount++ },
                                 onWeightEntered = { weight ->
                                     viewModel.addWeightEntryDirectly(cardId, weight)
                                     HapticUtil.tick(context)
@@ -382,10 +340,12 @@ fun WeightInputScreen(
                                 },
                                 isLocked = card.isLocked
                             )
+                            ColumnTotalsRow(calculateColumnTotals(table))
                         }
                     }
-                } else {
-                    // Placeholder — giữ chiều cao ổn định để grid xuất hiện mà không layout shift
+                }
+            } else {
+                item(key = "weight_table_placeholder") {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -394,18 +354,12 @@ fun WeightInputScreen(
                 }
             }
 
-            // === Tổng cột ===
-            item(key = "col_totals") {
-                val activeTable = tables.getOrNull(activeTableIndex) ?: emptyList()
-                ColumnTotalsRow(calculateColumnTotals(activeTable))
-            }
-
             // Bottom spacing
             item {
                 Spacer(
                     modifier = Modifier
                         .navigationBarsPadding()
-                        .height(180.dp)
+                        .height(32.dp)
                 )
             }
         }
@@ -470,6 +424,7 @@ private fun WeightTableCard(
     tableData: List<List<Double?>>,
     weightEntries: List<WeightEntry>,
     tableIndexInList: Int,
+    onNeedNextTable: () -> Unit,
     onWeightEntered: (Double) -> Unit,
     onWeightUpdated: (WeightEntry, Double) -> Unit,
     isLocked: Boolean
@@ -526,11 +481,12 @@ private fun WeightTableCard(
                                     else onWeightEntered(weight)
                                 },
                                 onNextFocus = {
-                                    // Nhảy focus dọc từ trên xuống dưới theo cột, hết cột nhảy sang cột kế tiếp
                                     if (rowIdx < 4) {
                                         focusRequesters[rowIdx + 1][colIdx].requestFocus()
                                     } else if (colIdx < 4) {
                                         focusRequesters[0][colIdx + 1].requestFocus()
+                                    } else {
+                                        onNeedNextTable()
                                     }
                                 },
                                 focusRequester = focusRequesters[rowIdx][colIdx],
@@ -684,7 +640,7 @@ private fun ColumnTotalsRow(totals: List<Double>) {
 private fun organizeIntoTables(entries: List<WeightEntry>, manualCount: Int): List<List<List<Double?>>> {
     val totalEntries = entries.size
     val calculatedNumTables = (totalEntries / 25) + 1
-    val numTables = calculatedNumTables + manualCount
+    val numTables = (calculatedNumTables + manualCount).coerceAtLeast(1)
     
     val tables = mutableListOf<List<List<Double?>>>()
     

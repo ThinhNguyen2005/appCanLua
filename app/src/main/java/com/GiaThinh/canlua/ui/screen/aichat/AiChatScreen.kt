@@ -83,6 +83,7 @@ import com.GiaThinh.canlua.ui.util.parseInlineMarkdown
 import com.GiaThinh.canlua.ui.viewmodel.AiChatViewModel
 import com.GiaThinh.canlua.ui.viewmodel.UiMessage
 import com.GiaThinh.canlua.ui.viewmodel.VoiceState
+import com.GiaThinh.canlua.util.TrackScreenRender
 import com.GiaThinh.canlua.util.SpeechRecognizerHelper
 import kotlinx.coroutines.launch
 
@@ -99,6 +100,7 @@ fun AiChatScreen(
     viewModel: AiChatViewModel = hiltViewModel(),
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
+    TrackScreenRender("ai_chat")
     val state by viewModel.state.collectAsState()
     val voice by viewModel.voiceState.collectAsState()
     val listState = rememberLazyListState()

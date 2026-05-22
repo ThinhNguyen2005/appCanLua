@@ -43,6 +43,7 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.util.concurrent.Executors
 
 /**
@@ -55,6 +56,7 @@ fun QrScanScreen(
     navController: NavController,
     viewModel: CardViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("qr_scan")
     val context = LocalContext.current
     val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)

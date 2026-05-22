@@ -74,7 +74,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_12_13,
                     MIGRATION_13_14,
                     MIGRATION_14_15
-                ).build()
+                ).setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                .build()
                 INSTANCE = instance
                 instance
             }

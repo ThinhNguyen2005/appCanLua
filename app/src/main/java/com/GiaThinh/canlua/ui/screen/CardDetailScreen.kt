@@ -7,12 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,6 +17,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -80,6 +76,7 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,8 +85,9 @@ fun CardDetailScreen(
     navController: NavController,
     viewModel: CardViewModel = hiltViewModel()
 ) {
-    val currentCard by viewModel.currentCard.collectAsState()
-    val weightEntries by viewModel.weightEntries.collectAsState()
+    com.GiaThinh.canlua.util.TrackScreenRender("card_detail")
+    val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
+    val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
 
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
 
@@ -98,6 +96,8 @@ fun CardDetailScreen(
     val heights = rememberHeaderHeights()
     val scrollState = rememberLazyListState()
     val density = LocalDensity.current
+
+
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val appToast = LocalAppToast.current
@@ -255,7 +255,8 @@ fun CardDetailScreen(
                 ) {
                     LazyColumn(
                         state = scrollState,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {

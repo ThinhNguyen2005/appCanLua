@@ -82,6 +82,7 @@ import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -107,6 +108,7 @@ fun FarmerProfileScreen(
     profileViewModel: ProfileViewModel = hiltViewModel(),
     dashboardViewModel: DashboardViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("farmer_profile")
     val profile by profileViewModel.profile.collectAsState(initial = null)
     val traderHistory by profileViewModel.traderHistory.collectAsState()
 

@@ -98,6 +98,7 @@ fun CardListScreen(
     profileViewModel: ProfileViewModel = hiltViewModel(),
     syncViewModel: SyncViewModel = hiltViewModel()
 ) {
+    com.GiaThinh.canlua.util.TrackScreenRender("scale")
     val cards by viewModel.cards.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val selectedFilter by viewModel.selectedVarietyFilter.collectAsState()

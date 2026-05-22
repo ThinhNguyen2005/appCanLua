@@ -54,6 +54,7 @@ import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.TraderTransactionItem
 import com.GiaThinh.canlua.ui.viewmodel.TraderTransactionsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.TransactionFilter
+import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,6 +72,7 @@ fun TraderTransactionsScreen(
     navController: androidx.navigation.NavController,
     viewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
+    TrackScreenRender("trader_transactions")
     val state by viewModel.uiState.collectAsState()
     val filter by viewModel.filter.collectAsState()
 

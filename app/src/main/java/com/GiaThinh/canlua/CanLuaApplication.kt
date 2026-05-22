@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import com.GiaThinh.canlua.repository.AuthManager
 import com.GiaThinh.canlua.repository.CardRepository
 import com.GiaThinh.canlua.repository.ProfileRepository
+import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.repository.SyncManager
 import com.GiaThinh.canlua.repository.SyncWorker
 import com.GiaThinh.canlua.util.AnalyticsHelper
@@ -47,6 +48,9 @@ class CanLuaApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var profileRepository: ProfileRepository
 
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // --- ĐOẠN ĐÃ SỬA ---
@@ -64,7 +68,7 @@ class CanLuaApplication : Application(), Configuration.Provider {
         applyEarlyAdopterPremium()
         scheduleOrphanClaim()
         scheduleAutoPullOnSignIn()
-        schedulePeriodicSync()
+        observeAutoSyncPreference()
     }
 
     /**
@@ -118,10 +122,22 @@ class CanLuaApplication : Application(), Configuration.Provider {
                 .map { it?.uid }
                 .distinctUntilChanged()
                 .collect { uid ->
-                    if (uid != null && syncManager.isOnline()) {
+                    if (uid != null && syncManager.isOnline() && settingsRepository.isAutoSyncEnabled()) {
                         syncManager.pullAllForCurrentUser()
                     }
                 }
+        }
+    }
+
+    private fun observeAutoSyncPreference() {
+        appScope.launch {
+            settingsRepository.autoSyncEnabled.collect { enabled ->
+                if (enabled) {
+                    schedulePeriodicSync()
+                } else {
+                    WorkManager.getInstance(this@CanLuaApplication).cancelUniqueWork("sync-worker")
+                }
+            }
         }
     }
 
