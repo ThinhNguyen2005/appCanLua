@@ -39,6 +39,79 @@ object RiceCalculator {
         return calcStandardWeight(gross, moisturePercent)
     }
 
+    /**
+     * Tính tổng trọng lượng bao bì theo cách user đã chọn cho phiếu.
+     *
+     * - Cách A (default, `methodIsSampling=false`):
+     *   `totalBag = bagCount × bagWeight`
+     *   User nhập trọng lượng 1 bao đơn vị, nhân với số bao.
+     *
+     * - Cách B (mẫu, `methodIsSampling=true`):
+     *   `totalBag = (sampleTotalWeight / sampleCount) × bagCount`
+     *   User cân `sampleCount` bao mẫu → ra `sampleTotalWeight` kg → suy ra unit weight.
+     *   Khi `sampleCount <= 0` fallback về Cách A để tránh chia 0.
+     */
+    fun calcTotalBagWeight(
+        bagCount: Int,
+        bagWeight: Double,
+        methodIsSampling: Boolean,
+        sampleCount: Int,
+        sampleTotalWeight: Double
+    ): Double {
+        return if (methodIsSampling && sampleCount > 0) {
+            (sampleTotalWeight / sampleCount) * bagCount
+        } else {
+            bagCount * bagWeight
+        }
+    }
+
+    /**
+     * Tính tổng kg tạp chất theo cách user đã chọn.
+     *
+     * - kg (default, `isPercent=false`): coi `impurityValue` là số kg tuyệt đối.
+     * - % (`isPercent=true`): coi `impurityValue` là tỉ lệ % trên `rawAfterBag`
+     *   (phần lúa thật sau khi đã trừ bao bì) → `impurityKg = rawAfterBag × value/100`.
+     */
+    fun calcTotalImpurity(
+        rawAfterBag: Double,
+        impurityValue: Double,
+        isPercent: Boolean
+    ): Double {
+        return if (isPercent) {
+            rawAfterBag * (impurityValue / 100.0)
+        } else {
+            impurityValue
+        }
+    }
+
+    /**
+     * Tính KL thực có ý thức về mode — wrapper bao trùm cả 2 quyết định mode
+     * (bao bì A/B, tạp kg/%). Dùng trong CardRepository khi recalc per-card.
+     */
+    fun calcNetWeightWithModes(
+        totalRaw: Double,
+        bagCount: Int,
+        bagWeight: Double,
+        bagMethodIsSampling: Boolean,
+        bagSampleCount: Int,
+        bagSampleTotalWeight: Double,
+        impurityValue: Double,
+        impurityIsPercent: Boolean,
+        moisturePercent: Double
+    ): Double {
+        val totalBag = calcTotalBagWeight(
+            bagCount = bagCount,
+            bagWeight = bagWeight,
+            methodIsSampling = bagMethodIsSampling,
+            sampleCount = bagSampleCount,
+            sampleTotalWeight = bagSampleTotalWeight
+        )
+        val rawAfterBag = (totalRaw - totalBag).coerceAtLeast(0.0)
+        val totalImpurity = calcTotalImpurity(rawAfterBag, impurityValue, impurityIsPercent)
+        val gross = (rawAfterBag - totalImpurity).coerceAtLeast(0.0)
+        return calcStandardWeight(gross, moisturePercent)
+    }
+
     /** Thành tiền = Khối lượng thực × Đơn giá */
     fun calcTotalAmount(netWeight: Double, pricePerKg: Double): Double {
         return netWeight * pricePerKg

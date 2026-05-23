@@ -2,8 +2,8 @@ package com.GiaThinh.canlua.ui.component
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -145,11 +145,12 @@ private fun PillNavItem(
                 .padding(horizontal = if (selected) 16.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon swap outlined ↔ filled với crossfade
+            // Icon swap outlined ↔ filled với crossfade nhẹ nhàng
             AnimatedContent(
                 targetState = selected,
                 transitionSpec = {
-                    (fadeIn(tween(220)) togetherWith fadeOut(tween(160)))
+                    (fadeIn(tween(360, easing = FastOutSlowInEasing)) togetherWith
+                        fadeOut(tween(240, easing = FastOutSlowInEasing)))
                 },
                 label = "icon-swap"
             ) { isSelected ->
@@ -165,12 +166,17 @@ private fun PillNavItem(
             AnimatedVisibility(
                 visible = selected,
                 enter = expandHorizontally(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
+                    animationSpec = tween(
+                        durationMillis = 420,
+                        easing = FastOutSlowInEasing
                     )
-                ) + fadeIn(tween(180, delayMillis = 60)),
-                exit = shrinkHorizontally(tween(180)) + fadeOut(tween(120))
+                ) + fadeIn(tween(durationMillis = 280, delayMillis = 140, easing = LinearOutSlowInEasing)),
+                exit = shrinkHorizontally(
+                    animationSpec = tween(
+                        durationMillis = 320,
+                        easing = FastOutSlowInEasing
+                    )
+                ) + fadeOut(tween(durationMillis = 200, easing = FastOutSlowInEasing))
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.width(6.dp))

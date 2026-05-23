@@ -20,8 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
@@ -93,7 +93,7 @@ fun NewsSection(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Article,
+                    imageVector = Icons.AutoMirrored.Filled.Article,
                     contentDescription = null,
                     tint = AppColors.GreenPrimary,
                     modifier = Modifier.size(20.dp)
@@ -146,7 +146,7 @@ fun NewsSection(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    articles.take(8).forEach { article ->
+                    articles.take(20).forEach { article ->
                         NewsCard(article = article)
                     }
                 }
@@ -249,7 +249,7 @@ private fun NewsCard(article: NewsArticle) {
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Default.Article,
+                    imageVector = Icons.AutoMirrored.Filled.Article,
                     contentDescription = null,
                     tint = AppColors.TextHint,
                     modifier = Modifier
@@ -329,7 +329,7 @@ private fun EmptyState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.Article,
+            imageVector = Icons.AutoMirrored.Filled.Article,
             contentDescription = null,
             tint = AppColors.TextHint,
             modifier = Modifier.size(40.dp)
@@ -377,7 +377,7 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
         )
         IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
             Icon(
-                imageVector = Icons.Default.OpenInNew,
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = "Đóng",
                 tint = AppColors.OfflineText.copy(alpha = 0.6f),
                 modifier = Modifier.size(14.dp)

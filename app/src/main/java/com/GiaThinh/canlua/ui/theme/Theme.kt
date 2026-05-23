@@ -62,7 +62,7 @@ fun CanLuaTheme(
     }
 
     // Thêm animation chuyển đổi mượt mà giữa sáng/tối
-    val colorScheme = androidx.compose.material3.ColorScheme(
+    val colorScheme = baseColorScheme.copy(
         primary = androidx.compose.animation.animateColorAsState(baseColorScheme.primary, label = "primary").value,
         onPrimary = androidx.compose.animation.animateColorAsState(baseColorScheme.onPrimary, label = "onPrimary").value,
         primaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.primaryContainer, label = "primaryContainer").value,

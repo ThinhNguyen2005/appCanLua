@@ -104,13 +104,31 @@
     <string name="create_card_deposit_label">Tiền cọc (đ)</string>
     <string name="create_card_deposit_placeholder">Tuỳ chọn — VD: 500.000</string>
     <string name="create_card_submit">Tạo Phiếu</string>
+    <string name="create_card_cccd_label">Số CCCD (tùy chọn)</string>
+    <string name="create_card_cccd_placeholder">VD: 12 chữ số</string>
+    <string name="create_card_impurity_weight_label">Trừ tạp chất mặc định (kg)</string>
+    <string name="create_card_impurity_weight_placeholder">VD: 5.0</string>
+    <string name="create_card_bag_weight_label">Trừ bao bì mặc định (kg/bao)</string>
+    <string name="create_card_bag_weight_placeholder">VD: 1.0</string>
+    <string name="create_card_cccd_help_title">Số CCCD (Căn cước công dân)</string>
+    <string name="create_card_cccd_help_description">Nhập số CCCD gồm 12 chữ số của đối tác để làm bằng chứng pháp lý khi đối soát và ký số hợp đồng điện tử sau này. Trường này không bắt buộc.</string>
+    <string name="create_card_impurity_help_title">Trừ Tạp Chất Mặc Định</string>
+    <string name="create_card_impurity_help_description">Số ký (kg) tạp chất (rơm, rạ, đất...) sẽ tự động trừ trực tiếp vào tổng khối lượng lúa của phiếu này khi tính toán khối lượng thực tế.</string>
+    <string name="create_card_bag_help_title">Trừ Bao Bì Mặc Định</string>
+    <string name="create_card_bag_help_description">Trọng lượng mặc định của một vỏ bao lúa (kg/bao). Khi nhập cân, hệ thống sẽ tự động nhân với số bao để trừ đi tổng trọng lượng bao bì.</string>
+    <string name="create_card_contacts_permission_denied">Từ chối quyền truy cập danh bạ. Vui lòng nhập số điện thoại thủ công.</string>
+    <string name="create_card_contacts_select">Chọn từ danh bạ</string>
+    <string name="detail_info_cccd">Số CCCD</string>
 
     <string name="card_item_locked_content">Đã khoá</string>
     <string name="card_item_delete_content">Xoá</string>
     <string name="card_item_moisture">Ẩm %1$s%%</string>
+    <string name="card_item_bag_weight">Bì %1$s kg</string>
+    <string name="card_item_impurity">Tạp %1$s kg</string>
     <string name="card_item_weigh_count">%1$d lần cân</string>
     <string name="card_item_remaining_amount">Còn: %1$s đ</string>
     <string name="card_item_qr_verified">✓ QR đã xác thực</string>
+    <string name="card_item_paid_in_full">Đã trả đủ tiền</string>
 
     <string name="weight_label_weight">Khối lượng</string>
     <string name="weight_label_total_weight">Tổng khối lượng</string>
@@ -127,7 +145,7 @@
     <string name="weight_metrics_bag_info_content">Tìm hiểu trọng lượng bì</string>
     <string name="weight_metrics_impurity_label">Tạp chất (kg)</string>
     <string name="weight_metrics_impurity_info_content">Tìm hiểu tạp chất</string>
-    <string name="weight_metrics_moisture_label">Độ ẩm (%) — quy đổi về chuẩn 14%</string>
+    <string name="weight_metrics_moisture_label">Độ ẩm (%)</string>
     <string name="weight_metrics_moisture_info_content">Tìm hiểu khấu trừ độ ẩm</string>
     <string name="weight_metrics_net_subtitle">Khối lượng thực tế</string>
     <string name="weight_metrics_total_amount">Thành tiền</string>
@@ -137,6 +155,32 @@
     <string name="weight_metrics_impurity_info_description">Khối lượng tạp chất (rơm rạ, đất cát, hạt lép) có trong lô lúa được hai bên thỏa thuận trừ trực tiếp bằng số kg cố định để đảm bảo công bằng cho người mua lúa sạch.</string>
     <string name="weight_metrics_moisture_info_title">💧 Khấu Trừ Độ Ẩm</string>
     <string name="weight_metrics_moisture_info_description">Độ ẩm lúa thực tế đo tại ruộng. Độ ẩm tiêu chuẩn thương mại là 14%. Nếu độ ẩm cao hơn, một tỷ lệ hao hụt sấy sẽ được khấu trừ vào khối lượng thực tế theo thỏa thuận.</string>
+    <string name="weight_metrics_formula_info_content">Xem công thức tính</string>
+    <string name="weight_metrics_formula_info_title">📐 Công thức tính tiền</string>
+    <string name="weight_metrics_formula_info_description">1) Khối lượng thực = (Tổng kg − Bì × Số bao − Tạp chất) × (100 − Độ ẩm) ÷ (100 − 14).\n\n2) Thành tiền = Khối lượng thực × Đơn giá/kg.\n\nVí dụ: 1.000 kg, bì 1kg × 20 bao = 20kg, tạp chất 5kg, độ ẩm 18% → KL thực = (1000 − 20 − 5) × (100 − 18) ÷ 86 ≈ 929,7 kg. Đơn giá 8.500đ/kg → Thành tiền ≈ 7,9 triệu.</string>
+    <string name="weight_metrics_impurity_label_percent">Tạp chất (%)</string>
+
+    <!-- Weigh options sheet (per-card modes) -->
+    <string name="weigh_options_title">Cách cân</string>
+    <string name="weigh_options_icon_content">Cách cân</string>
+    <string name="weigh_options_done">Xong</string>
+    <string name="weigh_options_impurity_unit">Tạp chất tính theo</string>
+    <string name="weigh_options_impurity_kg">Số kg</string>
+    <string name="weigh_options_impurity_percent">Phần trăm</string>
+    <string name="weigh_options_impurity_hint_kg">Trừ thẳng số kg tạp. Vd: bớt 2 kg.</string>
+    <string name="weigh_options_impurity_hint_percent" formatted="false">Trừ theo % trên lúa thật. Vd: 2% trên 1000 kg bớt 20 kg.</string>
+    <string name="weigh_options_bag_method">Cách tính bao bì</string>
+    <string name="weigh_options_bag_single">Từng bao</string>
+    <string name="weigh_options_bag_sample">Cân thử</string>
+    <string name="weigh_options_bag_hint_single">Nhập kg 1 bao rỗng × số bao. Vd: 0.5 kg × 100 = 50 kg.</string>
+    <string name="weigh_options_bag_hint_sample">Cân vài bao rỗng, app tự chia trung bình. Vd: 10 bao = 5 kg.</string>
+    <string name="weigh_options_bag_sample_count">Số bao mẫu</string>
+    <string name="weigh_options_bag_sample_weight">Cân được (kg)</string>
+    <string name="weigh_options_input_scale">Quy cách nhập số kg</string>
+    <string name="weigh_options_input_small">Cân nhỏ</string>
+    <string name="weigh_options_input_large">Cân lớn</string>
+    <string name="weigh_options_input_hint_small">Dưới 100 kg/lần. Gõ 503 thành 50.3 kg, tự nhảy ô.</string>
+    <string name="weigh_options_input_hint_large">Từ 100 kg/lần trở lên. Gõ 1503 thành 150.3 kg, tự nhảy ô.</string>
 
     <string name="weight_input_back_content">Quay lại</string>
     <string name="weight_input_unlock_content">Mở khóa</string>
@@ -157,6 +201,7 @@
     <string name="card_detail_unlock_card_first">Vui lòng mở khóa phiếu trước khi cân</string>
     <string name="card_detail_unlock_table_first">Vui lòng mở khóa bảng trước khi chỉnh sửa</string>
     <string name="card_detail_card_locked">Phiếu cân đang khóa</string>
+    <string name="card_detail_delete_blocked_unpaid">Phiếu chưa thanh toán — không thể xóa</string>
     <string name="card_detail_call_app_error">Không mở được ứng dụng gọi điện</string>
     <string name="card_detail_missing_gps">Chưa có tọa độ GPS</string>
     <string name="card_detail_default_field_label">Ruộng lúa</string>
@@ -384,9 +429,11 @@
     <string name="pdf_deposit">Tiền cọc</string>
     <string name="pdf_paid">Đã thanh toán</string>
     <string name="pdf_remaining">Còn lại</string>
+    <string name="pdf_excess_refund">Hoàn trả thương lái</string>
+    <string name="pdf_amount_due">Còn phải trả</string>
     <string name="pdf_status">Trạng thái</string>
     <string name="pdf_paid_full">Đã thanh toán đủ</string>
-    <string name="pdf_debt_remaining">Còn công nợ</string>
+    <string name="pdf_debt_remaining">Chưa thanh toán đủ</string>
     <string name="pdf_section_bag_details_count">IV. CHI TIẾT %1$d BAO CÂN</string>
     <string name="pdf_section_bag_details">IV. CHI TIẾT BAO CÂN</string>
     <string name="pdf_no_bags">Chưa có bao cân nào được ghi nhận.</string>
@@ -395,11 +442,8 @@
     <string name="pdf_column_tare">Bì (kg)</string>
     <string name="pdf_column_impurity">Tạp (kg)</string>
     <string name="pdf_column_net_weight">KL thực (kg)</string>
-    <string name="pdf_section_verification">V. THÔNG TIN XÁC THỰC VÀ KÝ SỐ</string>
-    <string name="pdf_signature_status">Trạng thái ký số</string>
-    <string name="pdf_signature_unsigned">Chưa ký số</string>
-    <string name="pdf_verification_code">Mã xác thực</string>
-    <string name="pdf_section_confirmation">VI. XÁC NHẬN</string>
+    <string name="pdf_table_total">TỔNG</string>
+    <string name="pdf_section_confirmation">V. XÁC NHẬN</string>
     <string name="pdf_sender">Người giao lúa</string>
     <string name="pdf_receiver">Người nhận lúa</string>
     <string name="pdf_creator">Người lập phiếu</string>
@@ -412,6 +456,23 @@
     <string name="pdf_qr_instruction">Quét QR để đối chiếu</string>
     <string name="pdf_card_date">Phiếu #%1$d · %2$s</string>
     <string name="pdf_footer">Trang %1$d · Tạo bởi Cân Lúa Mobile · Hash %2$s · %3$s</string>
+
+    <!-- Help Bottom Sheet -->
+    <string name="help_sheet_open_content">Mở trợ giúp &amp; hướng dẫn</string>
+    <string name="help_sheet_title">Trợ giúp &amp; Hướng dẫn</string>
+    <string name="help_sheet_subtitle">Mẹo sử dụng nhanh khi cân lúa</string>
+    <string name="help_tip_input_title">Nhập khối lượng nhanh</string>
+    <string name="help_tip_input_desc">Quy cách Nhỏ: gõ \"503\" → tự nhảy ô = 50.3 kg. Quy cách Lớn: gõ \"1503\" → 150.3 kg. Đổi quy cách ở Trang chủ → icon Tuỳ chỉnh.</string>
+    <string name="help_tip_lock_title">Khoá phiếu khi hoàn tất</string>
+    <string name="help_tip_lock_desc">Tap ổ khoá trên thanh tiêu đề để chốt số liệu, tránh bấm nhầm sửa sau khi đã thanh toán.</string>
+    <string name="help_tip_options_title">Tuỳ chỉnh cách cân</string>
+    <string name="help_tip_options_desc">Cài đặt mặc định cho tạp chất (kg/%) và bao bì (1 bao đơn vị / cân mẫu N bao) ở Trang chủ → icon Tuỳ chỉnh.</string>
+    <string name="help_tip_swipe_title">Vuốt để sửa / xoá bao</string>
+    <string name="help_tip_swipe_desc">Trên bảng cân: chạm dài ô để sửa, vuốt trái ô để xoá. Khi phiếu đã khoá thì các thao tác này bị chặn.</string>
+    <string name="help_tip_offline_title">Vẫn cân khi mất sóng</string>
+    <string name="help_tip_offline_desc">App lưu cục bộ trên máy, tự đồng bộ lên đám mây khi có mạng — không lo mất phiếu khi đang ở ngoài đồng.</string>
+    <string name="help_btn_tutorial">Hướng dẫn sử dụng</string>
+    <string name="help_btn_web">Xem trang web</string>
 
     <string name="settings_premium_title">Gói Premium</string>
     <string name="settings_premium_early_adopter">NGƯỜI DÙNG SỚM</string>

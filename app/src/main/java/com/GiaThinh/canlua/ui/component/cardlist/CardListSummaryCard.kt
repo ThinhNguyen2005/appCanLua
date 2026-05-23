@@ -73,7 +73,7 @@ fun CardListSummaryCard(
                     color = AppColors.TextSecondary
                 )
                 Text(
-                    text = stringResource(R.string.card_list_money_vnd, numberFormat.format(totalAmount)),
+                    text = stringResource(R.string.card_list_money_vnd, numberFormat.format(totalAmount.toLong())),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.GreenPrimary

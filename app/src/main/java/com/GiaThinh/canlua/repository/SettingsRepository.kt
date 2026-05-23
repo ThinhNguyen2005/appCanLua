@@ -22,6 +22,13 @@ class SettingsRepository @Inject constructor(
     private val KEY_LANGUAGE = "language"
     private val KEY_AUTO_SYNC_ENABLED = "auto_sync_enabled"
 
+    // Weigh-options defaults (v17): áp dụng cho phiếu mới tạo. Phiếu cũ giữ mode đã lưu.
+    private val KEY_IMPURITY_IS_PERCENT = "weigh_impurity_is_percent"
+    private val KEY_BAG_METHOD_IS_SAMPLING = "weigh_bag_method_is_sampling"
+    private val KEY_BAG_SAMPLE_COUNT = "weigh_bag_sample_count"
+    private val KEY_BAG_SAMPLE_TOTAL_WEIGHT = "weigh_bag_sample_total_weight"
+    private val KEY_WEIGHT_INPUT_MODE = "weigh_weight_input_mode"
+
     private val _fontScale = MutableStateFlow(readFontScale())
     val fontScale: Flow<FontScale> = _fontScale.asStateFlow()
 
@@ -30,6 +37,9 @@ class SettingsRepository @Inject constructor(
 
     private val _autoSyncEnabled = MutableStateFlow(isAutoSyncEnabled())
     val autoSyncEnabled: Flow<Boolean> = _autoSyncEnabled.asStateFlow()
+
+    private val _weighDefaults = MutableStateFlow(readWeighDefaults())
+    val weighDefaults: Flow<WeighDefaults> = _weighDefaults.asStateFlow()
 
     init {
         prefs.registerOnSharedPreferenceChangeListener { _, key ->
@@ -46,15 +56,15 @@ class SettingsRepository @Inject constructor(
     }
     
     fun isTtsEnabled(): Boolean {
-        return prefs.getBoolean(KEY_TTS_ENABLED, false)
+        return prefs.getBoolean(KEY_TTS_ENABLED, true)
     }
-    
+
     fun setTtsEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_TTS_ENABLED, enabled).apply()
     }
 
     fun isAutoSyncEnabled(): Boolean {
-        return prefs.getBoolean(KEY_AUTO_SYNC_ENABLED, false)
+        return prefs.getBoolean(KEY_AUTO_SYNC_ENABLED, true)
     }
 
     fun setAutoSyncEnabled(enabled: Boolean) {
@@ -76,6 +86,27 @@ class SettingsRepository @Inject constructor(
 
     fun getLanguage(): AppLanguage = readLanguage()
 
+    fun getWeighDefaults(): WeighDefaults = readWeighDefaults()
+
+    fun setWeighDefaults(d: WeighDefaults) {
+        prefs.edit()
+            .putBoolean(KEY_IMPURITY_IS_PERCENT, d.impurityIsPercent)
+            .putBoolean(KEY_BAG_METHOD_IS_SAMPLING, d.bagMethodIsSampling)
+            .putInt(KEY_BAG_SAMPLE_COUNT, d.bagSampleCount)
+            .putFloat(KEY_BAG_SAMPLE_TOTAL_WEIGHT, d.bagSampleTotalWeight.toFloat())
+            .putString(KEY_WEIGHT_INPUT_MODE, d.weightInputMode)
+            .apply()
+        _weighDefaults.value = d
+    }
+
+    private fun readWeighDefaults(): WeighDefaults = WeighDefaults(
+        impurityIsPercent = prefs.getBoolean(KEY_IMPURITY_IS_PERCENT, false),
+        bagMethodIsSampling = prefs.getBoolean(KEY_BAG_METHOD_IS_SAMPLING, false),
+        bagSampleCount = prefs.getInt(KEY_BAG_SAMPLE_COUNT, 0),
+        bagSampleTotalWeight = prefs.getFloat(KEY_BAG_SAMPLE_TOTAL_WEIGHT, 0f).toDouble(),
+        weightInputMode = prefs.getString(KEY_WEIGHT_INPUT_MODE, "SMALL") ?: "SMALL"
+    )
+
     private fun readFontScale(): FontScale {
         val name = prefs.getString(KEY_FONT_SCALE, FontScale.NORMAL.name)
         return FontScale.fromName(name)
@@ -86,4 +117,12 @@ class SettingsRepository @Inject constructor(
         return AppLanguage.fromTag(tag)
     }
 }
+
+data class WeighDefaults(
+    val impurityIsPercent: Boolean = false,
+    val bagMethodIsSampling: Boolean = false,
+    val bagSampleCount: Int = 0,
+    val bagSampleTotalWeight: Double = 0.0,
+    val weightInputMode: String = "SMALL"
+)
 

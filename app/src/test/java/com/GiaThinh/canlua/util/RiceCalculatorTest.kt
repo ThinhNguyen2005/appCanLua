@@ -205,4 +205,86 @@ class RiceCalculatorTest {
         val t2 = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 1_000_000.0)
         assertEquals(t1, t2)
     }
+
+    // === Per-card mode helpers (v17) ===
+
+    @Test
+    fun `calcTotalBagWeight method A multiplies bagWeight by bagCount`() {
+        val total = RiceCalculator.calcTotalBagWeight(
+            bagCount = 100,
+            bagWeight = 0.5,
+            methodIsSampling = false,
+            sampleCount = 0,
+            sampleTotalWeight = 0.0
+        )
+        assertEquals(50.0, total, eps)
+    }
+
+    @Test
+    fun `calcTotalBagWeight method B uses sample average`() {
+        // 10 bao mẫu = 5 kg → trung bình 0.5 kg/bao → 100 bao = 50 kg
+        val total = RiceCalculator.calcTotalBagWeight(
+            bagCount = 100,
+            bagWeight = 0.0,
+            methodIsSampling = true,
+            sampleCount = 10,
+            sampleTotalWeight = 5.0
+        )
+        assertEquals(50.0, total, eps)
+    }
+
+    @Test
+    fun `calcTotalImpurity in percent mode multiplies by raw`() {
+        // 1000 kg lúa sau bao, 2% tạp → 20 kg
+        val imp = RiceCalculator.calcTotalImpurity(
+            rawAfterBag = 1000.0,
+            impurityValue = 2.0,
+            isPercent = true
+        )
+        assertEquals(20.0, imp, eps)
+    }
+
+    @Test
+    fun `calcTotalImpurity in kg mode returns value as-is`() {
+        val imp = RiceCalculator.calcTotalImpurity(
+            rawAfterBag = 1000.0,
+            impurityValue = 2.0,
+            isPercent = false
+        )
+        assertEquals(2.0, imp, eps)
+    }
+
+    @Test
+    fun `calcNetWeightWithModes - impurity percent at 14 moisture`() {
+        // raw 1000, bag 0, tạp 2% → rawAfterBag 1000, impurity 20 → gross 980 @14% = 980
+        val net = RiceCalculator.calcNetWeightWithModes(
+            totalRaw = 1000.0,
+            bagCount = 0,
+            bagWeight = 0.0,
+            bagMethodIsSampling = false,
+            bagSampleCount = 0,
+            bagSampleTotalWeight = 0.0,
+            impurityValue = 2.0,
+            impurityIsPercent = true,
+            moisturePercent = 14.0
+        )
+        assertEquals(980.0, net, eps)
+    }
+
+    @Test
+    fun `calcNetWeightWithModes - bag sampling method`() {
+        // raw 1000, bao 100 với mẫu 10 bao=5kg → totalBag 50, raw 950, no impurity, 14% → 950
+        val net = RiceCalculator.calcNetWeightWithModes(
+            totalRaw = 1000.0,
+            bagCount = 100,
+            bagWeight = 0.0,
+            bagMethodIsSampling = true,
+            bagSampleCount = 10,
+            bagSampleTotalWeight = 5.0,
+            impurityValue = 0.0,
+            impurityIsPercent = false,
+            moisturePercent = 14.0
+        )
+        assertEquals(950.0, net, eps)
+    }
 }

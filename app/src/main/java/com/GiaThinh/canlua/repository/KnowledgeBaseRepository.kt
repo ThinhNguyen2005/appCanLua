@@ -19,7 +19,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class KnowledgeBaseRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     enum class Audience { FARMER, TRADER }

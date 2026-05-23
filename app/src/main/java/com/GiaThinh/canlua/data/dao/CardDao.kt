@@ -56,6 +56,15 @@ interface CardDao {
     @Query("SELECT DISTINCT riceVariety FROM cards WHERE ownerUid = :uid AND riceVariety != '' ORDER BY riceVariety")
     fun getDistinctRiceVarieties(uid: String): Flow<List<String>>
 
+    @Query("""
+        SELECT riceVariety FROM cards
+        WHERE ownerUid = :uid AND riceVariety != ''
+        GROUP BY riceVariety
+        ORDER BY MAX(date) DESC, COUNT(*) DESC
+        LIMIT 5
+    """)
+    fun getSuggestedRiceVarieties(uid: String): Flow<List<String>>
+
     // === Phase 3: Season Statistics Dashboard ===
 
     /** Lấy danh sách các vụ đã có dữ liệu, sort theo ngày card mới nhất trong vụ đó. */

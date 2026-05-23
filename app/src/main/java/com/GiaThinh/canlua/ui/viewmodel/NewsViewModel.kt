@@ -36,7 +36,7 @@ class NewsViewModel @Inject constructor(
 
     /** List bài lọc theo selectedTopic, hot stream cache 5s sau khi không còn subscriber. */
     val articles: StateFlow<List<NewsArticle>> = _selectedTopic
-        .flatMapLatest { topic -> repository.observe(topic, limit = 30) }
+        .flatMapLatest { topic -> repository.observe(topic, limit = 60) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),

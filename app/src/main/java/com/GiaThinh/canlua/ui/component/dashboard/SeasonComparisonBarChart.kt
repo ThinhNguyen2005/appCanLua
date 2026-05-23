@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
@@ -119,11 +120,13 @@ private fun BarChartCanvas(
             val value = metric.extract(season)
             val ratio = (value / maxValue).toFloat().coerceIn(0.05f, 1f)
             val isSelected = season.season == selectedSeason
+            val (prefix, year) = remember(season.season) { seasonLabelParts(season.season) }
 
             Bar(
                 value = value,
                 ratio = ratio,
-                label = shortLabel(season.season),
+                labelPrefix = prefix,
+                labelYear = year,
                 isSelected = isSelected,
                 metric = metric,
                 modifier = Modifier.weight(1f)
@@ -136,7 +139,8 @@ private fun BarChartCanvas(
 private fun Bar(
     value: Double,
     ratio: Float,
-    label: String,
+    labelPrefix: String,
+    labelYear: String,
     isSelected: Boolean,
     metric: ChartMetric,
     modifier: Modifier = Modifier
@@ -149,7 +153,7 @@ private fun Bar(
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Value text trên đầu cột
+        // Value text trên đầu cột — 1 dòng, không wrap để cột không bị nâng cao bất thường
         Text(
             text = when (metric) {
                 ChartMetric.WEIGHT -> DashboardFormatter.weight(value)
@@ -158,7 +162,9 @@ private fun Bar(
             fontSize = 9.sp,
             color = AppColors.TextSecondary,
             fontWeight = FontWeight.SemiBold,
-            maxLines = 1
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Visible
         )
 
         Spacer(Modifier.size(4.dp))
@@ -174,12 +180,26 @@ private fun Bar(
 
         Spacer(Modifier.size(6.dp))
 
+        // Label 2 dòng: tên vụ (ĐX/HT/TĐ) + năm — fit khít với cột bar hẹp,
+        // tránh phải rút gọn quá ngắn hoặc cắt cụt.
         Text(
-            text = label,
-            fontSize = 10.sp,
+            text = labelPrefix,
+            fontSize = 11.sp,
             color = if (isSelected) AppColors.GreenPrimary else AppColors.TextSecondary,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Visible
         )
+        if (labelYear.isNotEmpty()) {
+            Text(
+                text = labelYear,
+                fontSize = 9.sp,
+                color = if (isSelected) AppColors.GreenPrimary.copy(alpha = 0.85f) else AppColors.TextHint,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+        }
     }
 }
 
@@ -192,15 +212,19 @@ enum class ChartMetric {
     }
 }
 
-/** Rút gọn "Đông Xuân 2026" → "ĐX'26", "Hè Thu 2025" → "HT'25". */
-private fun shortLabel(season: String): String {
+/**
+ * Tách "Đông Xuân 2026" → ("ĐX", "'26"), "Hè Thu 2025" → ("HT", "'25").
+ * Render 2 dòng dưới bar — gọn, đủ chỗ với cột bar hẹp, vẫn nhận diện được vụ + năm.
+ */
+private fun seasonLabelParts(season: String): Pair<String, String> {
     val parts = season.split(" ")
-    val yearShort = parts.lastOrNull()?.takeLast(2) ?: ""
+    val yearShort = parts.lastOrNull()?.takeLast(2).orEmpty()
     val prefix = when {
         season.startsWith("Đông Xuân") -> "ĐX"
         season.startsWith("Hè Thu") -> "HT"
         season.startsWith("Thu Đông") -> "TĐ"
         else -> parts.firstOrNull()?.take(3) ?: season.take(3)
     }
-    return if (yearShort.isNotEmpty()) "$prefix'$yearShort" else prefix
+    val year = if (yearShort.isNotEmpty()) "'$yearShort" else ""
+    return prefix to year
 }

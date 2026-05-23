@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,9 +55,13 @@ import androidx.navigation.compose.rememberNavController
 import com.GiaThinh.canlua.ui.component.BottomBarItemSpec
 import com.GiaThinh.canlua.ui.component.ModernBottomBar
 import com.GiaThinh.canlua.ui.component.OfflineStatusBanner
+import com.GiaThinh.canlua.ui.component.weight.HelpBottomSheet
+import com.GiaThinh.canlua.ui.component.weight.WeighOptionsSheet
 import com.GiaThinh.canlua.ui.navigation.AppNavHost
 import com.GiaThinh.canlua.ui.navigation.BottomNavItem
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
+import com.GiaThinh.canlua.repository.WeighDefaults
 import kotlinx.coroutines.launch
 
 /**
@@ -112,6 +118,11 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
     val profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
     val profile by profileViewModel.profile.collectAsState(initial = null)
+
+    val settingsViewModel: SettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+    val weighDefaults by settingsViewModel.weighDefaults.collectAsState()
+    var showWeighOptionsSheet by remember { mutableStateOf(false) }
+    var showHelpSheet by remember { mutableStateOf(false) }
     
     // Determine nav items based on role
     val isTrader = profile?.role == "TRADER"
@@ -127,7 +138,8 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val isImeVisible = WindowInsets.isImeVisible
 
     // Các route con mà vẫn hiển thị bottom bar (detail, weight input...)
-    val showBottomBar = (isOnTabScreen || currentRoute in listOf("sync_status")) && !isImeVisible
+    val scrollVisible by com.GiaThinh.canlua.ui.util.BottomBarVisibility.visible.collectAsState()
+    val showBottomBar = (isOnTabScreen || currentRoute in listOf("sync_status")) && !isImeVisible && scrollVisible
 
     // Title theo tab/route — riêng AI Chat đổi theo audience để truyền tải đúng identity của bot.
     val defaultScaleTitle = stringResource(com.GiaThinh.canlua.R.string.nav_scale)
@@ -214,9 +226,28 @@ fun MainScreen(deeplinkCardId: String? = null) {
                                     )
                                 }
                             }
+                            currentRoute == BottomNavItem.SCALE.route -> {
+                                // Trang Cân Lúa: nút Trợ giúp & Hướng dẫn ở trái.
+                                IconButton(onClick = { showHelpSheet = true }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.help_sheet_open_content)
+                                    )
+                                }
+                            }
                         }
                     },
                     actions = {
+                        // Tab Cân Lúa: nút Tune chỉnh default 3 mode cân (kg/%, A/B, SMALL/LARGE)
+                        // áp cho mọi phiếu mới tạo.
+                        if (currentRoute == BottomNavItem.SCALE.route) {
+                            IconButton(onClick = { showWeighOptionsSheet = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Tune,
+                                    contentDescription = stringResource(com.GiaThinh.canlua.R.string.weigh_options_icon_content)
+                                )
+                            }
+                        }
                         // Trader ở tab Cân Lúa → icon QR scan để verify giao dịch nhanh.
                         if (isTrader && currentRoute == BottomNavItem.SCALE.route) {
                             IconButton(onClick = {
@@ -242,7 +273,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
@@ -300,6 +331,33 @@ fun MainScreen(deeplinkCardId: String? = null) {
                 }
             }
         }
+    }
+
+    if (showWeighOptionsSheet) {
+        WeighOptionsSheet(
+            impurityIsPercent = weighDefaults.impurityIsPercent,
+            bagMethodIsSampling = weighDefaults.bagMethodIsSampling,
+            bagSampleCount = weighDefaults.bagSampleCount,
+            bagSampleTotalWeight = weighDefaults.bagSampleTotalWeight,
+            weightInputMode = weighDefaults.weightInputMode,
+            onDismiss = { showWeighOptionsSheet = false },
+            onSave = { impurityPct, bagSampling, sampleCount, sampleWeight, inputMode ->
+                settingsViewModel.setWeighDefaults(
+                    WeighDefaults(
+                        impurityIsPercent = impurityPct,
+                        bagMethodIsSampling = bagSampling,
+                        bagSampleCount = sampleCount,
+                        bagSampleTotalWeight = sampleWeight,
+                        weightInputMode = inputMode
+                    )
+                )
+                showWeighOptionsSheet = false
+            }
+        )
+    }
+
+    if (showHelpSheet) {
+        HelpBottomSheet(onDismiss = { showHelpSheet = false })
     }
 }
 

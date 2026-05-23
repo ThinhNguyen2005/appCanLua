@@ -161,10 +161,10 @@ fun CardDetailScreen(
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             if (c.isLocked) {
                                 appToast.warning(context.getString(R.string.card_detail_unlock_card_first))
                             } else {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 navController.navigate("weight_input/${cardId}")
                             }
                         },
@@ -308,7 +308,9 @@ fun CardDetailScreen(
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         viewModel.refreshFieldLocation(cardId)
                                         appToast.info(context.getString(R.string.card_detail_updating_location))
-                                    }
+                                    },
+                                    isLocked = card.isLocked,
+                                    cccd = card.cccd
                                 )
                             }
                         }
@@ -321,8 +323,10 @@ fun CardDetailScreen(
                                     bagCount = card.bagCount,
                                     bagWeight = card.bagWeight,
                                     impurityWeight = card.impurityWeight,
+                                    moisturePercent = card.moisturePercent,
                                     netWeight = card.netWeight,
-                                    numberFormat = numberFormat
+                                    numberFormat = numberFormat,
+                                    isLocked = card.isLocked
                                 )
                             }
                         }
@@ -336,6 +340,9 @@ fun CardDetailScreen(
                                     depositAmount = card.depositAmount,
                                     paidAmount = card.paidAmount,
                                     remainingAmount = card.remainingAmount,
+                                    isPaid = card.isPaid,
+                                    onPaidChange = { viewModel.updateCard(card.copy(isPaid = it)) },
+                                    isLocked = card.isLocked,
                                     numberFormat = numberFormat
                                 )
                             }
@@ -465,6 +472,8 @@ fun CardDetailScreen(
                     if (isLoading) return@CustomHeader
                     if (displayCard.isLocked) {
                         appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
+                    } else if (!displayCard.isPaid) {
+                        appToast.warning(context.getString(R.string.card_detail_delete_blocked_unpaid))
                     } else {
                         showDeleteConfirm = true
                     }

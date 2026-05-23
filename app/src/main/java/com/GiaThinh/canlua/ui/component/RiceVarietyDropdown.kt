@@ -33,7 +33,8 @@ import com.GiaThinh.canlua.util.RiceVarieties
 fun RiceVarietyDropdown(
     selected: String,
     onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    suggestions: List<String> = com.GiaThinh.canlua.util.RiceVarieties.popular.take(5)
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -66,7 +67,7 @@ fun RiceVarietyDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            RiceVarieties.popular.forEach { variety ->
+            suggestions.forEach { variety ->
                 DropdownMenuItem(
                     text = {
                         Text(variety, style = MaterialTheme.typography.bodyLarge)

@@ -3,6 +3,7 @@ package com.GiaThinh.canlua.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -155,17 +156,22 @@ fun SettingsScreen(
                                 }
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
                                     Text(
                                         text = stringResource(R.string.settings_premium_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = AppColors.TextPrimary
+                                        color = AppColors.TextPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     if (premiumInfo.isActive) {
-                                        Spacer(Modifier.width(8.dp))
                                         Box(
                                             modifier = Modifier
+                                                .align(Alignment.CenterVertically)
                                                 .clip(RoundedCornerShape(6.dp))
                                                 .background(
                                                     if (premiumInfo.isEarlyAdopter) AppColors.GoldAccent
@@ -181,7 +187,8 @@ fun SettingsScreen(
                                                 },
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = Color.White,
-                                                fontWeight = FontWeight.ExtraBold
+                                                fontWeight = FontWeight.ExtraBold,
+                                                maxLines = 1
                                             )
                                         }
                                     }
@@ -375,8 +382,9 @@ fun SettingsScreen(
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = AppColors.GreenPrimary
                                 ),
-                                border = ButtonDefaults.outlinedButtonBorder.copy(
-                                    brush = androidx.compose.ui.graphics.SolidColor(AppColors.GreenPrimary)
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    AppColors.GreenPrimary
                                 )
                             ) {
                                 if (backupStatus is BackupStatus.BackingUp) {

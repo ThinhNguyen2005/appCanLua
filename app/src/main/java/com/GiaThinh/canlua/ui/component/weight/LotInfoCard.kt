@@ -19,6 +19,7 @@ import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
 import com.GiaThinh.canlua.ui.component.ExplainingPopover
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.theme.lockedAwareTextFieldColors
 
 /**
  * Card 1/3: Thông tin lô hàng — tên, giống lúa, độ ẩm, vụ mùa.
@@ -67,7 +68,8 @@ fun LotInfoCard(
                 enabled = !isLocked,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = lockedAwareTextFieldColors()
             )
 
             // Giống lúa + Icon giải thích
@@ -122,7 +124,8 @@ fun LotInfoCard(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    colors = lockedAwareTextFieldColors()
                 )
                 OutlinedTextField(
                     value = seasonLabel,
@@ -131,7 +134,8 @@ fun LotInfoCard(
                     enabled = !isLocked,
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    colors = lockedAwareTextFieldColors()
                 )
             }
         }

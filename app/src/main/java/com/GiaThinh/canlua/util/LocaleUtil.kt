@@ -11,6 +11,7 @@ object LocaleUtil {
         Locale.setDefault(locale)
         val configuration = Configuration(context.resources.configuration)
         configuration.setLocale(locale)
+        @Suppress("DEPRECATION")
         context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
     }
 }

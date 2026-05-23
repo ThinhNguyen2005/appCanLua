@@ -2,7 +2,10 @@ package com.GiaThinh.canlua.ui.component.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,10 +32,17 @@ fun KpiGrid(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items.chunked(2).forEach { rowItems ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // IntrinsicSize.Max + fillMaxHeight → 2 card cùng hàng luôn đồng chiều cao
+            // dù 1 card có delta pill còn card kia thì không.
+            Row(
+                modifier = Modifier.height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 rowItems.forEach { item ->
                     KpiCard(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                         icon = item.icon,
                         label = item.label,
                         value = item.value,

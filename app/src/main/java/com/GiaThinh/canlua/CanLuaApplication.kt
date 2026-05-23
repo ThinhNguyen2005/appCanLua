@@ -17,6 +17,7 @@ import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.repository.SyncManager
 import com.GiaThinh.canlua.repository.SyncWorker
 import com.GiaThinh.canlua.util.AnalyticsHelper
+import com.GiaThinh.canlua.util.FirebaseRemoteConfigManager
 import com.GiaThinh.canlua.util.PremiumState
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -65,23 +66,36 @@ class CanLuaApplication : Application(), Configuration.Provider {
         super.onCreate()
         AnalyticsHelper.init(this)
         PremiumState.init(this)
-        applyEarlyAdopterPremium()
+        FirebaseRemoteConfigManager.init(this)
+        // Sync: dùng cached/default → chạy ngay để user nhận premium nếu đã từng cài trước cutoff.
+        // Nhưng firstInstallTime > cutoff (user cài hôm nay) → không nhận.
+        applyEarlyAdopterPremiumSync()
+        // Async: fetch Firebase → force update → check lại nếu cần.
+        // Gọi forceFetch trước check để lấy giá trị mới nhất trước khi apply.
+        appScope.launch {
+            val fetched = FirebaseRemoteConfigManager.forceFetch()
+            if (fetched) {
+                // Config mới → check lại (phòng trường hợp cutoff mới đã pass).
+                applyEarlyAdopterPremiumSync()
+            }
+        }
         scheduleOrphanClaim()
         scheduleAutoPullOnSignIn()
         observeAutoSyncPreference()
     }
 
     /**
-     * Apply Early Adopter Premium nếu user cài app trước ngày cutoff.
-     * Lấy firstInstallTime từ PackageManager để đảm bảo không bị fake được.
+     * Sync version: dùng giá trị cached/default từ Firebase Remote Config.
+     * Chạy ngay trong onCreate — không blocking.
      */
-    private fun applyEarlyAdopterPremium() {
+    private fun applyEarlyAdopterPremiumSync() {
         try {
             val firstInstallTime = packageManager.getPackageInfo(packageName, 0).firstInstallTime
             PremiumState.applyEarlyAdopterIfEligible(
                 context = applicationContext,
                 firstInstallTimeMs = firstInstallTime,
-                earlyAdopterEnabled = true, // TODO: thay = giá trị từ Firebase Remote Config
+                earlyAdopterEnabled = FirebaseRemoteConfigManager.earlyAdopterEnabled,
+                remoteCutoffMs = FirebaseRemoteConfigManager.earlyAdopterCutoffMs.takeIf { it > 0 },
             )
         } catch (e: PackageManager.NameNotFoundException) {
             // Không xác định được first install time → bỏ qua early adopter

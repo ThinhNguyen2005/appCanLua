@@ -448,8 +448,8 @@ private fun TraderHistorySection(history: List<TraderHistoryItem>) {
 
 @Composable
 private fun TraderHistoryRow(item: TraderHistoryItem) {
-    val moneyFmt = remember { NumberFormat.getInstance(Locale("vi", "VN")) }
-    val dateFmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")) }
+    val moneyFmt = remember { NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")) }
+    val dateFmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),

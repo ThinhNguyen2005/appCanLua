@@ -89,6 +89,9 @@ class CardViewModel @Inject constructor(
     val availableVarieties: StateFlow<List<String>> = repository.getDistinctRiceVarieties()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val suggestedRiceVarieties: StateFlow<List<String>> = repository.getSuggestedRiceVarieties()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val availableSeasons: StateFlow<List<String>> = repository.getDistinctSeasons()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -159,7 +162,9 @@ class CardViewModel @Inject constructor(
         riceVariety: String = "",
         moisturePercent: Double = 0.0,
         seasonLabel: String = "",
-        traderPhone: String = ""
+        traderPhone: String = "",
+        bagWeight: Double = 0.0,
+        impurityWeight: Double = 0.0
     ) {
         viewModelScope.launch {
             val trimmedName = name.trim()
@@ -171,6 +176,7 @@ class CardViewModel @Inject constructor(
                 runCatching { locationProvider.reverseGeocode(it.lat, it.lon) }.getOrNull()
             }.orEmpty()
 
+            val defaults = settingsRepository.getWeighDefaults()
             val newCard = Card(
                 name = trimmedName,
                 cccd = cccd,
@@ -184,7 +190,14 @@ class CardViewModel @Inject constructor(
                 latitude = geo?.lat,
                 longitude = geo?.lon,
                 traderPhone = traderPhone.trim(),
-                fieldAddress = address
+                fieldAddress = address,
+                bagWeight = bagWeight,
+                impurityWeight = impurityWeight,
+                impurityIsPercent = defaults.impurityIsPercent,
+                bagMethodIsSampling = defaults.bagMethodIsSampling,
+                bagSampleCount = defaults.bagSampleCount,
+                bagSampleTotalWeight = defaults.bagSampleTotalWeight,
+                weightInputMode = defaults.weightInputMode
             )
             val cardId = repository.insertCard(newCard)
             
@@ -215,6 +228,10 @@ class CardViewModel @Inject constructor(
      *   và [createCard], nếu không sẽ bị [updateCardCalculations] ghi đè.
      */
     fun updateCard(card: Card) {
+        val current = _currentCard.value
+        if (current != null && current.id == card.id) {
+            _currentCard.value = card
+        }
         viewModelScope.launch {
             val oldCard = repository.getCardById(card.id)
             repository.updateCard(card)
@@ -251,6 +268,11 @@ class CardViewModel @Inject constructor(
             if (needRecalc || oldCard?.pricePerKg != card.pricePerKg) {
                 repository.updateCardCalculations(card.id)
                 loadCardById(card.id)
+            } else {
+                val latestCard = repository.getCardById(card.id)
+                if (latestCard != null) {
+                    _currentCard.value = latestCard
+                }
             }
         }
     }
@@ -285,6 +307,9 @@ class CardViewModel @Inject constructor(
                 impurityWeight = 0.0,
                 netWeight = netWeight
             )
+            val currentSize = _weightEntries.value.size
+            val isColumnCompleted = (currentSize % 5 == 4)
+
             repository.insertWeightEntry(weightEntry)
             repository.updateCardCalculations(cardId)
             _currentCard.value = repository.getCardById(cardId)
@@ -292,7 +317,9 @@ class CardViewModel @Inject constructor(
             val ttsEnabled = settingsRepository.isTtsEnabled()
             ttsManager.setEnabled(ttsEnabled)
             if (ttsEnabled && ttsManager.isEnabled()) {
-                ttsManager.speakNumber(weight)
+                ttsManager.speakNumber(weight, completesColumn = isColumnCompleted)
+            } else if (isColumnCompleted) {
+                ttsManager.triggerColumnCompleteFeedback()
             }
         }
     }
@@ -460,6 +487,7 @@ class CardViewModel @Inject constructor(
                 val updatedCard = it.copy(bagWeight = bagWeight)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
+                loadCardById(cardId)
             }
         }
     }
@@ -471,6 +499,7 @@ class CardViewModel @Inject constructor(
                 val updatedCard = it.copy(impurityWeight = impurityWeight)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
+                loadCardById(cardId)
             }
         }
     }
@@ -482,6 +511,7 @@ class CardViewModel @Inject constructor(
                 val updatedCard = it.copy(pricePerKg = pricePerKg)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
+                loadCardById(cardId)
             }
         }
     }
@@ -493,6 +523,7 @@ class CardViewModel @Inject constructor(
                 val updatedCard = it.copy(moisturePercent = moisturePercent)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
+                loadCardById(cardId)
             }
         }
     }
@@ -502,6 +533,7 @@ class CardViewModel @Inject constructor(
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(riceVariety = variety))
+                loadCardById(cardId)
             }
         }
     }
@@ -511,6 +543,7 @@ class CardViewModel @Inject constructor(
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(seasonLabel = seasonLabel))
+                loadCardById(cardId)
             }
         }
     }
@@ -569,6 +602,9 @@ class CardViewModel @Inject constructor(
                     impurityWeight = 0.0,
                     netWeight = netWeight
                 )
+                val currentSize = _weightEntries.value.size
+                val isColumnCompleted = (currentSize % 5 == 4)
+
                 repository.insertWeightEntry(weightEntry)
                 repository.updateCardCalculations(cardId)
                 _currentCard.value = repository.getCardById(cardId)
@@ -576,7 +612,9 @@ class CardViewModel @Inject constructor(
                 val ttsEnabled = settingsRepository.isTtsEnabled()
                 ttsManager.setEnabled(ttsEnabled)
                 if (ttsEnabled && ttsManager.isEnabled()) {
-                    ttsManager.speakNumber(weight)
+                    ttsManager.speakNumber(weight, completesColumn = isColumnCompleted)
+                } else if (isColumnCompleted) {
+                    ttsManager.triggerColumnCompleteFeedback()
                 }
             }
         }
@@ -585,5 +623,33 @@ class CardViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         ttsManager.shutdown()
+    }
+
+    /**
+     * Cập nhật 5 mode flag của phiếu (kg/% tạp, A/B bao, SMALL/LARGE quy cách KG).
+     * Gộp 1 hàm thay vì 5 hàm riêng để chỉ chạy 1 lần update + 1 lần recalc khi
+     * user đóng sheet "Tùy chọn cân".
+     */
+    fun updateCardWeighOptions(
+        cardId: Long,
+        impurityIsPercent: Boolean,
+        bagMethodIsSampling: Boolean,
+        bagSampleCount: Int,
+        bagSampleTotalWeight: Double,
+        weightInputMode: String
+    ) {
+        viewModelScope.launch {
+            val card = repository.getCardById(cardId) ?: return@launch
+            val updated = card.copy(
+                impurityIsPercent = impurityIsPercent,
+                bagMethodIsSampling = bagMethodIsSampling,
+                bagSampleCount = bagSampleCount,
+                bagSampleTotalWeight = bagSampleTotalWeight,
+                weightInputMode = weightInputMode
+            )
+            repository.updateCard(updated)
+            repository.updateCardCalculations(cardId)
+            loadCardById(cardId)
+        }
     }
 }

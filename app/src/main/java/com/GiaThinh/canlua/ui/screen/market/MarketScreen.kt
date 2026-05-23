@@ -7,6 +7,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,20 +22,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.outlined.PriceChange
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -75,11 +83,14 @@ import kotlinx.coroutines.launch
 /**
  * Module 2 — Bảng Tin Giá Lúa & Thị Trường
  *
- * Phase 2.1: read-only với mock data + Vico chart.
- * UX update: bỏ header trùng (TopBar đã có "Thị Trường"), thay icon Refresh
- * bằng cử chỉ Pull-to-Refresh, và Shimmer skeleton khi load lần đầu.
+ * Layout: TabRow + HorizontalPager 2 trang.
+ *  - Page 0 "Tin tức": Weather widget + NativeAd + NewsSection (cuộn chung trong LazyColumn)
+ *  - Page 1 "Bảng giá lúa": Giá rao của bạn (nếu trader) + Bảng giá thu mua
+ *
+ * Weather card chỉ thuộc tab Tin tức — cuộn cùng news, không sticky, không hiện ở
+ * Prices tab hay tab khác. Tab và pager đồng bộ 2 chiều.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MarketScreen(
     viewModel: MarketViewModel = hiltViewModel(),
@@ -116,16 +127,18 @@ fun MarketScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    val pullState = rememberPullToRefreshState()
-    val listState = rememberLazyListState()
-    val fabExpanded = listState.isScrollingUp() || myBids.isEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // State đóng/mở editor sheet — null = closed; FirestoreRicePrice() = create; existing = edit.
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    val newsListState = rememberLazyListState()
+    val pricesListState = rememberLazyListState()
+
+    // FAB chỉ hiện ở tab "Bảng giá lúa" — nơi thương lái thực sự đăng giá.
+    val fabExpanded = pricesListState.isScrollingUp() || myBids.isEmpty()
+
     var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
     var showEditor by remember { mutableStateOf(false) }
 
-    // Hiển thị snackbar khi có message từ bidsViewModel.
     LaunchedEffect(bidUiState.successMessage, bidUiState.errorMessage) {
         bidUiState.successMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -141,7 +154,7 @@ fun MarketScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (isTrader) {
+            if (isTrader && pagerState.currentPage == 1) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         editingBid = null
@@ -158,35 +171,38 @@ fun MarketScreen(
                 )
             }
         },
-        // Inner Scaffold — MainScreen đã xử lý status bar / nav bar insets thông qua
-        // TopAppBar + BottomBar overlay. Phải tắt window insets ở đây để không cộng
-        // dồn → tránh dải trắng giữa topbar và Weather widget.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { padding ->
-        PullToRefreshBox(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            state = pullState,
-            isRefreshing = isLoading && prices.isNotEmpty(),
-            onRefresh = {
-                viewModel.refresh()
-                weatherViewModel.load(forceRefresh = true)
-                newsViewModel.refresh()
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    WeatherWidget(
-                        weather = weatherState.weather,
-                        isLoading = weatherState.isLoading,
-                        errorMessage = weatherState.errorMessage,
-                        isStale = weatherState.isStale,
-                        onRefresh = {
+            // Weather không cố định trên đỉnh — đã chiếm gần nửa màn hình nếu sticky.
+            // Đưa vào item đầu của LazyColumn NewsPage → cuộn 1 chút là tự ẩn, chỉ TabRow ở lại.
+            // TabRow fixed phía trên pager để user luôn nhảy được tab kể cả đang ở cuối list.
+            MarketTabRow(
+                selectedTab = pagerState.currentPage,
+                onSelect = { tab ->
+                    scope.launch { pagerState.animateScrollToPage(tab) }
+                }
+            )
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> NewsPage(
+                        listState = newsListState,
+                        articles = newsArticles,
+                        selectedTopic = newsTopic,
+                        isRefreshing = newsUi.isRefreshing,
+                        errorMessage = newsUi.errorMessage,
+                        isPremium = isPremium,
+                        weatherState = weatherState,
+                        onWeatherRefresh = {
                             permissionLauncher.launch(
                                 arrayOf(
                                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -194,83 +210,31 @@ fun MarketScreen(
                                 )
                             )
                             weatherViewModel.load(forceRefresh = true)
-                        }
-                    )
-                }
-
-                // Native ad — chỉ hiển thị cho user Free, fade out reactive khi upgrade Premium.
-                // Đặt ngay sau Weather (vị trí #2) để hiện trong viewport đầu tiên không cần scroll.
-                // Sau Weather thay vì sau News vì NewsSection render 8 bài dọc → ad sẽ rơi xuống dưới fold.
-                item(key = "native_ad") {
-                    AnimatedVisibility(
-                        visible = !isPremium,
-                        enter = fadeIn(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        NativeAdPlaceholder(onClick = { /* TODO: deep link landing page */ })
-                    }
-                }
-
-                item {
-                    NewsSection(
-                        articles = newsArticles,
-                        selectedTopic = newsTopic,
-                        isRefreshing = newsUi.isRefreshing,
-                        errorMessage = newsUi.errorMessage,
+                        },
                         onSelectTopic = newsViewModel::selectTopic,
-                        onRefresh = newsViewModel::refresh,
+                        onRefresh = {
+                            newsViewModel.refresh()
+                            weatherViewModel.load(forceRefresh = true)
+                        },
+                        onNewsRefresh = newsViewModel::refresh,
                         onDismissError = newsViewModel::clearError
                     )
-                }
-
-                // Section "Giá rao của bạn" — chỉ hiện cho TRADER đã có bids.
-                if (isTrader && myBids.isNotEmpty()) {
-                    item {
-                        SectionTitle(
-                            title = "Giá rao của bạn",
-                            subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
-                        )
-                    }
-                    items(myBids, key = { "mine_${it.id}" }) { bid ->
-                        MyBidCard(
-                            bid = bid,
-                            onEdit = {
-                                editingBid = bid
-                                showEditor = true
-                            },
-                            onDelete = { bidsViewModel.deleteBid(bid.id) }
-                        )
-                    }
-                }
-
-                item {
-                    SectionTitle(
-                        title = "Bảng giá thu mua",
-                        subtitle = "Cập nhật từ thương lái uy tín · ${prices.size} kết quả"
+                    else -> PricesPage(
+                        listState = pricesListState,
+                        prices = prices,
+                        isLoading = isLoading,
+                        filter = filter,
+                        isTrader = isTrader,
+                        myBids = myBids,
+                        onRefresh = { viewModel.refresh() },
+                        onSelectTrend = viewModel::setTrendFilter,
+                        onSelectVariety = viewModel::selectVariety,
+                        onEditBid = { bid ->
+                            editingBid = bid
+                            showEditor = true
+                        },
+                        onDeleteBid = { id -> bidsViewModel.deleteBid(id) }
                     )
-                }
-
-                item {
-                    FilterChipsRow(
-                        selectedTrend = filter.trend,
-                        onSelectTrend = { viewModel.setTrendFilter(it) }
-                    )
-                }
-
-                if (isLoading && prices.isEmpty()) {
-                    item { MarketSkeletonList(items = 4) }
-                } else {
-                    items(prices, key = { it.id }) { price ->
-                        RicePriceCard(
-                            price = price,
-                            onClick = { viewModel.selectVariety(price.variety) }
-                        )
-                    }
-                }
-
-                item {
-                    FooterNote()
-                    Spacer(Modifier.height(80.dp))
                 }
             }
         }
@@ -305,7 +269,6 @@ fun MarketScreen(
         }
     }
 
-    // Bid editor sheet — chỉ hiện cho trader.
     if (showEditor && isTrader) {
         ModalBottomSheet(
             onDismissRequest = { showEditor = false },
@@ -321,6 +284,219 @@ fun MarketScreen(
                 onDismiss = { showEditor = false }
             )
         }
+    }
+}
+
+/**
+ * Page 0 — Tin tức nông nghiệp (+ Weather card + Native Ad nếu user Free).
+ * PullToRefreshBox riêng → kéo xuống refresh news + weather, không động đến market.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewsPage(
+    listState: LazyListState,
+    articles: List<com.GiaThinh.canlua.data.model.NewsArticle>,
+    selectedTopic: com.GiaThinh.canlua.data.model.NewsTopic?,
+    isRefreshing: Boolean,
+    errorMessage: String?,
+    isPremium: Boolean,
+    weatherState: com.GiaThinh.canlua.ui.viewmodel.WeatherUiState,
+    onWeatherRefresh: () -> Unit,
+    onSelectTopic: (com.GiaThinh.canlua.data.model.NewsTopic?) -> Unit,
+    onRefresh: () -> Unit,
+    onNewsRefresh: () -> Unit,
+    onDismissError: () -> Unit
+) {
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        modifier = Modifier.fillMaxSize(),
+        state = pullState,
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(key = "weather") {
+                AnimatedVisibility(
+                    visible = !weatherState.isRateLimited,
+                    enter = fadeIn(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    WeatherWidget(
+                        weather = weatherState.weather,
+                        isLoading = weatherState.isLoading,
+                        errorMessage = weatherState.errorMessage,
+                        isStale = weatherState.isStale,
+                        onRefresh = onWeatherRefresh
+                    )
+                }
+            }
+
+            item(key = "native_ad") {
+                AnimatedVisibility(
+                    visible = !isPremium,
+                    enter = fadeIn(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    NativeAdPlaceholder(onClick = { /* TODO: deep link landing page */ })
+                }
+            }
+
+            item {
+                NewsSection(
+                    articles = articles,
+                    selectedTopic = selectedTopic,
+                    isRefreshing = isRefreshing,
+                    errorMessage = errorMessage,
+                    onSelectTopic = onSelectTopic,
+                    onRefresh = onNewsRefresh,
+                    onDismissError = onDismissError
+                )
+            }
+
+            item { Spacer(Modifier.height(40.dp)) }
+        }
+    }
+}
+
+/**
+ * Page 1 — Bảng giá lúa: bids của trader (nếu có) + bảng giá thu mua chung.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PricesPage(
+    listState: LazyListState,
+    prices: List<com.GiaThinh.canlua.data.model.RicePrice>,
+    isLoading: Boolean,
+    filter: com.GiaThinh.canlua.ui.viewmodel.MarketFilter,
+    isTrader: Boolean,
+    myBids: List<FirestoreRicePrice>,
+    onRefresh: () -> Unit,
+    onSelectTrend: (String?) -> Unit,
+    onSelectVariety: (String?) -> Unit,
+    onEditBid: (FirestoreRicePrice) -> Unit,
+    onDeleteBid: (String) -> Unit
+) {
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        modifier = Modifier.fillMaxSize(),
+        state = pullState,
+        isRefreshing = isLoading && prices.isNotEmpty(),
+        onRefresh = onRefresh
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (isTrader && myBids.isNotEmpty()) {
+                item {
+                    SectionTitle(
+                        title = "Giá rao của bạn",
+                        subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
+                    )
+                }
+                items(myBids, key = { "mine_${it.id}" }) { bid ->
+                    MyBidCard(
+                        bid = bid,
+                        onEdit = { onEditBid(bid) },
+                        onDelete = { onDeleteBid(bid.id) }
+                    )
+                }
+            }
+
+            item {
+                SectionTitle(
+                    title = "Bảng giá thu mua",
+                    subtitle = "Cập nhật từ thương lái uy tín · ${prices.size} kết quả"
+                )
+            }
+
+            item {
+                FilterChipsRow(
+                    selectedTrend = filter.trend,
+                    onSelectTrend = onSelectTrend
+                )
+            }
+
+            if (isLoading && prices.isEmpty()) {
+                item { MarketSkeletonList(items = 4) }
+            } else {
+                items(prices, key = { it.id }) { price ->
+                    RicePriceCard(
+                        price = price,
+                        onClick = { onSelectVariety(price.variety) }
+                    )
+                }
+            }
+
+            item {
+                FooterNote()
+                Spacer(Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Tab row "Tin tức | Bảng giá lúa" — đồng bộ 2 chiều với HorizontalPager.
+ * Tap tab → animateScrollToPage; vuốt ngang trên pager → indicator tự follow.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MarketTabRow(
+    selectedTab: Int,
+    onSelect: (Int) -> Unit
+) {
+    PrimaryTabRow(
+        selectedTabIndex = selectedTab,
+        containerColor = AppColors.Surface,
+        contentColor = AppColors.GreenPrimary,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Tab(
+            selected = selectedTab == 0,
+            onClick = { onSelect(0) },
+            text = {
+                Text(
+                    "Tin tức",
+                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium
+                )
+            },
+            icon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Article,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            selectedContentColor = AppColors.GreenPrimary,
+            unselectedContentColor = AppColors.TextSecondary
+        )
+        Tab(
+            selected = selectedTab == 1,
+            onClick = { onSelect(1) },
+            text = {
+                Text(
+                    "Bảng giá lúa",
+                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium
+                )
+            },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.PriceChange,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            selectedContentColor = AppColors.GreenPrimary,
+            unselectedContentColor = AppColors.TextSecondary
+        )
     }
 }
 

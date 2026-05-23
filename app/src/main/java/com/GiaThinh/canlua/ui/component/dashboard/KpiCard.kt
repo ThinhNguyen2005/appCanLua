@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.ui.theme.AppColors
@@ -52,8 +53,8 @@ fun KpiCard(
     deltaLabel: String? = null,
     highlight: Boolean = false
 ) {
-    val padding = if (highlight) 18.dp else 14.dp
-    val valueSize = if (highlight) 24.sp else 18.sp
+    val padding = if (highlight) 16.dp else 14.dp
+    val valueSize = if (highlight) 22.sp else 18.sp
 
     Card(
         modifier = modifier,
@@ -66,37 +67,47 @@ fun KpiCard(
                 .fillMaxWidth()
                 .padding(padding)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(accentColor.copy(alpha = 0.14f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = label,
-                    fontSize = 12.sp,
-                    color = AppColors.TextSecondary,
-                    fontWeight = FontWeight.Medium
+            // Icon hàng riêng — label đặt dưới full width để không bao giờ xuống dòng
+            // do thiếu chỗ. Trước đây icon + label chung Row khiến "Sản lượng đã bán"
+            // wrap 2 dòng làm các card lệch chiều cao.
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accentColor.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            Spacer(Modifier.height(if (highlight) 12.dp else 8.dp))
+            Spacer(Modifier.height(10.dp))
 
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = AppColors.TextSecondary,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            // Value autoshrink — value số dài "1.234.567 đ" sẽ … chứ không xuống dòng,
+            // giữ chiều cao card đồng nhất giữa "1,2 tr" và "12,5 tr".
             Text(
                 text = value,
                 fontSize = valueSize,
                 fontWeight = FontWeight.ExtraBold,
-                color = AppColors.TextPrimary
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
 
             if (deltaPercent != null || deltaLabel != null) {

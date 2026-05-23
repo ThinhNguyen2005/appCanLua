@@ -1,3 +1,5 @@
+@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
+
 package com.GiaThinh.canlua.ui.screen.map
 
 import androidx.compose.foundation.background

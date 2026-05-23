@@ -89,7 +89,7 @@
     <string name="create_card_counterparty_phone_label">%1$s 电话</string>
     <string name="create_card_counterparty_phone_placeholder">选填 — 例：0901 234 567</string>
     <string name="create_card_section_payment">价格与支付</string>
-    <string name="create_card_weight_hint">💡 皮重和杂质将在实际称重时输入。目前仅需输入测得的水分。</string>
+    <string name="create_card_weight_hint">💡这些信息都可以在实际称重后进行调整。</string>
     <string name="create_card_moisture_label">水分 (%)</string>
     <string name="create_card_moisture_placeholder">例：18.5</string>
     <string name="create_card_price_label">单价 (盾/公斤)</string>
@@ -100,9 +100,12 @@
     <string name="card_item_locked_content">已锁定</string>
     <string name="card_item_delete_content">删除</string>
     <string name="card_item_moisture">水分 %1$s%%</string>
+    <string name="card_item_bag_weight">袋重 %1$s 公斤</string>
+    <string name="card_item_impurity">杂质 %1$s 公斤</string>
     <string name="card_item_weigh_count">称重 %1$d 次</string>
     <string name="card_item_remaining_amount">剩余：%1$s 盾</string>
     <string name="card_item_qr_verified">✓ 二维码已验证</string>
+    <string name="card_item_paid_in_full">已付清</string>
     <string name="weight_label_weight">重量</string>
     <string name="weight_label_total_weight">总重量</string>
     <string name="weight_label_before_tare">未扣皮重</string>
@@ -128,6 +131,33 @@
     <string name="weight_metrics_impurity_info_description">稻谷中杂质（秸秆、泥沙、瘪粒）的重量。双方协定直接按固定公斤数扣除，以保证稻谷买家的公平权益。</string>
     <string name="weight_metrics_moisture_info_title">💧 水分折扣</string>
     <string name="weight_metrics_moisture_info_description">田间测得的稻谷实际水分。商业标准水分通常为 14%。如果实际水分偏高，将按双方协定比例从实际净重中扣除烘干损耗。</string>
+    <string name="weight_metrics_formula_info_content">查看计算公式</string>
+    <string name="weight_metrics_formula_info_title">📐 金额计算公式</string>
+    <string name="weight_metrics_formula_info_description">1) 净重 = (总公斤 − 袋重 × 袋数 − 杂质) × (100 − 水分) ÷ (100 − 14).\n\n2) 总金额 = 净重 × 每公斤单价。</string>
+    <string name="weight_metrics_impurity_label_percent">杂质 (%)</string>
+
+    <!-- Weigh options sheet (per-card modes) -->
+    <string name="weigh_options_title">称重选项</string>
+    <string name="weigh_options_icon_content">称重选项</string>
+    <string name="weigh_options_done">完成</string>
+    <string name="weigh_options_impurity_unit">杂质单位</string>
+    <string name="weigh_options_impurity_kg">按公斤</string>
+    <string name="weigh_options_impurity_percent">按 %</string>
+    <string name="weigh_options_impurity_hint_kg">直接扣除杂质公斤数。</string>
+    <string name="weigh_options_impurity_hint_percent" formatted="false">杂质按扣袋后稻谷的 % 计算。</string>
+    <string name="weigh_options_bag_method">袋重计算方式</string>
+    <string name="weigh_options_bag_single">单袋重量</string>
+    <string name="weigh_options_bag_sample">取 n 袋样品</string>
+    <string name="weigh_options_bag_hint_single">输入 1 个空袋重 × 袋数。</string>
+    <string name="weigh_options_bag_hint_sample">称 n 个空袋 = X 公斤 → 平均 × 总袋数。</string>
+    <string name="weigh_options_bag_sample_count">样品袋数 (n)</string>
+    <string name="weigh_options_bag_sample_weight">n 袋重量 (公斤)</string>
+    <string name="weigh_options_input_scale">公斤输入规格</string>
+    <string name="weigh_options_input_small">小 &lt; 100 公斤</string>
+    <string name="weigh_options_input_large">大 ≥ 100 公斤</string>
+    <string name="weigh_options_input_hint_small">输入 3 位: 例 503 → 50.3 公斤。自动跳下格。</string>
+    <string name="weigh_options_input_hint_large">输入 4 位: 例 1503 → 150.3 公斤。自动跳下格。</string>
+
     <string name="weight_input_back_content">返回</string>
     <string name="weight_input_unlock_content">解锁</string>
     <string name="weight_input_lock_content">锁定</string>
@@ -291,9 +321,11 @@
     <string name="pdf_deposit">抵扣定金</string>
     <string name="pdf_paid">实付金额</string>
     <string name="pdf_remaining">尚欠余款</string>
+    <string name="pdf_excess_refund">应退商贩</string>
+    <string name="pdf_amount_due">尚需补付</string>
     <string name="pdf_status">结算状态</string>
     <string name="pdf_paid_full">已全额结清</string>
-    <string name="pdf_debt_remaining">尚有余款未结</string>
+    <string name="pdf_debt_remaining">尚未付清</string>
     <string name="personal_information">个人信息</string>
     <string name="save">保存</string>
     <string name="edit">编辑</string>
@@ -367,11 +399,8 @@
     <string name="pdf_column_tare">皮重 (kg)</string>
     <string name="pdf_column_impurity">杂质 (kg)</string>
     <string name="pdf_column_net_weight">净重 (kg)</string>
-    <string name="pdf_section_verification">V. 验真与电子防伪</string>
-    <string name="pdf_signature_status">电子签名状态</string>
-    <string name="pdf_signature_unsigned">未签署</string>
-    <string name="pdf_verification_code">验真编码</string>
-    <string name="pdf_section_confirmation">VI. 双方签字确认</string>
+    <string name="pdf_table_total">合计</string>
+    <string name="pdf_section_confirmation">V. 双方签字确认</string>
     <string name="pdf_sender">送交方签字</string>
     <string name="pdf_receiver">接收方签字</string>
     <string name="pdf_creator">制单人签字</string>
@@ -384,6 +413,23 @@
     <string name="pdf_qr_instruction">扫描上方二维码进行账目对账</string>
     <string name="pdf_card_date">单据 #%1$d · %2$s</string>
     <string name="pdf_footer">第 %1$d 页 · 由 Cân Lúa Mobile 生成 · Hash %2$s · %3$s</string>
+
+    <!-- Help Bottom Sheet -->
+    <string name="help_sheet_open_content">打开帮助与使用指南</string>
+    <string name="help_sheet_title">帮助与使用指南</string>
+    <string name="help_sheet_subtitle">称稻快速使用技巧</string>
+    <string name="help_tip_input_title">快速录入重量</string>
+    <string name="help_tip_input_desc">小档：输入 \"503\" → 自动跳到下一格 = 50.3 kg。大档：\"1503\" → 150.3 kg。在主页 → Tune 图标可切换档位。</string>
+    <string name="help_tip_lock_title">完成后锁定单据</string>
+    <string name="help_tip_lock_desc">点击顶栏锁形图标冻结数据，避免结算后误改。</string>
+    <string name="help_tip_options_title">自定义称量方式</string>
+    <string name="help_tip_options_desc">在主页 → Tune 图标设置杂质（kg/%）和包装方式（单袋/抽样 N 袋）的默认值。</string>
+    <string name="help_tip_swipe_title">滑动修改/删除</string>
+    <string name="help_tip_swipe_desc">表格中：长按编辑，左滑删除袋子。已锁定的单据将禁止这些操作。</string>
+    <string name="help_tip_offline_title">无网仍可称量</string>
+    <string name="help_tip_offline_desc">数据本地保存，连网后自动同步云端 — 在田间使用安心。</string>
+    <string name="help_btn_tutorial">观看使用教程</string>
+    <string name="help_btn_web">访问官网</string>
     <string name="settings_premium_title">Premium 套餐</string>
     <string name="settings_premium_early_adopter">早期用户</string>
     <string name="settings_premium_active">已启用</string>

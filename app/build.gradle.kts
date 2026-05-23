@@ -1,15 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
-    id("com.google.firebase.firebase-perf")
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.firebase.perf)
 }
-
-import java.util.Properties
 
 // Load API keys từ local.properties (không commit). Fallback empty string nếu chưa cấu hình.
 val localProps = Properties().apply {
@@ -100,67 +100,69 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    ksp("androidx.hilt:hilt-compiler:1.2.0")
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-crashlytics")
-    implementation("com.google.firebase:firebase-perf")
-    implementation("com.google.firebase:firebase-storage")
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.perf)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.remoteconfig)
+    implementation(libs.play.services.auth)
 
+    // Credentials & Identity
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
-    implementation("androidx.credentials:credentials:1.6.0-beta03")
-    implementation("androidx.credentials:credentials-play-services-auth:1.6.0-beta03")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-    // Coroutines (đảm bảo version mới)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.play.services)
 
     // WorkManager (auto sync)
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Chart library (Vico - Jetpack Compose native)
-    implementation("com.patrykandpatrick.vico:compose:2.0.0-beta.1")
-    implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-beta.1")
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
 
     // QR Code generate
-    implementation("com.google.zxing:core:3.5.3")
+    implementation(libs.zxing.core)
 
     // QR Code scan (ML Kit + CameraX)
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
     // Location (GPS for weather + map)
-    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation(libs.play.services.location)
 
-    // Google Maps Compose 6.x + Clustering utils
-    implementation("com.google.maps.android:maps-compose:6.4.1")
-    implementation("com.google.maps.android:maps-compose-utils:6.4.1")
-    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    // Google Maps Compose + Clustering utils
+    implementation(libs.maps.compose)
+    implementation(libs.maps.compose.utils)
+    implementation(libs.play.services.maps)
 
     // Accompanist Permissions
-    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
+    implementation(libs.accompanist.permissions)
 
     // Networking (OpenRouter AI API)
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.gson)
 
     // Markdown renderer for AI responses, including tables
-    implementation("io.noties.markwon:core:4.6.2")
-    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation(libs.markwon.core)
+    implementation(libs.markwon.ext.tables)
 
     // Coil — load thumbnail bài báo trong NewsSection
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.coil.compose)
 
     // AndroidX Browser — Chrome Custom Tab cho mở bài báo external
-    implementation("androidx.browser:browser:1.8.0")
+    implementation(libs.androidx.browser)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

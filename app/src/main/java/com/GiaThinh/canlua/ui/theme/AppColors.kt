@@ -40,7 +40,11 @@ object AppColors {
         @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.TextHint else Color(0xFF757575), label = "TextHint").value
         
     val Divider: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.Divider else Color(0xFFEEEEEE), label = "Divider").value
+        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.Divider else Color(0xFFD0D0D0), label = "Divider").value
+
+    /** Divider đậm hơn cho ngữ cảnh cần phân tách rõ (ngoài trời, độ sáng thấp). */
+    val DividerStrong: Color
+        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.DividerStrong else Color(0xFFB8B8B8), label = "DividerStrong").value
 
     // Status
     val Success = Color(0xFF43A047)
@@ -59,6 +63,20 @@ object AppColors {
     // Locked card
     val LockedBg = Color(0xFFFCE4EC)
     val LockedText = Color(0xFFC62828)
+
+    /** Tint nền card khi phiếu khoá — hồng rất nhạt, không nuốt nội dung. */
+    val LockedSurface: Color
+        @Composable get() = animateColorAsState(
+            if (isSystemInDarkTheme()) Dark.LockedSurface else Color(0xFFFFF1F3),
+            label = "LockedSurface"
+        ).value
+
+    /** Tint nền card khi đã trả đủ tiền — xanh rất nhạt. */
+    val PaidSurface: Color
+        @Composable get() = animateColorAsState(
+            if (isSystemInDarkTheme()) Dark.PaidSurface else Color(0xFFF1F8F2),
+            label = "PaidSurface"
+        ).value
 
     // Coming Soon
     val ComingSoonBg = Color(0xFFF3E5F5)
@@ -109,7 +127,10 @@ object AppColors {
         val TextPrimary = Color(0xFFE0E0E0)
         val TextSecondary = Color(0xFFE0E0E0)
         val TextHint = Color(0xFFAAAAAA)
-        val Divider = Color(0xFF333333)
+        val Divider = Color(0xFF3D3D3D)
+        val DividerStrong = Color(0xFF555555)
+        val LockedSurface = Color(0xFF2A1F22)
+        val PaidSurface = Color(0xFF1A2820)
         val GreenPrimary = Color(0xFFA5D6A7) // Green80 (light soft green)
         val GreenSurface = Color(0xFF1E3A24) // Soft dark forest green
         val RemainingHighlight = Color(0xFFEF5350) // Đỏ mềm cho dark

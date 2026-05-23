@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua.repository
 
+import android.util.Log
 import com.GiaThinh.canlua.BuildConfig
 import com.GiaThinh.canlua.data.dao.WeatherCacheDao
 import com.GiaThinh.canlua.data.location.GeoPoint
@@ -9,6 +10,7 @@ import com.GiaThinh.canlua.data.model.WeatherInfo
 import com.GiaThinh.canlua.data.model.toCache
 import com.GiaThinh.canlua.data.model.toInfo
 import com.GiaThinh.canlua.data.remote.HttpClient
+import com.GiaThinh.canlua.data.remote.HttpException
 import com.GiaThinh.canlua.data.remote.weather.OpenWeatherResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
+private const val TAG = "WeatherRepo"
+
 /**
  * UI state cho weather. Dùng sealed class để encode 3 trạng thái rõ ràng.
  */
@@ -25,14 +29,16 @@ sealed class WeatherState {
     object Loading : WeatherState()
     data class Data(val info: WeatherInfo, val isStale: Boolean) : WeatherState()
     data class Error(val message: String?, val cached: WeatherInfo? = null) : WeatherState()
+    object RateLimited : WeatherState()
 }
 
 /**
  * Phase 2.3 + cache offline:
  * - Cache singleton row trong Room (id=1).
- * - Fresh: <10 phút → serve cache, không call API.
- * - Stale: 10 phút–24h → serve cache + refresh ngầm.
+ * - Fresh: <60 phút → serve cache, không call API.
+ * - Stale: 60 phút–24h → serve cache + refresh ngầm.
  * - Expired: >24h → coi như không có cache (vẫn dùng nếu offline).
+ * - HTTP 429: emit RateLimited để UI ẩn card.
  */
 @Singleton
 class WeatherRepository @Inject constructor(
@@ -40,7 +46,7 @@ class WeatherRepository @Inject constructor(
     private val locationProvider: LocationProvider,
     private val cacheDao: WeatherCacheDao
 ) {
-    private val freshTtlMs = 10 * 60 * 1000L
+    private val freshTtlMs = 60 * 60 * 1000L
     private val usableTtlMs = 24 * 60 * 60 * 1000L
 
     /**
@@ -56,22 +62,35 @@ class WeatherRepository @Inject constructor(
         if (cached != null) {
             val age = now - cached.cachedAt
             val isStale = age >= freshTtlMs
+            Log.d(TAG, "observeWeather: cache hit, ageMs=$age isStale=$isStale forceRefresh=$forceRefresh")
             emit(WeatherState.Data(cached.toInfo(), isStale = isStale))
 
             // Fresh + không force → dừng, tiết kiệm API call
             if (!isStale && !forceRefresh) return@flow
         } else {
+            Log.d(TAG, "observeWeather: no cache, forceRefresh=$forceRefresh")
             emit(WeatherState.Loading)
         }
 
         // Refresh
+        Log.d(TAG, "observeWeather: refreshing from network…")
         val result = fetchFromNetwork()
         result.onSuccess { fresh ->
+            Log.d(TAG, "observeWeather: network success location=${fresh.location} temp=${fresh.temperature}")
             cacheDao.upsert(fresh.toCache())
             emit(WeatherState.Data(fresh, isStale = false))
         }.onFailure { err ->
-            if (cached == null) {
+            if (err is HttpException) {
+                Log.e(TAG, "observeWeather: HTTP ${err.code} body=${err.errorBody}")
+            } else {
+                Log.e(TAG, "observeWeather: network failure (${err.javaClass.simpleName}): ${err.message}", err)
+            }
+            if (err is HttpException && err.code == 429) {
+                emit(WeatherState.RateLimited)
+            } else if (cached == null) {
                 emit(WeatherState.Error(err.message))
+            } else {
+                Log.w(TAG, "observeWeather: keeping stale cache after network failure")
             }
             // có cache rồi → giữ nguyên emit Data trước đó
         }
@@ -86,25 +105,37 @@ class WeatherRepository @Inject constructor(
 
     private suspend fun fetchFromNetwork(): Result<WeatherInfo> {
         if (BuildConfig.OPENWEATHER_API_KEY.isEmpty()) {
+            Log.e(TAG, "fetchFromNetwork: OPENWEATHER_API_KEY rỗng — kiểm tra local.properties + BuildConfig")
             return Result.failure(IllegalStateException(
                 "Thiếu OPENWEATHER_API_KEY trong local.properties"
             ))
         }
-        val location = locationProvider.getCurrentLocation()
-            ?: GeoPoint(10.045, 105.746) // fallback Cần Thơ centroid
+        val locFromProvider = locationProvider.getCurrentLocation()
+        if (locFromProvider == null) {
+            Log.w(TAG, "fetchFromNetwork: locationProvider null — fallback Cần Thơ centroid (10.045, 105.746)")
+        } else {
+            Log.d(TAG, "fetchFromNetwork: location lat=${locFromProvider.lat} lon=${locFromProvider.lon}")
+        }
+        val location = locFromProvider ?: GeoPoint(10.045, 105.746)
 
         return try {
             val url = "https://api.openweathermap.org/data/2.5/weather" +
                 "?lat=${location.lat}&lon=${location.lon}" +
                 "&appid=${BuildConfig.OPENWEATHER_API_KEY}" +
                 "&units=metric&lang=vi"
+            // KHÔNG log full url — chứa appid. Chỉ log host + lat/lon.
+            Log.d(TAG, "fetchFromNetwork: GET api.openweathermap.org lat=${location.lat} lon=${location.lon}")
             val response: OpenWeatherResponse = httpClient.get(url)
 
             // OWM `name` hàng thường trả tên thành phố lớn (vd "Ho Chi Minh City")
             // chứ không đúng Quận. Override bằng Geocoder native để lấy "Quận 12, TP. HCM".
             val accurateName = locationProvider.reverseGeocode(location.lat, location.lon)
             Result.success(response.toWeatherInfo(overrideName = accurateName))
+        } catch (e: HttpException) {
+            Log.e(TAG, "fetchFromNetwork: HTTP ${e.code} body=${e.errorBody}")
+            Result.failure(e)
         } catch (e: Exception) {
+            Log.e(TAG, "fetchFromNetwork: ${e.javaClass.simpleName}: ${e.message}", e)
             Result.failure(e)
         }
     }

@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,7 +26,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -37,9 +39,9 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -103,6 +105,7 @@ fun CardListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val selectedFilter by viewModel.selectedVarietyFilter.collectAsState()
     val availableVarieties by viewModel.availableVarieties.collectAsState()
+    val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsState()
     val selectedSeason by viewModel.selectedSeasonFilter.collectAsState()
     val availableSeasons by viewModel.availableSeasons.collectAsState()
     val profileState by profileViewModel.profile.collectAsState(initial = null)
@@ -117,7 +120,16 @@ fun CardListScreen(
     var cardToDelete by remember { mutableStateOf<com.GiaThinh.canlua.data.model.Card?>(null) }
     var manualRefreshing by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    val fabVisible = listState.isScrollingUp() || cards.isEmpty()
+    val scrollingUp = listState.isScrollingUp()
+    val fabVisible = scrollingUp || cards.isEmpty()
+
+    // Đồng bộ ẩn/hiện bottom bar theo hướng cuộn — FAB không bị thanh điều hướng chồng.
+    LaunchedEffect(scrollingUp, cards.isEmpty()) {
+        com.GiaThinh.canlua.ui.util.BottomBarVisibility.set(scrollingUp || cards.isEmpty())
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { com.GiaThinh.canlua.ui.util.BottomBarVisibility.reset() }
+    }
 
     // Tự động tắt refreshing khi sync xong (hoặc hết 800ms giả lập để user thấy phong cách)
     LaunchedEffect(manualRefreshing, syncStatus) {
@@ -271,16 +283,21 @@ fun CardListScreen(
             }
         }
 
-        // FAB — auto-hide khi scroll xuống đọc danh sách
+        // FAB — auto-hide khi scroll xuống đọc danh sách; bottom bar cũng tự ẩn theo
+        // (xem LaunchedEffect ở trên). Khi cả hai cùng hiện, FAB sit cao hơn để không
+        // bị thanh điều hướng chồng — dùng WindowInsets.navigationBars + offset bar.
+        val navBarPadding = androidx.compose.foundation.layout.WindowInsets.navigationBars
+            .asPaddingValues()
+            .calculateBottomPadding()
         AnimatedVisibility(
             visible = fabVisible,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 88.dp)
+                .padding(end = 16.dp, bottom = 96.dp + navBarPadding)
         ) {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = {
                     // Premium gate: free user tối đa FREE_CARDS_PER_DAY phiếu/ngày.
                     // Đếm reactive từ cardsToday → nếu vượt mở dialog upsell thay vì tạo.
@@ -293,10 +310,14 @@ fun CardListScreen(
                 },
                 containerColor = AppColors.GreenPrimary,
                 contentColor = AppColors.CardBg,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Tạo phiếu cân")
-            }
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = {
+                    Text(
+                        text = "Tạo phiếu cân",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            )
         }
     }
 
@@ -304,9 +325,10 @@ fun CardListScreen(
     if (showCreateDialog) {
         CreateCardDialog(
             ownerName = ownerName,
+            suggestedVarieties = suggestedVarieties,
             mode = if (isTrader) CreateCardMode.TRADER else CreateCardMode.FARMER,
             onDismiss = { showCreateDialog = false },
-            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit ->
+            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, bagWeight, impurityWeight ->
                 // FARMER: name=farmer (owner), traderName=counterparty.
                 // TRADER: name=farmer (counterparty), traderName=trader (owner).
                 val cardName = if (isTrader) counterpartyName else ownerName
@@ -314,14 +336,16 @@ fun CardListScreen(
                 val cardTraderPhone = if (isTrader) profileState?.phone.orEmpty() else counterpartyPhone
                 viewModel.createNewCard(
                     name = cardName,
-                    cccd = "",
+                    cccd = cccd,
                     traderName = cardTraderName,
                     pricePerKg = price,
                     depositAmount = deposit,
                     riceVariety = variety,
                     moisturePercent = moisture,
                     seasonLabel = season,
-                    traderPhone = cardTraderPhone
+                    traderPhone = cardTraderPhone,
+                    bagWeight = bagWeight,
+                    impurityWeight = impurityWeight
                 )
                 // Tăng counter chống gian lận. Counter chỉ tăng — xoá phiếu cũ
                 // KHÔNG giảm → user free không thể bypass quota 3 phiếu/ngày.

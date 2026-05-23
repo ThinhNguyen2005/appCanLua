@@ -12,12 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.theme.lockedAwareTextFieldColors
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -36,6 +39,7 @@ fun PaymentResultCard(
     onPaidFullToggle: (Boolean) -> Unit
 ) {
     val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
+    val haptic = LocalHapticFeedback.current
     val isPaidFull = remainingAmount <= 0.0 && totalAmount > 0
 
     var depositText by remember(depositAmount) {
@@ -77,7 +81,8 @@ fun PaymentResultCard(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = lockedAwareTextFieldColors()
             )
 
             OutlinedTextField(
@@ -94,7 +99,8 @@ fun PaymentResultCard(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = lockedAwareTextFieldColors()
             )
 
             // Còn lại (big highlight) - High Contrast
@@ -151,7 +157,12 @@ fun PaymentResultCard(
                 Text(stringResource(R.string.weight_payment_paid_full_toggle), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 Switch(
                     checked = isPaidFull,
-                    onCheckedChange = { if (!isLocked) onPaidFullToggle(it) },
+                    onCheckedChange = {
+                        if (!isLocked) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onPaidFullToggle(it)
+                        }
+                    },
                     enabled = !isLocked,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = AppColors.CardBg,

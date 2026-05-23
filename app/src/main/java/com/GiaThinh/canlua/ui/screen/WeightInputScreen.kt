@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -89,11 +91,26 @@ fun WeightInputScreen(
 
     val liveTotalWeight = remember(weightEntries) { weightEntries.sumOf { it.weight } }
     val liveBagCount = weightEntries.size
-    val liveNetWeight = remember(liveTotalWeight, currentCard?.bagWeight, currentCard?.moisturePercent) {
-        RiceCalculator.calcNetWeight(
-            rawWeight = liveTotalWeight,
+    val liveNetWeight = remember(
+        liveTotalWeight,
+        liveBagCount,
+        currentCard?.bagWeight,
+        currentCard?.impurityWeight,
+        currentCard?.moisturePercent,
+        currentCard?.impurityIsPercent,
+        currentCard?.bagMethodIsSampling,
+        currentCard?.bagSampleCount,
+        currentCard?.bagSampleTotalWeight
+    ) {
+        RiceCalculator.calcNetWeightWithModes(
+            totalRaw = liveTotalWeight,
+            bagCount = liveBagCount,
             bagWeight = currentCard?.bagWeight ?: 0.0,
-            impurityWeight = 0.0,
+            bagMethodIsSampling = currentCard?.bagMethodIsSampling ?: false,
+            bagSampleCount = currentCard?.bagSampleCount ?: 0,
+            bagSampleTotalWeight = currentCard?.bagSampleTotalWeight ?: 0.0,
+            impurityValue = currentCard?.impurityWeight ?: 0.0,
+            impurityIsPercent = currentCard?.impurityIsPercent ?: false,
             moisturePercent = currentCard?.moisturePercent ?: 0.0
         )
     }
@@ -265,7 +282,8 @@ fun WeightInputScreen(
                         onBagWeightChange = { viewModel.updateCardBagWeight(cardId, it) },
                         onImpurityWeightChange = { viewModel.updateCardImpurityWeight(cardId, it) },
                         onMoistureChange = { viewModel.updateCardMoisture(cardId, it) },
-                        onPriceChange = { viewModel.updateCardPricePerKg(cardId, it) }
+                        onPriceChange = { viewModel.updateCardPricePerKg(cardId, it) },
+                        impurityIsPercent = card.impurityIsPercent
                     )
                 }
             }
@@ -338,7 +356,8 @@ fun WeightInputScreen(
                                         )
                                     )
                                 },
-                                isLocked = card.isLocked
+                                isLocked = card.isLocked,
+                                weightInputMode = card.weightInputMode
                             )
                             ColumnTotalsRow(calculateColumnTotals(table))
                         }
@@ -427,7 +446,8 @@ private fun WeightTableCard(
     onNeedNextTable: () -> Unit,
     onWeightEntered: (Double) -> Unit,
     onWeightUpdated: (WeightEntry, Double) -> Unit,
-    isLocked: Boolean
+    isLocked: Boolean,
+    weightInputMode: String = "SMALL"
 ) {
     val tableTotal = tableData.flatten().filterNotNull().sum()
     val focusRequesters = remember { List(5) { List(5) { FocusRequester() } } }
@@ -491,6 +511,7 @@ private fun WeightTableCard(
                                 },
                                 focusRequester = focusRequesters[rowIdx][colIdx],
                                 isLocked = isLocked,
+                                weightInputMode = weightInputMode,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -507,6 +528,9 @@ private fun parseWeightInput(input: String): Double? {
     return digits.toDoubleOrNull()?.div(10)
 }
 
+private fun maxInputDigits(mode: String): Int = if (mode == "LARGE") 4 else 3
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun GridCell(
     value: Double?,
@@ -514,6 +538,7 @@ private fun GridCell(
     onNextFocus: () -> Unit,
     focusRequester: FocusRequester,
     isLocked: Boolean,
+    weightInputMode: String,
     modifier: Modifier
 ) {
     val displayValue = value?.let {
@@ -524,17 +549,32 @@ private fun GridCell(
     val context = LocalContext.current
     val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
 
+    // Auto-lift: khi cell focus, kéo cell lên trên bàn phím để không bị che.
+    // bringIntoViewRequester phối hợp với .imePadding() của LazyColumn — IME pad
+    // đảm bảo view rút lại, bringIntoView scroll thêm để cell nằm trong vùng visible.
+    val bringIntoView = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
+
+    // Viền sắc nét cho điều kiện ngoài trời nắng / màn hình giảm sáng:
+    //  - Empty: nền trắng (CardBg) + viền xám đậm DividerStrong → cell rõ ranh giới
+    //  - Filled: nền GreenSurface + viền GreenPrimary 1.5dp
+    //  - Focused: viền GreenPrimary 2dp (dày hơn để nhận biết ô đang gõ)
+    val borderColor = when {
+        isFocused -> AppColors.GreenPrimary
+        value != null -> AppColors.GreenPrimary
+        else -> AppColors.DividerStrong
+    }
+    val borderWidth = if (isFocused) 2.dp else 1.5.dp
+    val cellBg = if (value != null) AppColors.GreenSurface else AppColors.CardBg
+
     Box(
         modifier = modifier
-            .heightIn(min = 60.dp) // Sử dụng chiều cao linh hoạt để hỗ trợ co giãn chữ hệ thống tốt hơn (Font Scale)
+            .heightIn(min = 60.dp)
             .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(if (value != null) AppColors.GreenSurface else MaterialTheme.colorScheme.surfaceVariant)
-            .border(
-                1.dp,
-                if (isFocused) AppColors.GreenPrimary else AppColors.Divider,
-                RoundedCornerShape(8.dp)
-            )
+            .background(cellBg)
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp))
+            .bringIntoViewRequester(bringIntoView)
             .then(
                 if (isLocked) {
                     Modifier.clickable(
@@ -551,10 +591,11 @@ private fun GridCell(
             BasicTextField(
                 value = if (isFocused) text else displayValue,
                 onValueChange = { input ->
-                    if (input.all { it.isDigit() } && input.length <= 3) {
+                    val maxLen = maxInputDigits(weightInputMode)
+                    if (input.all { it.isDigit() } && input.length <= maxLen) {
                         if (input.length > text.length) HapticUtil.textHandleMove(context)
                         text = input
-                        if (input.length == 3) {
+                        if (input.length == maxLen) {
                             parseWeightInput(input)?.let {
                                 if (it > 0) {
                                     text = ""
@@ -574,6 +615,11 @@ private fun GridCell(
                         isFocused = state.isFocused
                         if (state.isFocused && !wasFocused) {
                             text = ""
+                            // Đẩy cell vào tầm nhìn — chờ IME mở (~250ms) rồi mới scroll.
+                            scope.launch {
+                                delay(280L)
+                                runCatching { bringIntoView.bringIntoView() }
+                            }
                         }
                         if (!state.isFocused && wasFocused && text.isNotEmpty()) {
                             val entered = text
@@ -606,6 +652,7 @@ private fun ColumnTotalsRow(totals: List<Double>) {
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.GoldLight),
         elevation = CardDefaults.cardElevation(1.dp),
+        border = BorderStroke(1.5.dp, AppColors.GoldDark.copy(alpha = 0.6f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(12.dp)) {
@@ -619,7 +666,8 @@ private fun ColumnTotalsRow(totals: List<Double>) {
                             .heightIn(min = 48.dp) // Tăng chiều cao để người dùng trung niên dễ nhìn ngoài đồng ruộng
                             .padding(vertical = 2.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppColors.SurfaceContainer.copy(alpha = 0.7f)),
+                            .background(AppColors.SurfaceContainer.copy(alpha = 0.7f))
+                            .border(1.dp, AppColors.GoldDark.copy(alpha = 0.5f), RoundedCornerShape(6.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

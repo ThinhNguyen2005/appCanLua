@@ -26,7 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
@@ -403,7 +403,7 @@ private fun TransactionRow(item: TraderTransactionItem) {
                     modifier = Modifier.weight(1f)
                 )
                 MetricBox(
-                    icon = Icons.Filled.ReceiptLong,
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
                     label = "Còn lại",
                     value = formatCurrencyShort(item.remaining),
                     valueColor = if (item.isFullyPaid) AppColors.Success else AppColors.Error,
@@ -504,7 +504,7 @@ private fun EmptyTraderTransactions() {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Filled.ReceiptLong,
+                    Icons.AutoMirrored.Filled.ReceiptLong,
                     contentDescription = null,
                     tint = AppColors.GoldAccent,
                     modifier = Modifier.size(56.dp)
@@ -538,7 +538,7 @@ private fun FilteredEmptyState() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
-                Icons.Filled.ReceiptLong,
+                Icons.AutoMirrored.Filled.ReceiptLong,
                 contentDescription = null,
                 tint = AppColors.TextHint,
                 modifier = Modifier.size(40.dp)

@@ -35,7 +35,7 @@ import com.GiaThinh.canlua.data.converter.DateConverter
         NewsArticle::class,
         com.GiaThinh.canlua.data.model.DeletedCard::class
     ],
-    version = 15,
+    version = 17,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -73,7 +73,9 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_11_12,
                     MIGRATION_12_13,
                     MIGRATION_13_14,
-                    MIGRATION_14_15
+                    MIGRATION_14_15,
+                    MIGRATION_15_16,
+                    MIGRATION_16_17
                 ).setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 INSTANCE = instance
@@ -82,45 +84,45 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     "ALTER TABLE cards ADD COLUMN traderName TEXT NOT NULL DEFAULT ''"
                 )
             }
         }
 
         val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT NOT NULL, `region` TEXT NOT NULL, `note` TEXT NOT NULL, `role` TEXT NOT NULL)"
                 )
             }
         }
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE profiles ADD COLUMN cccd TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE profiles ADD COLUMN username TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE profiles ADD COLUMN email TEXT NOT NULL DEFAULT ''")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE profiles ADD COLUMN cccd TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE profiles ADD COLUMN username TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE profiles ADD COLUMN email TEXT NOT NULL DEFAULT ''")
             }
         }
 
         /** Phase 1: thêm giống lúa, độ ẩm, vụ mùa, QR token, trader ID */
         val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     "ALTER TABLE cards ADD COLUMN riceVariety TEXT NOT NULL DEFAULT ''"
                 )
-                database.execSQL(
+                db.execSQL(
                     "ALTER TABLE cards ADD COLUMN moisturePercent REAL NOT NULL DEFAULT 0"
                 )
-                database.execSQL(
+                db.execSQL(
                     "ALTER TABLE cards ADD COLUMN seasonLabel TEXT NOT NULL DEFAULT ''"
                 )
-                database.execSQL(
+                db.execSQL(
                     "ALTER TABLE cards ADD COLUMN qrToken TEXT"
                 )
-                database.execSQL(
+                db.execSQL(
                     "ALTER TABLE cards ADD COLUMN lockedByTraderId TEXT"
                 )
             }
@@ -128,8 +130,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         /** Phase 2.1: Module Thị Trường — bảng giá lúa & lịch sử giá */
         val MIGRATION_5_6 = object : Migration(5, 6) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `rice_prices` (
                         `id` TEXT NOT NULL,
@@ -146,7 +148,7 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                database.execSQL(
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `price_history` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -163,8 +165,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         /** Phase 2.3: Cache thời tiết offline */
         val MIGRATION_6_7 = object : Migration(6, 7) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `weather_cache` (
                         `id` INTEGER PRIMARY KEY NOT NULL,
@@ -186,16 +188,16 @@ abstract class AppDatabase : RoomDatabase() {
 
         /** Phase 2.6: GPS location cho mỗi thẻ — phục vụ RiceMapScreen */
         val MIGRATION_7_8 = object : Migration(7, 8) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE cards ADD COLUMN latitude REAL")
-                database.execSQL("ALTER TABLE cards ADD COLUMN longitude REAL")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN latitude REAL")
+                db.execSQL("ALTER TABLE cards ADD COLUMN longitude REAL")
             }
         }
 
         /** Phase 2.7: NewsFeed — bài báo nông nghiệp từ RSS */
         val MIGRATION_8_9 = object : Migration(8, 9) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `news_articles` (
                         `id` TEXT NOT NULL,
@@ -211,7 +213,7 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                database.execSQL(
+                db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `idx_news_topic_published` ON `news_articles` (`topic`, `publishedAt`)"
                 )
             }
@@ -219,9 +221,9 @@ abstract class AppDatabase : RoomDatabase() {
 
         /** Phase 2.8: Trader phone + field address (modern CardInfoCard) */
         val MIGRATION_9_10 = object : Migration(9, 10) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE cards ADD COLUMN traderPhone TEXT NOT NULL DEFAULT ''")
-                database.execSQL("ALTER TABLE cards ADD COLUMN fieldAddress TEXT NOT NULL DEFAULT ''")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN traderPhone TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE cards ADD COLUMN fieldAddress TEXT NOT NULL DEFAULT ''")
             }
         }
 
@@ -233,9 +235,9 @@ abstract class AppDatabase : RoomDatabase() {
          * Trade-off: user vào lại ProfileSetup 1 lần — chấp nhận được vì đây là bug fix.
          */
         val MIGRATION_10_11 = object : Migration(10, 11) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("DROP TABLE IF EXISTS profiles")
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS profiles")
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `profiles` (
                         `uid` TEXT NOT NULL,
@@ -270,9 +272,9 @@ abstract class AppDatabase : RoomDatabase() {
          * gán cho user đầu tiên đăng nhập sau update (xem `CanLuaApplication`).
          */
         val MIGRATION_11_12 = object : Migration(11, 12) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE cards ADD COLUMN ownerUid TEXT NOT NULL DEFAULT ''")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_ownerUid` ON `cards` (`ownerUid`)")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN ownerUid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_ownerUid` ON `cards` (`ownerUid`)")
             }
         }
 
@@ -286,13 +288,13 @@ abstract class AppDatabase : RoomDatabase() {
          * Index trên firestoreId để query `getByFirestoreId(fsId)` chạy nhanh.
          */
         val MIGRATION_12_13 = object : Migration(12, 13) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE cards ADD COLUMN firestoreId TEXT")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_firestoreId` ON `cards` (`firestoreId`)")
-                database.execSQL("ALTER TABLE weight_entries ADD COLUMN firestoreId TEXT")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_firestoreId` ON `weight_entries` (`firestoreId`)")
-                database.execSQL("ALTER TABLE transactions ADD COLUMN firestoreId TEXT")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_firestoreId` ON `transactions` (`firestoreId`)")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN firestoreId TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_firestoreId` ON `cards` (`firestoreId`)")
+                db.execSQL("ALTER TABLE weight_entries ADD COLUMN firestoreId TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_firestoreId` ON `weight_entries` (`firestoreId`)")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN firestoreId TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_firestoreId` ON `transactions` (`firestoreId`)")
             }
         }
 
@@ -307,9 +309,9 @@ abstract class AppDatabase : RoomDatabase() {
          * lần đầu, các update sau sẽ tự stamp.
          */
         val MIGRATION_13_14 = object : Migration(13, 14) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE cards ADD COLUMN lastModifiedMs INTEGER NOT NULL DEFAULT 0")
-                database.execSQL("UPDATE cards SET lastModifiedMs = date WHERE lastModifiedMs = 0")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN lastModifiedMs INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE cards SET lastModifiedMs = date WHERE lastModifiedMs = 0")
             }
         }
 
@@ -323,8 +325,8 @@ abstract class AppDatabase : RoomDatabase() {
          * Bonus: data tombstone = "Lịch sử phiếu đã xoá" cho user khôi phục.
          */
         val MIGRATION_14_15 = object : Migration(14, 15) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `deleted_cards` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -344,8 +346,37 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_deleted_cards_ownerUid` ON `deleted_cards` (`ownerUid`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_deleted_cards_firestoreId` ON `deleted_cards` (`firestoreId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_deleted_cards_ownerUid` ON `deleted_cards` (`ownerUid`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_deleted_cards_firestoreId` ON `deleted_cards` (`firestoreId`)")
+            }
+        }
+
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * Phase 6 — Per-card weigh modes.
+         *
+         * 3 toggle UI cho từng phiếu cân (đặt trên TopBar trang Cân lúa):
+         *  1. `impurityIsPercent`: tạp chất nhập kg (false, default) hay % (true)
+         *  2. `bagMethodIsSampling`: bao bì = 1-bao-đơn-vị × số bao (false, default)
+         *     hay = (mẫu n bao ra X kg)/n × tổng bao (true). Khi true dùng
+         *     `bagSampleCount` + `bagSampleTotalWeight`.
+         *  3. `weightInputMode`: GridCell auto-confirm sau 3 chữ số ("SMALL", default)
+         *     hay 4 chữ số ("LARGE") — cho mẻ cân lớn ≥100kg/lần.
+         *
+         * Mọi default giữ behavior cũ → phiếu cũ không bị ảnh hưởng tính toán.
+         */
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN impurityIsPercent INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cards ADD COLUMN bagMethodIsSampling INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cards ADD COLUMN bagSampleCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cards ADD COLUMN bagSampleTotalWeight REAL NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cards ADD COLUMN weightInputMode TEXT NOT NULL DEFAULT 'SMALL'")
             }
         }
     }

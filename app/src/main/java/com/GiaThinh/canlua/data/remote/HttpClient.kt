@@ -23,7 +23,10 @@ class HttpClient @Inject constructor() {
     @PublishedApi
     internal val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        // Free-tier AI models (OpenRouter) thỉnh thoảng cần 40-50s. Đặt 60s
+        // để không timeout giữa lúc model đang generate token cuối.
+        .readTimeout(60, TimeUnit.SECONDS)
+        .callTimeout(75, TimeUnit.SECONDS)
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC
         })

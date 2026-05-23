@@ -157,6 +157,7 @@ class CardRepository @Inject constructor(
         sb.append("\"remainingAmount\":${card.remainingAmount},")
         sb.append("\"bagCount\":${card.bagCount},")
         sb.append("\"isLocked\":${card.isLocked},")
+        sb.append("\"isPaid\":${card.isPaid},")
         sb.append("\"riceVariety\":${jsonString(card.riceVariety)},")
         sb.append("\"moisturePercent\":${card.moisturePercent},")
         sb.append("\"seasonLabel\":${jsonString(card.seasonLabel)},")
@@ -165,7 +166,12 @@ class CardRepository @Inject constructor(
         sb.append("\"latitude\":${card.latitude ?: "null"},")
         sb.append("\"longitude\":${card.longitude ?: "null"},")
         sb.append("\"traderPhone\":${jsonString(card.traderPhone)},")
-        sb.append("\"fieldAddress\":${jsonString(card.fieldAddress)}")
+        sb.append("\"fieldAddress\":${jsonString(card.fieldAddress)},")
+        sb.append("\"impurityIsPercent\":${card.impurityIsPercent},")
+        sb.append("\"bagMethodIsSampling\":${card.bagMethodIsSampling},")
+        sb.append("\"bagSampleCount\":${card.bagSampleCount},")
+        sb.append("\"bagSampleTotalWeight\":${card.bagSampleTotalWeight},")
+        sb.append("\"weightInputMode\":${jsonString(card.weightInputMode)}")
         sb.append("}")
         return sb.toString()
     }
@@ -189,6 +195,7 @@ class CardRepository @Inject constructor(
             remainingAmount = (map["remainingAmount"] as? Number)?.toDouble() ?: 0.0,
             bagCount = (map["bagCount"] as? Number)?.toInt() ?: 0,
             isLocked = map["isLocked"] as? Boolean ?: false,
+            isPaid = map["isPaid"] as? Boolean ?: false,
             riceVariety = map["riceVariety"]?.toString().orEmpty(),
             moisturePercent = (map["moisturePercent"] as? Number)?.toDouble() ?: 0.0,
             seasonLabel = map["seasonLabel"]?.toString().orEmpty(),
@@ -197,7 +204,12 @@ class CardRepository @Inject constructor(
             latitude = (map["latitude"] as? Number)?.toDouble(),
             longitude = (map["longitude"] as? Number)?.toDouble(),
             traderPhone = map["traderPhone"]?.toString().orEmpty(),
-            fieldAddress = map["fieldAddress"]?.toString().orEmpty()
+            fieldAddress = map["fieldAddress"]?.toString().orEmpty(),
+            impurityIsPercent = map["impurityIsPercent"] as? Boolean ?: false,
+            bagMethodIsSampling = map["bagMethodIsSampling"] as? Boolean ?: false,
+            bagSampleCount = (map["bagSampleCount"] as? Number)?.toInt() ?: 0,
+            bagSampleTotalWeight = (map["bagSampleTotalWeight"] as? Number)?.toDouble() ?: 0.0,
+            weightInputMode = map["weightInputMode"]?.toString().takeIf { !it.isNullOrBlank() } ?: "SMALL"
         )
     }.getOrNull()
 
@@ -287,14 +299,17 @@ class CardRepository @Inject constructor(
         }
 
         val totalRaw = calculation.totalRawWeight
-        // Tổng khối lượng bao bì = số bao × trọng lượng bao đơn vị
-        val totalBagWeight = calculation.bagCount * card.bagWeight
-
-        // Net weight chuẩn: (raw - bao - tạp) × (100 - moisture) / (100 - 14)
-        val finalNetWeight = RiceCalculator.calcNetWeight(
-            rawWeight = totalRaw,
-            bagWeight = totalBagWeight,
-            impurityWeight = card.impurityWeight,
+        // Tính KL thực có ý thức về mode bao bì (A/B) + tạp chất (kg/%).
+        // Default mọi flag = false/0 → tương đương công thức cũ.
+        val finalNetWeight = RiceCalculator.calcNetWeightWithModes(
+            totalRaw = totalRaw,
+            bagCount = calculation.bagCount,
+            bagWeight = card.bagWeight,
+            bagMethodIsSampling = card.bagMethodIsSampling,
+            bagSampleCount = card.bagSampleCount,
+            bagSampleTotalWeight = card.bagSampleTotalWeight,
+            impurityValue = card.impurityWeight,
+            impurityIsPercent = card.impurityIsPercent,
             moisturePercent = card.moisturePercent
         ).coerceAtLeast(0.0)
 
@@ -342,6 +357,9 @@ class CardRepository @Inject constructor(
 
     fun getDistinctRiceVarieties(): Flow<List<String>> =
         cardDao.getDistinctRiceVarieties(uid())
+
+    fun getSuggestedRiceVarieties(): Flow<List<String>> =
+        cardDao.getSuggestedRiceVarieties(uid())
 
     // === Phase 3: Season Statistics Dashboard ===
 

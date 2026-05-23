@@ -35,6 +35,8 @@ class SyncableCardRepository @Inject constructor(
 
     fun getDistinctRiceVarieties(): Flow<List<String>> = cardRepository.getDistinctRiceVarieties()
 
+    fun getSuggestedRiceVarieties(): Flow<List<String>> = cardRepository.getSuggestedRiceVarieties()
+
     fun getDistinctSeasons(): Flow<List<String>> = cardRepository.getDistinctSeasons()
 
     suspend fun getCardById(id: Long) = cardRepository.getCardById(id)

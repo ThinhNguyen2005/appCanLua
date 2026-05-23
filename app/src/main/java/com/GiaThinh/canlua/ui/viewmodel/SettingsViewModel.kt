@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.data.model.AppLanguage
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.SettingsRepository
+import com.GiaThinh.canlua.repository.WeighDefaults
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +43,17 @@ class SettingsViewModel @Inject constructor(
             started = SharingStarted.Eagerly,
             initialValue = settingsRepository.getLanguage()
         )
+
+    val weighDefaults: StateFlow<WeighDefaults> = settingsRepository.weighDefaults
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = settingsRepository.getWeighDefaults()
+        )
+
+    fun setWeighDefaults(d: WeighDefaults) {
+        viewModelScope.launch { settingsRepository.setWeighDefaults(d) }
+    }
 
     fun setTtsEnabled(enabled: Boolean) {
         viewModelScope.launch {

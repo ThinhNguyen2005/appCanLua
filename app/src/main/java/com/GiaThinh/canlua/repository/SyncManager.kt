@@ -364,6 +364,7 @@ class SyncManager @Inject constructor(
             remainingAmount = this.remainingAmount,
             bagCount = this.bagCount,
             isLocked = this.isLocked,
+            isPaid = this.isPaid,
             traderName = this.traderName,
             riceVariety = this.riceVariety,
             moisturePercent = this.moisturePercent,
@@ -375,7 +376,12 @@ class SyncManager @Inject constructor(
             traderPhone = this.traderPhone,
             fieldAddress = this.fieldAddress,
             lastModifiedMs = this.lastModifiedMs,
-            localId = this.id
+            localId = this.id,
+            impurityIsPercent = this.impurityIsPercent,
+            bagMethodIsSampling = this.bagMethodIsSampling,
+            bagSampleCount = this.bagSampleCount,
+            bagSampleTotalWeight = this.bagSampleTotalWeight,
+            weightInputMode = this.weightInputMode
         )
     }
 
@@ -425,6 +431,7 @@ class SyncManager @Inject constructor(
             remainingAmount = this.remainingAmount,
             bagCount = this.bagCount,
             isLocked = this.isLocked,
+            isPaid = this.isPaid,
             riceVariety = this.riceVariety,
             moisturePercent = this.moisturePercent,
             seasonLabel = this.seasonLabel,
@@ -433,7 +440,12 @@ class SyncManager @Inject constructor(
             latitude = this.latitude,
             longitude = this.longitude,
             traderPhone = this.traderPhone,
-            fieldAddress = this.fieldAddress
+            fieldAddress = this.fieldAddress,
+            impurityIsPercent = this.impurityIsPercent,
+            bagMethodIsSampling = this.bagMethodIsSampling,
+            bagSampleCount = this.bagSampleCount,
+            bagSampleTotalWeight = this.bagSampleTotalWeight,
+            weightInputMode = this.weightInputMode
         )
     }
 

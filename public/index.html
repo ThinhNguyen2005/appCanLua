@@ -2,1580 +2,1152 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cân Lúa Mobile — Trợ lý số hóa mùa gặt, mộc mạc & thân thiện</title>
-  
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="Cân Lúa Mobile - Ứng dụng ghi chép phiếu cân lúa offline-first mộc mạc, bình dân giúp nông dân và thương lái tính toán khối lượng tịnh, quét mã QR giao dịch và cập nhật giá thị trường trực tiếp.">
-  <meta name="keywords" content="cân lúa, số hóa nông nghiệp, nông dân, thương lái, tính tiền lúa, đồng bằng sông cửu long, ST25, OM18, nông nghiệp việt">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2E7D32">
+  <title>Cân Lúa — App ghi phiếu cân lúa miễn phí cho bà con nông dân</title>
+
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- SEO -->
+  <meta name="description" content="App Cân Lúa: ghi sổ cân lúa trên điện thoại, không cần mạng, tự trừ bì, quy đổi ẩm, in phiếu, gửi Zalo. Miễn phí cho bà con nông dân và thương lái.">
+  <meta name="keywords" content="cân lúa, app cân lúa, ghi phiếu cân, nông dân, thương lái, trừ bì lúa, độ ẩm lúa, ST25, OM18">
   <meta name="author" content="GiaThinh CanLua Team">
-  
-  <!-- OpenGraph Meta Tags -->
-  <meta property="og:title" content="Cân Lúa Mobile — Đồng hành cùng bà con trúng đậm mùa vàng">
-  <meta property="og:description" content="Ghi phiếu cân thông minh hoạt động offline không cần mạng, tự động trừ bì và quy đổi độ ẩm lúa tươi chuẩn xác ngay tại ruộng.">
+
+  <!-- OG -->
+  <meta property="og:title" content="Cân Lúa — App ghi phiếu cân lúa cho bà con nông dân">
+  <meta property="og:description" content="Ghi sổ cân lúa ngay tại ruộng, không cần mạng. Tự trừ bì, tính ẩm, in phiếu gửi Zalo trong vài giây.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://canluavn.web.app">
   <meta property="og:image" content="https://canluavn.web.app/farmers.png">
 
-  <!-- Google Fonts: Outfit (Trang trọng/Tiêu đề) & Inter (Thân thiện/Nội dung) -->
+  <!-- Fonts: Be Vietnam Pro — dễ đọc dấu tiếng Việt; Outfit — tiêu đề -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Playpen+Sans:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* --------------------------------------------------
-       HỆ THỐNG THIẾT KẾ (DESIGN SYSTEM) & BIẾN CSS
-       Tông màu kem ngà ấm áp, xanh lá mạ và vàng lúa chín
-       -------------------------------------------------- */
+    /* ==================================================
+       BIẾN MÀU & TYPOGRAPHY — bám màu hiện tại
+       ================================================== */
     :root {
-      --bg-cream: #FAF9F6;        /* Màu kem gạo ấm, mộc mạc, cực kỳ dịu mắt ngoài đồng */
-      --bg-card: #FFFFFF;         /* Nền card trắng sứ sạch sẽ */
-      --bg-sub: #F3F1EB;          /* Nền phụ màu rơm vàng nhạt */
-      
-      --primary-green: #2E7D32;   /* Màu xanh lá lúa trĩu hạt */
-      --primary-green-light: #4CAF50;
-      --primary-green-dark: #1B5E20;
-      
-      --accent-gold: #F9A825;     /* Vàng chín trúng mùa */
-      --accent-gold-dark: #F57F17;
-      --accent-gold-light: #FFF59D;
-      
-      --text-main: #1A281E;       /* Xanh đen đậm mộc mạc như màu đất phù sa, dễ đọc */
-      --text-sub: #4A5B4D;        /* Chữ phụ màu lá lúa già */
-      --text-muted: #7E9282;      /* Chữ mờ */
-      --border-color: rgba(46, 125, 50, 0.12);
-      
-      --font-display: 'Outfit', sans-serif;
-      --font-body: 'Inter', sans-serif;
-      --font-hand: 'Playpen Sans', cursive; /* Tạo cảm giác gần gũi, ghi chép tay */
-      
-      --transition-base: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      --radius-sm: 8px;
-      --radius-md: 16px;
-      --radius-lg: 24px;
+      --bg: #FAF9F6;
+      --bg-card: #FFFFFF;
+      --bg-soft: #F3F1EB;
+
+      --green: #2E7D32;
+      --green-dark: #1B5E20;
+      --green-light: #4CAF50;
+
+      --gold: #F9A825;
+      --gold-dark: #F57F17;
+      --gold-soft: #FFF8E1;
+
+      --ink: #1A281E;
+      --ink-2: #3D4A40;
+      --ink-3: #6B7A6E;
+      --line: rgba(46, 125, 50, 0.14);
+
+      --font-head: 'Outfit', 'Be Vietnam Pro', sans-serif;
+      --font-body: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+
+      --r-sm: 10px;
+      --r-md: 16px;
+      --r-lg: 22px;
+
+      --shadow-sm: 0 2px 8px rgba(27, 43, 32, 0.05);
+      --shadow-md: 0 8px 24px rgba(27, 43, 32, 0.08);
+      --shadow-lg: 0 16px 40px rgba(27, 43, 32, 0.10);
     }
 
-    /* Reset & Thiết lập chung */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
     body {
-      background-color: var(--bg-cream);
-      color: var(--text-main);
+      background: var(--bg);
+      color: var(--ink);
       font-family: var(--font-body);
-      line-height: 1.65;
+      font-size: 17px;
+      line-height: 1.7;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
+
+    img { max-width: 100%; height: auto; display: block; }
 
     .container {
-      max-width: 1140px;
+      width: 100%;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 0 24px;
+      padding: 0 20px;
     }
 
-    /* --------------------------------------------------
-       HIỆU ỨNG CUỘN XUẤT HIỆN MƯỢT MÀ
-       -------------------------------------------------- */
+    /* Cuộn xuất hiện */
     .reveal {
       opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(24px);
+      transition: opacity .7s ease, transform .7s ease;
     }
+    .reveal.active { opacity: 1; transform: none; }
 
-    .reveal.active {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* --------------------------------------------------
-       NAVIGATION HEADER
-       -------------------------------------------------- */
+    /* ==================================================
+       HEADER
+       ================================================== */
     header {
-      position: fixed;
+      position: sticky;
       top: 0;
-      left: 0;
-      width: 100%;
-      height: 76px;
-      background: rgba(250, 249, 246, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-color);
-      z-index: 100;
-      transition: var(--transition-base);
+      z-index: 50;
+      background: rgba(250, 249, 246, 0.92);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 1px solid var(--line);
     }
 
-    .nav-container {
+    .nav {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      height: 100%;
+      justify-content: space-between;
+      gap: 12px;
+      height: 64px;
     }
 
     .logo {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      color: var(--ink);
     }
-
-    .logo-icon {
-      fill: var(--primary-green);
-      width: 32px;
-      height: 32px;
-    }
-
+    .logo svg { width: 30px; height: 30px; fill: var(--green); }
     .logo-text {
-      font-family: var(--font-display);
-      font-size: 24px;
+      font-family: var(--font-head);
       font-weight: 800;
-      color: var(--text-main);
-      letter-spacing: -0.5px;
+      font-size: 22px;
+      letter-spacing: -0.3px;
     }
+    .logo-text span { color: var(--gold-dark); }
 
-    .logo-text span {
-      color: var(--accent-gold-dark);
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 28px;
+    .nav-menu {
+      display: none;
       list-style: none;
+      gap: 8px;
       align-items: center;
     }
-
-    .nav-links a {
-      color: var(--text-sub);
+    .nav-menu a {
+      color: var(--ink-2);
       text-decoration: none;
       font-weight: 600;
       font-size: 15px;
-      transition: var(--transition-base);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      border-radius: 999px;
+      transition: background .2s, color .2s;
     }
+    .nav-menu a:hover { background: rgba(46,125,50,.06); color: var(--green); }
 
-    .nav-links a:hover {
-      color: var(--primary-green);
-      background: rgba(46, 125, 50, 0.05);
-    }
-
-    /* Nút APK trên Header */
-    .btn-nav-download {
-      background: var(--primary-green);
-      color: #FFFFFF !important;
-      padding: 10px 20px !important;
-      border-radius: 30px !important;
+    .btn-apk {
+      background: var(--green);
+      color: #fff !important;
+      padding: 10px 18px !important;
+      border-radius: 999px !important;
       font-weight: 700 !important;
-      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.20);
     }
+    .btn-apk:hover { background: var(--green-dark) !important; }
 
-    .btn-nav-download:hover {
-      background: var(--primary-green-dark) !important;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 125, 50, 0.25);
-    }
-
-    /* --------------------------------------------------
-       HERO SECTION (Ấm áp, Bố cục rõ ràng không chồng đè)
-       -------------------------------------------------- */
+    /* ==================================================
+       HERO
+       ================================================== */
     .hero {
-      padding-top: 140px;
-      padding-bottom: 70px;
-      background: radial-gradient(circle at 80% 20%, rgba(249, 168, 37, 0.06) 0%, rgba(46, 125, 50, 0.02) 60%, transparent 100%);
+      padding: 32px 0 12px;
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(249,168,37,.10), transparent 60%),
+        radial-gradient(900px 500px at -10% 30%, rgba(46,125,50,.06), transparent 60%);
     }
 
-    .hero-wrapper {
+    .hero-grid {
       display: grid;
-      grid-template-cols: 1.1fr 0.9fr;
-      gap: 48px;
+      grid-template-columns: 1fr;
+      gap: 28px;
       align-items: center;
     }
 
-    .hero-content {
-      max-width: 580px;
-    }
-
-    .badge-hero {
+    .pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(46, 125, 50, 0.06);
-      border: 1px solid rgba(46, 125, 50, 0.16);
-      color: var(--primary-green-dark);
-      padding: 6px 14px;
-      border-radius: 30px;
-      font-size: 13px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--green-dark);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
       font-weight: 700;
-      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
     }
-
-    .badge-hero svg {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
+    .pill svg { width: 16px; height: 16px; fill: var(--gold-dark); }
 
     .hero h1 {
-      font-family: var(--font-display);
-      font-size: 48px;
-      line-height: 1.2;
+      font-family: var(--font-head);
       font-weight: 800;
-      letter-spacing: -1.2px;
-      margin-bottom: 20px;
-      color: var(--text-main);
+      font-size: clamp(30px, 7vw, 52px);
+      line-height: 1.15;
+      letter-spacing: -0.8px;
+      margin: 18px 0 14px;
+      color: var(--ink);
+    }
+    .hero h1 .g { color: var(--green); }
+    .hero h1 .y { color: var(--gold-dark); }
+
+    .hero-desc {
+      font-size: clamp(16px, 2.4vw, 18px);
+      color: var(--ink-2);
+      line-height: 1.7;
+      margin-bottom: 22px;
+      max-width: 560px;
     }
 
-    .hero h1 span.green {
-      color: var(--primary-green);
-    }
-
-    .hero h1 span.gold {
-      color: var(--accent-gold-dark);
-    }
-
-    .hero p.hero-desc {
-      font-size: 16px;
-      color: var(--text-sub);
-      margin-bottom: 36px;
-      line-height: 1.75;
-    }
-
-    .hero-ctas {
+    .ctas {
       display: flex;
-      gap: 16px;
-      align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      gap: 12px;
+      align-items: stretch;
     }
+    .ctas .btn { flex: 1 1 0; min-width: 0; padding-left: 14px; padding-right: 14px; white-space: nowrap; }
 
-    /* Nút download APK xung mạch lúa chín */
-    .btn-main-download {
+    .btn {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dark) 100%);
-      color: #FFFFFF;
-      padding: 16px 30px;
-      border-radius: 50px;
-      font-family: var(--font-display);
+      justify-content: center;
+      gap: 10px;
+      min-height: 56px;
+      padding: 14px 24px;
+      border-radius: 999px;
+      font-family: var(--font-head);
       font-weight: 700;
-      font-size: 16px;
+      font-size: 17px;
       text-decoration: none;
       border: none;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(249, 168, 37, 0.28);
-      transition: var(--transition-base);
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
     }
-
-    .btn-main-download:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(249, 168, 37, 0.4);
+    .btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+      color: #fff;
+      box-shadow: 0 8px 22px rgba(249,168,37,.30);
     }
-
-    .btn-secondary-guide {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #FFFFFF;
-      color: var(--primary-green-dark);
-      padding: 16px 24px;
-      border-radius: 50px;
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 15px;
-      text-decoration: none;
-      border: 1px solid var(--border-color);
-      transition: var(--transition-base);
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(249,168,37,.40); }
+    .btn-ghost {
+      background: #fff;
+      color: var(--green-dark);
+      border: 1.5px solid var(--line);
     }
+    .btn-ghost:hover { background: var(--bg-soft); }
 
-    .btn-secondary-guide:hover {
-      background: var(--bg-sub);
-      color: var(--primary-green-dark);
-      transform: translateY(-2px);
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(249,168,37,.45), 0 8px 22px rgba(249,168,37,.30); }
+      70% { box-shadow: 0 0 0 14px rgba(249,168,37,0), 0 8px 22px rgba(249,168,37,.30); }
+      100% { box-shadow: 0 0 0 0 rgba(249,168,37,0), 0 8px 22px rgba(249,168,37,.30); }
     }
+    .btn-primary.pulse { animation: pulse 2.4s infinite; }
 
-    /* Hiệu ứng pulse lúa chín */
-    @keyframes pulse-gold-ring {
-      0% { box-shadow: 0 0 0 0 rgba(249, 168, 37, 0.45); }
-      70% { box-shadow: 0 0 0 12px rgba(249, 168, 37, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(249, 168, 37, 0); }
+    .hero-photo {
+      background: #fff;
+      padding: 14px 14px 20px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow-md);
+      max-width: 460px;
+      margin: 0 auto;
     }
-
-    .btn-main-download.pulse {
-      animation: pulse-gold-ring 2.5s infinite;
-    }
-
-    /* Cột Phải: Ảnh chụp Polaroid nghệ thuật & mộc mạc (BẢO ĐẢM KHÔNG CHỒNG ĐÈ) */
-    .hero-media {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Khung ảnh Polaroid mộc mạc gần gũi */
-    .farmer-polaroid {
-      background: #FFFFFF;
-      padding: 16px 16px 24px 16px;
-      border: 1px solid rgba(46, 125, 50, 0.12);
-      border-radius: 4px;
-      box-shadow: 0 10px 30px rgba(27, 43, 32, 0.06);
-      transform: rotate(1.5deg);
-      transition: var(--transition-base);
-      width: 100%;
-      max-width: 420px;
-    }
-
-    .farmer-polaroid:hover {
-      transform: rotate(0deg) scale(1.02);
-      box-shadow: 0 15px 40px rgba(27, 43, 32, 0.12);
-    }
-
-    .farmer-polaroid img {
-      width: 100%;
-      height: auto;
-      border-radius: 2px;
-      display: block;
-      object-fit: cover;
-    }
-
-    .farmer-polaroid .caption {
-      font-family: var(--font-hand);
+    .hero-photo img { border-radius: 4px; }
+    .hero-photo .cap {
+      text-align: center;
+      margin-top: 14px;
       font-weight: 700;
-      color: var(--text-sub);
-      text-align: center;
-      margin-top: 16px;
+      color: var(--ink-2);
       font-size: 15px;
-      letter-spacing: -0.2px;
     }
 
-    /* --------------------------------------------------
-       SECTION TƯƠNG TÁC: BỘ CÂN THỬ LÚA TRỰC TIẾP
-       -------------------------------------------------- */
-    .interactive-section {
-      padding: 60px 0;
-      background: var(--bg-sub);
-      border-top: 1px solid var(--border-color);
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .section-header {
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto 40px auto;
-    }
-
-    .section-header h2 {
-      font-family: var(--font-display);
-      font-size: 36px;
-      font-weight: 800;
-      color: var(--text-main);
-      line-height: 1.25;
-      letter-spacing: -0.8px;
-      margin-bottom: 16px;
-    }
-
-    .section-header h2 span {
-      color: var(--primary-green);
-    }
-
-    .section-header p {
-      font-size: 16px;
-      color: var(--text-sub);
-    }
-
-    .calculator-wrapper {
+    /* Số liệu nhanh */
+    .quick-stats {
       display: grid;
-      grid-template-cols: 1.1fr 0.9fr;
-      gap: 36px;
-      align-items: stretch;
-      background: #FFFFFF;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 32px;
-      box-shadow: 0 12px 36px rgba(27, 43, 32, 0.04);
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .stat {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat b {
+      display: block;
+      font-family: var(--font-head);
+      font-size: clamp(20px, 5vw, 26px);
+      color: var(--green);
+      line-height: 1.2;
+    }
+    .stat span {
+      font-size: 13px;
+      color: var(--ink-3);
+      font-weight: 600;
     }
 
-    /* Form Nhập Số Liệu */
-    .calculator-inputs {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+    /* ==================================================
+       SECTION HEADER
+       ================================================== */
+    section { padding: 56px 0; }
+
+    .sec-head {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 32px;
+    }
+    .sec-head .eyebrow {
+      display: inline-block;
+      color: var(--green-dark);
+      background: rgba(46,125,50,.08);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .sec-head h2 {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: clamp(26px, 5vw, 38px);
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .sec-head h2 .g { color: var(--green); }
+    .sec-head p { font-size: 16px; color: var(--ink-2); }
+
+    /* ==================================================
+       DEMO CALCULATOR
+       ================================================== */
+    .demo {
+      background: var(--bg-soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .calc {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 22px;
+      box-shadow: var(--shadow-md);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 22px;
     }
 
     .calc-title {
-      font-family: var(--font-display);
-      font-size: 20px;
+      font-family: var(--font-head);
       font-weight: 700;
-      color: var(--primary-green-dark);
+      font-size: 18px;
+      color: var(--green-dark);
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 2px dashed rgba(46, 125, 50, 0.15);
       padding-bottom: 12px;
-      margin-bottom: 8px;
+      border-bottom: 2px dashed rgba(46,125,50,.18);
+      margin-bottom: 4px;
     }
-
-    .calc-title svg {
-      width: 22px;
-      height: 22px;
-      fill: currentColor;
-    }
+    .calc-title svg { width: 22px; height: 22px; fill: currentColor; }
 
     .input-grid {
       display: grid;
-      grid-template-cols: 1fr 1fr;
-      gap: 20px;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
     }
 
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .input-group label {
-      font-size: 13px;
+    .field label {
+      display: block;
+      font-size: 14px;
       font-weight: 700;
-      color: var(--text-sub);
+      color: var(--ink-2);
+      margin-bottom: 6px;
     }
-
-    .input-wrapper {
+    .field-wrap {
       position: relative;
-      display: flex;
-      align-items: center;
     }
-
-    .input-wrapper input {
+    .field input {
       width: 100%;
-      padding: 12px 40px 12px 14px;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-main);
-      border: 1.5px solid rgba(46, 125, 50, 0.2);
-      border-radius: var(--radius-sm);
-      background-color: var(--bg-cream);
+      min-height: 52px;
+      padding: 12px 56px 12px 14px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      background: var(--bg);
+      border: 1.5px solid rgba(46,125,50,.22);
+      border-radius: var(--r-sm);
       outline: none;
-      transition: var(--transition-base);
+      font-family: var(--font-body);
+      transition: border-color .15s, box-shadow .15s, background .15s;
     }
-
-    .input-wrapper input:focus {
-      border-color: var(--primary-green);
-      background-color: #FFFFFF;
-      box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    .field input:focus {
+      border-color: var(--green);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(46,125,50,.12);
     }
-
-    .input-wrapper .unit {
+    .field .unit {
       position: absolute;
       right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
       font-size: 13px;
       font-weight: 700;
-      color: var(--text-muted);
+      color: var(--ink-3);
+      background: #fff;
+      padding: 2px 6px;
+      border-radius: 6px;
     }
 
-    /* Slip Hóa Đơn Trực Quan (Handwriting & Modern Receipt) */
-    .calculator-receipt {
-      background: var(--bg-cream);
-      border: 1px solid rgba(46, 125, 50, 0.15);
-      border-radius: var(--radius-md);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
+    .receipt {
+      background: var(--bg);
+      border: 1.5px dashed rgba(46,125,50,.22);
+      border-radius: var(--r-md);
+      padding: 20px;
     }
-
-    .calculator-receipt::before {
-      content: '';
-      position: absolute;
-      top: -1px;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background-image: radial-gradient(circle, transparent, transparent 50%, var(--bg-cream) 50%, var(--bg-cream)), radial-gradient(circle, transparent, transparent 50%, #FAF9F6 50%, #FAF9F6);
-      background-size: 12px 12px;
-      background-position: 0 0, 0 6px;
-    }
-
-    .receipt-header {
+    .receipt-head {
       text-align: center;
-      margin-bottom: 20px;
-      border-bottom: 1.5px dashed rgba(46, 125, 50, 0.2);
-      padding-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px dashed rgba(46,125,50,.18);
+      margin-bottom: 14px;
     }
-
-    .receipt-header h3 {
-      font-family: var(--font-hand);
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-main);
+    .receipt-head h3 {
+      font-family: var(--font-head);
+      font-size: 18px;
+      color: var(--ink);
     }
-
-    .receipt-header p {
-      font-size: 11px;
-      color: var(--text-muted);
+    .receipt-head p {
+      font-size: 12px;
+      color: var(--ink-3);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: .6px;
       margin-top: 4px;
     }
-
     .receipt-row {
       display: flex;
       justify-content: space-between;
-      font-size: 14px;
-      margin-bottom: 10px;
-      color: var(--text-sub);
-    }
-
-    .receipt-row .val {
-      font-weight: 600;
-      color: var(--text-main);
-    }
-
-    .receipt-total {
-      margin-top: auto;
-      border-top: 1.5px dashed rgba(46, 125, 50, 0.2);
-      padding-top: 16px;
-      display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 10px;
+      font-size: 15px;
+      color: var(--ink-2);
+      padding: 8px 0;
     }
-
-    .receipt-total-lbl {
+    .receipt-row .v {
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .receipt-total {
+      margin-top: 12px;
+      padding-top: 14px;
+      border-top: 1.5px dashed rgba(46,125,50,.18);
+      text-align: center;
+    }
+    .receipt-total .lbl {
       font-size: 13px;
       font-weight: 700;
-      color: var(--primary-green-dark);
+      color: var(--green-dark);
+      letter-spacing: .4px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
-
-    .receipt-total-val {
-      font-family: var(--font-display);
-      font-size: 32px;
+    .receipt-total .val {
+      display: block;
+      font-family: var(--font-head);
       font-weight: 800;
-      color: var(--primary-green);
-      transition: var(--transition-base);
+      font-size: clamp(28px, 7vw, 36px);
+      color: var(--green);
+      margin: 6px 0 10px;
     }
-
-    .status-badge {
+    .badge {
       display: inline-block;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 12px;
-      text-align: center;
-      margin-top: 4px;
+      padding: 6px 14px;
+      border-radius: 999px;
     }
+    .badge.ok    { background: rgba(46,125,50,.10); color: var(--green-dark); }
+    .badge.good  { background: rgba(249,168,37,.16); color: var(--gold-dark); }
+    .badge.great { background: linear-gradient(135deg, rgba(249,168,37,.25), rgba(245,127,23,.20)); color: var(--gold-dark); }
 
-    .status-badge.normal {
-      background: rgba(46, 125, 50, 0.08);
-      color: var(--primary-green-dark);
-    }
-
-    .status-badge.high {
-      background: rgba(249, 168, 37, 0.12);
-      color: var(--accent-gold-dark);
-    }
-
-    .status-badge.super-high {
-      background: linear-gradient(135deg, rgba(249, 168, 37, 0.2) 0%, rgba(245, 127, 23, 0.2) 100%);
-      color: var(--accent-gold-dark);
-      border: 1px solid rgba(245, 127, 23, 0.3);
-      box-shadow: 0 4px 10px rgba(245, 127, 23, 0.1);
-    }
-
-    /* --------------------------------------------------
-       PHẦN CHỨC NĂNG CHÍNH (THỂ HIỆN ĐẦY ĐỦ CHỨC NĂNG)
-       -------------------------------------------------- */
-    .features-section {
-      padding: 90px 0;
-      background-color: #FFFFFF;
-    }
+    /* ==================================================
+       FEATURES
+       ================================================== */
+    .features { background: #fff; }
 
     .features-grid {
       display: grid;
-      grid-template-cols: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 28px;
-      margin-top: 48px;
+      grid-template-columns: 1fr;
+      gap: 16px;
     }
 
-    .feature-card {
-      background: var(--bg-cream);
-      border: 1.5px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 28px;
-      transition: var(--transition-base);
-      position: relative;
-      overflow: hidden;
+    .f-card {
+      background: var(--bg);
+      border: 1.5px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 22px;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
     }
-
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: var(--primary-green-light);
-      opacity: 0;
-      transition: var(--transition-base);
+    .f-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(46,125,50,.25);
     }
-
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 30px rgba(46, 125, 50, 0.04);
-      border-color: rgba(46, 125, 50, 0.25);
-    }
-
-    .feature-card:hover::before {
-      opacity: 1;
-    }
-
-    .feature-icon-wrapper {
+    .f-icon {
       width: 52px;
       height: 52px;
-      background: rgba(46, 125, 50, 0.06);
-      border-radius: 12px;
+      border-radius: 14px;
+      background: rgba(46,125,50,.10);
+      color: var(--green);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
-      color: var(--primary-green);
-      transition: var(--transition-base);
+      margin-bottom: 14px;
     }
-
-    .feature-card:hover .feature-icon-wrapper {
-      background: var(--primary-green);
-      color: #FFFFFF;
-    }
-
-    .feature-icon-wrapper svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    .feature-card h3 {
-      font-family: var(--font-display);
-      font-size: 19px;
+    .f-icon svg { width: 26px; height: 26px; fill: currentColor; }
+    .f-card h3 {
+      font-family: var(--font-head);
       font-weight: 700;
-      margin-bottom: 10px;
-      color: var(--text-main);
+      font-size: 19px;
+      margin-bottom: 8px;
+      color: var(--ink);
     }
-
-    .feature-card p {
-      font-size: 14.5px;
-      color: var(--text-sub);
+    .f-card p {
+      font-size: 16px;
+      color: var(--ink-2);
       line-height: 1.65;
     }
 
-    /* --------------------------------------------------
-       PHẦN GIÁ TRỊ MANG LẠI (VAI TRÒ NÔNG DÂN & THƯƠNG LÁI)
-       -------------------------------------------------- */
-    .value-section {
-      padding: 90px 0;
-      background: radial-gradient(circle at 10% 90%, rgba(46, 125, 50, 0.04) 0%, transparent 80%);
+    /* ==================================================
+       VALUE / ROLES
+       ================================================== */
+    .value {
+      background:
+        radial-gradient(700px 400px at 10% 90%, rgba(46,125,50,.05), transparent 60%),
+        radial-gradient(700px 400px at 90% 10%, rgba(249,168,37,.05), transparent 60%);
     }
 
-    .value-intro {
-      text-align: center;
-      max-width: 680px;
-      margin: 0 auto 50px auto;
-    }
-
-    .role-grid {
+    .roles {
       display: grid;
-      grid-template-cols: 1fr 1fr;
-      gap: 32px;
+      grid-template-columns: 1fr;
+      gap: 16px;
     }
-
-    .role-card {
-      background: #FFFFFF;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 40px;
-      box-shadow: 0 10px 30px rgba(27, 43, 32, 0.03);
-      position: relative;
-      overflow: hidden;
-      transition: var(--transition-base);
+    .role {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
     }
+    .role.farmer { border-top: 6px solid var(--green); }
+    .role.trader { border-top: 6px solid var(--gold); }
 
-    .role-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 15px 40px rgba(46, 125, 50, 0.05);
-    }
-
-    .role-card.farmer-style {
-      border-left: 6px solid var(--primary-green);
-    }
-
-    .role-card.trader-style {
-      border-left: 6px solid var(--accent-gold);
-    }
-
-    .role-badge {
+    .role-tag {
       display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 20px;
-      margin-bottom: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 999px;
+      letter-spacing: .6px;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      margin-bottom: 14px;
     }
+    .role.farmer .role-tag { background: rgba(46,125,50,.10); color: var(--green-dark); }
+    .role.trader .role-tag { background: rgba(249,168,37,.16); color: var(--gold-dark); }
 
-    .role-card.farmer-style .role-badge {
-      background: rgba(46, 125, 50, 0.08);
-      color: var(--primary-green-dark);
-    }
-
-    .role-card.trader-style .role-badge {
-      background: rgba(249, 168, 37, 0.12);
-      color: var(--accent-gold-dark);
-    }
-
-    .role-card h3 {
-      font-family: var(--font-display);
-      font-size: 24px;
+    .role h3 {
+      font-family: var(--font-head);
       font-weight: 700;
-      margin-bottom: 20px;
-      color: var(--text-main);
+      font-size: 22px;
+      margin-bottom: 16px;
+      color: var(--ink);
+      line-height: 1.3;
     }
-
-    .value-list {
-      list-style: none;
+    .role ul { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .role li {
       display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .value-list li {
-      display: flex;
-      gap: 14px;
+      gap: 12px;
       align-items: flex-start;
-      font-size: 15px;
-      color: var(--text-sub);
+      font-size: 16px;
+      color: var(--ink-2);
     }
-
-    .value-list svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--primary-green);
+    .role li svg {
+      width: 22px; height: 22px;
       flex-shrink: 0;
       margin-top: 2px;
+      fill: var(--green);
     }
+    .role.trader li svg { fill: var(--gold-dark); }
+    .role li strong { color: var(--ink); font-weight: 700; }
 
-    .role-card.trader-style .value-list svg {
-      fill: var(--accent-gold-dark);
-    }
+    /* ==================================================
+       DOWNLOAD
+       ================================================== */
+    .download { background: #fff; border-top: 1px solid var(--line); }
 
-    .value-list strong {
-      color: var(--text-main);
-      font-weight: 600;
-    }
-
-    /* --------------------------------------------------
-       PHẦN HƯỚNG DẪN TẢI APP & DỄ DÀNG LÀM QUEN
-       -------------------------------------------------- */
-    .download-section {
-      padding: 80px 0;
-      background-color: #FFFFFF;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .download-panel {
-      background: linear-gradient(135deg, rgba(46, 125, 50, 0.06) 0%, rgba(249, 168, 37, 0.04) 100%);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 48px;
+    .dl-panel {
+      background: linear-gradient(135deg, rgba(46,125,50,.07), rgba(249,168,37,.06));
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 28px 22px;
       display: grid;
-      grid-template-cols: 1.2fr 0.8fr;
-      gap: 40px;
-      align-items: center;
+      grid-template-columns: 1fr;
+      gap: 24px;
     }
-
-    .download-text h2 {
-      font-family: var(--font-display);
-      font-size: 32px;
+    .dl-text h2 {
+      font-family: var(--font-head);
       font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 14px;
-      color: var(--text-main);
+      font-size: clamp(24px, 5vw, 32px);
+      line-height: 1.2;
+      color: var(--ink);
+      margin-bottom: 12px;
+      letter-spacing: -0.4px;
+    }
+    .dl-text p {
+      font-size: 16px;
+      color: var(--ink-2);
+      margin-bottom: 22px;
     }
 
-    .download-text p {
-      font-size: 15.5px;
-      color: var(--text-sub);
-      margin-bottom: 30px;
-      line-height: 1.7;
-    }
-
-    .download-steps {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 30px;
-    }
-
-    .step-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 14px;
-      color: var(--text-sub);
+    .steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
+    .step {
+      display: flex; align-items: center; gap: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 12px 14px;
+      font-size: 16px;
+      color: var(--ink);
       font-weight: 500;
     }
-
-    .step-num {
-      width: 24px;
-      height: 24px;
-      background: var(--primary-green);
-      color: #FFFFFF;
+    .step-n {
+      width: 32px; height: 32px;
+      background: var(--green);
+      color: #fff;
       border-radius: 50%;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
-      font-size: 12px;
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 15px;
       flex-shrink: 0;
     }
 
-    .download-box-right {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #FFFFFF;
-      border: 1.5px dashed var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 28px;
-      box-shadow: 0 8px 24px rgba(27, 43, 32, 0.03);
+    /* ==================================================
+       FOOTER
+       ================================================== */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--line);
+      padding: 40px 0 20px;
     }
+    .ftr {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+    .ftr-desc { font-size: 15px; color: var(--ink-2); margin-top: 10px; }
 
-    .qr-container {
-      width: 140px;
-      height: 140px;
-      background: var(--bg-cream);
-      border-radius: var(--radius-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
+    .ftr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .ftr-cols h5 {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: .6px;
       margin-bottom: 12px;
     }
+    .ftr-cols ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .ftr-cols a { color: var(--ink-2); text-decoration: none; font-size: 15px; }
+    .ftr-cols a:hover { color: var(--green); }
 
-    .qr-container svg {
-      width: 100%;
-      height: 100%;
-      fill: var(--primary-green-dark);
-    }
-
-    .qr-desc {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--text-sub);
-      text-align: center;
-      letter-spacing: -0.2px;
-    }
-
-    /* --------------------------------------------------
-       FOOTER
-       -------------------------------------------------- */
-    footer {
-      background-color: var(--bg-cream);
-      border-top: 1px solid var(--border-color);
-      padding: 60px 0 24px 0;
-    }
-
-    .footer-content {
-      display: grid;
-      grid-template-cols: 1.2fr 0.8fr;
-      margin-bottom: 40px;
-      gap: 40px;
-    }
-
-    .footer-brand .logo {
-      margin-bottom: 16px;
-    }
-
-    .footer-desc {
-      font-size: 14px;
-      color: var(--text-sub);
-      max-width: 380px;
-      line-height: 1.7;
-    }
-
-    .footer-links-grid {
-      display: grid;
-      grid-template-cols: 1fr 1fr;
-      gap: 30px;
-    }
-
-    .footer-col h5 {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 16px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .footer-col ul {
-      list-style: none;
+    .ftr-bottom {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-    }
-
-    .footer-col a {
-      color: var(--text-sub);
-      text-decoration: none;
-      font-size: 14px;
-      transition: var(--transition-base);
-    }
-
-    .footer-col a:hover {
-      color: var(--primary-green);
-    }
-
-    .footer-bottom-bar {
-      border-top: 1px solid var(--border-color);
-      padding-top: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      gap: 6px;
       font-size: 13px;
-      color: var(--text-muted);
-      flex-wrap: wrap;
-      gap: 12px;
+      color: var(--ink-3);
+      text-align: center;
     }
 
-    /* --------------------------------------------------
-       TỐI ƯU HÓA RESPONSIVE DI ĐỘNG & TABLET
-       -------------------------------------------------- */
-    @media (max-width: 991px) {
-      .hero-wrapper {
-        grid-template-cols: 1fr;
-        gap: 40px;
-        text-align: center;
-      }
-
-      .hero-content {
-        max-width: 100%;
-        margin: 0 auto;
-      }
-
-      .badge-hero {
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      .hero h1 {
-        font-size: 38px;
-      }
-
-      .hero-ctas {
-        justify-content: center;
-      }
-
-      .hero-media {
-        margin-top: 10px;
-      }
-
-      .calculator-wrapper {
-        grid-template-cols: 1fr;
-        gap: 30px;
-        padding: 24px;
-      }
-
-      .role-grid {
-        grid-template-cols: 1fr;
-        gap: 24px;
-      }
-
-      .download-panel {
-        grid-template-cols: 1fr;
-        text-align: center;
-        padding: 30px 24px;
-      }
-
-      .download-steps {
-        align-items: center;
-      }
-
-      .footer-content {
-        grid-template-cols: 1fr;
-        gap: 30px;
-      }
+    /* ==================================================
+       TABLET — từ 640px
+       ================================================== */
+    @media (min-width: 640px) {
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .roles { grid-template-columns: 1fr 1fr; }
+      .ftr-bottom { flex-direction: row; justify-content: space-between; text-align: left; }
     }
 
-    @media (max-width: 768px) {
-      header {
-        height: 68px;
-      }
-      
-      .hero {
-        padding-top: 110px;
-        padding-bottom: 50px;
-      }
+    /* ==================================================
+       DESKTOP — từ 960px
+       ================================================== */
+    @media (min-width: 960px) {
+      body { font-size: 17px; }
+      section { padding: 80px 0; }
+      .hero { padding: 56px 0 32px; }
 
-      .hero h1 {
-        font-size: 32px;
-      }
+      .nav { height: 72px; }
+      .nav-menu { display: flex; }
 
-      .nav-links li:not(:last-child) {
-        display: none; /* Chỉ giữ nút Tải APK trên thanh navigation của điện thoại */
+      .hero-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 48px;
       }
+      .quick-stats { max-width: 520px; }
 
-      .section-header h2 {
-        font-size: 28px;
-      }
-
-      .role-card {
+      .calc {
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 28px;
         padding: 28px;
       }
+
+      .features-grid { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+
+      .dl-panel {
+        grid-template-columns: 1.3fr 0.7fr;
+        align-items: center;
+        padding: 40px;
+      }
+
+      .ftr { grid-template-columns: 1.3fr 0.7fr; gap: 40px; }
+    }
+
+    /* Mobile rất nhỏ: nén nút hero cho khít 1 hàng */
+    @media (max-width: 380px) {
+      .ctas .btn { font-size: 15px; padding: 12px 10px; gap: 6px; min-height: 52px; }
+      .ctas .btn svg { width: 18px; height: 18px; }
+    }
+
+    /* ==================================================
+       TÔN TRỌNG NGƯỜI DÙNG GIẢM HIỆU ỨNG
+       ================================================== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .reveal { opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
 
-  <!-- NAVIGATION HEADER -->
+  <!-- HEADER -->
   <header>
-    <div class="container nav-container">
-      <a href="#" class="logo">
-        <svg class="logo-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C11.5 4 9.5 6 8.5 8C7.5 10 7.5 11 8.5 11.5C9.5 12 11 10.5 12 9C13 10.5 14.5 12 15.5 11.5C16.5 11 16.5 10 15.5 8C14.5 6 12.5 4 12 2ZM12 8C11.3 8.8 10.5 9.4 10 9.4C9.5 9.4 9.5 9 10 8.2C10.6 7.2 11.5 6 12 5C12.5 6 13.4 7.2 14 8.2C14.5 9 14.5 9.4 14 9.4C13.5 9.4 12.7 8.8 12 8ZM12 10C11 12 8.5 14 7.5 16C6.5 18 6.5 19 7.5 19.5C8.5 20 10.5 18 12 16C13.5 18 15.5 20 16.5 19.5C17.5 19 17.5 18 16.5 16C15.5 14 13 12 12 10ZM12 15.2C11.3 16 10.2 16.8 9.5 16.8C8.8 16.8 8.8 16.2 9.5 15.2C10.2 14 11.2 12.5 12 11.5C12.8 12.5 13.8 14 14.5 15.2C15.2 16.2 15.2 16.8 14.5 16.8C13.8 16.8 12.7 16 12 15.2Z" />
+    <div class="container nav">
+      <a href="#" class="logo" aria-label="Trang chủ Cân Lúa">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2C11.5 4 9.5 6 8.5 8C7.5 10 7.5 11 8.5 11.5C9.5 12 11 10.5 12 9C13 10.5 14.5 12 15.5 11.5C16.5 11 16.5 10 15.5 8C14.5 6 12.5 4 12 2ZM12 10C11 12 8.5 14 7.5 16C6.5 18 6.5 19 7.5 19.5C8.5 20 10.5 18 12 16C13.5 18 15.5 20 16.5 19.5C17.5 19 17.5 18 16.5 16C15.5 14 13 12 12 10Z"/>
         </svg>
         <span class="logo-text">Cân<span>Lúa</span></span>
       </a>
-      
-      <ul class="nav-links">
-        <li><a href="#demo-calc">Cân Thử Lúa</a></li>
-        <li><a href="#features">Chức Năng</a></li>
-        <li><a href="#benefits">Lợi Ích</a></li>
-        <li><a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn-nav-download">Tải APK</a></li>
+
+      <ul class="nav-menu">
+        <li><a href="#demo">Thử tính cân</a></li>
+        <li><a href="#features">Tính năng</a></li>
+        <li><a href="#benefits">Lợi ích</a></li>
+        <li><a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn-apk">Tải app</a></li>
       </ul>
+
+      <!-- Nút Tải app trên mobile -->
+      <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn-apk" style="display:inline-flex;" id="nav-mobile-apk">Tải app</a>
     </div>
   </header>
 
-  <!-- HERO SECTION -->
+  <!-- HERO -->
   <section class="hero">
-    <div class="container hero-wrapper">
-      
-      <!-- Cột Trái: Giới thiệu, CTAs tải app -->
-      <div class="hero-content">
-        <div class="badge-hero">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-          </svg>
-          Ghi chép mộc mạc, bình dân & thân thuộc
-        </div>
-        
+    <div class="container hero-grid">
+
+      <div>
+        <span class="pill">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L15 8.3L22 9.3L17 14.1L18.2 21L12 17.8L5.8 21L7 14.1L2 9.3L9 8.3L12 2Z"/></svg>
+          Miễn phí cho bà con nông dân
+        </span>
+
         <h1>
-          Đơn Giản Hóa<br>
-          <span class="green">Cân Lúa Tại Ruộng</span><br>
-          Cho Bà Con Việt
+          Ghi sổ cân lúa<br>
+          <span class="g">ngay tại ruộng</span><br>
+          <span class="y">không cần mạng</span>
         </h1>
-        
+
         <p class="hero-desc">
-          Ứng dụng <strong>Cân Lúa Mobile</strong> ra đời nhằm thay thế hoàn toàn những cuốn sổ ghi chép lem luốc ngoài đồng sâu. Với triết lý <strong>Offline-first</strong> chạy không cần mạng, ứng dụng giúp bà con tự động tính toán khối lượng tịnh, chốt giao dịch bằng mã QR bảo mật và hỏi đáp trợ lý nông nghiệp AI khuyến nông cực kỳ dễ dàng.
+          App <strong>Cân Lúa</strong> giúp bà con và thương lái ghi phiếu cân nhanh gọn trên điện thoại. Tự cộng tổng, trừ bì, tính ẩm và in phiếu gửi Zalo trong vài giây — dùng được cả khi mất sóng ngoài đồng.
         </p>
-        
-        <div class="hero-ctas">
-          <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn-main-download pulse">
-            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#FFFFFF;">
-              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
-            </svg>
-            Tải File APK (Bản Beta)
+
+        <div class="ctas">
+          <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn btn-primary pulse">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Tải app (file APK)
           </a>
-          <a href="#download" class="btn-secondary-guide">
-            Xem cách cài đặt
-          </a>
+          <a href="#download" class="btn btn-ghost">Xem cách cài</a>
+        </div>
+
+        <div class="quick-stats" aria-label="Vài con số">
+          <div class="stat"><b>100%</b><span>Miễn phí</span></div>
+          <div class="stat"><b>0 đ</b><span>Không quảng cáo</span></div>
+          <div class="stat"><b>3 giây</b><span>In phiếu gửi Zalo</span></div>
         </div>
       </div>
-      
-      <!-- Cột Phải: Ảnh nông dân chụp Polaroid độc lập (TRÁNH CHỒNG ĐÈ) -->
-      <div class="hero-media">
-        <div class="farmer-polaroid">
-          <img src="farmers.png" alt="Bà con nông dân cười rạng rỡ thu hoạch lúa chín trúng vụ">
-          <div class="caption">🌾 Đồng hành cùng mùa vàng Việt Nam</div>
-        </div>
+
+      <div>
+        <figure class="hero-photo">
+          <img src="farmers.png" alt="Bà con nông dân vui mừng thu hoạch mùa lúa chín">
+          <figcaption class="cap">🌾 Đồng hành cùng bà con mùa vàng</figcaption>
+        </figure>
       </div>
-      
+
     </div>
   </section>
 
-  <!-- INTERACTIVE DEMO: BỘ TÍNH CÂN LÚA TRỰC TIẾP TRÊN WEB -->
-  <section class="interactive-section" id="demo-calc">
+  <!-- DEMO CALCULATOR -->
+  <section class="demo" id="demo">
     <div class="container">
-      
-      <div class="section-header reveal">
-        <h2>Trải Nghiệm <span>Bộ Cân Lúa Thử Nghiệm</span></h2>
-        <p>Bấm nhập số liệu để xem cách thuật toán Cân Lúa quy đổi khối lượng và đánh giá vụ mùa ngay tức thì giống như ứng dụng di động.</p>
+
+      <div class="sec-head reveal">
+        <span class="eyebrow">Thử ngay tại đây</span>
+        <h2>Tính thử <span class="g">cân lúa</span> trên web</h2>
+        <p>Nhập vào vài con số quen thuộc — máy sẽ tự tính khối lượng tịnh giống y như trên app.</p>
       </div>
-      
-      <div class="calculator-wrapper reveal">
-        <!-- Form Nhập Liệu -->
-        <div class="calculator-inputs">
+
+      <div class="calc reveal">
+
+        <div>
           <div class="calc-title">
-            <svg viewBox="0 0 24 24">
-              <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM7 7H9V9H7V7ZM11 7H13V9H11V7ZM15 7H17V9H15V7ZM7 11H9V13H7V11ZM11 11H13V13H11V11ZM15 11H17V13H15V11ZM7 15H9V17H7V15ZM11 15H17V17H11V15Z" />
-            </svg>
-            Thông số lúa gặt tại ruộng
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM7 7H9V9H7V7ZM11 7H13V9H11V7ZM15 7H17V9H15V7ZM7 11H9V13H7V11ZM11 11H13V13H11V11ZM15 11H17V13H15V11ZM7 15H9V17H7V15ZM11 15H17V17H11V15Z"/></svg>
+            Nhập số liệu
           </div>
-          
+
           <div class="input-grid">
-            <div class="input-group">
-              <label for="calc-bags">Tổng số bao lúa</label>
-              <div class="input-wrapper">
-                <input type="number" id="calc-bags" value="120" min="1" max="1000">
-                <span class="unit">Bao</span>
+            <div class="field">
+              <label for="calc-bags">Số bao lúa</label>
+              <div class="field-wrap">
+                <input type="number" id="calc-bags" inputmode="numeric" value="120" min="1" max="9999">
+                <span class="unit">bao</span>
               </div>
             </div>
-            
-            <div class="input-group">
-              <label for="calc-weight">Cân TB mỗi bao</label>
-              <div class="input-wrapper">
-                <input type="number" id="calc-weight" value="61.8" step="0.1" min="10" max="100">
+            <div class="field">
+              <label for="calc-weight">Cân TB / bao</label>
+              <div class="field-wrap">
+                <input type="number" id="calc-weight" inputmode="decimal" value="61.8" step="0.1" min="1">
                 <span class="unit">kg</span>
               </div>
             </div>
-          </div>
-          
-          <div class="input-grid">
-            <div class="input-group">
-              <label for="calc-tare">Trừ bì bao vỏ</label>
-              <div class="input-wrapper">
-                <input type="number" id="calc-tare" value="0.8" step="0.1" min="0" max="5">
-                <span class="unit">kg/bao</span>
+            <div class="field">
+              <label for="calc-tare">Trừ bì / bao</label>
+              <div class="field-wrap">
+                <input type="number" id="calc-tare" inputmode="decimal" value="0.8" step="0.1" min="0">
+                <span class="unit">kg</span>
               </div>
             </div>
-            
-            <div class="input-group">
-              <label for="calc-moisture">Độ ẩm hạt lúa</label>
-              <div class="input-wrapper">
-                <input type="number" id="calc-moisture" value="13.8" step="0.1" min="10" max="30">
+            <div class="field">
+              <label for="calc-moisture">Độ ẩm</label>
+              <div class="field-wrap">
+                <input type="number" id="calc-moisture" inputmode="decimal" value="13.8" step="0.1" min="10" max="35">
                 <span class="unit">%</span>
               </div>
             </div>
           </div>
         </div>
-        
-        <!-- Slip Hóa Đơn Trực Quan -->
-        <div class="calculator-receipt">
-          <div class="receipt-header">
-            <h3>Phiếu Cân Điện Tử</h3>
+
+        <div class="receipt" aria-live="polite">
+          <div class="receipt-head">
+            <h3>Phiếu cân</h3>
             <p>Mô phỏng app Cân Lúa</p>
           </div>
-          
-          <div class="receipt-row">
-            <span>Tổng khối lượng thô:</span>
-            <span class="val" id="res-raw">7,416.0 kg</span>
-          </div>
-          
-          <div class="receipt-row">
-            <span>Tổng khấu trừ bì bao:</span>
-            <span class="val" id="res-tare" style="color:var(--accent-gold-dark);">-96.0 kg</span>
-          </div>
-          
-          <div class="receipt-row">
-            <span>Trừ ẩm quy đổi (Chuẩn 14%):</span>
-            <span class="val" id="res-moisture-deduct">0.0 kg</span>
-          </div>
-          
+
+          <div class="receipt-row"><span>Tổng cân thô</span><span class="v" id="res-raw">7.416,0 kg</span></div>
+          <div class="receipt-row"><span>Trừ bì bao</span><span class="v" id="res-tare" style="color:var(--gold-dark);">−96,0 kg</span></div>
+          <div class="receipt-row"><span>Trừ ẩm (chuẩn 14%)</span><span class="v" id="res-moisture">0,0 kg</span></div>
+
           <div class="receipt-total">
-            <span class="receipt-total-lbl">Khối Lượng Tịnh Thực Tế</span>
-            <span class="receipt-total-val" id="res-net">7,320.0 kg</span>
-            <span class="status-badge high" id="res-status">Mùa Vụ Thu Hoạch Khá 👍</span>
+            <span class="lbl">Khối lượng tịnh</span>
+            <span class="val" id="res-net">7.320,0 kg</span>
+            <span class="badge good" id="res-status">Mùa khá 👍</span>
           </div>
         </div>
-        
+
       </div>
-      
     </div>
   </section>
 
-  <!-- FEATURES SHOWCASE SECTION (ĐẦY ĐỦ CHỨC NĂNG) -->
-  <section class="features-section" id="features">
+  <!-- FEATURES -->
+  <section class="features" id="features">
     <div class="container">
-      
-      <div class="section-header reveal">
-        <h2>Đầy Đủ Chức Năng <span>Chuyên Biệt Thực Địa</span></h2>
-        <p>Hệ sinh thái số hóa mộc mạc phục vụ đắc lực cho cả nông dân lẫn thương lái tại vựa lúa Việt Nam.</p>
+      <div class="sec-head reveal">
+        <span class="eyebrow">Tính năng</span>
+        <h2>Đủ thứ cần dùng <span class="g">ngoài đồng</span></h2>
+        <p>Đơn giản, dễ học, ai cũng dùng được. Mở app lên là làm việc ngay.</p>
       </div>
-      
+
       <div class="features-grid">
-        
-        <!-- 1. Nhập liệu siêu tốc -->
-        <div class="feature-card reveal">
-          <div class="feature-icon-wrapper">
-            <svg viewBox="0 0 24 24">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v2H7zm0 4h2v2H7zm4-4h2v2h-2zm0 4h2v2h-2zm4-4h2v2h-2zm0 4h2v2h-2z" />
-            </svg>
-          </div>
-          <h3>Nhập Cân Siêu Tốc & Trừ Bì</h3>
-          <p>Thiết kế bảng cân 3 cột độc quyền, hỗ trợ nhảy ô tự động column-major giúp nhập điểm số siêu tốc ngoài ruộng, tự động trừ bì vỏ bao chuẩn xác.</p>
+
+        <div class="f-card reveal">
+          <div class="f-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 10h2v2H7zm0 4h2v2H7zm4-4h2v2h-2zm0 4h2v2h-2zm4-4h2v2h-2zm0 4h2v2h-2z"/></svg></div>
+          <h3>Nhập cân nhanh, tự trừ bì</h3>
+          <p>Bảng cân kiểu sổ tay, chạm số là nhảy ô. Tự cộng tổng, tự trừ bao — không phải bấm máy tính nữa.</p>
         </div>
-        
-        <!-- 2. Offline-first -->
-        <div class="feature-card reveal">
-          <div class="feature-icon-wrapper">
-            <svg viewBox="0 0 24 24">
-              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
-            </svg>
-          </div>
-          <h3>Hoạt Động Không Cần Mạng</h3>
-          <p>Triết lý offline-first bảo vệ dữ liệu tối đa. Room Database lưu phiếu cân an toàn khi mất sóng ngoài ruộng sâu, tự đồng bộ lên đám mây khi có mạng.</p>
+
+        <div class="f-card reveal">
+          <div class="f-icon"><svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg></div>
+          <h3>Không cần mạng</h3>
+          <p>Ngoài ruộng sâu mất sóng cũng ghi được. Khi có wifi, dữ liệu tự lưu lên đám mây an toàn.</p>
         </div>
-        
-        <!-- 3. QR Code -->
-        <div class="feature-card reveal">
-          <div class="feature-icon-wrapper">
-            <svg viewBox="0 0 24 24">
-              <path d="M3 3h8v8H3zm2 2v4h4V5zm-2 8h8v8H3zm2 2v4h4v-4zm8-12h8v8h-8zm2 2v4h4V5zm-2 8h3v3h-3zm3 3h3v3h-3zm-3 3h3v2h-3zm6-6h3v3h-3zm-3 3h3v3h-3zm3 3h3v2h-3z"/>
-            </svg>
-          </div>
-          <h3>Xác Thực Giao Dịch QR Code</h3>
-          <p>Mã hóa phiếu cân thành QR bảo mật sử dụng chữ ký SHA-256. Thương lái và nông dân kết nối, đối chiếu dữ liệu chỉ trong 1 giây mà không sợ sai sót tẩy xóa.</p>
+
+        <div class="f-card reveal">
+          <div class="f-icon"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm2 2v4h4V5zm-2 8h8v8H3zm2 2v4h4v-4zm8-12h8v8h-8zm2 2v4h4V5zm-2 8h3v3h-3zm3 3h3v3h-3zm-3 3h3v2h-3z"/></svg></div>
+          <h3>Quét mã QR đối chiếu</h3>
+          <p>Thương lái và nông dân quét mã là khớp ngay số bao, số ký, không sợ nhầm lẫn hay tẩy xóa.</p>
         </div>
-        
-        <!-- 4. Giá cả thời tiết -->
-        <div class="feature-card reveal">
-          <div class="feature-icon-wrapper">
-            <svg viewBox="0 0 24 24">
-              <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM4 10.5H1v2h3v-2zm9-6.66V1h-2v2.84c.56-.08 1.08-.18 1.66-.18.57 0 1.1.1 1.66.18zM11 19.16V22h2v-2.84c-.56.08-1.08.18-1.66.18-.57 0-1.1-.1-1.66-.18zm9.24-14.32l-1.42-1.42-1.79 1.8 1.41 1.41 1.8-1.79zM20 10.5h3v2h-3v-2zm-8-7c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm5.24 1.34l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM4.96 17.5l-1.79 1.8 1.41 1.41 1.8-1.79-1.42-1.42z"/>
-            </svg>
-          </div>
-          <h3>Giá Cả & Thời Tiết Realtime</h3>
-          <p>Theo dõi sát sao giá lúa thị trường hôm nay (ST25, OM18, Đài Thơm...) được liên kết trực tiếp. Dự báo thời tiết cánh đồng giúp bà con lên lịch gặt thuận lợi nhất.</p>
+
+        <div class="f-card reveal">
+          <div class="f-icon"><svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/><path d="M11 7h2v6h-2zm0 7h2v2h-2z"/></svg></div>
+          <h3>Giá lúa & thời tiết hôm nay</h3>
+          <p>Xem giá ST25, OM18, Đài Thơm cập nhật mỗi ngày. Coi thời tiết để tính ngày gặt cho trúng.</p>
         </div>
-        
-        <!-- 5. AI RAG -->
-        <div class="feature-card reveal">
-          <div class="feature-icon-wrapper">
-            <svg viewBox="0 0 24 24">
-              <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12zm-9-4H8V8h4V6H6v8h6v-2z"/>
-            </svg>
-          </div>
-          <h3>Trợ Lý Khuyến Nông AI</h3>
-          <p>Tra cứu kỹ thuật canh tác, chẩn đoán sâu bệnh qua tài liệu nông nghiệp ĐBSCL được tích hợp trong trợ lý AI. Hỗ trợ hỏi đáp bằng giọng nói tiếng Việt cực kỳ tự nhiên.</p>
+
+        <div class="f-card reveal">
+          <div class="f-icon"><svg viewBox="0 0 24 24"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-9 10H8V8h4V6H6v8h6v-2z"/></svg></div>
+          <h3>Hỏi đáp nông nghiệp</h3>
+          <p>Trợ lý trong app trả lời chuyện sâu bệnh, phân bón, kỹ thuật canh tác ngay bằng tiếng Việt.</p>
         </div>
-        
-        <!-- 6. Google Map Mark -->
-        <div class="feature-card reveal">
-          <div class="feature-icon-wrapper">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-          </div>
-          <h3>Bản Đồ Điểm Cân Vệ Tinh</h3>
-          <p>Hiển thị trực quan các điểm thu mua lúa gạo, lò sấy hoạt động trên nền bản đồ vệ tinh sắc nét, định vị tọa độ ruộng và bãi cân lúa chính xác cao.</p>
+
+        <div class="f-card reveal">
+          <div class="f-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg></div>
+          <h3>Bản đồ điểm cân, lò sấy</h3>
+          <p>Tìm chỗ bán lúa, lò sấy gần nhất trên bản đồ. Lưu lại tọa độ ruộng để lần sau quay lại.</p>
         </div>
-        
+
       </div>
     </div>
   </section>
 
-  <!-- LỢI ÍCH & GIÁ TRỊ THỰC TIỄN (MANG LẠI GIÁ TRỊ GÌ) -->
-  <section class="value-section" id="benefits">
+  <!-- BENEFITS -->
+  <section class="value" id="benefits">
     <div class="container">
-      
-      <div class="value-intro reveal">
-        <div class="section-header">
-          <h2>Giá Trị Thiết Thực <span>Đồng Hành Cùng Nhà Nông</span></h2>
-          <p>Cân Lúa Mobile không chỉ là một ứng dụng ghi chép số liệu đơn thuần, mà là giải pháp bảo vệ tối đa lợi ích kinh tế cho cả nông dân và thương lái.</p>
-        </div>
+      <div class="sec-head reveal">
+        <span class="eyebrow">Lợi ích</span>
+        <h2>App giúp gì cho <span class="g">bà con và thương lái</span></h2>
+        <p>Không chỉ ghi sổ — mà còn giữ tiền bạc, công sức ngay tại ruộng.</p>
       </div>
-      
-      <div class="role-grid">
-        
-        <!-- Dành cho nông dân -->
-        <div class="role-card farmer-style reveal">
-          <span class="role-badge">Dành cho nông dân</span>
-          <h3>Minh bạch từng ký lúa, an tâm thu hoạch</h3>
-          
-          <ul class="value-list">
+
+      <div class="roles">
+
+        <div class="role farmer reveal">
+          <span class="role-tag">Nông dân</span>
+          <h3>Cân đúng, ghi rõ — an tâm bán lúa</h3>
+          <ul>
             <li>
               <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-              <span><strong>Độ chính xác tuyệt đối</strong>: Tự động tính toán khối lượng tịnh và khấu trừ độ ẩm, tạp chất minh bạch, tránh nhầm lẫn sổ sách.</span>
+              <span><strong>Không tính nhẩm sai.</strong> App tự cộng số ký, tự trừ bì bao và độ ẩm.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-              <span><strong>Lịch sử mùa gặt</strong>: Lưu trữ và so sánh sản lượng lúa, doanh thu thu về qua các mùa vụ trực quan, giúp chủ động tài chính.</span>
+              <span><strong>Lưu mọi mùa vụ.</strong> Xem lại sản lượng, doanh thu các vụ trước để tính toán mùa sau.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-              <span><strong>Quản lý công nợ</strong>: Ghi nhận đầy đủ thông tin tiền cọc, tiền thanh toán đợt của thương lái, chống thất thoát dòng tiền.</span>
+              <span><strong>Theo dõi tiền cọc.</strong> Ai trả bao nhiêu, còn nợ bao nhiêu — đều có sổ rõ ràng.</span>
             </li>
           </ul>
         </div>
-        
-        <!-- Dành cho thương lái -->
-        <div class="role-card trader-style reveal">
-          <span class="role-badge">Dành cho thương lái</span>
-          <h3>Thu mua chuyên nghiệp, quản lý tức thời</h3>
-          
-          <ul class="value-list">
+
+        <div class="role trader reveal">
+          <span class="role-tag">Thương lái</span>
+          <h3>Mua chuyên nghiệp — quản lý gọn gàng</h3>
+          <ul>
             <li>
               <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-              <span><strong>Sổ giao dịch thu mua số</strong>: Thống kê chi tiết số tiền đã đặt cọc, lượng lúa gom mua thực tế tại ruộng thời gian thực.</span>
+              <span><strong>Sổ thu mua đầy đủ.</strong> Tổng số bao, tổng tiền cọc, tổng lúa gom được theo từng ngày.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-              <span><strong>In phiếu PDF & gửi Zalo nhanh</strong>: Tạo hóa đơn phiếu cân chuyên nghiệp ngay tại ruộng và gửi trực tiếp qua Zalo cho nông dân trong 2 giây.</span>
+              <span><strong>Gửi phiếu Zalo.</strong> Bấm 1 lần là xuất phiếu PDF gửi cho bà con xem ngay tại ruộng.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-              <span><strong>Cơ cấu giống lúa</strong>: Biểu đồ trực quan giúp thương lái nắm bắt tỷ trọng thu mua các giống lúa để phân bổ lò sấy hiệu quả.</span>
+              <span><strong>Biết loại lúa nào nhiều.</strong> Biểu đồ tỷ trọng giống lúa giúp phân bổ lò sấy hợp lý.</span>
             </li>
           </ul>
         </div>
-        
+
       </div>
-      
     </div>
   </section>
 
-  <!-- HƯỚNG DẪN TẢI & CÀI ĐẶT DỄ DÀNG (EASY DOWNLOAD) -->
-  <section class="download-section" id="download">
+  <!-- DOWNLOAD -->
+  <section class="download" id="download">
     <div class="container">
-      
-      <div class="download-panel reveal">
-        <div class="download-text">
-          <h2>Tải App Cân Lúa Chỉ Với 1 Chạm</h2>
-          <p>Ứng dụng hoàn toàn miễn phí, cài đặt nhanh gọn bằng file APK trực tiếp. Chỉ mất 1 phút để mang trợ lý số hóa nông nghiệp ra cánh đồng của bạn!</p>
-          
-          <div class="download-steps">
-            <div class="step-item">
-              <span class="step-num">1</span>
-              <span>Bấm nút Tải APK màu vàng ở trên hoặc nút màu xanh bên dưới</span>
-            </div>
-            <div class="step-item">
-              <span class="step-num">2</span>
-              <span>Mở file vừa tải xuống (Can.Lua.v1.apk) và nhấn "Cài đặt"</span>
-            </div>
-            <div class="step-item">
-              <span class="step-num">3</span>
-              <span>Mở app Cân Lúa lên và sẵn sàng ghi chép phiếu cân!</span>
-            </div>
+
+      <div class="dl-panel reveal">
+        <div class="dl-text">
+          <h2>Tải app Cân Lúa — chỉ 3 bước</h2>
+          <p>App nhẹ, cài nhanh, dùng miễn phí. Không cần đăng ký, mở lên là làm.</p>
+
+          <div class="steps">
+            <div class="step"><span class="step-n">1</span><span>Bấm nút <strong>Tải app</strong> để lấy file APK</span></div>
+            <div class="step"><span class="step-n">2</span><span>Mở file vừa tải, nhấn <strong>Cài đặt</strong></span></div>
+            <div class="step"><span class="step-n">3</span><span>Mở app lên và bắt đầu ghi phiếu cân</span></div>
           </div>
-          
-          <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn-main-download">
-            <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#FFFFFF;">
-              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
-            </svg>
-            Tải APK Bản Beta Ngay
+
+          <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+            Tải app ngay
           </a>
         </div>
-        
-        <!-- QR Code Quét tải nhanh trên Mobile -->
-        <div class="download-box-right">
-          <div class="qr-container">
-            <!-- SVG QR Code giả lập thiết kế đẹp -->
-            <svg viewBox="0 0 100 100">
-              <rect x="0" y="0" width="100" height="100" fill="none"/>
-              <!-- Định dạng các khối QR -->
-              <rect x="10" y="10" width="25" height="25" fill="currentColor"/>
-              <rect x="15" y="15" width="15" height="15" fill="#FAF9F6"/>
-              <rect x="18" y="18" width="9" height="9" fill="currentColor"/>
-              
-              <rect x="65" y="10" width="25" height="25" fill="currentColor"/>
-              <rect x="70" y="15" width="15" height="15" fill="#FAF9F6"/>
-              <rect x="73" y="18" width="9" height="9" fill="currentColor"/>
-              
-              <rect x="10" y="65" width="25" height="25" fill="currentColor"/>
-              <rect x="15" y="70" width="15" height="15" fill="#FAF9F6"/>
-              <rect x="18" y="73" width="9" height="9" fill="currentColor"/>
-              
-              <!-- Các chấm ngẫu nhiên khác -->
-              <rect x="42" y="12" width="6" height="6" fill="currentColor"/>
-              <rect x="52" y="18" width="8" height="4" fill="currentColor"/>
-              <rect x="45" y="30" width="10" height="8" fill="currentColor"/>
-              <rect x="12" y="45" width="6" height="10" fill="currentColor"/>
-              <rect x="24" y="42" width="12" height="6" fill="currentColor"/>
-              <rect x="72" y="42" width="16" height="6" fill="currentColor"/>
-              <rect x="60" y="52" width="6" height="12" fill="currentColor"/>
-              <rect x="45" y="60" width="8" height="8" fill="currentColor"/>
-              <rect x="72" y="65" width="18" height="18" fill="currentColor"/>
-              <rect x="78" y="71" width="6" height="6" fill="#FAF9F6"/>
-              <rect x="45" y="80" width="15" height="8" fill="currentColor"/>
-            </svg>
+
+        <div style="background:#fff; border:1.5px dashed var(--line); border-radius:var(--r-md); padding:22px; text-align:center;">
+          <div style="font-family:var(--font-head); font-weight:800; font-size:18px; color:var(--green-dark); margin-bottom:6px;">Bản Beta</div>
+          <div style="font-size:14px; color:var(--ink-3); margin-bottom:14px;">Đang cải thiện hằng ngày — phản hồi của bà con rất quý</div>
+          <div style="font-size:15px; color:var(--ink-2);">
+            📧 <a href="mailto:nguyenthinhk52005@gmail.com" style="color:var(--green); font-weight:700; text-decoration:none;">nguyenthinhk52005@gmail.com</a>
+            📱 <a href="https://zalo.me/0945553902" style="color:var(--green); font-weight:700; text-decoration:none;">0945553902</a>
+
           </div>
-          <div class="qr-desc">Quét Camera Điện Thoại<br><span style="color:var(--primary-green);">Tải nhanh file APK</span></div>
         </div>
       </div>
-      
+
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer>
     <div class="container">
-      <div class="footer-content">
-        <div class="footer-brand">
+      <div class="ftr">
+        <div>
           <a href="#" class="logo">
-            <svg class="logo-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C11.5 4 9.5 6 8.5 8C7.5 10 7.5 11 8.5 11.5C9.5 12 11 10.5 12 9C13 10.5 14.5 12 15.5 11.5C16.5 11 16.5 10 15.5 8C14.5 6 12.5 4 12 2ZM12 8C11.3 8.8 10.5 9.4 10 9.4C9.5 9.4 9.5 9 10 8.2C10.6 7.2 11.5 6 12 5C12.5 6 13.4 7.2 14 8.2C14.5 9 14.5 9.4 14 9.4C13.5 9.4 12.7 8.8 12 8ZM12 10C11 12 8.5 14 7.5 16C6.5 18 6.5 19 7.5 19.5C8.5 20 10.5 18 12 16C13.5 18 15.5 20 16.5 19.5C17.5 19 17.5 18 16.5 16C15.5 14 13 12 12 10ZM12 15.2C11.3 16 10.2 16.8 9.5 16.8C8.8 16.8 8.8 16.2 9.5 15.2C10.2 14 11.2 12.5 12 11.5C12.8 12.5 13.8 14 14.5 15.2C15.2 16.2 15.2 16.8 14.5 16.8C13.8 16.8 12.7 16 12 15.2Z" />
-            </svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C11.5 4 9.5 6 8.5 8C7.5 10 7.5 11 8.5 11.5C9.5 12 11 10.5 12 9C13 10.5 14.5 12 15.5 11.5C16.5 11 16.5 10 15.5 8C14.5 6 12.5 4 12 2Z"/></svg>
             <span class="logo-text">Cân<span>Lúa</span></span>
           </a>
-          <p class="footer-desc">Công cụ đắc lực số hóa quá trình cân đo thu hoạch nông sản. Bảo vệ lợi ích kinh tế, tối ưu hóa quy trình làm việc thực địa cho bà con nông dân và thương lái lúa gạo Việt.</p>
+          <p class="ftr-desc">Trợ lý số hóa cân lúa cho bà con nông dân và thương lái Việt. Đơn giản, miễn phí, dùng được mọi lúc.</p>
         </div>
-        
-        <div class="footer-links-grid">
-          <div class="footer-col">
-            <h5>Liên Kết Nhanh</h5>
+
+        <div class="ftr-cols">
+          <div>
+            <h5>Liên kết</h5>
             <ul>
-              <li><a href="#demo-calc">Cân Thử Lúa</a></li>
-              <li><a href="#features">Chức Năng Chính</a></li>
-              <li><a href="#benefits">Lợi Ích Đạt Được</a></li>
-              <li><a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk">Tải file APK</a></li>
+              <li><a href="#demo">Tính thử cân</a></li>
+              <li><a href="#features">Tính năng</a></li>
+              <li><a href="#benefits">Lợi ích</a></li>
+              <li><a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/Beta/CanLua.apk">Tải APK</a></li>
             </ul>
           </div>
-          <div class="footer-col">
-            <h5>Hỗ Trợ Kỹ Thuật</h5>
+          <div>
+            <h5>Hỗ trợ</h5>
             <ul>
-              <li><a href="mailto:support@canluavn.web.app">support@canluavn.web.app</a></li>
-              <li><a href="#">Điều khoản sử dụng</a></li>
-              <li><a href="#">Chính sách bảo mật</a></li>
+              <li><a href="mailto:support@canluavn.web.app">Email hỗ trợ</a></li>
+              <li><a href="#">Điều khoản</a></li>
+              <li><a href="#">Bảo mật</a></li>
             </ul>
           </div>
         </div>
       </div>
-      
-      <div class="footer-bottom-bar">
-        <p>&copy; 2026 Cân Lúa Mobile. Phát triển bởi GiaThinh Studio. Bảo lưu mọi quyền.</p>
-        <p>Phiên bản Web 2.4.0-CozyHarvest</p>
+
+      <div class="ftr-bottom">
+        <span>© 2026 Cân Lúa Mobile — GiaThinh Studio</span>
+        <span>Web v3.0 · Mộc mạc · Dễ dùng</span>
       </div>
     </div>
   </footer>
 
-  <!-- JAVASCRIPT: BỘ CÂN THỬ LÚA & HIỆU ỨNG CHUYỂN ĐỘNG CUỘN -->
   <script>
-    // 1. DYNAMIC NUMBER COUNTING ANIMATION
-    function animateValue(obj, start, end, duration) {
-      if (isNaN(start)) start = 0;
-      if (isNaN(end)) end = 0;
-      let startTimestamp = null;
-      const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const currentValue = start + progress * (end - start);
-        obj.textContent = currentValue.toLocaleString('vi-VN', {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 1
-        }) + ' kg';
-        if (progress < 1) {
-          window.requestAnimationFrame(step);
+    // Hiển/ẩn nút tải APK mobile khi đã hiện trong nav-menu (desktop)
+    (function () {
+      var navMobile = document.getElementById('nav-mobile-apk');
+      function syncNav() {
+        if (window.matchMedia('(min-width: 960px)').matches) {
+          navMobile.style.display = 'none';
+        } else {
+          navMobile.style.display = 'inline-flex';
         }
-      };
-      window.requestAnimationFrame(step);
+      }
+      syncNav();
+      window.addEventListener('resize', syncNav);
+    })();
+
+    // Format số tiếng Việt
+    function fmt(n) {
+      return n.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     }
 
-    // 2. FORM CALCULATOR LOGIC
-    function recalculate() {
-      const bags = parseFloat(document.getElementById('calc-bags').value) || 0;
-      const weight = parseFloat(document.getElementById('calc-weight').value) || 0;
-      const tare = parseFloat(document.getElementById('calc-tare').value) || 0;
-      const moisture = parseFloat(document.getElementById('calc-moisture').value) || 14;
+    // Tính cân
+    function recalc() {
+      var bags = parseFloat(document.getElementById('calc-bags').value) || 0;
+      var weight = parseFloat(document.getElementById('calc-weight').value) || 0;
+      var tare = parseFloat(document.getElementById('calc-tare').value) || 0;
+      var moisture = parseFloat(document.getElementById('calc-moisture').value) || 14;
 
-      // Tính tổng khối lượng thô
-      const totalRaw = bags * weight;
-      
-      // Tính tổng trừ bì vỏ bao
-      const totalTare = bags * tare;
-      
-      // Quy đổi độ ẩm lúa khô tiêu chuẩn (Chuẩn 14%)
-      // Nếu lúa gặt có độ ẩm > 14%, bà con phải khấu trừ trọng lượng hao hụt nước.
-      let moistureDeduct = 0;
-      if (moisture > 14) {
-        moistureDeduct = totalRaw * ((moisture - 14) / 100);
-      }
+      var raw = bags * weight;
+      var tareTotal = bags * tare;
+      var moistureDeduct = moisture > 14 ? raw * ((moisture - 14) / 100) : 0;
+      var net = Math.max(0, raw - tareTotal - moistureDeduct);
 
-      // Khối lượng tịnh thực tế
-      const netWeight = Math.max(0, totalRaw - totalTare - moistureDeduct);
+      document.getElementById('res-raw').textContent = fmt(raw) + ' kg';
 
-      // Cập nhật lên Slip
-      document.getElementById('res-raw').textContent = totalRaw.toLocaleString('vi-VN', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' kg';
-      
-      const tareElement = document.getElementById('res-tare');
-      if (totalTare > 0) {
-        tareElement.textContent = '-' + totalTare.toLocaleString('vi-VN', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' kg';
-        tareElement.style.color = 'var(--accent-gold-dark)';
+      var tareEl = document.getElementById('res-tare');
+      tareEl.textContent = (tareTotal > 0 ? '−' : '') + fmt(tareTotal) + ' kg';
+      tareEl.style.color = tareTotal > 0 ? 'var(--gold-dark)' : 'var(--ink)';
+
+      var moistEl = document.getElementById('res-moisture');
+      moistEl.textContent = (moistureDeduct > 0 ? '−' : '') + fmt(moistureDeduct) + ' kg';
+      moistEl.style.color = moistureDeduct > 0 ? '#C62828' : 'var(--ink)';
+
+      document.getElementById('res-net').textContent = fmt(net) + ' kg';
+
+      var badge = document.getElementById('res-status');
+      if (net === 0) {
+        badge.textContent = 'Chưa có số liệu';
+        badge.className = 'badge ok';
+      } else if (net > 10000) {
+        badge.textContent = 'Trúng đậm! 🎉';
+        badge.className = 'badge great';
+      } else if (net > 3000) {
+        badge.textContent = 'Mùa khá 👍';
+        badge.className = 'badge good';
       } else {
-        tareElement.textContent = '0.0 kg';
-        tareElement.style.color = 'var(--text-main)';
-      }
-
-      const moistureElement = document.getElementById('res-moisture-deduct');
-      if (moistureDeduct > 0) {
-        moistureElement.textContent = '-' + moistureDeduct.toLocaleString('vi-VN', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' kg';
-        moistureElement.style.color = '#c62828'; // Màu đỏ trừ hao
-      } else {
-        moistureElement.textContent = '0.0 kg';
-        moistureElement.style.color = 'var(--text-main)';
-      }
-
-      // Nhảy số động cho kết quả cuối cùng
-      const netElement = document.getElementById('res-net');
-      const prevNet = parseFloat(netElement.textContent.replace(/[^0-9.]/g, '')) || 0;
-      animateValue(netElement, prevNet, netWeight, 400);
-
-      // Đánh giá sản lượng mùa gặt
-      const statusBadge = document.getElementById('res-status');
-      if (netWeight === 0) {
-        statusBadge.textContent = 'Chưa có số liệu';
-        statusBadge.className = 'status-badge normal';
-      } else if (netWeight > 10000) {
-        statusBadge.textContent = 'Vụ Mùa Trúng Đậm! 🎉';
-        statusBadge.className = 'status-badge super-high';
-      } else if (netWeight > 3000) {
-        statusBadge.textContent = 'Thu Hoạch Đạt Khá 👍';
-        statusBadge.className = 'status-badge high';
-      } else {
-        statusBadge.textContent = 'Đạt Chuẩn Thu Hoạch';
-        statusBadge.className = 'status-badge normal';
+        badge.textContent = 'Đạt chuẩn';
+        badge.className = 'badge ok';
       }
     }
 
-    // Gắn sự kiện cho các input
-    const inputs = ['calc-bags', 'calc-weight', 'calc-tare', 'calc-moisture'];
-    inputs.forEach(id => {
-      document.getElementById(id).addEventListener('input', recalculate);
+    ['calc-bags', 'calc-weight', 'calc-tare', 'calc-moisture'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', recalc);
     });
 
-    // 3. INTERSECTION OBSERVER FOR SCROLL REVEALS
-    document.addEventListener("DOMContentLoaded", function() {
-      const reveals = document.querySelectorAll(".reveal");
-      
-      const observerOptions = {
-        root: null,
-        rootMargin: "0px",
-        threshold: 0.12
-      };
-
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("active");
-            observer.unobserve(entry.target); // Chỉ chạy animation một lần khi cuộn tới
-          }
-        });
-      }, observerOptions);
-
-      reveals.forEach(reveal => {
-        observer.observe(reveal);
-      });
-      
-      // Chạy tính toán mẫu lần đầu tiên
-      recalculate();
+    // Hiệu ứng cuộn
+    document.addEventListener('DOMContentLoaded', function () {
+      var els = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) {
+              e.target.classList.add('active');
+              io.unobserve(e.target);
+            }
+          });
+        }, { threshold: 0.12 });
+        els.forEach(function (el) { io.observe(el); });
+      } else {
+        els.forEach(function (el) { el.classList.add('active'); });
+      }
+      recalc();
     });
   </script>
-
 </body>
 </html>
