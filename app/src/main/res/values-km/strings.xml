@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">CanLua</string>
+    <string name="app_name">Cân Lúa</string>
     <string name="role_farmer">កសិករ</string>
     <string name="role_trader">ឈ្មួញ</string>
     <string name="nav_scale">ថ្លឹងស្រូវ</string>
@@ -53,7 +53,7 @@
     <string name="profile_setup_cccd_label">អត្តសញ្ញាណប័ណ្ណ (ស្រេចចិត្ត)</string>
     <string name="profile_setup_complete">បញ្ចប់ការកំណត់</string>
     <string name="profile_setup_locked_content">ត្រូវការការអនុម័ត</string>
-    <string name="auth_logo_content">ឡូហ្គោ CanLua</string>
+    <string name="auth_logo_content">ឡូហ្គោ Cân Lúa</string>
     <string name="auth_title">ចូល ឬ ចុះឈ្មោះ</string>
     <string name="auth_subtitle">ការគ្រប់គ្រងទិន្នន័យឆ្លាតវៃ ការផ្ទុកប្រកបដោយសុវត្ថិភាព និងការសមកាលកម្មគ្រប់ពេល។</string>
     <string name="auth_or">ឬ</string>
@@ -318,7 +318,7 @@
     <string name="pdf_verification_hash">Hash ផ្ទៀងផ្ទាត់៖ %1$s</string>
     <string name="pdf_qr_instruction">ស្កែន QR ដើម្បីផ្ទៀងផ្ទាត់</string>
     <string name="pdf_card_date">វិក្កយបត្រ #%1$d · %2$s</string>
-    <string name="pdf_footer">ទំព័រ %1$d · បង្កើតដោយ CanLua Mobile · Hash %2$s · %3$s</string>
+    <string name="pdf_footer">ទំព័រ %1$d · បង្កើតដោយ Cân Lúa Mobile · Hash %2$s · %3$s</string>
     <string name="personal_information">ព័ត៌មានផ្ទាល់ខ្លួន</string>
     <string name="save">រក្សាទុក</string>
     <string name="edit">កែសម្រួល</string>

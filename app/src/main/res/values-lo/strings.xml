@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">CanLua</string>
+    <string name="app_name">Cân Lúa</string>
     <string name="role_farmer">ຊາວນາ</string>
     <string name="role_trader">ພໍ່ຄ້າ</string>
     <string name="nav_scale">ຊັ່ງເຂົ້າ</string>
@@ -53,7 +53,7 @@
     <string name="profile_setup_cccd_label">ບັດປະຊາຊົນ (ທາງເລືອກ)</string>
     <string name="profile_setup_complete">ສຳເລັດການຕັ້ງຄ່າ</string>
     <string name="profile_setup_locked_content">ຕ້ອງໄດ້ຮັບການອະນຸມັດ</string>
-    <string name="auth_logo_content">ໂລໂກ້ CanLua</string>
+    <string name="auth_logo_content">ໂລໂກ້ Cân Lúa</string>
     <string name="auth_title">ເຂົ້າສູ່ລະບົບ ຫຼື ລົງທະບຽນ</string>
     <string name="auth_subtitle">CN ການຈັດການຂໍ້ມູນອັດສະລິຍະ, ຈັດເກັບຢ່າງປອດໄພ ແລະ ຊິງຄ໌ໄດ້ທຸກເວລາ.</string>
     <string name="auth_or">ຫຼື</string>
@@ -383,7 +383,7 @@
     <string name="pdf_verification_hash">Hash ຢືນຢັນ: %1$s</string>
     <string name="pdf_qr_instruction">ສະແກນ QR ເພື່ອສົມທຽບ</string>
     <string name="pdf_card_date">ໃບຊັ່ງ #%1$d · %2$s</string>
-    <string name="pdf_footer">ໜ້າ %1$d · ສ້າງໂດຍ CanLua Mobile · Hash %2$s · %3$s</string>
+    <string name="pdf_footer">ໜ້າ %1$d · ສ້າງໂດຍ Cân Lúa Mobile · Hash %2$s · %3$s</string>
     <string name="settings_premium_title">ແພັກເກດ Premium</string>
     <string name="settings_premium_early_adopter">ຜູ້ໃຊ້ລຸ້ນທຳອິດ</string>
     <string name="settings_premium_active">ກຳລັງໃຊ້ງານ</string>

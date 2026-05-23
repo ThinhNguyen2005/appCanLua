@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">CanLua</string>
+    <string name="app_name">Cân Lúa</string>
     <string name="role_farmer">农民</string>
     <string name="role_trader">收购商</string>
     <string name="nav_scale">称稻</string>
@@ -383,7 +383,7 @@
     <string name="pdf_verification_hash">验真哈希：%1$s</string>
     <string name="pdf_qr_instruction">扫描上方二维码进行账目对账</string>
     <string name="pdf_card_date">单据 #%1$d · %2$s</string>
-    <string name="pdf_footer">第 %1$d 页 · 由 CanLua Mobile 生成 · Hash %2$s · %3$s</string>
+    <string name="pdf_footer">第 %1$d 页 · 由 Cân Lúa Mobile 生成 · Hash %2$s · %3$s</string>
     <string name="settings_premium_title">Premium 套餐</string>
     <string name="settings_premium_early_adopter">早期用户</string>
     <string name="settings_premium_active">已启用</string>
