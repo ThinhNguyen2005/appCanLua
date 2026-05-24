@@ -118,7 +118,7 @@ fun RiceMapScreen(
     // Khi có permission → lấy GPS thật, animate camera tới vị trí user.
     LaunchedEffect(permissionState.allPermissionsGranted) {
         if (permissionState.allPermissionsGranted && userLatLng == null) {
-            locationProvider.getCurrentLocation()?.let { gp ->
+            locationProvider.getCurrentLocation(forceFresh = true)?.let { gp ->
                 val ll = LatLng(gp.lat, gp.lon)
                 userLatLng = ll
                 cameraPositionState.animate(

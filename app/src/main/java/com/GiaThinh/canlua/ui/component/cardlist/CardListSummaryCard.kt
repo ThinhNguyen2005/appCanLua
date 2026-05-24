@@ -13,6 +13,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -35,7 +36,7 @@ fun CardListSummaryCard(
     titlePrefix: String = stringResource(R.string.card_list_today_prefix),
     amountLabel: String = stringResource(R.string.card_list_total_income)
 ) {
-    val numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
 
     Card(
         modifier = modifier.fillMaxWidth(),

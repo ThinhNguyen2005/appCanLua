@@ -113,7 +113,7 @@ fun SyncStatusScreen(
                     }
 
                     if (lastSyncTime != null) {
-                        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+                        val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()) }
                         Text(
                             text = "Lần đồng bộ cuối: ${dateFormat.format(Date(lastSyncTime!!))}",
                             style = MaterialTheme.typography.bodySmall,

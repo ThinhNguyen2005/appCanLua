@@ -1,0 +1,164 @@
+package com.GiaThinh.canlua.repository
+
+import com.GiaThinh.canlua.data.firestore.FirestoreFeedback
+import com.GiaThinh.canlua.data.remote.HttpClient
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.MetadataChanges
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class FeedbackRepository @Inject constructor(
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth,
+    private val httpClient: HttpClient,
+    private val profileRepository: ProfileRepository
+) {
+    private val userId: String?
+        get() = auth.currentUser?.uid
+
+    private val feedbacksCollection
+        get() = firestore.collection("feedbacks")
+
+    fun observeMyFeedbacks(): Flow<List<FirestoreFeedback>> = callbackFlow {
+        val uid = userId
+        if (uid == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val registration: ListenerRegistration = feedbacksCollection
+            .whereEqualTo("userId", uid)
+            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val list = snapshot?.documents
+                    ?.mapNotNull { it.toObject(FirestoreFeedback::class.java) }
+                    .orEmpty()
+                    .sortedBy { it.timestamp } // Thứ tự thời gian tăng dần để giống giao diện chat
+                trySend(list)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    fun observeUnreadReplyCount(): Flow<Int> = callbackFlow {
+        val uid = userId
+        if (uid == null) {
+            trySend(0)
+            close()
+            return@callbackFlow
+        }
+
+        val registration: ListenerRegistration = feedbacksCollection
+            .whereEqualTo("userId", uid)
+            .whereEqualTo("isReadByUser", false)
+            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+                if (error != null) {
+                    trySend(0)
+                    return@addSnapshotListener
+                }
+                // Chỉ đếm khi tin nhắn có câu trả lời từ Admin (replyText != null)
+                val count = snapshot?.documents
+                    ?.mapNotNull { it.toObject(FirestoreFeedback::class.java) }
+                    ?.count { it.replyText != null } ?: 0
+                trySend(count)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    suspend fun sendFeedback(messageText: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = userId ?: return@withContext Result.failure(IllegalStateException("User not logged in"))
+        val profile = profileRepository.ensureCurrentProfile()
+        val userName = profile?.name?.ifBlank { "Nông dân vô danh" } ?: "Nông dân"
+        val userRole = profile?.role ?: "FARMER"
+
+        try {
+            val docRef = feedbacksCollection.document()
+            val feedback = FirestoreFeedback(
+                id = docRef.id,
+                userId = uid,
+                userName = userName,
+                userRole = userRole,
+                message = messageText,
+                timestamp = System.currentTimeMillis(),
+                replyText = null,
+                replyTimestamp = null,
+                isReadByUser = true
+            )
+            docRef.set(feedback).await()
+
+            // Gửi thông báo đến Telegram Bot Admin
+            sendTelegramNotification(docRef.id, userName, userRole, messageText)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun markFeedbacksAsRead(): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = userId ?: return@withContext Result.failure(IllegalStateException("User not logged in"))
+        try {
+            val snapshot = feedbacksCollection
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("isReadByUser", false)
+                .get()
+                .await()
+
+            if (!snapshot.isEmpty) {
+                val batch = firestore.batch()
+                snapshot.documents.forEach { doc ->
+                    val replyText = doc.getString("replyText")
+                    if (replyText != null) {
+                        batch.update(doc.reference, "isReadByUser", true)
+                    }
+                }
+                batch.commit().await()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun sendTelegramNotification(feedbackId: String, name: String, role: String, messageText: String) {
+        try {
+            val roleName = if (role.uppercase() == "TRADER") "Thương lái" else "Nông dân"
+            val textMessage = """
+<b>📩 PHẢN HỒI MỚI TỪ APP CÂN LÚA</b>
+👤 <b>Người gửi:</b> ${name} (${roleName})
+💬 <b>Nội dung:</b> "${messageText}"
+
+Ref: <code>${feedbackId}</code>
+──────────────────
+👉 <b>Trả lời:</b> Hãy nhấn giữ tin nhắn này và chọn <b>"Reply" (Trả lời)</b> để gửi câu trả lời về App cho user.
+            """.trimIndent()
+
+            val token = "8719184708:AAEHY0mfzeTyA7Zqu2S7W-Tu4ecYRZqbkjA"
+            val chatId = "5236653379"
+            val url = "https://api.telegram.org/bot$token/sendMessage"
+
+            val body = mapOf(
+                "chat_id" to chatId,
+                "text" to textMessage,
+                "parse_mode" to "HTML"
+            )
+
+            httpClient.postJson<Map<String, Any>>(url, body)
+        } catch (e: Exception) {
+            // Không làm ảnh hưởng luồng gửi feedback chính nếu Telegram lỗi mạng
+            e.printStackTrace()
+        }
+    }
+}

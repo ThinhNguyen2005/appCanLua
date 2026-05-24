@@ -518,4 +518,14 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">Tiếng Trung</string>
     <string name="language_chinese_native">中文</string>
+    <!-- Feedback strings -->
+    <string name="help_btn_feedback">Gửi phản hồi</string>
+    <string name="feedback_screen_title">Gửi Phản Hồi</string>
+    <string name="feedback_placeholder">Nhập ý kiến phản hồi của bà con ở đây...</string>
+    <string name="feedback_btn_send">Gửi</string>
+    <string name="feedback_toast_success">Cảm ơn bà con đã gửi phản hồi! Chúng tôi sẽ xem xét sớm nhất.</string>
+    <string name="feedback_toast_empty">Vui lòng nhập nội dung phản hồi.</string>
+    <string name="feedback_empty_messages">Chưa có phản hồi nào. Hãy gửi ý kiến của bà con để chúng tôi hỗ trợ nhé!</string>
+    <string name="feedback_admin_name">Nhà phát triển</string>
 </resources>
+

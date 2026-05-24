@@ -4,6 +4,7 @@ import com.GiaThinh.canlua.data.firestore.FirestoreRicePrice
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.MetadataChanges
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -67,7 +68,7 @@ class MarketFirestoreRepository @Inject constructor(
     fun observeActiveBids(): Flow<List<FirestoreRicePrice>> = callbackFlow {
         val registration: ListenerRegistration = pricesCollection
             .whereEqualTo("active", true)
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     android.util.Log.w("MarketRepo", "observeActiveBids error", error)
                     trySend(emptyList())
@@ -96,7 +97,7 @@ class MarketFirestoreRepository @Inject constructor(
         }
         val registration: ListenerRegistration = pricesCollection
             .whereEqualTo("traderId", uid)
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     android.util.Log.w("MarketRepo", "observeMyBids error", error)
                     trySend(emptyList())

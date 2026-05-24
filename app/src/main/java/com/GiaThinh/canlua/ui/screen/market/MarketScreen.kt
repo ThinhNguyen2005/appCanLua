@@ -584,7 +584,7 @@ private fun MyBidCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val numberFormat = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
+    val numberFormat = remember { java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")) }
     val trendColor = when (bid.trend) {
         "UP" -> AppColors.Success
         "DOWN" -> AppColors.Error

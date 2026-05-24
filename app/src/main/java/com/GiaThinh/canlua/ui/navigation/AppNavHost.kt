@@ -23,6 +23,7 @@ import com.GiaThinh.canlua.ui.screen.aichat.AiChatScreen
 import com.GiaThinh.canlua.ui.screen.market.MarketScreen
 import com.GiaThinh.canlua.ui.screen.map.RiceMapScreen
 import com.GiaThinh.canlua.ui.screen.profile.PremiumScreen
+import com.GiaThinh.canlua.ui.screen.profile.FeedbackScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrGenerateScreen
 import com.GiaThinh.canlua.ui.screen.qr.QrScanScreen
 import com.GiaThinh.canlua.ui.screen.trader.TraderProfileScreen
@@ -142,6 +143,11 @@ fun AppNavHost(
         // === Màn yêu cầu nâng cấp Role TRADER ===
         composable("role_request") {
             RoleRequestScreen(navController = navController)
+        }
+
+        // === Màn hình gửi/nhận phản hồi ===
+        composable("feedback") {
+            FeedbackScreen(navController = navController)
         }
     }
 }

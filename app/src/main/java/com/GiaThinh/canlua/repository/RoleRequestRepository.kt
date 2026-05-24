@@ -2,6 +2,7 @@ package com.GiaThinh.canlua.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.MetadataChanges
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -93,7 +94,7 @@ class RoleRequestRepository @Inject constructor(
             return@callbackFlow
         }
         val reg = firestore.collection(COLLECTION).document(uid)
-            .addSnapshotListener { snap, _ ->
+            .addSnapshotListener(MetadataChanges.EXCLUDE) { snap, _ ->
                 if (snap == null || !snap.exists()) {
                     trySend(null)
                 } else {

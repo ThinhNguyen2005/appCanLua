@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Strip verbose/debug logs trong release. Log.i/w/e/wtf vẫn giữ để Crashlytics
+# + adb logcat khi user report bug. Loại bỏ Log.d/v giảm size APK + ẩn thông
+# tin nội bộ (paths, document IDs, query params) khỏi release build.
+-assumenosideeffects class android.util.Log {
+    public static int d(...);
+    public static int v(...);
+}

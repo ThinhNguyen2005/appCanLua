@@ -37,6 +37,13 @@ class LocationProvider @Inject constructor(
 ) {
     private val client by lazy { LocationServices.getFusedLocationProviderClient(context) }
 
+    // In-memory cache để tránh kích hoạt GPS chip mỗi lần gọi. User nông dân thường
+    // ở 1 chỗ cả ngày → fresh GPS mỗi 6h là đủ; các call screen-load nên hit cache.
+    // Call site cần coordinate mới (tạo phiếu, mở map) phải truyền forceFresh=true.
+    @Volatile private var cachedGeo: GeoPoint? = null
+    @Volatile private var cachedAt: Long = 0L
+    private val cacheTtlMs = 6 * 60 * 60 * 1000L // 6 giờ
+
     fun hasPermission(): Boolean {
         val fine = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
@@ -51,17 +58,31 @@ class LocationProvider @Inject constructor(
         context, Manifest.permission.ACCESS_FINE_LOCATION
     ) == PackageManager.PERMISSION_GRANTED
 
+    /** Xoá cache để force fresh fetch lần tiếp theo (vd khi user cấp lại permission). */
+    fun invalidateCache() {
+        cachedGeo = null
+        cachedAt = 0L
+    }
+
     /**
      * Lấy toạ độ hiện tại, ưu tiên GPS thật.
      *
      * Logic:
-     * 1. Nếu có FINE permission → dùng PRIORITY_HIGH_ACCURACY (GPS chip).
-     * 2. Nếu chỉ có COARSE → fallback BALANCED (WiFi/Cell).
-     * 3. Timeout 8 giây để tránh treo UI khi GPS không có sóng.
-     * 4. Nếu fail thì lấy lastLocation (có thể stale).
+     * 1. Nếu cache còn fresh (< 6h) và không forceFresh → return cache (không bật GPS).
+     * 2. Nếu có FINE permission → dùng PRIORITY_HIGH_ACCURACY (GPS chip).
+     * 3. Nếu chỉ có COARSE → fallback BALANCED (WiFi/Cell).
+     * 4. Timeout 8 giây để tránh treo UI khi GPS không có sóng.
+     * 5. Nếu fail thì lấy lastLocation (có thể stale).
+     *
+     * @param forceFresh true = bypass cache, bật GPS thật. Dùng khi user chủ động
+     *                   refresh weather, tạo phiếu mới, hoặc mở RiceMapScreen.
      */
     @SuppressLint("MissingPermission")
-    suspend fun getCurrentLocation(): GeoPoint? {
+    suspend fun getCurrentLocation(forceFresh: Boolean = false): GeoPoint? {
+        if (!forceFresh) {
+            val now = System.currentTimeMillis()
+            cachedGeo?.let { if (now - cachedAt < cacheTtlMs) return it }
+        }
         if (!hasPermission()) return null
 
         val priority = if (hasFineLocationPermission()) {
@@ -76,8 +97,12 @@ class LocationProvider @Inject constructor(
                 client.getCurrentLocation(priority, cts.token).await()
             }
             cts.cancel()
-            loc?.let { GeoPoint(it.latitude, it.longitude) }
+            val result = loc?.let { GeoPoint(it.latitude, it.longitude) }
                 ?: client.lastLocation.await()?.let { GeoPoint(it.latitude, it.longitude) }
+            result?.also {
+                cachedGeo = it
+                cachedAt = System.currentTimeMillis()
+            }
         } catch (_: SecurityException) {
             null
         } catch (_: Exception) {

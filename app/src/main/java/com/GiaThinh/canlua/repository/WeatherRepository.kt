@@ -74,7 +74,7 @@ class WeatherRepository @Inject constructor(
 
         // Refresh
         Log.d(TAG, "observeWeather: refreshing from network…")
-        val result = fetchFromNetwork()
+        val result = fetchFromNetwork(forceFreshLocation = forceRefresh)
         result.onSuccess { fresh ->
             Log.d(TAG, "observeWeather: network success location=${fresh.location} temp=${fresh.temperature}")
             cacheDao.upsert(fresh.toCache())
@@ -98,19 +98,19 @@ class WeatherRepository @Inject constructor(
 
     /** Force refresh. Dùng cho pull-to-refresh / tap widget. */
     suspend fun refresh(): Result<WeatherInfo> {
-        val result = fetchFromNetwork()
+        val result = fetchFromNetwork(forceFreshLocation = true)
         result.onSuccess { cacheDao.upsert(it.toCache()) }
         return result
     }
 
-    private suspend fun fetchFromNetwork(): Result<WeatherInfo> {
+    private suspend fun fetchFromNetwork(forceFreshLocation: Boolean = false): Result<WeatherInfo> {
         if (BuildConfig.OPENWEATHER_API_KEY.isEmpty()) {
             Log.e(TAG, "fetchFromNetwork: OPENWEATHER_API_KEY rỗng — kiểm tra local.properties + BuildConfig")
             return Result.failure(IllegalStateException(
                 "Thiếu OPENWEATHER_API_KEY trong local.properties"
             ))
         }
-        val locFromProvider = locationProvider.getCurrentLocation()
+        val locFromProvider = locationProvider.getCurrentLocation(forceFresh = forceFreshLocation)
         if (locFromProvider == null) {
             Log.w(TAG, "fetchFromNetwork: locationProvider null — fallback Cần Thơ centroid (10.045, 105.746)")
         } else {

@@ -42,9 +42,10 @@ class SyncableCardRepository @Inject constructor(
     suspend fun getCardById(id: Long) = cardRepository.getCardById(id)
 
     suspend fun insertCard(card: Card): Long {
-        // Auto-capture GPS nếu card chưa có toạ độ và app có quyền
+        // Auto-capture GPS nếu card chưa có toạ độ và app có quyền.
+        // forceFresh=true vì phiếu mới cần geo chính xác lúc cân.
         val cardWithGps = if (card.latitude == null || card.longitude == null) {
-            val geo = locationProvider.getCurrentLocation()
+            val geo = locationProvider.getCurrentLocation(forceFresh = true)
             if (geo != null) card.copy(latitude = geo.lat, longitude = geo.lon) else card
         } else card
 

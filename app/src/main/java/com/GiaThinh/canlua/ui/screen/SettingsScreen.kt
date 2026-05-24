@@ -200,7 +200,7 @@ fun SettingsScreen(
                                         ?: if (premiumInfo.isEarlyAdopter) earlyAdopterLabel
                                         else activatedLabel
                                     val sinceLabel = if (premiumInfo.sinceMs > 0L) {
-                                        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                        val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
                                         stringResource(
                                             R.string.settings_premium_since,
                                             sdf.format(Date(premiumInfo.sinceMs))

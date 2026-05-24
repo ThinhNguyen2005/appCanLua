@@ -217,10 +217,9 @@ private fun TrendBadge(
     }
 }
 
-private fun formatPrice(price: Double): String {
-    val nf = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
-    return nf.format(price.toLong())
-}
+private val PRICE_FORMAT = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+
+private fun formatPrice(price: Double): String = PRICE_FORMAT.format(price.toLong())
 
 private fun formatRelativeTime(timestamp: Long): String {
     val diff = System.currentTimeMillis() - timestamp

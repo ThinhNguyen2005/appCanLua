@@ -103,7 +103,7 @@ fun CustomHeader(
     // Title: luôn hiển thị info trọng lượng — đã bỏ farmer name khỏi header
     // Khi card còn trống (mới tạo) → “Phiếu cân”, không để trống hổng.
     val titleText = if (card.totalWeight > 0.0 || card.bagCount > 0) {
-        val fmt = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
+        val fmt = remember { java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")) }
         val totalWeightFormatted = if (card.totalWeight % 1.0 == 0.0) "%.0f".format(card.totalWeight) else "%.1f".format(card.totalWeight)
         val totalbagCount = fmt.format(card.bagCount)
         "$totalWeightFormatted KG · $totalbagCount bao"
@@ -347,16 +347,19 @@ private fun MetricChip(label: String, value: String, modifier: Modifier = Modifi
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-private fun formatDate(ts: Long): String =
-    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(ts))
+// Cache formatter ở top-level để tránh allocate mỗi lần helper được gọi.
+// Lưu ý: SimpleDateFormat KHÔNG thread-safe — chỉ gọi từ Main thread (composable).
+private val DATE_FORMAT = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+private val TIME_FORMAT_SHORT = SimpleDateFormat("HH:mm", Locale.getDefault())
+private val NUMBER_FORMAT_VI = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi"))
 
-private fun formatTimeShort(ts: Long): String =
-    SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
+private fun formatDate(ts: Long): String = DATE_FORMAT.format(Date(ts))
+
+private fun formatTimeShort(ts: Long): String = TIME_FORMAT_SHORT.format(Date(ts))
 
 private fun formatKg(kg: Double): String =
     if (kg == 0.0) "0 KG"
-    else "${NumberFormat.getNumberInstance(Locale.forLanguageTag("vi")).format(kg.toInt())} KG"
+    else "${NUMBER_FORMAT_VI.format(kg.toInt())} KG"
 
 private fun formatMoney(amount: Double): String =
-    NumberFormat.getNumberInstance(Locale.forLanguageTag("vi"))
-        .format(amount.toLong()).replace(',', '.')
+    NUMBER_FORMAT_VI.format(amount.toLong()).replace(',', '.')

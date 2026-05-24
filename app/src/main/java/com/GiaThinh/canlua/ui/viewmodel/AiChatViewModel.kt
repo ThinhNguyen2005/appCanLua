@@ -9,6 +9,7 @@ import com.GiaThinh.canlua.data.model.WeatherInfo
 import com.GiaThinh.canlua.data.remote.ai.ChatMessage
 import com.GiaThinh.canlua.repository.AiChatRepository
 import com.GiaThinh.canlua.repository.ChatSessionStore
+import com.GiaThinh.canlua.repository.FirestoreRepository
 import com.GiaThinh.canlua.repository.KnowledgeBaseRepository
 import com.GiaThinh.canlua.repository.MarketRepository
 import com.GiaThinh.canlua.repository.ProfileRepository
@@ -57,6 +58,7 @@ data class AiChatUiState(
 @HiltViewModel
 class AiChatViewModel @Inject constructor(
     private val aiChatRepository: AiChatRepository,
+    private val firestoreRepository: FirestoreRepository,
     marketRepository: MarketRepository,
     profileRepository: ProfileRepository,
     weatherRepository: WeatherRepository,
@@ -173,11 +175,13 @@ class AiChatViewModel @Inject constructor(
                 audience = audience
             )
             val reply = if (result.isSuccess) {
+                firestoreRepository.incrementAiQueryCount()
                 UiMessage(role = "assistant", content = result.getOrNull().orEmpty())
             } else {
+                // Message từ repository đã là câu tiếng Việt gần gũi — hiển thị trực tiếp.
                 UiMessage(
                     role = "assistant",
-                    content = "Lỗi: ${result.exceptionOrNull()?.message ?: "Không phản hồi"}",
+                    content = result.exceptionOrNull()?.message ?: "AI tạm không trả lời được. Bà con thử lại sau.",
                     isError = true
                 )
             }

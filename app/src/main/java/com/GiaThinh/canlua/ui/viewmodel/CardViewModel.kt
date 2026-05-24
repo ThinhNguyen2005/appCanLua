@@ -171,7 +171,8 @@ class CardViewModel @Inject constructor(
             if (trimmedName.isBlank()) return@launch
 
             // Lấy GPS + reverse geocoding (best-effort, không block tạo phiếu)
-            val geo = runCatching { locationProvider.getCurrentLocation() }.getOrNull()
+            // forceFresh=true vì phiếu mới cần geo chính xác lúc cân (cache 6h có thể stale).
+            val geo = runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull()
             val address = geo?.let {
                 runCatching { locationProvider.reverseGeocode(it.lat, it.lon) }.getOrNull()
             }.orEmpty()
@@ -571,7 +572,7 @@ class CardViewModel @Inject constructor(
     /** Refresh GPS + địa chỉ ruộng cho phiếu hiện tại (gọi lại Geocoder) */
     fun refreshFieldLocation(cardId: Long) {
         viewModelScope.launch {
-            val geo = runCatching { locationProvider.getCurrentLocation() }.getOrNull() ?: return@launch
+            val geo = runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull() ?: return@launch
             val address = runCatching { locationProvider.reverseGeocode(geo.lat, geo.lon) }.getOrNull().orEmpty()
             val card = repository.getCardById(cardId) ?: return@launch
             repository.updateCard(

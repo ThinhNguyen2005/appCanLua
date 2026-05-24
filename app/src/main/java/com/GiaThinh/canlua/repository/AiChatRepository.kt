@@ -5,12 +5,14 @@ import com.GiaThinh.canlua.data.model.Profile
 import com.GiaThinh.canlua.data.model.RicePrice
 import com.GiaThinh.canlua.data.model.WeatherInfo
 import com.GiaThinh.canlua.data.remote.HttpClient
+import com.GiaThinh.canlua.data.remote.HttpException
 import com.GiaThinh.canlua.data.remote.ai.ChatMessage
 import com.GiaThinh.canlua.data.remote.ai.OpenRouterRequest
 import com.GiaThinh.canlua.data.remote.ai.OpenRouterResponse
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -33,16 +35,9 @@ class AiChatRepository @Inject constructor(
     private val httpClient: HttpClient
 ) {
     companion object {
-        // Chuỗi model fallback theo thứ tự ưu tiên. Lý do:
-        //  - openrouter/auto: OpenRouter tự chọn model rẻ/nhanh nhất phù hợp.
-        //  - deepseek-v4-flash:free: backup nhanh khi auto router quá tải.
-        //  - minimax-m2.5:free: backup cuối, đặc biệt tốt cho tiếng Trung/Việt.
-        // Khi 1 model fail (network / 5xx / empty), ta thử model kế tiếp.
-        private val MODEL_FALLBACKS = listOf(
-            "openrouter/auto",
-            "deepseek/deepseek-v4-flash:free",
-            "minimax/minimax-m2.5:free"
-        )
+        // Chỉ dùng 1 free model duy nhất — bỏ fallback cho đơn giản và predictable cost.
+        // Đổi constant này nếu muốn thử model khác (nhớ giữ suffix `:free`).
+        private const val MODEL = "deepseek/deepseek-v4-flash:free"
         private const val URL = "https://openrouter.ai/api/v1/chat/completions"
 
         private const val FARMER_PROMPT_BASE = """
@@ -108,12 +103,12 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
     ): Result<String> = withContext(Dispatchers.IO) {
         if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
-                "Thiếu OPENROUTER_API_KEY trong local.properties"
+                "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
         }
         val systemPrompt = buildSystemPrompt(profile, weather, ricePrices, knowledgeHits, audience)
         val messages = listOf(ChatMessage("system", systemPrompt)) + history
-        callWithFallback(messages, context = "chat")
+        callOnce(messages, context = "chat")
     }
 
     /**
@@ -135,7 +130,7 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
     ): Result<String> = withContext(Dispatchers.IO) {
         if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
-                "Thiếu OPENROUTER_API_KEY trong local.properties"
+                "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
         }
         val systemPrompt = buildSeasonAnalysisPrompt(profile, weather)
@@ -143,76 +138,73 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
             ChatMessage("system", systemPrompt),
             ChatMessage("user", seasonSummary)
         )
-        callWithFallback(messages, context = "analyzeSeason")
+        callOnce(messages, context = "analyzeSeason")
     }
 
     /**
-     * Gọi OpenRouter với chuỗi fallback model. Lý do dùng fallback:
-     *  - Free-tier models hay 429 / 5xx / empty content khi quota cạn.
-     *  - Auto router thỉnh thoảng pick model lỗi → cần retry với model cụ thể.
-     *
-     * Quy tắc:
-     *  - Thử lần lượt MODEL_FALLBACKS, dừng khi có model trả nội dung non-empty.
-     *  - Mỗi lần fail/cắt: log Crashlytics non-fatal (kèm model, finish_reason).
-     *  - `finish_reason == "length"` nhưng có nội dung → vẫn trả nội dung +
-     *    suffix "..." để user biết bị cắt do max_tokens.
+     * Gọi OpenRouter 1 lần, KHÔNG retry/fallback. Mọi lỗi map sang câu tiếng Việt
+     * gần gũi cho bà con để UI hiển thị trực tiếp.
      */
-    private fun callWithFallback(messages: List<ChatMessage>, context: String): Result<String> {
+    private fun callOnce(messages: List<ChatMessage>, context: String): Result<String> {
         val crashlytics = runCatching { FirebaseCrashlytics.getInstance() }.getOrNull()
-        var lastError: Throwable? = null
 
-        for ((idx, model) in MODEL_FALLBACKS.withIndex()) {
-            try {
-                val req = OpenRouterRequest(model = model, messages = messages)
-                val resp: OpenRouterResponse = httpClient.postJson(
-                    url = URL,
-                    body = req,
-                    headers = mapOf(
-                        "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
-                        "HTTP-Referer" to "https://canlua.app",
-                        "X-Title" to "CanLua"
-                    )
+        return try {
+            val req = OpenRouterRequest(model = MODEL, messages = messages)
+            val resp: OpenRouterResponse = httpClient.postJson(
+                url = URL,
+                body = req,
+                headers = mapOf(
+                    "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
+                    "HTTP-Referer" to "https://canlua.app",
+                    "X-Title" to "CanLua"
                 )
-                resp.error?.message?.let { errMsg ->
-                    crashlytics?.log("AI[$context] model=$model error=$errMsg")
-                    lastError = RuntimeException("$model: $errMsg")
-                    continue
-                }
-                val choice = resp.choices.firstOrNull()
-                val rawContent = choice?.message?.content?.trim().orEmpty()
-                val finishReason = choice?.finish_reason ?: "unknown"
-                crashlytics?.log(
-                    "AI[$context] model=$model finish_reason=$finishReason len=${rawContent.length}"
-                )
-
-                if (rawContent.isEmpty()) {
-                    lastError = RuntimeException("$model: empty content (finish=$finishReason)")
-                    continue
-                }
-                // Có nội dung — nhưng nếu bị cắt do length, append "…" để báo user
-                val finalAnswer = if (finishReason == "length") {
-                    "$rawContent…\n\n_(Trả lời bị cắt do độ dài. Bà con thử hỏi gọn hơn.)_"
-                } else {
-                    rawContent
-                }
-                if (idx > 0) {
-                    // Log để theo dõi tần suất fallback
-                    crashlytics?.log("AI[$context] used fallback model #$idx ($model)")
-                }
-                return Result.success(finalAnswer)
-            } catch (e: Exception) {
-                crashlytics?.log("AI[$context] model=$model exception=${e.javaClass.simpleName}: ${e.message}")
-                lastError = e
-                // Không recordException ở đây — chỉ record cuối khi tất cả model fail
+            )
+            resp.error?.message?.let { errMsg ->
+                crashlytics?.log("AI[$context] model=$MODEL api_error=$errMsg")
+                return Result.failure(RuntimeException(
+                    "AI tạm không trả lời được. Bà con thử lại sau ít phút."
+                ))
             }
-        }
+            val choice = resp.choices.firstOrNull()
+            val rawContent = choice?.message?.content?.trim().orEmpty()
+            val finishReason = choice?.finish_reason ?: "unknown"
+            crashlytics?.log(
+                "AI[$context] model=$MODEL finish_reason=$finishReason len=${rawContent.length}"
+            )
 
-        // Tất cả model fail → ghi non-fatal vào Crashlytics
-        val finalError = lastError ?: RuntimeException("AI không trả về nội dung")
-        crashlytics?.recordException(
-            RuntimeException("AI[$context] all ${MODEL_FALLBACKS.size} models failed: ${finalError.message}", finalError)
-        )
-        return Result.failure(finalError)
+            if (rawContent.isEmpty()) {
+                return Result.failure(RuntimeException(
+                    "AI chưa trả lời được câu này. Bà con thử hỏi cách khác xem."
+                ))
+            }
+            val finalAnswer = if (finishReason == "length") {
+                "$rawContent…\n\n_(Trả lời bị cắt do độ dài. Bà con thử hỏi gọn hơn.)_"
+            } else {
+                rawContent
+            }
+            Result.success(finalAnswer)
+        } catch (e: HttpException) {
+            crashlytics?.log("AI[$context] http_${e.code}: ${e.errorBody.take(200)}")
+            val userMsg = when (e.code) {
+                401, 403 -> "Khoá AI không hợp lệ. Báo nhà phát triển kiểm tra giúp."
+                402 -> "Hết lượt hỏi AI miễn phí hôm nay. Bà con thử lại vào ngày mai."
+                429 -> "AI đang quá tải. Bà con chờ chút rồi gửi lại."
+                in 500..599 -> "AI gặp sự cố tạm thời. Bà con thử lại sau ít phút."
+                else -> "AI tạm không trả lời được (mã ${e.code}). Bà con thử lại sau."
+            }
+            Result.failure(RuntimeException(userMsg))
+        } catch (e: IOException) {
+            crashlytics?.log("AI[$context] io_error: ${e.javaClass.simpleName}: ${e.message}")
+            Result.failure(RuntimeException(
+                "Không kết nối được AI. Bà con kiểm tra mạng rồi gửi lại."
+            ))
+        } catch (e: Exception) {
+            crashlytics?.log("AI[$context] exception: ${e.javaClass.simpleName}: ${e.message}")
+            crashlytics?.recordException(RuntimeException("AI[$context] unexpected: ${e.message}", e))
+            Result.failure(RuntimeException(
+                "AI tạm không trả lời được. Bà con thử lại sau."
+            ))
+        }
     }
 
     private fun buildSeasonAnalysisPrompt(profile: Profile?, weather: WeatherInfo?): String {

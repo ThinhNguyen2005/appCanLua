@@ -168,7 +168,7 @@ fun BagEntriesCard(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(tables.size) { index ->
+                    items(tables.size, key = { it }) { index ->
                         val isActive = index == activeTableIndex
                         val borderWidth by animateDpAsState(
                             targetValue = if (isActive) 1.5.dp else 0.dp,

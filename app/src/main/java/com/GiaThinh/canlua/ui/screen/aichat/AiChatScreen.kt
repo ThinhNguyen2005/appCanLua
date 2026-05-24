@@ -149,7 +149,7 @@ fun AiChatScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(PRESETS) { preset ->
+                    items(PRESETS, key = { it }) { preset ->
                         PresetChip(text = preset, onClick = { viewModel.usePresetPrompt(preset) })
                     }
                 }

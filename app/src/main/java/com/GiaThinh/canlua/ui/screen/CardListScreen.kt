@@ -143,9 +143,9 @@ fun CardListScreen(
     val isTrader = profileState?.role == "TRADER"
     val ownerName = profileState?.name ?: if (isTrader) "Thương lái" else "Nông dân"
 
-    val numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val today = Calendar.getInstance()
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
+    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
 
     // Calculate today's stats
     val todayCards = cards.filter { card ->

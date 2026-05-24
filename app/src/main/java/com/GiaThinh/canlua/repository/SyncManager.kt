@@ -175,6 +175,9 @@ class SyncManager @Inject constructor(
             result.onSuccess { firestoreId ->
                 // Stamp lại firestoreId vào Room để lần push sau update đúng doc,
                 // và để pull dedup được khi user login máy khác.
+                if (card.firestoreId.isNullOrEmpty()) {
+                    firestoreRepository.incrementCardCount()
+                }
                 if (card.firestoreId != firestoreId) {
                     cardDao.updateFirestoreId(card.id, firestoreId)
                 }

@@ -8,6 +8,7 @@ import android.net.NetworkRequest
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -121,6 +124,10 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
     val settingsViewModel: SettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
     val weighDefaults by settingsViewModel.weighDefaults.collectAsState()
+
+    val feedbackViewModel: com.GiaThinh.canlua.ui.viewmodel.FeedbackViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+    val unreadFeedbackCount by feedbackViewModel.unreadCount.collectAsState(initial = 0)
+    val hasUnreadFeedback = unreadFeedbackCount > 0
     var showWeighOptionsSheet by remember { mutableStateOf(false) }
     var showHelpSheet by remember { mutableStateOf(false) }
     
@@ -229,10 +236,20 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             currentRoute == BottomNavItem.SCALE.route -> {
                                 // Trang Cân Lúa: nút Trợ giúp & Hướng dẫn ở trái.
                                 IconButton(onClick = { showHelpSheet = true }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.help_sheet_open_content)
-                                    )
+                                    Box {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                            contentDescription = stringResource(com.GiaThinh.canlua.R.string.help_sheet_open_content)
+                                        )
+                                        if (hasUnreadFeedback) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(AppColors.Error, CircleShape)
+                                                    .align(Alignment.TopEnd)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -357,7 +374,11 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
 
     if (showHelpSheet) {
-        HelpBottomSheet(onDismiss = { showHelpSheet = false })
+        HelpBottomSheet(
+            hasUnreadFeedback = hasUnreadFeedback,
+            onFeedbackClick = { navController.navigate("feedback") },
+            onDismiss = { showHelpSheet = false }
+        )
     }
 }
 

@@ -23,6 +23,8 @@ import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,7 +48,11 @@ import com.GiaThinh.canlua.util.FirebaseRemoteConfigManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HelpBottomSheet(onDismiss: () -> Unit) {
+fun HelpBottomSheet(
+    hasUnreadFeedback: Boolean = false,
+    onFeedbackClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
@@ -133,6 +139,43 @@ fun HelpBottomSheet(onDismiss: () -> Unit) {
             )
 
             Spacer(Modifier.height(4.dp))
+
+            // Feedback button
+            Button(
+                onClick = {
+                    onFeedbackClick()
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GoldAccent,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.AutoMirrored.Outlined.Chat, null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            stringResource(R.string.help_btn_feedback),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (hasUnreadFeedback) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .size(10.dp)
+                                .background(AppColors.Error, CircleShape)
+                        )
+                    }
+                }
+            }
 
             // Tutorial button (Remote Config URL)
             Button(

@@ -187,7 +187,7 @@ private fun TopicFilterRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items) { (topic, label) ->
+        items(items, key = { it.first?.name ?: "_all" }) { (topic, label) ->
             val isSelected = selected == topic
             Box(
                 modifier = Modifier

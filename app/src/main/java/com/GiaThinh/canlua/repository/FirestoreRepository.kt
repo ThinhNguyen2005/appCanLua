@@ -6,6 +6,7 @@ import com.GiaThinh.canlua.data.firestore.FirestoreWeightEntry
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -250,7 +251,7 @@ class FirestoreRepository @Inject constructor(
         // Sort client-side vì 1 trader chỉ có vài chục/trăm card đã verify.
         val registration: ListenerRegistration = cardsCollection
             .whereEqualTo("lockedByTraderId", uid)
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     // Không crash app — trả emptyList, để UI tự hiển thị empty state.
                     trySend(emptyList())
@@ -283,7 +284,7 @@ class FirestoreRepository @Inject constructor(
         chunks.forEachIndexed { index, chunk ->
             val registration = transactionsCollection
                 .whereIn("cardId", chunk)
-                .addSnapshotListener { snapshot, error ->
+                .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
                     latestByChunk[index] = if (error != null) {
                         emptyList()
                     } else {
@@ -298,5 +299,32 @@ class FirestoreRepository @Inject constructor(
 
         awaitClose { registrations.forEach { it.remove() } }
     }
+
+    // ========== Analytics Counter Operations ==========
+
+    suspend fun incrementAiQueryCount(): Result<Unit> {
+        return try {
+            val uid = userId ?: return Result.failure(IllegalStateException("User not logged in"))
+            firestore.collection("profiles").document(uid)
+                .update("aiQueryCount", com.google.firebase.firestore.FieldValue.increment(1))
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun incrementCardCount(): Result<Unit> {
+        return try {
+            val uid = userId ?: return Result.failure(IllegalStateException("User not logged in"))
+            firestore.collection("profiles").document(uid)
+                .update("cardCount", com.google.firebase.firestore.FieldValue.increment(1))
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
+
 
