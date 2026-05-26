@@ -141,7 +141,10 @@ fun CanLuaTheme(
         }
 
         AppThemeMode.OLED -> {
-            if (isDynamicColorAvailable) dynamicDarkColorScheme(context) else DarkOledColorSchemeNoDynamic
+            // OLED intentionally ignores dynamic color — we NEED pure #000000 background
+            // for true AMOLED black and maximum power saving. The wallpaper-extracted
+            // dynamic colors are "dark grey" at best, defeating the entire purpose.
+            DarkOledColorSchemeNoDynamic
         }
 
         AppThemeMode.AUTO -> {

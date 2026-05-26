@@ -146,10 +146,7 @@ private fun LabeledNavItem(
     )
     val indicatorWidth by animateDpAsState(
         targetValue = if (selected) 40.dp else 0.dp,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "nav_indicator_width"
     )
 
@@ -175,7 +172,7 @@ private fun LabeledNavItem(
             // Background pill — nằm dưới icon, animate width khi selected.
             Box(
                 modifier = Modifier
-                    .size(width = indicatorWidth, height = 28.dp)
+                    .size(width = indicatorWidth.coerceAtLeast(0.dp), height = 28.dp)
             ) {
                 if (indicatorWidth > 0.dp) {
                     Surface(
