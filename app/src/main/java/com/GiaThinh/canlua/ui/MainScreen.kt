@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -13,6 +12,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
@@ -48,7 +49,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -129,8 +129,8 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val feedbackViewModel: com.GiaThinh.canlua.ui.viewmodel.FeedbackViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
     val unreadFeedbackCount by feedbackViewModel.unreadCount.collectAsStateWithLifecycle(initialValue = 0)
     val hasUnreadFeedback = unreadFeedbackCount > 0
-    var showWeighOptionsSheet by remember { mutableStateOf(false) }
-    var showHelpSheet by remember { mutableStateOf(false) }
+    val showWeighOptionsSheet = remember { mutableStateOf(false) }
+    val showHelpSheet = remember { mutableStateOf(false) }
     
     // Determine nav items based on role
     val navItems = if (isTrader) BottomNavItem.traderNavItems else BottomNavItem.farmerNavItems
@@ -228,41 +228,40 @@ fun MainScreen(deeplinkCardId: String? = null) {
                         }
                     },
                     navigationIcon = {
-                        when {
-                            currentRoute == BottomNavItem.AI_CHAT.route -> {
-                                IconButton(onClick = {
-                                    scope.launch { aiChatDrawerState.open() }
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Menu,
-                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_open_chat_sessions)
-                                    )
-                                }
+                        when (currentRoute) {
+                            BottomNavItem.AI_CHAT.route -> IconButton(onClick = {
+                                scope.launch { aiChatDrawerState.open() }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Menu,
+                                    contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_open_chat_sessions)
+                                )
                             }
-                            currentRoute == "trader_transactions" -> {
-                                IconButton(onClick = { navController.popBackStack() }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_back)
-                                    )
-                                }
+
+                            "trader_transactions" -> IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_back)
+                                )
                             }
-                            currentRoute == BottomNavItem.SCALE.route -> {
+
+                            BottomNavItem.SCALE.route
                                 // Trang Cân Lúa: nút Trợ giúp & Hướng dẫn ở trái.
-                                IconButton(onClick = { showHelpSheet = true }) {
-                                    Box {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                                            contentDescription = stringResource(com.GiaThinh.canlua.R.string.help_sheet_open_content)
+                                -> IconButton(onClick = {
+                                showHelpSheet.value = true
+                            }) {
+                                Box {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                        contentDescription = stringResource(com.GiaThinh.canlua.R.string.help_sheet_open_content)
+                                    )
+                                    if (hasUnreadFeedback) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .background(AppColors.Error, CircleShape)
+                                                .align(Alignment.TopEnd)
                                         )
-                                        if (hasUnreadFeedback) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .background(AppColors.Error, CircleShape)
-                                                    .align(Alignment.TopEnd)
-                                            )
-                                        }
                                     }
                                 }
                             }
@@ -272,7 +271,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                         // Tab Cân Lúa: nút Tune chỉnh default 3 mode cân (kg/%, A/B, SMALL/LARGE)
                         // áp cho mọi phiếu mới tạo.
                         if (currentRoute == BottomNavItem.SCALE.route) {
-                            IconButton(onClick = { showWeighOptionsSheet = true }) {
+                            IconButton(onClick = { showWeighOptionsSheet.value = true }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Tune,
                                     contentDescription = stringResource(com.GiaThinh.canlua.R.string.weigh_options_icon_content)
@@ -318,7 +317,11 @@ fun MainScreen(deeplinkCardId: String? = null) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(
+                    top = paddingValues.calculateTopPadding(),
+                    start = paddingValues.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                    end = paddingValues.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
+                )
         ) {
             // Offline banner
             OfflineStatusBanner(isOffline = isOffline)
@@ -360,17 +363,17 @@ fun MainScreen(deeplinkCardId: String? = null) {
         }
     }
 
-    if (showWeighOptionsSheet) {
+    if (showWeighOptionsSheet.value) {
         WeighOptionsSheetWrapper(
-            onDismiss = { showWeighOptionsSheet = false }
+            onDismiss = { showWeighOptionsSheet.value = false }
         )
     }
 
-    if (showHelpSheet) {
+    if (showHelpSheet.value) {
         HelpBottomSheet(
             hasUnreadFeedback = hasUnreadFeedback,
             onFeedbackClick = { navController.navigate("feedback") },
-            onDismiss = { showHelpSheet = false }
+            onDismiss = { showHelpSheet.value = false }
         )
     }
 }

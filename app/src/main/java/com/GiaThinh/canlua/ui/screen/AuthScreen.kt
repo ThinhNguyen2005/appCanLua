@@ -36,7 +36,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.auth.GoogleSignInHelper
-import com.GiaThinh.canlua.auth.saveLoginCredential
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthUiState
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
@@ -213,12 +212,7 @@ private fun AuthEmailForm(
     val isPhoneMode = remember(identifier) { viewModel.looksLikePhone(identifier) }
     val showOtpField = uiState.verificationId != null
 
-    // Lưu thành công → prompt Google Smart Lock save password cho login lần sau.
-    LaunchedEffect(uiState.isSignedIn) {
-        if (uiState.isSignedIn && !isPhoneMode && password.isNotBlank() && activity != null) {
-            saveLoginCredential(activity, identifier.trim(), password)
-        }
-    }
+
 
     // Email / Phone identifier
     OutlinedTextField(

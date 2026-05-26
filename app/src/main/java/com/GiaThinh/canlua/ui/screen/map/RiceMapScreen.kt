@@ -8,6 +8,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -194,7 +197,7 @@ fun RiceMapScreen(
                 },
                 containerColor = AppColors.GreenPrimary,
                 contentColor = Color.White,
-                modifier = Modifier.padding(bottom = 88.dp)
+                modifier = Modifier.padding(bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
             ) {
                 Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí của tôi")
             }
