@@ -33,6 +33,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -98,7 +100,8 @@ fun CreateCardDialog(
         depositAmount: Double,
         cccd: String?,
         bagWeight: Double,
-        impurityWeight: Double
+        impurityWeight: Double,
+        recordLocation: Boolean
     ) -> Unit,
     mode: CreateCardMode = CreateCardMode.FARMER
 ) {
@@ -122,6 +125,7 @@ fun CreateCardDialog(
     var riceVariety       by remember { mutableStateOf("") }
     var seasonLabel       by remember { mutableStateOf("") } // Vụ mùa để trống mặc định
     var cccd              by remember { mutableStateOf("") }
+    var recordLocation    by remember { mutableStateOf(false) }
 
     // Lưu chuỗi số thô, hiển thị được format qua VisualTransformation
     var moistureRaw        by remember { mutableStateOf("") }   // "18.2" -> 18.2%
@@ -493,6 +497,37 @@ fun CreateCardDialog(
                         shape = RoundedCornerShape(14.dp),
                         colors = dialogTextFieldColors()
                     )
+
+                    // Row 6: Opt-in GPS vị trí ruộng
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = recordLocation,
+                            onCheckedChange = { recordLocation = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = AppColors.GreenPrimary,
+                                uncheckedColor = AppColors.TextSecondary
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Lưu vị trí GPS ruộng",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AppColors.TextPrimary
+                            )
+                            Text(
+                                text = "Ghi lại tọa độ để hiển thị trên bản đồ lúa",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.TextSecondary
+                            )
+                        }
+                    }
                 }
 
                 // ── Buttons ──
@@ -527,7 +562,8 @@ fun CreateCardDialog(
                                 depositRaw.toDoubleOrNull() ?: 0.0,
                                 cccd.trim().takeIf { it.isNotEmpty() },
                                 bagWeightRaw.toDoubleOrNull() ?: 0.0,
-                                impurityWeightRaw.toDoubleOrNull() ?: 0.0
+                                impurityWeightRaw.toDoubleOrNull() ?: 0.0,
+                                recordLocation
                             )
                             onDismiss()
                         },

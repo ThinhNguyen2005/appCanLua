@@ -89,23 +89,7 @@ class MarketFirestoreRepository @Inject constructor(
      * NOTE: Sort client-side để không cần composite index `(active, updatedAt)` trên Firestore.
      * Listener KHÔNG bao giờ crash app — lỗi mạng/permission chỉ trả empty list.
      */
-    fun observeActiveBids(): Flow<List<FirestoreRicePrice>> = callbackFlow {
-        val registration: ListenerRegistration = pricesCollection
-            .whereEqualTo("active", true)
-            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
-                if (error != null) {
-                    android.util.Log.w("MarketRepo", "observeActiveBids error", error)
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-                val bids = snapshot?.documents
-                    ?.mapNotNull { it.toObject(FirestoreRicePrice::class.java) }
-                    ?.sortedByDescending { it.updatedAt }
-                    .orEmpty()
-                trySend(bids)
-            }
-        awaitClose { registration.remove() }
-    }.distinctUntilChanged()
+
 
     /**
      * Realtime stream bids của TRADER hiện tại.

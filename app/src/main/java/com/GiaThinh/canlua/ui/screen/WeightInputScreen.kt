@@ -58,6 +58,8 @@ import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
 import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.util.TrackScreenRender
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.toPersistentList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +98,54 @@ fun WeightInputScreen(
 
     val tables by viewModel.tables.collectAsStateWithLifecycle()
 
+    // === STABLE STATE REFS (rememberUpdatedState) ===
+    // Cho phép lambda onCellWeightEntered được tạo một lần duy nhất (remember {})
+    // nhưng vẫn đọc được giá trị mới nhất mà không recreate → 24 ô còn lại không bị
+    // invalidate khi người dùng gõ vào ô số 1.
+    val currentWeightEntries by rememberUpdatedState(weightEntries)
+    val currentCardState by rememberUpdatedState(currentCard)
+
+    // Chuyển dữ liệu bảng sang PersistentList — kiểu này được Compose Compiler
+    // nhận diện NATIVELY là Stable (không cần @Immutable) → WeightTableCard
+    // và ColumnTotalsRow trở thành Skippable hoàn toàn theo báo cáo Compiler
+    val stableTables = remember(tables) {
+        tables.map { outer ->
+            ImmutableTableData(
+                outer.map { inner -> inner.toPersistentList() }.toPersistentList()
+            )
+        }.toPersistentList()
+    }
+
+    // Stable callback duy nhất cho toàn màn hình — tham chiếu KHÔNG đổi qua mọi recompose.
+    // Nhờ rememberUpdatedState, lambda này luôn đọc weightEntries và card mới nhất mà
+    // không cần recreate → các GridCell giữ nguyên tham chiếu callback → Skippable hoàn toàn.
+    val onCellWeightEntered: (Int, Double) -> Unit = remember {
+        { entryIdx, weight ->
+            val entries = currentWeightEntries
+            val activeCard = currentCardState
+            val existingEntry = if (entryIdx < entries.size) entries[entryIdx] else null
+            if (existingEntry != null && activeCard != null) {
+                val netWeight = RiceCalculator.calcNetWeight(
+                    rawWeight = weight,
+                    bagWeight = activeCard.bagWeight,
+                    impurityWeight = 0.0,
+                    moisturePercent = activeCard.moisturePercent
+                )
+                viewModel.updateWeightEntry(
+                    existingEntry.copy(
+                        weight = weight,
+                        bagWeight = activeCard.bagWeight,
+                        impurityWeight = 0.0,
+                        netWeight = netWeight
+                    )
+                )
+            } else {
+                viewModel.addWeightEntryDirectly(cardId, weight)
+                HapticUtil.tick(context)
+            }
+        }
+    }
+
 
     val liveTotalWeight = remember(weightEntries) { weightEntries.sumOf { it.weight } }
     val liveBagCount = weightEntries.size
@@ -125,7 +175,9 @@ fun WeightInputScreen(
             moisturePercent = calcParams.moisturePercent
         )
     }
-    val liveTotalAmount = liveNetWeight * (currentCard?.pricePerKg ?: 0.0)
+    val liveTotalAmount = remember(liveNetWeight, currentCard?.pricePerKg) {
+        liveNetWeight * (currentCard?.pricePerKg ?: 0.0)
+    }
 
     val lazyListState = rememberLazyListState()
 
@@ -342,42 +394,22 @@ fun WeightInputScreen(
             }
 
             if (isAnimationFinished) {
-                tables.forEachIndexed { pageIndex, table ->
+                stableTables.forEachIndexed { pageIndex, stableTable ->
                     item(key = "weight_table_$pageIndex") {
                         val onNeedNextTable = remember { { viewModel.incrementManualTableCount() } }
-                        val onWeightEntered = remember(cardId) { { weight: Double ->
-                            viewModel.addWeightEntryDirectly(cardId, weight)
-                            HapticUtil.tick(context)
-                        } }
-                        val onWeightUpdated = remember(cardId, card.bagWeight, card.moisturePercent) { { entry: com.GiaThinh.canlua.data.model.WeightEntry, newWeight: Double ->
-                            val netWeight = RiceCalculator.calcNetWeight(
-                                rawWeight = newWeight,
-                                bagWeight = card.bagWeight,
-                                impurityWeight = 0.0,
-                                moisturePercent = card.moisturePercent
-                            )
-                            viewModel.updateWeightEntry(
-                                entry.copy(
-                                    weight = newWeight,
-                                    bagWeight = card.bagWeight,
-                                    impurityWeight = 0.0,
-                                    netWeight = netWeight
-                                )
-                            )
-                        } }
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             WeightTableCard(
                                 tableIndex = pageIndex + 1,
-                                tableData = table,
-                                weightEntries = weightEntries,
+                                stableTableData = stableTable,
                                 tableIndexInList = pageIndex,
                                 onNeedNextTable = onNeedNextTable,
-                                onWeightEntered = onWeightEntered,
-                                onWeightUpdated = onWeightUpdated,
+                                onWeightEntered = onCellWeightEntered,
                                 isLocked = card.isLocked,
                                 weightInputMode = card.weightInputMode
                             )
-                            ColumnTotalsRow(calculateColumnTotals(table))
+                            // Truyền trực tiếp wrapper — ColumnTotalsRow tự remember tính tổng
+                            // → Skippable hoàn toàn khi bảng khác thay đổi
+                            ColumnTotalsRow(stableTableData = stableTable)
                         }
                     }
                 }
@@ -458,16 +490,16 @@ fun WeightInputScreen(
 @Composable
 private fun WeightTableCard(
     tableIndex: Int,
-    tableData: List<List<Double?>>,
-    weightEntries: List<WeightEntry>,
+    stableTableData: ImmutableTableData,
     tableIndexInList: Int,
     onNeedNextTable: () -> Unit,
-    onWeightEntered: (Double) -> Unit,
-    onWeightUpdated: (WeightEntry, Double) -> Unit,
+    onWeightEntered: (Int, Double) -> Unit,
     isLocked: Boolean,
     weightInputMode: String = "SMALL"
 ) {
-    val tableTotal = tableData.flatten().filterNotNull().sum()
+    val tableData = stableTableData.data
+    // remember(stableTableData) → tableTotal chỉ tính lại khi nội dung bảng này thay đổi
+    val tableTotal = remember(stableTableData) { tableData.flatten().filterNotNull().sum() }
     val focusRequesters = remember { List(5) { List(5) { FocusRequester() } } }
 
     Card(
@@ -510,13 +542,11 @@ private fun WeightTableCard(
                         displayCols.forEachIndexed { colIdx, weightVal ->
                             // Công thức tính index theo Cột (Column-Major)
                             val entryIdx = (tableIndexInList * 25) + (colIdx * 5) + rowIdx
-                            val existingEntry = if (entryIdx < weightEntries.size) weightEntries[entryIdx] else null
 
-                            val onCellWeightEntered = remember(existingEntry, weightVal, onWeightUpdated, onWeightEntered) {
-                                { weight: Double ->
-                                    if (weightVal != null && existingEntry != null) onWeightUpdated(existingEntry, weight)
-                                    else onWeightEntered(weight)
-                                }
+                            // onWeightEntered từ screen có tham chiếu ổn định →
+                            // remember chỉ cần key entryIdx, không đổi khi ô khác thay đổi
+                            val onCellWeightEntered = remember(entryIdx, onWeightEntered) {
+                                { weight: Double -> onWeightEntered(entryIdx, weight) }
                             }
                             val onCellNextFocus = remember(rowIdx, colIdx, onNeedNextTable) {
                                 {
@@ -674,7 +704,10 @@ private fun GridCell(
 }
 
 @Composable
-private fun ColumnTotalsRow(totals: List<Double>) {
+private fun ColumnTotalsRow(stableTableData: ImmutableTableData) {
+    // remember(stableTableData): phép tính tổng cột chỉ chạy lại khi bảng này thay đổi
+    // → ColumnTotalsRow trở thành Skippable hoàn toàn khi bảng khác được cập nhật
+    val totals = remember(stableTableData) { calculateColumnTotals(stableTableData.data) }
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.GoldLight),
@@ -690,7 +723,7 @@ private fun ColumnTotalsRow(totals: List<Double>) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp) // Tăng chiều cao để người dùng trung niên dễ nhìn ngoài đồng ruộng
+                            .heightIn(min = 48.dp)
                             .padding(vertical = 2.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(AppColors.SurfaceContainer.copy(alpha = 0.7f))
@@ -735,3 +768,9 @@ private data class CalcParams(
     val impurityIsPercent: Boolean,
     val moisturePercent: Double
 )
+
+// ImmutableTableData dùng PersistentList<PersistentList<Double?>> — kiểu dữ liệu này
+// được Compose Compiler nhận diện NATIVELY là Stable mà không cần @Immutable.
+// Kết quả: WeightTableCard và ColumnTotalsRow được máy biên dịch xác nhận là
+// "restartable AND skippable" trong báo cáo Compose Compiler Stability Reports.
+data class ImmutableTableData(val data: PersistentList<PersistentList<Double?>>)

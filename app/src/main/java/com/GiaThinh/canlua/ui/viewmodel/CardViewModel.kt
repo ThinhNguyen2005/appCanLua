@@ -182,15 +182,18 @@ class CardViewModel @Inject constructor(
         seasonLabel: String = "",
         traderPhone: String = "",
         bagWeight: Double = 0.0,
-        impurityWeight: Double = 0.0
+        impurityWeight: Double = 0.0,
+        recordLocation: Boolean = false
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) return@launch
 
-            // Lấy GPS + reverse geocoding (best-effort, không block tạo phiếu)
+            // Lấy GPS + reverse geocoding (best-effort, không block tạo phiếu) chỉ khi được opt-in.
             // forceFresh=true vì phiếu mới cần geo chính xác lúc cân (cache 6h có thể stale).
-            val geo = runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull()
+            val geo = if (recordLocation) {
+                runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull()
+            } else null
             val address = geo?.let {
                 runCatching { locationProvider.reverseGeocode(it.lat, it.lon) }.getOrNull()
             }.orEmpty()

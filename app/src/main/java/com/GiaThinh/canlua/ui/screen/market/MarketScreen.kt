@@ -223,7 +223,7 @@ fun MarketScreen(
             }
             val onSelectTopic = remember { newsViewModel::selectTopic }
             val onDismissError = remember { newsViewModel::clearError }
-            val onRefreshPrices = remember { { viewModel.refresh() } }
+            val onRefreshPrices = remember { { viewModel.refreshFromFirestore() } }
             val onSelectTrend = remember { viewModel::setTrendFilter }
             val onSelectVariety = remember { viewModel::selectVariety }
             val onEditBid = remember {
@@ -365,7 +365,7 @@ private fun NewsPage(
         ) {
             item(key = "weather") {
                 AnimatedVisibility(
-                    visible = !weatherState.isRateLimited,
+                    visible = weatherState.hasPermission && !weatherState.isRateLimited && weatherState.weather != null,
                     enter = fadeIn(),
                     exit = fadeOut() + shrinkVertically()
                 ) {

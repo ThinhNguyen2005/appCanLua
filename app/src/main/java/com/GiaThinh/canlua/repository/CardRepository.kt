@@ -278,32 +278,71 @@ class CardRepository @Inject constructor(
     suspend fun updateCardCalculations(cardId: Long) {
         val card = cardDao.getCardById(cardId, uid()) ?: return
         val calculation = calculateCardTotals(cardId)
-
+        val totalRaw = calculation.totalRawWeight
         val entries = weightEntryDao.getWeightEntriesByCardIdSync(cardId)
-        entries.forEach { entry ->
-            val entryNetWeight = RiceCalculator.calcNetWeight(
-                rawWeight = entry.weight,
+
+        val validEntries = entries.filter { it.weight > 0.0 }
+        val validBagCount = validEntries.size
+
+        if (validBagCount > 0) {
+            val totalBag = RiceCalculator.calcTotalBagWeight(
+                bagCount = validBagCount,
                 bagWeight = card.bagWeight,
-                impurityWeight = 0.0,
-                moisturePercent = card.moisturePercent
+                methodIsSampling = card.bagMethodIsSampling,
+                sampleCount = card.bagSampleCount,
+                sampleTotalWeight = card.bagSampleTotalWeight
             )
-            if (entry.bagWeight != card.bagWeight || entry.impurityWeight != 0.0 || entry.netWeight != entryNetWeight) {
-                weightEntryDao.updateWeightEntry(
-                    entry.copy(
-                        bagWeight = card.bagWeight,
-                        impurityWeight = 0.0,
-                        netWeight = entryNetWeight
+            val singleBagWeight = totalBag / validBagCount
+
+            val rawAfterBag = (totalRaw - totalBag).coerceAtLeast(0.0)
+            val totalImpurity = RiceCalculator.calcTotalImpurity(
+                rawAfterBag = rawAfterBag,
+                impurityValue = card.impurityWeight,
+                isPercent = card.impurityIsPercent
+            )
+            val singleImpurityWeight = totalImpurity / validBagCount
+
+            entries.forEach { entry ->
+                val (bagW, impW, netW) = if (entry.weight > 0.0) {
+                    val entryNetWeight = RiceCalculator.calcNetWeight(
+                        rawWeight = entry.weight,
+                        bagWeight = singleBagWeight,
+                        impurityWeight = singleImpurityWeight,
+                        moisturePercent = card.moisturePercent
                     )
-                )
+                    Triple(singleBagWeight, singleImpurityWeight, entryNetWeight)
+                } else {
+                    Triple(0.0, 0.0, 0.0)
+                }
+
+                if (entry.bagWeight != bagW || entry.impurityWeight != impW || entry.netWeight != netW) {
+                    weightEntryDao.updateWeightEntry(
+                        entry.copy(
+                            bagWeight = bagW,
+                            impurityWeight = impW,
+                            netWeight = netW
+                        )
+                    )
+                }
+            }
+        } else {
+            entries.forEach { entry ->
+                if (entry.bagWeight != 0.0 || entry.impurityWeight != 0.0 || entry.netWeight != 0.0) {
+                    weightEntryDao.updateWeightEntry(
+                        entry.copy(
+                            bagWeight = 0.0,
+                            impurityWeight = 0.0,
+                            netWeight = 0.0
+                        )
+                    )
+                }
             }
         }
 
-        val totalRaw = calculation.totalRawWeight
         // Tính KL thực có ý thức về mode bao bì (A/B) + tạp chất (kg/%).
-        // Default mọi flag = false/0 → tương đương công thức cũ.
         val finalNetWeight = RiceCalculator.calcNetWeightWithModes(
             totalRaw = totalRaw,
-            bagCount = calculation.bagCount,
+            bagCount = validBagCount,
             bagWeight = card.bagWeight,
             bagMethodIsSampling = card.bagMethodIsSampling,
             bagSampleCount = card.bagSampleCount,
@@ -319,7 +358,6 @@ class CardRepository @Inject constructor(
         ).coerceAtLeast(0.0)
 
         // Còn lại không cho phép âm để tránh hiển thị "-100,000đ" vô nghĩa.
-        // Nếu paid + deposit > total, UI nên flag "Đã thanh toán dư" thay vì show số âm.
         val remainingAmount = RiceCalculator.calcRemainingAmount(
             totalAmount = totalAmount,
             paidAmount = calculation.totalPaid,

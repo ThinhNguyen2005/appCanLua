@@ -83,6 +83,7 @@ import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.GiaThinh.canlua.ui.viewmodel.DashboardData
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.util.TrackScreenRender
@@ -104,6 +105,10 @@ import java.util.Locale
  *  6. AI Crop Insights
  *  7. Top Traders + Trader History
  *  8. Account Operations (Thông tin · Đổi vai trò · Premium · Logout)
+ *
+ * PERFORMANCE: Tiêu thụ dashboardData thay vì 7 StateFlow riêng lẻ.
+ * DashboardViewModel.combine() gom TẤT CẢ data thành 1 atomic emission,
+ * chống Flow Avalanche — chỉ 1 recomposition thay vì 5-7.
  */
 @Composable
 fun FarmerProfileScreen(
@@ -115,27 +120,16 @@ fun FarmerProfileScreen(
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle()
 
-    // Dashboard data — reuse DashboardViewModel để tránh lặp logic aggregate
-    val seasons by dashboardViewModel.seasons.collectAsStateWithLifecycle()
-    val selectedSeason by dashboardViewModel.selectedSeason.collectAsStateWithLifecycle()
-    val currentStats by dashboardViewModel.currentStats.collectAsStateWithLifecycle()
-    val previousStats by dashboardViewModel.previousSeasonStats.collectAsStateWithLifecycle()
-    val topTraders by dashboardViewModel.topTraders.collectAsStateWithLifecycle()
-    val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsStateWithLifecycle()
-    val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsStateWithLifecycle()
-    val isAggregated by dashboardViewModel.isAggregated.collectAsStateWithLifecycle()
-
-    // Skeleton hiện đến khi Room (profile) + DashboardVM aggregate cùng ready.
-    // KHÔNG fixed-time: chờ flow emit thật. Nếu DB nhanh → skeleton flash <100ms;
-    // nếu DB chậm → skeleton giữ đến khi data đến — đúng tinh thần "load xong mới hiện".
-    val showSkeleton = profile == null || !isAggregated
+    // Combined flow — 1 recomposition thay vì 7 staggered emissions.
+    val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
+    val showSkeleton = profile == null || !dash.isAggregated
 
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
-    val lifetimeStats = remember(seasonsComparison) {
-        if (seasonsComparison.isEmpty()) null else LifetimeStats(
-            seasonCount = seasonsComparison.size,
-            totalNetWeight = seasonsComparison.sumOf { it.totalNetWeight },
-            totalRevenue = seasonsComparison.sumOf { it.totalRevenue }
+    val lifetimeStats = remember(dash.seasonsComparison) {
+        if (dash.seasonsComparison.isEmpty()) null else LifetimeStats(
+            seasonCount = dash.seasonsComparison.size,
+            totalNetWeight = dash.seasonsComparison.sumOf { it.totalNetWeight },
+            totalRevenue = dash.seasonsComparison.sumOf { it.totalRevenue }
         )
     }
 
@@ -204,23 +198,23 @@ fun FarmerProfileScreen(
             }
 
             // ─── TIER 2: Season Selector Chips ───
-            if (seasons.isNotEmpty()) {
+            if (dash.seasons.isNotEmpty()) {
                 item {
                     SeasonSelectorChip(
-                        seasons = seasons,
-                        selectedSeason = selectedSeason,
+                        seasons = dash.seasons,
+                        selectedSeason = dash.selectedSeason,
                         onSelect = dashboardViewModel::selectSeason
                     )
                 }
             }
 
             // ─── TIER 3: Primary KPI Grid 2×2 ───
-            currentStats?.let { stats ->
+            dash.currentStats?.let { stats ->
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         FarmerPrimaryKpiGrid(
                             stats = stats,
-                            previous = previousStats
+                            previous = dash.previousStats
                         )
                     }
                 }
@@ -239,12 +233,12 @@ fun FarmerProfileScreen(
             }
 
             // ─── TIER 5: Season Comparison Bar Chart ───
-            if (seasonsComparison.isNotEmpty()) {
+            if (dash.seasonsComparison.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         SeasonComparisonBarChart(
-                            seasons = seasonsComparison,
-                            selectedSeason = selectedSeason,
+                            seasons = dash.seasonsComparison,
+                            selectedSeason = dash.selectedSeason,
                             metric = ChartMetric.WEIGHT
                         )
                     }
@@ -252,11 +246,11 @@ fun FarmerProfileScreen(
             }
 
             // ─── TIER 6: AI Crop Insights ───
-            if (currentStats?.isEmpty == false) {
+            if (dash.currentStats?.isEmpty == false) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         AiInsightsCard(
-                            state = aiAnalysis,
+                            state = dash.aiAnalysis,
                             onAnalyze = dashboardViewModel::analyzeWithAi,
                             onReset = dashboardViewModel::resetAiAnalysis
                         )
@@ -265,10 +259,10 @@ fun FarmerProfileScreen(
             }
 
             // ─── TIER 7: Top Traders + Trader History (Farmer-specific) ───
-            if (topTraders.isNotEmpty()) {
+            if (dash.topTraders.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        TopTradersCard(items = topTraders)
+                        TopTradersCard(items = dash.topTraders)
                     }
                 }
             }

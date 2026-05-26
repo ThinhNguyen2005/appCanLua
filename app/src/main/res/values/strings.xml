@@ -362,6 +362,14 @@
     <string name="font_large">Lớn</string>
     <string name="font_xlarge">Rất lớn</string>
 
+    <string name="theme_light">Sáng</string>
+    <string name="theme_high_contrast">Tối tương phản tốt</string>
+    <string name="theme_oled">Tối sâu (AMOLED)</string>
+    <string name="theme_auto">Tự động theo thiết bị</string>
+
+    <string name="settings_theme_title">Giao diện</string>
+    <string name="settings_theme_subtitle">Chọn chế độ màu sắc cho app</string>
+
     <string name="profile_farmer_default_name">Nông dân</string>
     <string name="profile_trader_default_name">Thương lái</string>
     <string name="profile_farmer_account">Tài khoản Nông dân</string>

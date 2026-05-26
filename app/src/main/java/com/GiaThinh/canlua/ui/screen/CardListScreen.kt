@@ -1,10 +1,12 @@
 package com.GiaThinh.canlua.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -181,125 +183,115 @@ fun CardListScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // === Card List (chứa cả Summary + Filter chips để cuộn theo) ===
-            AnimatedVisibility(
-                visible = showSkeleton,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                CardListSkeleton(count = 3)
-            }
-
-            AnimatedVisibility(
-                visible = !showSkeleton,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                val pullState = rememberPullToRefreshState()
-                PullToRefreshBox(
-                    isRefreshing = manualRefreshing,
-                    onRefresh = {
-                        manualRefreshing = true
-                        viewModel.refreshCards()
-                        syncViewModel.syncAll()
-                    },
-                    state = pullState,
-                    modifier = Modifier.fillMaxSize(),
-                    indicator = {
-                        // Đọc distanceFraction TRONG lambda graphicsLayer → defer xuống
-                        // draw phase, không trigger recompose toàn bộ PullToRefreshBox
-                        // mỗi tick (~60fps khi user kéo).
-                        PullToRefreshDefaults.Indicator(
-                            state = pullState,
-                            isRefreshing = manualRefreshing,
-                            color = AppColors.GreenPrimary,
-                            containerColor = AppColors.GreenSurface,
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .graphicsLayer {
-                                    val p = pullState.distanceFraction.coerceIn(0f, 1f)
-                                    scaleX = p
-                                    scaleY = p
-                                    alpha = p
-                                }
-                        )
-                    }
-                ) {
-                    // Group cards by date — fallback empty list nếu chưa có phiếu nào
-                    // (vẫn render summary + filter chips trong LazyColumn để user đọc trước khi tạo).
-                    val groupedCards = remember(cards, dateFormat) {
-                        cards.groupBy { card ->
-                            dateFormat.format(card.date)
-                        }
-                    }
-
-                    LazyColumn(
-                        state = listState,
+            // Crossfade thay vì 2 AnimatedVisibility riêng biệt vì skeleton và real content
+            // GIỜ CÙNG cấu trúc LazyColumn → swap mượt, không unmeasure → measure lại.
+            // listState DÙNG CHUNG giữa skeleton và real content → scroll position
+            // được bảo toàn khi skeleton → content (sau khi InitViewModel warm cache).
+            Crossfade(
+                targetState = showSkeleton,
+                animationSpec = tween(durationMillis = 300),
+                label = "card_list_crossfade"
+            ) { skeleton ->
+                if (skeleton) {
+                    CardListSkeleton(count = 3, listState = listState)
+                } else {
+                    val pullState = rememberPullToRefreshState()
+                    PullToRefreshBox(
+                        isRefreshing = manualRefreshing,
+                        onRefresh = {
+                            manualRefreshing = true
+                            viewModel.refreshCards()
+                            syncViewModel.syncAll()
+                        },
+                        state = pullState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 8.dp,
-                            bottom = 96.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        item(key = "summary_header") {
-                            CardListSummaryCard(
-                                cardCount = todayCards.size,
-                                totalKg = todayTotalKg,
-                                totalAmount = todayTotalAmount,
-                                syncStatus = syncStatus
+                        indicator = {
+                            PullToRefreshDefaults.Indicator(
+                                state = pullState,
+                                isRefreshing = manualRefreshing,
+                                color = AppColors.GreenPrimary,
+                                containerColor = AppColors.GreenSurface,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .graphicsLayer {
+                                        val p = pullState.distanceFraction.coerceIn(0f, 1f)
+                                        scaleX = p
+                                        scaleY = p
+                                        alpha = p
+                                    }
                             )
                         }
-
-                        // ─── Compact filter bar — 1 row gọn ~44dp ───
-                        // Thay vì 2 hàng chips chiếm ~90dp như trước.
-                        // Nút "Bộ lọc" + chips active inline. Tap nút mở bottom sheet
-                        // chọn full filter chips. Active filter clear nhanh bằng × ngay tại chỗ.
-                        if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
-                            item(key = "filter_bar") {
-                                CardListFilterBar(
-                                    selectedSeason = selectedSeason,
-                                    selectedVariety = selectedFilter,
-                                    onOpenFilter = { showFilterSheet = true },
-                                    onClearSeason = { viewModel.setSeasonFilter(null) },
-                                    onClearVariety = { viewModel.setVarietyFilter(null) },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                    ) {
+                        val groupedCards = remember(cards, dateFormat) {
+                            cards.groupBy { card ->
+                                dateFormat.format(card.date)
                             }
                         }
 
-                        // ─── Empty state hoặc danh sách phiếu ───
-                        if (cards.isEmpty()) {
-                            item(key = "empty") {
-                                CardListEmptyState(
-                                    onSyncClick = { syncViewModel.syncAll() },
-                                    syncing = syncStatus is SyncStatus.Syncing
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 8.dp,
+                                bottom = 96.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item(key = "summary_header") {
+                                CardListSummaryCard(
+                                    cardCount = todayCards.size,
+                                    totalKg = todayTotalKg,
+                                    totalAmount = todayTotalAmount,
+                                    syncStatus = syncStatus
                                 )
                             }
-                        } else {
-                            groupedCards.forEach { (date, cardsInDay) ->
-                                item(key = "header_$date") {
-                                    Text(
-                                        text = date,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = AppColors.TextSecondary,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(
-                                            top = 8.dp,
-                                            bottom = 4.dp
-                                        )
+
+                            if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
+                                item(key = "filter_bar") {
+                                    CardListFilterBar(
+                                        selectedSeason = selectedSeason,
+                                        selectedVariety = selectedFilter,
+                                        onOpenFilter = { showFilterSheet = true },
+                                        onClearSeason = { viewModel.setSeasonFilter(null) },
+                                        onClearVariety = { viewModel.setVarietyFilter(null) },
+                                        modifier = Modifier.fillMaxWidth()
                                     )
                                 }
-                                items(
-                                    items = cardsInDay,
-                                    key = { it.id }
-                                ) { card ->
-                                    CardItem(
-                                        card = card,
-                                        onClick = onCardClick,
-                                        onDelete = onCardDelete
+                            }
+
+                            if (cards.isEmpty()) {
+                                item(key = "empty") {
+                                    CardListEmptyState(
+                                        onSyncClick = { syncViewModel.syncAll() },
+                                        syncing = syncStatus is SyncStatus.Syncing
                                     )
+                                }
+                            } else {
+                                groupedCards.forEach { (date, cardsInDay) ->
+                                    item(key = "header_$date") {
+                                        Text(
+                                            text = date,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = AppColors.TextSecondary,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(
+                                                top = 8.dp,
+                                                bottom = 4.dp
+                                            )
+                                        )
+                                    }
+                                    items(
+                                        items = cardsInDay,
+                                        key = { it.id }
+                                    ) { card ->
+                                        CardItem(
+                                            card = card,
+                                            onClick = onCardClick,
+                                            onDelete = onCardDelete
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -352,7 +344,7 @@ fun CardListScreen(
             suggestedVarieties = suggestedVarieties,
             mode = if (isTrader) CreateCardMode.TRADER else CreateCardMode.FARMER,
             onDismiss = { showCreateDialog = false },
-            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, bagWeight, impurityWeight ->
+            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, bagWeight, impurityWeight, recordLocation ->
                 // FARMER: name=farmer (owner), traderName=counterparty.
                 // TRADER: name=farmer (counterparty), traderName=trader (owner).
                 val cardName = if (isTrader) counterpartyName else ownerName
@@ -369,7 +361,8 @@ fun CardListScreen(
                     seasonLabel = season,
                     traderPhone = cardTraderPhone,
                     bagWeight = bagWeight,
-                    impurityWeight = impurityWeight
+                    impurityWeight = impurityWeight,
+                    recordLocation = recordLocation
                 )
                 // Tăng counter chống gian lận. Counter chỉ tăng — xoá phiếu cũ
                 // KHÔNG giảm → user free không thể bypass quota 3 phiếu/ngày.

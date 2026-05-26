@@ -121,15 +121,4 @@ class MarketViewModel @Inject constructor(
     fun clearFilters() {
         _filter.value = MarketFilter()
     }
-
-    fun refresh() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                marketRepository.refreshFromFirestore()
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
 }

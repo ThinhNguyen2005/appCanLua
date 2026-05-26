@@ -144,7 +144,7 @@ class CanLuaApplication : Application(), Configuration.Provider {
                 .map { it?.uid }
                 .distinctUntilChanged()
                 .collect { uid ->
-                    if (uid != null && syncManager.get().isOnline() && settingsRepository.isAutoSyncEnabled()) {
+                    if (uid != null && syncManager.get().isWifiConnected() && settingsRepository.isAutoSyncEnabled()) {
                         // Chỉ tự động tải dữ liệu từ đám mây về nếu cơ sở dữ liệu trên máy trống (đăng nhập lần đầu / cài mới)
                         val localCards = cardRepository.get().getAllCards().first()
                         if (localCards.isEmpty()) {
@@ -171,10 +171,10 @@ class CanLuaApplication : Application(), Configuration.Provider {
 
     private fun schedulePeriodicSync() {
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiredNetworkType(NetworkType.UNMETERED)
             .build()
 
-        val request = PeriodicWorkRequestBuilder<SyncWorker>(12, TimeUnit.HOURS)
+        val request = PeriodicWorkRequestBuilder<SyncWorker>(24, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
 

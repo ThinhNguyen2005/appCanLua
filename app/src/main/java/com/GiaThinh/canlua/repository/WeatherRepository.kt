@@ -37,6 +37,7 @@ sealed class WeatherState {
     data class Data(val info: WeatherInfo, val isStale: Boolean) : WeatherState()
     data class Error(val message: String?, val cached: WeatherInfo? = null) : WeatherState()
     object RateLimited : WeatherState()
+    object NoPermission : WeatherState()
 }
 
 /**
@@ -66,9 +67,7 @@ class WeatherRepository @Inject constructor(
     /** Hot StateFlow — mọi caller nhận cùng state, không tạo thêm network call. */
     val state: StateFlow<WeatherState> = _state.asStateFlow()
 
-    init {
-        scope.launch { collectWeather(forceRefresh = false) }
-    }
+
 
     /**
      * Gọi khi user pull-to-refresh hoặc permission được cấp.
@@ -89,6 +88,10 @@ class WeatherRepository @Inject constructor(
     }
 
     private fun coldWeatherFlow(forceRefresh: Boolean): Flow<WeatherState> = flow {
+        if (!locationProvider.hasPermission()) {
+            emit(WeatherState.NoPermission)
+            return@flow
+        }
         val cached = cacheDao.get()
         val now = System.currentTimeMillis()
 
@@ -160,10 +163,7 @@ class WeatherRepository @Inject constructor(
             Log.d(TAG, "fetchFromNetwork: GET api.openweathermap.org lat=${location.lat} lon=${location.lon}")
             val response: OpenWeatherResponse = httpClient.get(url)
 
-            // OWM `name` hàng thường trả tên thành phố lớn (vd "Ho Chi Minh City")
-            // chứ không đúng Quận. Override bằng Geocoder native để lấy "Quận 12, TP. HCM".
-            val accurateName = locationProvider.reverseGeocode(location.lat, location.lon)
-            Result.success(response.toWeatherInfo(overrideName = accurateName))
+            Result.success(response.toWeatherInfo(overrideName = null))
         } catch (e: HttpException) {
             Log.e(TAG, "fetchFromNetwork: HTTP ${e.code} body=${e.errorBody}")
             Result.failure(e)

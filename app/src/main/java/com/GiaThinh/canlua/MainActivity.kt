@@ -14,6 +14,7 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.ui.MainScreen
 import com.GiaThinh.canlua.ui.screen.AppSplashScreen
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val authViewModel: AuthViewModel = hiltViewModel()
             val fontScale by settingsViewModel.fontScale.collectAsStateWithLifecycle(FontScale.NORMAL)
+            val appThemeMode by settingsViewModel.appThemeMode.collectAsStateWithLifecycle(AppThemeMode.AUTO)
             val language by settingsViewModel.language.collectAsStateWithLifecycle()
             val authState by authViewModel.uiState.collectAsStateWithLifecycle()
             // isDataReady đã true khi native splash exit; subscribe ở đây để trigger
@@ -62,7 +64,7 @@ class MainActivity : ComponentActivity() {
             val isDataReady by initViewModel.isDataReady.collectAsStateWithLifecycle()
             LocaleUtil.applyLanguage(this, language)
 
-            CanLuaTheme(fontScale = fontScale) {
+            CanLuaTheme(appThemeMode = appThemeMode, fontScale = fontScale) {
                 com.GiaThinh.canlua.ui.feedback.AppToastHost {
                     val rootNavController = rememberNavController()
 

@@ -59,6 +59,8 @@ browser = "1.10.0"
 benchmarkTraceprocessor = "1.4.1"
 profileinstaller = "1.4.1"
 splashscreen = "1.0.1"
+# Kotlinx Collections Immutable — Compose Compiler nhận diện natively là Stable
+kotlinxCollectionsImmutable = "0.3.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -142,6 +144,8 @@ androidx-browser = { group = "androidx.browser", name = "browser", version.ref =
 androidx-benchmark-traceprocessor = { group = "androidx.benchmark", name = "benchmark-traceprocessor", version.ref = "benchmarkTraceprocessor" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
+# Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện natively là Stable
+kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

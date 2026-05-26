@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.AppLanguage
+import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.BackupStatus
 import com.GiaThinh.canlua.repository.SyncStatus
@@ -71,6 +73,7 @@ fun SettingsScreen(
     val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
+    val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
     val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
     val backupStatus by syncViewModel.backupStatus.collectAsStateWithLifecycle()
@@ -501,6 +504,53 @@ fun SettingsScreen(
                     }
                 }
 
+                // ── Theme Mode Card ──
+                SettingsCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            IconTile(
+                                bg = AppColors.GreenSurface,
+                                tint = AppColors.GreenPrimary,
+                                icon = { tint, mod ->
+                                    Icon(
+                                        Icons.Default.DarkMode,
+                                        contentDescription = null,
+                                        tint = tint,
+                                        modifier = mod
+                                    )
+                                }
+                            )
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.settings_theme_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.TextPrimary
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_theme_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextHint,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+
+                        ThemeModeOptions(
+                            selected = appThemeMode,
+                            onSelect = { viewModel.setThemeMode(it) }
+                        )
+                    }
+                }
+
                 // ── Font scale Card ──
                 SettingsCard {
                     Column(
@@ -730,6 +780,47 @@ private fun LanguageOptions(
                     RadioButton(
                         selected = isSelected,
                         onClick = { onSelect(language) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = AppColors.GreenPrimary,
+                            unselectedColor = AppColors.TextHint
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeModeOptions(
+    selected: AppThemeMode,
+    onSelect: (AppThemeMode) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AppThemeMode.entries.forEach { mode ->
+            val isSelected = mode == selected
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                onClick = { onSelect(mode) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(mode.labelRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                    )
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { onSelect(mode) },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = AppColors.GreenPrimary,
                             unselectedColor = AppColors.TextHint

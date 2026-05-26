@@ -12,6 +12,8 @@ import com.GiaThinh.canlua.data.remote.ai.OpenRouterResponse
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import java.io.IOException
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -154,20 +156,22 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
      * Gọi OpenRouter 1 lần, KHÔNG retry/fallback. Mọi lỗi map sang câu tiếng Việt
      * gần gũi cho bà con để UI hiển thị trực tiếp.
      */
-    private fun callOnce(messages: List<ChatMessage>, context: String): Result<String> {
+    private suspend fun callOnce(messages: List<ChatMessage>, context: String): Result<String> {
         val crashlytics = runCatching { FirebaseCrashlytics.getInstance() }.getOrNull()
 
         return try {
             val req = OpenRouterRequest(model = MODEL, messages = messages)
-            val resp: OpenRouterResponse = httpClient.postJson(
-                url = URL,
-                body = req,
-                headers = mapOf(
-                    "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
-                    "HTTP-Referer" to "https://canlua.app",
-                    "X-Title" to "CanLua"
+            val resp: OpenRouterResponse = withTimeout(30_000L) {
+                httpClient.postJson(
+                    url = URL,
+                    body = req,
+                    headers = mapOf(
+                        "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
+                        "HTTP-Referer" to "https://canlua.app",
+                        "X-Title" to "CanLua"
+                    )
                 )
-            )
+            }
             resp.error?.message?.let { errMsg ->
                 crashlytics?.log("AI[$context] model=$MODEL api_error=$errMsg")
                 return Result.failure(RuntimeException(
@@ -192,6 +196,11 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
                 rawContent
             }
             Result.success(finalAnswer)
+        } catch (e: TimeoutCancellationException) {
+            crashlytics?.log("AI[$context] timeout: ${e.message}")
+            Result.failure(RuntimeException(
+                "Không kết nối được AI (quá thời gian phản hồi). Bà con thử lại sau."
+            ))
         } catch (e: HttpException) {
             crashlytics?.log("AI[$context] http_${e.code}: ${e.errorBody.take(200)}")
             val userMsg = when (e.code) {

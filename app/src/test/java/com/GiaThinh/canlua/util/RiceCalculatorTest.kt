@@ -287,4 +287,51 @@ class RiceCalculatorTest {
         )
         assertEquals(950.0, net, eps)
     }
+
+    @Test
+    fun `calcTotalImpurity percent mode with moisture conversion matches global final net weight`() {
+        // raw 1000, 100 bao, bao bì 0.5kg/bao (tổng bao 50kg)
+        // tạp chất 2% (20kg)
+        // độ ẩm 14% (không đổi)
+        val totalRaw = 1000.0
+        val bagCount = 100
+        val bagWeight = 0.5
+        val impurityPercent = 2.0
+        val moisturePercent = 14.0
+
+        val totalBag = RiceCalculator.calcTotalBagWeight(bagCount, bagWeight, false, 0, 0.0)
+        val singleBagWeight = totalBag / bagCount // 0.5
+
+        val rawAfterBag = totalRaw - totalBag // 950
+        val totalImpurity = RiceCalculator.calcTotalImpurity(rawAfterBag, impurityPercent, true) // 19.0
+        val singleImpurityWeight = totalImpurity / bagCount // 0.19
+
+        // Tổng quát
+        val globalNetWeight = RiceCalculator.calcNetWeightWithModes(
+            totalRaw = totalRaw,
+            bagCount = bagCount,
+            bagWeight = bagWeight,
+            bagMethodIsSampling = false,
+            bagSampleCount = 0,
+            bagSampleTotalWeight = 0.0,
+            impurityValue = impurityPercent,
+            impurityIsPercent = true,
+            moisturePercent = moisturePercent
+        )
+        assertEquals(931.0, globalNetWeight, eps) // (1000 - 50 - 19) = 931
+
+        // Tổng của từng bao lẻ
+        var sumNetWeight = 0.0
+        repeat(bagCount) {
+            val entryRaw = totalRaw / bagCount // 10kg/bao
+            val entryNet = RiceCalculator.calcNetWeight(
+                rawWeight = entryRaw,
+                bagWeight = singleBagWeight,
+                impurityWeight = singleImpurityWeight,
+                moisturePercent = moisturePercent
+            )
+            sumNetWeight += entryNet
+        }
+        assertEquals(globalNetWeight, sumNetWeight, eps)
+    }
 }

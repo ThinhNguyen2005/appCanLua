@@ -46,7 +46,7 @@ class SyncableCardRepository @Inject constructor(
         syncJobs[cardId] = scope.launch {
             delay(5000) // Trì hoãn 5 giây để gom cụm các sự kiện gõ liên tiếp
             syncJobs.remove(cardId)
-            if (syncManager.isOnline()) {
+            if (syncManager.isWifiConnected()) {
                 syncManager.syncCardAndDetails(cardId)
             } else {
                 syncManager.scheduleImmediateSync()
@@ -65,20 +65,13 @@ class SyncableCardRepository @Inject constructor(
     suspend fun getCardById(id: Long) = cardRepository.getCardById(id)
 
     suspend fun insertCard(card: Card): Long {
-        // Auto-capture GPS nếu card chưa có toạ độ và app có quyền.
-        // forceFresh=true vì phiếu mới cần geo chính xác lúc cân.
-        val cardWithGps = if (card.latitude == null || card.longitude == null) {
-            val geo = locationProvider.getCurrentLocation(forceFresh = true)
-            if (geo != null) card.copy(latitude = geo.lat, longitude = geo.lon) else card
-        } else card
-
-        val id = cardRepository.insertCard(cardWithGps)
-        if (syncManager.isOnline()) {
-            val cardWithId = cardWithGps.copy(id = id)
+        val id = cardRepository.insertCard(card)
+        if (syncManager.isWifiConnected()) {
+            val cardWithId = card.copy(id = id)
             syncManager.syncCard(cardWithId)
         } else {
-            // Offline → enqueue OneTimeWorkRequest, WorkManager sẽ tự chạy
-            // SyncWorker khi có mạng (không phải đợi periodic 12h).
+            // Offline/No Wifi → enqueue OneTimeWorkRequest, WorkManager sẽ tự chạy
+            // SyncWorker khi có mạng và kết nối Wi-Fi.
             syncManager.scheduleImmediateSync()
         }
         return id
@@ -107,7 +100,7 @@ class SyncableCardRepository @Inject constructor(
         cardRepository.deleteCard(card)
 
         // 2. Đẩy delete lên cloud nếu online + có firestoreId.
-        if (fsCardId != null && syncManager.isOnline()) {
+        if (fsCardId != null && syncManager.isWifiConnected()) {
             val ok = runCatching {
                 firestoreRepository.getWeightEntriesByCardId(fsCardId).getOrNull().orEmpty()
                     .forEach { entry ->
@@ -151,7 +144,7 @@ class SyncableCardRepository @Inject constructor(
      */
     suspend fun deleteWeightEntry(weightEntry: WeightEntry) {
         val fsId = weightEntry.firestoreId
-        if (fsId != null && syncManager.isOnline()) {
+        if (fsId != null && syncManager.isWifiConnected()) {
             firestoreRepository.deleteWeightEntry(fsId)
         }
         cardRepository.deleteWeightEntry(weightEntry)
@@ -186,7 +179,7 @@ class SyncableCardRepository @Inject constructor(
         cardRepository.lockCard(cardId, traderId)
         // Lock card là hành động one-off quan trọng cuối cùng, đồng bộ tức thì
         cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isOnline()) {
+            if (syncManager.isWifiConnected()) {
                 syncManager.syncCard(updatedCard)
             } else {
                 syncManager.scheduleImmediateSync()
@@ -194,34 +187,5 @@ class SyncableCardRepository @Inject constructor(
         }
     }
 
-    /**
-     * Đồng bộ 1 weight entry lên Firestore. Yêu cầu card cha đã có firestoreId
-     * (entry tham chiếu cardId là Firestore doc id, không phải Room id).
-     * Nếu card cha chưa sync — push card trước rồi push entry.
-     * Offline → noop, để background sync xử lý.
-     */
-    private suspend fun syncEntryIfPossible(weightEntry: WeightEntry) {
-        if (!syncManager.isOnline()) {
-            // Offline → defer cho retry queue. SyncWorker sẽ pickup khi có mạng.
-            syncManager.scheduleImmediateSync()
-            return
-        }
-        val parent = cardRepository.getCardById(weightEntry.cardId) ?: return
-        val cardFsId = parent.firestoreId ?: run {
-            syncManager.syncCard(parent).getOrNull() ?: return
-        }
-        syncManager.syncWeightEntry(weightEntry, cardFsId)
-    }
-
-    private suspend fun syncTransactionIfPossible(transaction: Transaction) {
-        if (!syncManager.isOnline()) {
-            syncManager.scheduleImmediateSync()
-            return
-        }
-        val parent = cardRepository.getCardById(transaction.cardId) ?: return
-        val cardFsId = parent.firestoreId ?: run {
-            syncManager.syncCard(parent).getOrNull() ?: return
-        }
-        syncManager.syncTransaction(transaction, cardFsId)
-    }
 }
+

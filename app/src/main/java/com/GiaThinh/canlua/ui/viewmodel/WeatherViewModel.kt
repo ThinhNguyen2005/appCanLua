@@ -19,7 +19,8 @@ data class WeatherUiState(
     val isLoading: Boolean = false,
     val isStale: Boolean = false,
     val errorMessage: String? = null,
-    val isRateLimited: Boolean = false
+    val isRateLimited: Boolean = false,
+    val hasPermission: Boolean = true
 )
 
 private const val TAG = "WeatherVM"
@@ -54,13 +55,15 @@ class WeatherViewModel @Inject constructor(
                         isLoading = false,
                         isStale = st.isStale,
                         errorMessage = null,
-                        isRateLimited = false
+                        isRateLimited = false,
+                        hasPermission = true
                     )
                     is WeatherState.Error -> {
                         Log.e(TAG, "WeatherState.Error: ${st.message}")
                         _state.value.copy(
                             isLoading = false,
-                            errorMessage = st.message
+                            errorMessage = st.message,
+                            hasPermission = true
                         )
                     }
                     is WeatherState.RateLimited -> {
@@ -68,7 +71,19 @@ class WeatherViewModel @Inject constructor(
                         _state.value.copy(
                             isLoading = false,
                             errorMessage = null,
-                            isRateLimited = true
+                            isRateLimited = true,
+                            hasPermission = true
+                        )
+                    }
+                    is WeatherState.NoPermission -> {
+                        Log.d(TAG, "WeatherState.NoPermission — GPS permission not granted")
+                        WeatherUiState(
+                            weather = null,
+                            isLoading = false,
+                            isStale = false,
+                            errorMessage = null,
+                            isRateLimited = false,
+                            hasPermission = false
                         )
                     }
                 }

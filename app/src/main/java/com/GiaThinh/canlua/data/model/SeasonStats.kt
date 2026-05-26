@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua.data.model
 
+import androidx.compose.runtime.Immutable
 import java.util.Calendar
 import java.util.Date
 
@@ -43,7 +44,14 @@ data class SeasonStatsRaw(
     )
 }
 
-/** Stats sạch dùng trong UI/ViewModel. */
+/**
+ * Stats sạch dùng trong UI/ViewModel.
+ *
+ * @Immutable đảm bảo Compose Compiler nhận diện type này là ổn định,
+ * tránh "Flow Collection Avalanche" khi nhiều flow emit cùng lúc — Compose
+ * không còn phải recompose chart/component mỗi khi 1 field nhỏ thay đổi.
+ */
+@Immutable
 data class SeasonStats(
     val season: String,
     val cardCount: Int,
@@ -72,6 +80,7 @@ data class SeasonStats(
 }
 
 /** Phân bổ giống lúa trong 1 vụ. */
+@Immutable
 data class VarietyStat(
     val variety: String,
     val weight: Double,
@@ -79,6 +88,7 @@ data class VarietyStat(
 )
 
 /** Top thương lái mua trong 1 vụ. */
+@Immutable
 data class TraderStat(
     val traderName: String,
     val revenue: Double,

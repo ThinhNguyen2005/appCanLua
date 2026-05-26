@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,6 +46,52 @@ class FirestoreRepository @Inject constructor(
     // Transactions collection
     private val transactionsCollection
         get() = firestore.collection("transactions")
+
+    fun generateCardId(): String = cardsCollection.document().id
+    fun generateWeightEntryId(): String = weightEntriesCollection.document().id
+    fun generateTransactionId(): String = transactionsCollection.document().id
+
+    suspend fun executeBatchSync(
+        cards: List<FirestoreCard>,
+        weightEntries: List<FirestoreWeightEntry>,
+        transactions: List<FirestoreTransaction>,
+        newCardsCount: Int
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val batch = firestore.batch()
+            val now = System.currentTimeMillis()
+            val currentUid = userId
+
+            // Add cards
+            cards.forEach { card ->
+                val docRef = cardsCollection.document(card.id)
+                batch.set(docRef, card.copy(userId = currentUid, syncTimestamp = now))
+            }
+
+            // Add weight entries
+            weightEntries.forEach { entry ->
+                val docRef = weightEntriesCollection.document(entry.id)
+                batch.set(docRef, entry.copy(userId = currentUid, syncTimestamp = now))
+            }
+
+            // Add transactions
+            transactions.forEach { tx ->
+                val docRef = transactionsCollection.document(tx.id)
+                batch.set(docRef, tx.copy(userId = currentUid, syncTimestamp = now))
+            }
+
+            // Increment profile cardCount if there are new cards
+            if (newCardsCount > 0 && currentUid != null) {
+                val profileRef = firestore.collection("profiles").document(currentUid)
+                batch.update(profileRef, "cardCount", com.google.firebase.firestore.FieldValue.increment(newCardsCount.toLong()))
+            }
+
+            batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     // ========== Card Operations ==========
 

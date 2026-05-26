@@ -6,21 +6,32 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
@@ -28,16 +39,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 
 /**
  * Modifier shimmer 45° sweep — gradient sáng quét chéo qua bề mặt.
  * Tạo cảm giác "đang load" tinh tế, không nhịp full-block alpha.
+ * MÀU tự động thích ứng light/dark mode qua [skeletonColors].
  *
  * Áp dụng trực tiếp lên element có background.
  */
-fun Modifier.shimmerEffect(): Modifier = composed {
+fun Modifier.shimmerEffect(skeletonColors: SkeletonColors? = null): Modifier = composed {
+    val colors = skeletonColors ?: skeletonColors()
     var size by remember { mutableStateOf(IntSize.Zero) }
     val transition = rememberInfiniteTransition(label = "shimmer_sweep")
     val startOffsetX by transition.animateFloat(
@@ -51,12 +65,7 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 
     background(
         brush = Brush.linearGradient(
-            colors = listOf(
-                Color(0xFFD6D6D6),
-                Color(0xFFEDEDED),
-                Color(0xFFD6D6D6),
-            ),
-            // 45° sweep: from (x, 0) to (x + width, height) — kéo chéo
+            colors = colors.shimmerGradient,
             start = Offset(startOffsetX, 0f),
             end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat()),
         ),
@@ -64,26 +73,71 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 }
 
 /**
+ * Bộ màu skeleton thích ứng light/dark mode.
+ * @param surface Màu nền card skeleton.
+ * @param shimmerBase Màu base của shimmer gradient (2 vế).
+ * @param shimmerHighlight Màu highlight giữa của shimmer gradient.
+ */
+data class SkeletonColors(
+    val surface: Color,
+    val shimmerBase: Color,
+    val shimmerHighlight: Color,
+) {
+    val shimmerGradient: List<Color>
+        get() = listOf(shimmerBase, shimmerHighlight, shimmerBase)
+}
+
+/**
+ * Lấy bộ màu skeleton phù hợp với theme hiện tại (light hoặc dark).
+ * Dùng trong @Composable context để đọc [MaterialTheme.colorScheme].
+ */
+@Composable
+fun skeletonColors(): SkeletonColors {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    return if (isDark) {
+        SkeletonColors(
+            surface = Color(0xFF2C2C2C),
+            shimmerBase = Color(0xFF1E1E1E),
+            shimmerHighlight = Color(0xFF3A3A3A),
+        )
+    } else {
+        SkeletonColors(
+            surface = Color(0xFFF5F5F5),
+            shimmerBase = Color(0xFFD6D6D6),
+            shimmerHighlight = Color(0xFFEDEDED),
+        )
+    }
+}
+
+private fun Color.luminance(): Float {
+    val r = red
+    val g = green
+    val b = blue
+    return 0.299f * r + 0.587f * g + 0.114f * b
+}
+
+/**
  * Skeleton loading card — placeholder với shimmer 45° sweep.
- * Thay thế full-block alpha tween cũ bằng gradient sáng quét chéo.
+ * MÀU tự động thích ứng light/dark mode.
  */
 @Composable
 fun SkeletonCard(modifier: Modifier = Modifier) {
+    val colors = skeletonColors()
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            ShimmerBlock(widthFraction = 0.6f, height = 20.dp)
+            ShimmerBlock(widthFraction = 0.6f, height = 20.dp, colors = colors)
             Spacer(Modifier.height(12.dp))
-            ShimmerBlock(widthFraction = 0.9f, height = 14.dp)
+            ShimmerBlock(widthFraction = 0.9f, height = 14.dp, colors = colors)
             Spacer(Modifier.height(8.dp))
-            ShimmerBlock(widthFraction = 0.75f, height = 14.dp)
+            ShimmerBlock(widthFraction = 0.75f, height = 14.dp, colors = colors)
             Spacer(Modifier.height(12.dp))
-            ShimmerBlock(widthFraction = 0.4f, height = 32.dp, corner = 8.dp)
+            ShimmerBlock(widthFraction = 0.4f, height = 32.dp, corner = 8.dp, colors = colors)
         }
     }
 }
@@ -91,15 +145,16 @@ fun SkeletonCard(modifier: Modifier = Modifier) {
 @Composable
 private fun ShimmerBlock(
     widthFraction: Float,
-    height: androidx.compose.ui.unit.Dp,
-    corner: androidx.compose.ui.unit.Dp = 4.dp,
+    height: Dp,
+    corner: Dp = 4.dp,
+    colors: SkeletonColors = skeletonColors(),
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth(widthFraction)
             .height(height)
             .clip(RoundedCornerShape(corner))
-            .shimmerEffect(),
+            .shimmerEffect(colors),
     )
 }
 
@@ -114,36 +169,37 @@ fun SkeletonList(count: Int = 3) {
 
 /**
  * Skeleton "Hôm nay" — placeholder cho [CardListSummaryCard].
- * Cùng kích thước/khoảng cách để khi data thật xuất hiện không bị "pop in" từ dưới.
+ * MÀU tự động thích ứng light/dark mode.
  */
 @Composable
 fun SummaryCardSkeleton(modifier: Modifier = Modifier) {
+    val colors = skeletonColors()
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F4F0)),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         shape = RoundedCornerShape(16.dp),
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.fillMaxWidth(0.5f)) {
-                ShimmerBlock(widthFraction = 0.8f, height = 14.dp)
+                ShimmerBlock(widthFraction = 0.8f, height = 14.dp, colors = colors)
                 Spacer(Modifier.height(10.dp))
-                ShimmerBlock(widthFraction = 0.7f, height = 28.dp, corner = 6.dp)
+                ShimmerBlock(widthFraction = 0.7f, height = 28.dp, corner = 6.dp, colors = colors)
             }
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = androidx.compose.ui.Alignment.End,
+                horizontalAlignment = Alignment.End,
             ) {
-                ShimmerBlock(widthFraction = 0.7f, height = 14.dp)
+                ShimmerBlock(widthFraction = 0.7f, height = 14.dp, colors = colors)
                 Spacer(Modifier.height(10.dp))
-                ShimmerBlock(widthFraction = 0.9f, height = 28.dp, corner = 6.dp)
+                ShimmerBlock(widthFraction = 0.9f, height = 28.dp, corner = 6.dp, colors = colors)
             }
         }
     }
@@ -151,16 +207,52 @@ fun SummaryCardSkeleton(modifier: Modifier = Modifier) {
 
 /**
  * Skeleton tổng hợp cho màn "Cân lúa" — summary card + danh sách phiếu.
- * Layout match với [CardListScreen] để fade-out → fade-in mượt, không pop-in.
+ * Dùng LazyColumn ĐỂ KHỚP CẤU TRÚC với real content trong CardListScreen:
+ *   - contentPadding: top=8dp, bottom=96dp, start/end=16dp
+ *   - verticalArrangement: spacedBy(8dp)
+ *   - item đầu tiên: summary card
+ *   - item thứ hai: empty-state-height card (placeholder cho list)
+ *   - items còn lại: skeleton cards với header trước mỗi nhóm
+ * Khi skeleton → real content swap, Compose thấy CÙNG layout tree →
+ * không phải unmeasure → measure lại → KHÔNG còn jank/bottom-up pop.
  */
 @Composable
-fun CardListSkeleton(count: Int = 3) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Spacer(Modifier.height(8.dp))
-        SummaryCardSkeleton()
-        Spacer(Modifier.height(12.dp))
-        repeat(count) {
-            SkeletonCard(modifier = Modifier.padding(vertical = 6.dp))
+fun CardListSkeleton(
+    count: Int = 3,
+    listState: LazyListState = rememberLazyListState()
+) {
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 8.dp,
+            bottom = 96.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item(key = "skeleton_summary_header") {
+            Spacer(Modifier.height(0.dp))
+        }
+        item(key = "skeleton_summary") {
+            SummaryCardSkeleton()
+        }
+        item(key = "skeleton_filter_placeholder") {
+            Spacer(Modifier.height(44.dp))
+        }
+        item(key = "skeleton_list_header") {
+            Text(
+                text = "",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
+        }
+        items(
+            count = count,
+            key = { "skeleton_card_$it" }
+        ) { _ ->
+            SkeletonCard(modifier = Modifier.padding(vertical = 0.dp))
         }
     }
 }

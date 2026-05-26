@@ -169,6 +169,10 @@ dependencies {
     // AndroidX Browser — Chrome Custom Tab cho mở bài báo external
     implementation(libs.androidx.browser)
 
+    // Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện
+    // natively là Stable (không cần @Immutable annotation) → WeightTableCard Skippable hoàn toàn
+    implementation(libs.kotlinx.collections.immutable)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

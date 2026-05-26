@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -18,16 +19,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.times
+import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.ui.util.LocalFontScaleFactor
 
-private val DarkColorScheme = darkColorScheme(
+private val DarkHighContrastColorScheme = darkColorScheme(
     primary = Green80,
     secondary = GreenGrey80,
     tertiary = Amber80,
     background = Color(0xFF121212),
     surface = Color(0xFF1E1E1E),
-    surfaceVariant = Color(0xFF2C2C2C)
+    surfaceVariant = Color(0xFF2C2C2C),
+    onBackground = Color(0xFFE0E0E0),
+    onSurface = Color(0xFFE0E0E0),
+    onSurfaceVariant = Color(0xFFB0B0B0),
+    inverseSurface = Color(0xFFE0E0E0),
+    inverseOnSurface = Color(0xFF121212),
+)
+
+private val DarkOledColorScheme = darkColorScheme(
+    primary = Green80,
+    secondary = GreenGrey80,
+    tertiary = Amber80,
+    background = Color(0xFF000000),
+    surface = Color(0xFF0A0A0A),
+    surfaceVariant = Color(0xFF121212),
+    surfaceContainer = Color(0xFF0F0F0F),
+    onBackground = Color(0xFFE8E8E8),
+    onSurface = Color(0xFFE8E8E8),
+    onSurfaceVariant = Color(0xFFB0B0B0),
+    inverseSurface = Color(0xFFE8E8E8),
+    inverseOnSurface = Color(0xFF000000),
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -36,78 +58,109 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Amber40,
     background = SurfaceGreen,
     surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFE8F5E9), // Lighter green for variant surface to improve contrast
+    surfaceVariant = Color(0xFFE8F5E9),
     onPrimary = Color(0xFFFFFFFF),
     onSecondary = Color(0xFFFFFFFF),
     onTertiary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF1A1C1A), // Near black with green tint for high contrast text
-    onSurface = Color(0xFF1A1C1A), // Near black with green tint
-    onSurfaceVariant = Color(0xFF424940) // Dark gray with green tint for secondary text
+    onBackground = Color(0xFF1A1C1A),
+    onSurface = Color(0xFF1A1C1A),
+    onSurfaceVariant = Color(0xFF424940)
 )
+
+private val LightColorSchemeNoDynamic = lightColorScheme(
+    primary = Green40,
+    secondary = GreenGrey40,
+    tertiary = Amber40,
+    background = SurfaceGreen,
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE8F5E9),
+    onPrimary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFFFFFFFF),
+    onTertiary = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF1A1C1A),
+    onSurface = Color(0xFF1A1C1A),
+    onSurfaceVariant = Color(0xFF424940),
+    inverseSurface = Color(0xFF1A1C1A),
+    inverseOnSurface = Color(0xFFF1F8E9)
+)
+
+private val DarkHighContrastColorSchemeNoDynamic = darkColorScheme(
+    primary = Green80,
+    secondary = GreenGrey80,
+    tertiary = Amber80,
+    background = Color(0xFF121212),
+    surface = Color(0xFF1E1E1E),
+    surfaceVariant = Color(0xFF2C2C2C),
+    onPrimary = Color(0xFF003300),
+    onSecondary = Color(0xFF003300),
+    onTertiary = Color(0xFF4A3000),
+    onBackground = Color(0xFFE0E0E0),
+    onSurface = Color(0xFFE0E0E0),
+    onSurfaceVariant = Color(0xFFB0B0B0),
+    inverseSurface = Color(0xFFE0E0E0),
+    inverseOnSurface = Color(0xFF121212)
+)
+
+private val DarkOledColorSchemeNoDynamic = darkColorScheme(
+    primary = Green80,
+    secondary = GreenGrey80,
+    tertiary = Amber80,
+    background = Color(0xFF000000),
+    surface = Color(0xFF0A0A0A),
+    surfaceVariant = Color(0xFF121212),
+    surfaceContainer = Color(0xFF0F0F0F),
+    onPrimary = Color(0xFF003300),
+    onSecondary = Color(0xFF003300),
+    onTertiary = Color(0xFF4A3000),
+    onBackground = Color(0xFFE8E8E8),
+    onSurface = Color(0xFFE8E8E8),
+    onSurfaceVariant = Color(0xFFB0B0B0),
+    inverseSurface = Color(0xFFE8E8E8),
+    inverseOnSurface = Color(0xFF000000),
+)
+
+internal val LocalAppThemeMode = staticCompositionLocalOf { AppThemeMode.AUTO }
 
 @Composable
 fun CanLuaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    appThemeMode: AppThemeMode = AppThemeMode.AUTO,
     fontScale: FontScale = FontScale.NORMAL,
     content: @Composable () -> Unit
 ) {
-    val baseColorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val systemDark = isSystemInDarkTheme()
+    val isDynamicColorAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val context = LocalContext.current
+
+    val baseColorScheme = when (appThemeMode) {
+        AppThemeMode.LIGHT -> {
+            if (isDynamicColorAvailable) dynamicLightColorScheme(context) else LightColorSchemeNoDynamic
         }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+        AppThemeMode.HIGH_CONTRAST -> {
+            if (isDynamicColorAvailable) dynamicDarkColorScheme(context) else DarkHighContrastColorSchemeNoDynamic
+        }
 
-    // Thêm animation chuyển đổi mượt mà giữa sáng/tối
-    val colorScheme = baseColorScheme.copy(
-        primary = androidx.compose.animation.animateColorAsState(baseColorScheme.primary, label = "primary").value,
-        onPrimary = androidx.compose.animation.animateColorAsState(baseColorScheme.onPrimary, label = "onPrimary").value,
-        primaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.primaryContainer, label = "primaryContainer").value,
-        onPrimaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onPrimaryContainer, label = "onPrimaryContainer").value,
-        inversePrimary = androidx.compose.animation.animateColorAsState(baseColorScheme.inversePrimary, label = "inversePrimary").value,
-        secondary = androidx.compose.animation.animateColorAsState(baseColorScheme.secondary, label = "secondary").value,
-        onSecondary = androidx.compose.animation.animateColorAsState(baseColorScheme.onSecondary, label = "onSecondary").value,
-        secondaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.secondaryContainer, label = "secondaryContainer").value,
-        onSecondaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onSecondaryContainer, label = "onSecondaryContainer").value,
-        tertiary = androidx.compose.animation.animateColorAsState(baseColorScheme.tertiary, label = "tertiary").value,
-        onTertiary = androidx.compose.animation.animateColorAsState(baseColorScheme.onTertiary, label = "onTertiary").value,
-        tertiaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.tertiaryContainer, label = "tertiaryContainer").value,
-        onTertiaryContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onTertiaryContainer, label = "onTertiaryContainer").value,
-        background = androidx.compose.animation.animateColorAsState(baseColorScheme.background, label = "background").value,
-        onBackground = androidx.compose.animation.animateColorAsState(baseColorScheme.onBackground, label = "onBackground").value,
-        surface = androidx.compose.animation.animateColorAsState(baseColorScheme.surface, label = "surface").value,
-        onSurface = androidx.compose.animation.animateColorAsState(baseColorScheme.onSurface, label = "onSurface").value,
-        surfaceVariant = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceVariant, label = "surfaceVariant").value,
-        onSurfaceVariant = androidx.compose.animation.animateColorAsState(baseColorScheme.onSurfaceVariant, label = "onSurfaceVariant").value,
-        surfaceTint = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceTint, label = "surfaceTint").value,
-        inverseSurface = androidx.compose.animation.animateColorAsState(baseColorScheme.inverseSurface, label = "inverseSurface").value,
-        inverseOnSurface = androidx.compose.animation.animateColorAsState(baseColorScheme.inverseOnSurface, label = "inverseOnSurface").value,
-        error = androidx.compose.animation.animateColorAsState(baseColorScheme.error, label = "error").value,
-        onError = androidx.compose.animation.animateColorAsState(baseColorScheme.onError, label = "onError").value,
-        errorContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.errorContainer, label = "errorContainer").value,
-        onErrorContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.onErrorContainer, label = "onErrorContainer").value,
-        outline = androidx.compose.animation.animateColorAsState(baseColorScheme.outline, label = "outline").value,
-        outlineVariant = androidx.compose.animation.animateColorAsState(baseColorScheme.outlineVariant, label = "outlineVariant").value,
-        scrim = androidx.compose.animation.animateColorAsState(baseColorScheme.scrim, label = "scrim").value,
-        surfaceBright = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceBright, label = "surfaceBright").value,
-        surfaceDim = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceDim, label = "surfaceDim").value,
-        surfaceContainer = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainer, label = "surfaceContainer").value,
-        surfaceContainerHigh = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerHigh, label = "surfaceContainerHigh").value,
-        surfaceContainerHighest = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerHighest, label = "surfaceContainerHighest").value,
-        surfaceContainerLow = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerLow, label = "surfaceContainerLow").value,
-        surfaceContainerLowest = androidx.compose.animation.animateColorAsState(baseColorScheme.surfaceContainerLowest, label = "surfaceContainerLowest").value
-    )
+        AppThemeMode.OLED -> {
+            if (isDynamicColorAvailable) dynamicDarkColorScheme(context) else DarkOledColorSchemeNoDynamic
+        }
+
+        AppThemeMode.AUTO -> {
+            if (isDynamicColorAvailable) {
+                if (systemDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            } else {
+                if (systemDark) DarkHighContrastColorSchemeNoDynamic else LightColorSchemeNoDynamic
+            }
+        }
+    }
 
     val scaledTypography = Typography.scale(fontScale.scale)
 
-    CompositionLocalProvider(LocalFontScaleFactor provides fontScale.scale) {
+    CompositionLocalProvider(
+        LocalFontScaleFactor provides fontScale.scale,
+        LocalAppThemeMode provides appThemeMode,
+    ) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = baseColorScheme,
             typography = scaledTypography,
             content = content
         )

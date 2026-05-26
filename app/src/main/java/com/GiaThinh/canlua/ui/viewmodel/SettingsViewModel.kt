@@ -3,6 +3,7 @@ package com.GiaThinh.canlua.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.data.model.AppLanguage
+import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.repository.WeighDefaults
@@ -44,6 +45,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = settingsRepository.getLanguage()
         )
 
+    val appThemeMode: StateFlow<AppThemeMode> = settingsRepository.appThemeMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = settingsRepository.getThemeMode()
+        )
+
     val weighDefaults: StateFlow<WeighDefaults> = settingsRepository.weighDefaults
         .stateIn(
             scope = viewModelScope,
@@ -77,6 +85,12 @@ class SettingsViewModel @Inject constructor(
     fun setLanguage(language: AppLanguage) {
         viewModelScope.launch {
             settingsRepository.setLanguage(language)
+        }
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        viewModelScope.launch {
+            settingsRepository.setThemeMode(mode)
         }
     }
 }
