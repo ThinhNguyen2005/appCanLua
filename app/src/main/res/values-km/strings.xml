@@ -476,4 +476,31 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">ភាសាចិន</string>
     <string name="language_chinese_native">中文</string>
+
+    <string name="create_card_cccd_label">លេខអត្តសញ្ញាណប័ណ្ណ (ស្រេចចិត្ត)</string>
+    <string name="create_card_cccd_placeholder">ឧទាហរណ៍៖ ១២ ខ្ទង់</string>
+    <string name="create_card_impurity_weight_label">ដកភាពមិនបរិសុទ្ធ (គីឡូក្រាម)</string>
+    <string name="create_card_impurity_weight_placeholder">ឧទាហរណ៍៖ ៥.០</string>
+    <string name="create_card_bag_weight_label">ដកការវេចខ្ចប់ (គីឡូក្រាម/បាវ)</string>
+    <string name="create_card_bag_weight_placeholder">ឧទាហរណ៍៖ ១.០</string>
+    <string name="create_card_cccd_help_title">លេខអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ</string>
+    <string name="create_card_cccd_help_description">បញ្ចូលលេខអត្តសញ្ញាណប័ណ្ណ ១២ខ្ទង់ របស់ដៃគូ ដើម្បីធ្វើជាភស្តុតាងស្របច្បាប់សម្រាប់ការផ្ទៀងផ្ទាត់ និងការចុះហត្ថលេខាលើកិច្ចសន្យាអេឡិចត្រូនិកនាពេលអនាគត។ វាលនេះគឺស្រេចចិត្ត។</string>
+    <string name="create_card_impurity_help_title">ដកភាពមិនបរិសុទ្ធ</string>
+    <string name="create_card_impurity_help_description">ទម្ងន់ (គីឡូក្រាម) នៃភាពមិនបរិសុទ្ធ (ចំបើង ដី...) នឹងត្រូវដកចេញដោយស្វ័យប្រវត្តិកាត់ចេញពីទម្ងន់ស្រូវសរុបនៃសន្លឹកបៀនេះ នៅពេលគណនាទម្ងន់ជាក់ស្តែង។</string>
+    <string name="create_card_bag_help_title">ដកការវេចខ្ចប់</string>
+    <string name="create_card_moisture_help_title">សំណើមស្រូវ</string>
+    <string name="create_card_moisture_help_description">ភាគរយនៃសំណើមស្រូវនៅពេលថ្លឹង (%)។ សំណើមនេះត្រូវបានប្រើសម្រាប់ជាឯកសារយោងក្នុងអំឡុងពេលសម្ងួតស្រូវ ឬការចរចាអត្រាកាត់បន្ថយទម្ងន់សម្រាប់ស្រូវស្ងួត។</string>
+    <string name="create_card_bag_help_description">ទម្ងន់លំនាំដើមនៃសំបកបាវស្រូវ (គីឡូក្រាម/បាវ)។ នៅពេលបញ្ចូលការថ្លឹង ប្រព័ន្ធនឹងគុណដោយស្វ័យប្រវត្តិនឹងចំនួនបាវ ដើម្បីដកទម្ងន់វេចខ្ចប់សរុប។</string>
+    <string name="create_card_contacts_permission_denied">សិទ្ធិចូលប្រើទំនាក់ទំនងត្រូវបានបដិសេធ។ សូមបញ្ចូលលេខទូរស័ព្ទដោយដៃ។</string>
+    <string name="create_card_contacts_select">ជ្រើសរើសពីទំនាក់ទំនង</string>
+    <string name="detail_info_cccd">លេខអត្តសញ្ញាណប័ណ្ណ</string>
+    <string name="card_detail_delete_blocked_unpaid">សន្លឹកបៀមិនទាន់បង់ប្រាក់ — មិនអាចលុបបានទេ</string>
+    <string name="help_btn_feedback">ផ្ញើមតិកែលម្អ</string>
+    <string name="feedback_screen_title">ផ្ញើមតិកែលម្អ</string>
+    <string name="feedback_placeholder">បញ្ចូលមតិកែលម្អរបស់អ្នកនៅទីនេះ...</string>
+    <string name="feedback_btn_send">ផ្ញើ</string>
+    <string name="feedback_toast_success">សូមអរគុណសម្រាប់មតិកែលម្អរបស់អ្នក! យើងនឹងពិនិត្យមើលវាឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។</string>
+    <string name="feedback_toast_empty">សូមបញ្ចូលខ្លឹមសារមតិកែលម្អរបស់អ្នក។</string>
+    <string name="feedback_empty_messages">មិនទាន់មានមតិកែលម្អនៅឡើយទេ។ សូមផ្ញើមតិរបស់អ្នកមកយើងខ្ញុំដើម្បីឱ្យយើងអាចគាំទ្រអ្នកបាន!</string>
+    <string name="feedback_admin_name">អ្នកអភិវឌ្ឍន៍</string>
 </resources>

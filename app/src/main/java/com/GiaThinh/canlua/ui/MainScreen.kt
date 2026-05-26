@@ -39,7 +39,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,8 +87,14 @@ fun MainScreen(deeplinkCardId: String? = null) {
         }
     }
 
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentRoute by remember {
+        derivedStateOf { navBackStackEntry.value?.destination?.route }
+    }
+
+    val profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val isTrader = profile?.role == "TRADER"
 
     val context = LocalContext.current
     var isOffline by remember { mutableStateOf(!isNetworkAvailable(context)) }
@@ -119,21 +126,26 @@ fun MainScreen(deeplinkCardId: String? = null) {
         }
     }
 
-    val profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
-    val profile by profileViewModel.profile.collectAsState(initial = null)
-
-    val settingsViewModel: SettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
-    val weighDefaults by settingsViewModel.weighDefaults.collectAsState()
-
     val feedbackViewModel: com.GiaThinh.canlua.ui.viewmodel.FeedbackViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
-    val unreadFeedbackCount by feedbackViewModel.unreadCount.collectAsState(initial = 0)
+    val unreadFeedbackCount by feedbackViewModel.unreadCount.collectAsStateWithLifecycle(initialValue = 0)
     val hasUnreadFeedback = unreadFeedbackCount > 0
     var showWeighOptionsSheet by remember { mutableStateOf(false) }
     var showHelpSheet by remember { mutableStateOf(false) }
     
     // Determine nav items based on role
-    val isTrader = profile?.role == "TRADER"
     val navItems = if (isTrader) BottomNavItem.traderNavItems else BottomNavItem.farmerNavItems
+
+    val bottomBarItems = remember(navItems) {
+        navItems.map { nav ->
+            BottomBarItemSpec(
+                route = nav.route,
+                icon = nav.icon,
+                selectedIcon = nav.selectedIcon,
+                label = "",
+                labelRes = nav.labelRes
+            )
+        }
+    }
 
     // Xác định tab hiện tại
     val currentTab = navItems.find { it.route == currentRoute }
@@ -145,7 +157,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val isImeVisible = WindowInsets.isImeVisible
 
     // Các route con mà vẫn hiển thị bottom bar (detail, weight input...)
-    val scrollVisible by com.GiaThinh.canlua.ui.util.BottomBarVisibility.visible.collectAsState()
+    val scrollVisible by com.GiaThinh.canlua.ui.util.BottomBarVisibility.visible.collectAsStateWithLifecycle()
     val showBottomBar = (isOnTabScreen || currentRoute in listOf("sync_status")) && !isImeVisible && scrollVisible
 
     // Title theo tab/route — riêng AI Chat đổi theo audience để truyền tải đúng identity của bot.
@@ -177,15 +189,17 @@ fun MainScreen(deeplinkCardId: String? = null) {
     // Tạo scrollBehavior 1 lần, persist qua mọi recomposition.
     // NẾU KHÔNG có remember → mỗi recomposition tạo instance MỚI →
     // scroll state bị reset → TopBar nhấp nháy (flicker).
-    val pinnedBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    val enterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val rawPinnedBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val rawEnterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val pinnedRoutes = listOf(
         BottomNavItem.SCALE.route,
         BottomNavItem.ACCOUNT.route,
         BottomNavItem.TRADER_PROFILE.route,
         "trader_transactions"
     )
-    val scrollBehavior = if (currentRoute in pinnedRoutes) pinnedBehavior else enterAlwaysBehavior
+    val scrollBehavior = remember(currentRoute) {
+        if (currentRoute in pinnedRoutes) rawPinnedBehavior else rawEnterAlwaysBehavior
+    }
 
     Scaffold(
         modifier = if (showTopBar) {
@@ -291,8 +305,11 @@ fun MainScreen(deeplinkCardId: String? = null) {
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
             }
@@ -324,14 +341,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                     modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     ModernBottomBar(
-                        items = navItems.map { nav ->
-                            BottomBarItemSpec(
-                                route = nav.route,
-                                icon = nav.icon,
-                                selectedIcon = nav.selectedIcon,
-                                label = stringResource(nav.labelRes)
-                            )
-                        },
+                        items = bottomBarItems,
                         currentRoute = currentRoute,
                         onItemClick = { item ->
                             if (currentRoute != item.route) {
@@ -351,25 +361,8 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
 
     if (showWeighOptionsSheet) {
-        WeighOptionsSheet(
-            impurityIsPercent = weighDefaults.impurityIsPercent,
-            bagMethodIsSampling = weighDefaults.bagMethodIsSampling,
-            bagSampleCount = weighDefaults.bagSampleCount,
-            bagSampleTotalWeight = weighDefaults.bagSampleTotalWeight,
-            weightInputMode = weighDefaults.weightInputMode,
-            onDismiss = { showWeighOptionsSheet = false },
-            onSave = { impurityPct, bagSampling, sampleCount, sampleWeight, inputMode ->
-                settingsViewModel.setWeighDefaults(
-                    WeighDefaults(
-                        impurityIsPercent = impurityPct,
-                        bagMethodIsSampling = bagSampling,
-                        bagSampleCount = sampleCount,
-                        bagSampleTotalWeight = sampleWeight,
-                        weightInputMode = inputMode
-                    )
-                )
-                showWeighOptionsSheet = false
-            }
+        WeighOptionsSheetWrapper(
+            onDismiss = { showWeighOptionsSheet = false }
         )
     }
 
@@ -380,6 +373,34 @@ fun MainScreen(deeplinkCardId: String? = null) {
             onDismiss = { showHelpSheet = false }
         )
     }
+}
+
+@Composable
+private fun WeighOptionsSheetWrapper(
+    onDismiss: () -> Unit,
+    viewModel: SettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+) {
+    val weighDefaults by viewModel.weighDefaults.collectAsStateWithLifecycle()
+    WeighOptionsSheet(
+        impurityIsPercent = weighDefaults.impurityIsPercent,
+        bagMethodIsSampling = weighDefaults.bagMethodIsSampling,
+        bagSampleCount = weighDefaults.bagSampleCount,
+        bagSampleTotalWeight = weighDefaults.bagSampleTotalWeight,
+        weightInputMode = weighDefaults.weightInputMode,
+        onDismiss = onDismiss,
+        onSave = { impurityPct, bagSampling, sampleCount, sampleWeight, inputMode ->
+            viewModel.setWeighDefaults(
+                WeighDefaults(
+                    impurityIsPercent = impurityPct,
+                    bagMethodIsSampling = bagSampling,
+                    bagSampleCount = sampleCount,
+                    bagSampleTotalWeight = sampleWeight,
+                    weightInputMode = inputMode
+                )
+            )
+            onDismiss()
+        }
+    )
 }
 
 private fun isNetworkAvailable(context: Context): Boolean {

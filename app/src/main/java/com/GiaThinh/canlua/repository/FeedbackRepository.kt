@@ -7,9 +7,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.MetadataChanges
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -38,7 +43,7 @@ class FeedbackRepository @Inject constructor(
 
         val registration: ListenerRegistration = feedbacksCollection
             .whereEqualTo("userId", uid)
-            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     trySend(emptyList())
                     return@addSnapshotListener
@@ -50,31 +55,35 @@ class FeedbackRepository @Inject constructor(
                 trySend(list)
             }
         awaitClose { registration.remove() }
-    }
+    }.distinctUntilChanged()
 
-    fun observeUnreadReplyCount(): Flow<Int> = callbackFlow {
-        val uid = userId
-        if (uid == null) {
-            trySend(0)
-            close()
-            return@callbackFlow
+    /**
+     * Badge "tin nhắn chưa đọc" — poll Firestore mỗi 30s thay vì giữ snapshot listener.
+     * Lý do: badge luôn được MainScreen collect → listener không bao giờ dừng. Chấp nhận
+     * trễ ~30s vì admin reply không thường xuyên, đổi lại không bombard main thread bằng
+     * snapshot callbacks khi user đang ở tab khác.
+     */
+    fun observeUnreadReplyCount(intervalMs: Long = 30_000L): Flow<Int> = flow {
+        while (true) {
+            emit(fetchUnreadReplyCount())
+            delay(intervalMs)
         }
+    }.flowOn(Dispatchers.IO).distinctUntilChanged()
 
-        val registration: ListenerRegistration = feedbacksCollection
-            .whereEqualTo("userId", uid)
-            .whereEqualTo("isReadByUser", false)
-            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
-                if (error != null) {
-                    trySend(0)
-                    return@addSnapshotListener
-                }
-                // Chỉ đếm khi tin nhắn có câu trả lời từ Admin (replyText != null)
-                val count = snapshot?.documents
-                    ?.mapNotNull { it.toObject(FirestoreFeedback::class.java) }
-                    ?.count { it.replyText != null } ?: 0
-                trySend(count)
-            }
-        awaitClose { registration.remove() }
+    private suspend fun fetchUnreadReplyCount(): Int {
+        val uid = userId ?: return 0
+        return try {
+            val snapshot = feedbacksCollection
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("isReadByUser", false)
+                .get()
+                .await()
+            snapshot.documents
+                .mapNotNull { it.toObject(FirestoreFeedback::class.java) }
+                .count { it.replyText != null }
+        } catch (e: Exception) {
+            0
+        }
     }
 
     suspend fun sendFeedback(messageText: String): Result<Unit> = withContext(Dispatchers.IO) {

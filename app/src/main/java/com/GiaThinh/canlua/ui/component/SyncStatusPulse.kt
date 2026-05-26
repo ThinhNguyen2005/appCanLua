@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,29 +47,35 @@ fun SyncStatusPulse(
         else                  -> AppColors.GreenLight to stringResource(R.string.sync_status_ready)
     }
 
-    val infinite = rememberInfiniteTransition(label = "sync_pulse")
-    val pulseScale by infinite.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.25f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
-    val pulseAlpha by infinite.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_alpha"
-    )
-
+    // Chỉ chạy infiniteRepeatable khi đang sync — tránh tick 60fps khi idle.
+    // Trước đây animation chạy mãi và chỉ if/else giá trị → engine vẫn tick mỗi frame.
     val isSyncing = status is SyncStatus.Syncing
-    val effectiveScale = if (isSyncing) pulseScale else 1f
-    val effectiveAlpha = if (isSyncing) pulseAlpha else 1f
+    val effectiveScale: Float
+    val effectiveAlpha: Float
+    if (isSyncing) {
+        val infinite = rememberInfiniteTransition(label = "sync_pulse")
+        effectiveScale = infinite.animateFloat(
+            initialValue = 0.85f,
+            targetValue = 1.25f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse_scale"
+        ).value
+        effectiveAlpha = infinite.animateFloat(
+            initialValue = 0.45f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse_alpha"
+        ).value
+    } else {
+        effectiveScale = 1f
+        effectiveAlpha = 1f
+    }
 
     Row(
         modifier = modifier,

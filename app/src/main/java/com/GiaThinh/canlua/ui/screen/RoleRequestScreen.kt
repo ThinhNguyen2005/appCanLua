@@ -29,7 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,8 +55,8 @@ fun RoleRequestScreen(
     viewModel: RoleRequestViewModel = hiltViewModel()
 ) {
     TrackScreenRender("role_request")
-    val ui by viewModel.ui.collectAsState()
-    val existing by viewModel.myRequest.collectAsState()
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val existing by viewModel.myRequest.collectAsStateWithLifecycle()
 
     var businessName by remember { mutableStateOf("") }
     var taxId by remember { mutableStateOf("") }

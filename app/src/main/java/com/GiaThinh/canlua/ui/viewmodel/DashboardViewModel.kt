@@ -24,8 +24,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -115,8 +118,17 @@ class DashboardViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * True khi seasonsComparison Room query đã emit ≥ 1 lần (kể cả emptyList nếu user mới).
+     * Dùng làm tín hiệu "DashboardVM đã chạm DB" để Profile/Dashboard screen biết
+     * chuyển từ skeleton sang UI thật — không dựa thời gian cố định.
+     */
+    private val _isAggregated = MutableStateFlow(false)
+    val isAggregated: StateFlow<Boolean> = _isAggregated.asStateFlow()
+
     /** So sánh 6 vụ gần nhất — dùng cho bar chart. */
     val seasonsComparison: StateFlow<List<SeasonStats>> = repository.getAllSeasonsComparison()
+        .onEach { _isAggregated.value = true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Stats vụ liền trước → tính delta (tăng/giảm) so với vụ hiện tại. */
@@ -134,11 +146,11 @@ class DashboardViewModel @Inject constructor(
     // === AI dependencies (profile + weather làm ngữ cảnh cho prompt) ===
 
     private val profile: StateFlow<Profile?> = profileRepository.latestProfile()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val weather: StateFlow<WeatherInfo?> = weatherRepository.observeWeather()
         .map { st -> if (st is WeatherState.Data) st.info else null }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun selectSeason(season: String) {
         _selectedSeason.value = season
@@ -163,13 +175,15 @@ class DashboardViewModel @Inject constructor(
 
         _aiAnalysis.value = AiAnalysisState.Loading
         viewModelScope.launch {
-            val summary = buildSeasonSummary(
-                stats = stats,
-                previous = previousSeasonStats.value,
-                varieties = varieties.value,
-                topTraders = topTraders.value,
-                comparison = seasonsComparison.value
-            )
+            val summary = withContext(Dispatchers.Default) {
+                buildSeasonSummary(
+                    stats = stats,
+                    previous = previousSeasonStats.value,
+                    varieties = varieties.value,
+                    topTraders = topTraders.value,
+                    comparison = seasonsComparison.value
+                )
+            }
             val result = aiChatRepository.analyzeSeason(
                 seasonSummary = summary,
                 profile = profile.value,

@@ -3,6 +3,7 @@ package com.GiaThinh.canlua.ui.screen.market
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Row
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -49,7 +50,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -100,17 +101,17 @@ fun MarketScreen(
     bidsViewModel: TraderBidsViewModel = hiltViewModel()
 ) {
     TrackScreenRender("market")
-    val prices by viewModel.prices.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val selectedVariety by viewModel.selectedVariety.collectAsState()
-    val timeRangeDays by viewModel.timeRangeDays.collectAsState()
-    val history by viewModel.history.collectAsState()
-    val filter by viewModel.filter.collectAsState()
-    val weatherState by weatherViewModel.state.collectAsState()
+    val prices by viewModel.prices.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val selectedVariety by viewModel.selectedVariety.collectAsStateWithLifecycle()
+    val timeRangeDays by viewModel.timeRangeDays.collectAsStateWithLifecycle()
+    val history by viewModel.history.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val weatherState by weatherViewModel.state.collectAsStateWithLifecycle()
 
-    val newsArticles by newsViewModel.articles.collectAsState()
-    val newsTopic by newsViewModel.selectedTopic.collectAsState()
-    val newsUi by newsViewModel.ui.collectAsState()
+    val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
+    val newsTopic by newsViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val newsUi by newsViewModel.ui.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -118,11 +119,11 @@ fun MarketScreen(
         if (granted.values.any { it }) weatherViewModel.onPermissionGranted()
     }
 
-    val profile by profileViewModel.profile.collectAsState(initial = null)
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val isTrader = profile?.role == "TRADER"
-    val isPremium by PremiumState.isPremium.collectAsState()
-    val myBids by bidsViewModel.myBids.collectAsState()
-    val bidUiState by bidsViewModel.uiState.collectAsState()
+    val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
+    val myBids by bidsViewModel.myBids.collectAsStateWithLifecycle()
+    val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -144,11 +145,21 @@ fun MarketScreen(
             snackbarHostState.showSnackbar(it)
             bidsViewModel.clearMessage()
             showEditor = false
+            editingBid = null
         }
         bidUiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             bidsViewModel.clearMessage()
         }
+    }
+
+    // Tải dữ liệu trì hoãn sau khi slide transition (300ms) kết thúc để tránh lag chuyển trang
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(400)
+        viewModel.seedIfNeededDeferred()
+        weatherViewModel.startObserving()
+        newsViewModel.loadData()
+        bidsViewModel.syncBids()
     }
 
     Scaffold(
@@ -189,9 +200,42 @@ fun MarketScreen(
                 }
             )
 
+            // Remember stable callbacks to prevent child recomposition on parent state change
+            val onWeatherRefresh = remember {
+                {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                    weatherViewModel.load(forceRefresh = true)
+                }
+            }
+            val onNewsRefresh = remember { { newsViewModel.refresh() } }
+            val onRefreshNewsPage = remember {
+                {
+                    newsViewModel.refresh()
+                    weatherViewModel.load(forceRefresh = true)
+                }
+            }
+            val onSelectTopic = remember { newsViewModel::selectTopic }
+            val onDismissError = remember { newsViewModel::clearError }
+            val onRefreshPrices = remember { { viewModel.refresh() } }
+            val onSelectTrend = remember { viewModel::setTrendFilter }
+            val onSelectVariety = remember { viewModel::selectVariety }
+            val onEditBid = remember {
+                { bid: FirestoreRicePrice ->
+                    editingBid = bid
+                    showEditor = true
+                }
+            }
+            val onDeleteBid = remember { { id: String -> bidsViewModel.deleteBid(id) } }
+
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 0
             ) { page ->
                 when (page) {
                     0 -> NewsPage(
@@ -202,22 +246,11 @@ fun MarketScreen(
                         errorMessage = newsUi.errorMessage,
                         isPremium = isPremium,
                         weatherState = weatherState,
-                        onWeatherRefresh = {
-                            permissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                            weatherViewModel.load(forceRefresh = true)
-                        },
-                        onSelectTopic = newsViewModel::selectTopic,
-                        onRefresh = {
-                            newsViewModel.refresh()
-                            weatherViewModel.load(forceRefresh = true)
-                        },
-                        onNewsRefresh = newsViewModel::refresh,
-                        onDismissError = newsViewModel::clearError
+                        onWeatherRefresh = onWeatherRefresh,
+                        onSelectTopic = onSelectTopic,
+                        onRefresh = onRefreshNewsPage,
+                        onNewsRefresh = onNewsRefresh,
+                        onDismissError = onDismissError
                     )
                     else -> PricesPage(
                         listState = pricesListState,
@@ -226,14 +259,11 @@ fun MarketScreen(
                         filter = filter,
                         isTrader = isTrader,
                         myBids = myBids,
-                        onRefresh = { viewModel.refresh() },
-                        onSelectTrend = viewModel::setTrendFilter,
-                        onSelectVariety = viewModel::selectVariety,
-                        onEditBid = { bid ->
-                            editingBid = bid
-                            showEditor = true
-                        },
-                        onDeleteBid = { id -> bidsViewModel.deleteBid(id) }
+                        onRefresh = onRefreshPrices,
+                        onSelectTrend = onSelectTrend,
+                        onSelectVariety = onSelectVariety,
+                        onEditBid = onEditBid,
+                        onDeleteBid = onDeleteBid
                     )
                 }
             }
@@ -271,7 +301,10 @@ fun MarketScreen(
 
     if (showEditor && isTrader) {
         ModalBottomSheet(
-            onDismissRequest = { showEditor = false },
+            onDismissRequest = { 
+                showEditor = false 
+                editingBid = null
+            },
             sheetState = editorSheetState,
             containerColor = AppColors.Surface
         ) {
@@ -281,7 +314,10 @@ fun MarketScreen(
                 onSubmit = { variety, pMin, pMax, region, trend, note, existingId ->
                     bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
                 },
-                onDismiss = { showEditor = false }
+                onDismiss = { 
+                    showEditor = false 
+                    editingBid = null
+                }
             )
         }
     }
@@ -462,41 +498,49 @@ private fun MarketTabRow(
         Tab(
             selected = selectedTab == 0,
             onClick = { onSelect(0) },
-            text = {
-                Text(
-                    "Tin tức",
-                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium
-                )
-            },
-            icon = {
+            selectedContentColor = AppColors.GreenPrimary,
+            unselectedContentColor = AppColors.TextSecondary
+        ) {
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(vertical = 12.dp)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Article,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
-            },
-            selectedContentColor = AppColors.GreenPrimary,
-            unselectedContentColor = AppColors.TextSecondary
-        )
+                Text(
+                    text = "Tin tức",
+                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+        }
         Tab(
             selected = selectedTab == 1,
             onClick = { onSelect(1) },
-            text = {
-                Text(
-                    "Bảng giá lúa",
-                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium
-                )
-            },
-            icon = {
+            selectedContentColor = AppColors.GreenPrimary,
+            unselectedContentColor = AppColors.TextSecondary
+        ) {
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(vertical = 12.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Outlined.PriceChange,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
-            },
-            selectedContentColor = AppColors.GreenPrimary,
-            unselectedContentColor = AppColors.TextSecondary
-        )
+                Text(
+                    text = "Bảng giá lúa",
+                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+        }
     }
 }
 

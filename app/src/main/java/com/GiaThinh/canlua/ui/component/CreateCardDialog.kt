@@ -49,6 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
@@ -101,6 +103,7 @@ fun CreateCardDialog(
     mode: CreateCardMode = CreateCardMode.FARMER
 ) {
     val context = LocalContext.current
+    val contactsPermissionDeniedMessage = stringResource(R.string.create_card_contacts_permission_denied)
     // Label swap theo mode — owner header và input field counterparty.
     val ownerLabel = if (mode == CreateCardMode.FARMER) {
         stringResource(R.string.role_farmer)
@@ -131,6 +134,7 @@ fun CreateCardDialog(
     var showCccdHelp by remember { mutableStateOf(false) }
     var showImpurityHelp by remember { mutableStateOf(false) }
     var showBagHelp by remember { mutableStateOf(false) }
+    var showMoistureHelp by remember { mutableStateOf(false) }
 
     // Gợi ý giống lúa (ưu tiên DB, sau đó là default, lấy top 5)
     val combinedSuggestions = remember(suggestedVarieties) {
@@ -198,7 +202,7 @@ fun CreateCardDialog(
         } else {
             Toast.makeText(
                 context,
-                context.getString(R.string.create_card_contacts_permission_denied),
+                contactsPermissionDeniedMessage,
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -276,30 +280,22 @@ fun CreateCardDialog(
                     // Section: Thông tin lô hàng
                     SectionLabel(stringResource(R.string.create_card_section_lot))
 
-                    // Row 1: [Giống lúa ▼] [Vụ mùa (Manual)]
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(modifier = Modifier.weight(1.1f)) {
-                            RiceVarietyDropdown(
-                                selected = riceVariety,
-                                onSelect = { riceVariety = it },
-                                suggestions = combinedSuggestions,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                    // Giống lúa ▼
+                    RiceVarietyDropdown(
+                        selected = riceVariety,
+                        onSelect = { riceVariety = it },
+                        suggestions = combinedSuggestions,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                        Box(modifier = Modifier.weight(1f)) {
-                            FormTextField(
-                                value = seasonLabel,
-                                onValueChange = { seasonLabel = it },
-                                label = stringResource(R.string.card_list_filter_season),
-                                placeholder = stringResource(R.string.dropdown_season_placeholder),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
+                    // Vụ mùa (Manual)
+                    FormTextField(
+                        value = seasonLabel,
+                        onValueChange = { seasonLabel = it },
+                        label = stringResource(R.string.card_list_filter_season),
+                        placeholder = stringResource(R.string.dropdown_season_placeholder),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
                     // Row 2: Tên counterparty
                     FormTextField(
@@ -318,7 +314,7 @@ fun CreateCardDialog(
                             if (filtered.length <= 15) counterpartyPhone = filtered
                         },
                         label = { Text(stringResource(R.string.create_card_counterparty_phone_label, counterpartyLabel)) },
-                        placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodySmall) },
+                        placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         singleLine = true,
                         trailingIcon = {
@@ -356,7 +352,7 @@ fun CreateCardDialog(
                             if (digits.length <= 12) cccd = digits
                         },
                         label = { Text(stringResource(R.string.create_card_cccd_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodySmall) },
+                        placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         trailingIcon = {
                             IconButton(onClick = { showCccdHelp = true }) {
                                 Icon(
@@ -381,103 +377,105 @@ fun CreateCardDialog(
 
                     Text(
                         text = stringResource(R.string.create_card_weight_hint),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextHint,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
-                    // Row 3: [Trừ bao bì mặc định] [Trừ tạp chất mặc định]
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = bagWeightRaw,
-                            onValueChange = { input ->
-                                val filtered = input.filter { it.isDigit() || it == '.' }
-                                if (filtered.length <= 4) bagWeightRaw = filtered
-                            },
-                            label = { Text(stringResource(R.string.create_card_bag_weight_label)) },
-                            placeholder = { Text(stringResource(R.string.create_card_bag_weight_placeholder), style = MaterialTheme.typography.bodySmall) },
-                            trailingIcon = {
-                                IconButton(onClick = { showBagHelp = true }) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Info,
-                                        contentDescription = null,
-                                        tint = AppColors.GreenPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).heightIn(min = 60.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = dialogTextFieldColors()
-                        )
+                    // Trừ bao bì mặc định (1 dòng)
+                    OutlinedTextField(
+                        value = bagWeightRaw,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() || it == '.' }
+                            if (filtered.length <= 4) bagWeightRaw = filtered
+                        },
+                        label = { Text(stringResource(R.string.create_card_bag_weight_label)) },
+                        placeholder = { Text(stringResource(R.string.create_card_bag_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                        trailingIcon = {
+                            IconButton(onClick = { showBagHelp = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = null,
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = dialogTextFieldColors()
+                    )
 
-                        OutlinedTextField(
-                            value = impurityWeightRaw,
-                            onValueChange = { input ->
-                                val filtered = input.filter { it.isDigit() || it == '.' }
-                                if (filtered.length <= 5) impurityWeightRaw = filtered
-                            },
-                            label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
-                            placeholder = { Text(stringResource(R.string.create_card_impurity_weight_placeholder), style = MaterialTheme.typography.bodySmall) },
-                            trailingIcon = {
-                                IconButton(onClick = { showImpurityHelp = true }) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Info,
-                                        contentDescription = null,
-                                        tint = AppColors.GreenPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).heightIn(min = 60.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = dialogTextFieldColors()
-                        )
-                    }
+                    // Trừ tạp chất mặc định (1 dòng)
+                    OutlinedTextField(
+                        value = impurityWeightRaw,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() || it == '.' }
+                            if (filtered.length <= 5) impurityWeightRaw = filtered
+                        },
+                        label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
+                        placeholder = { Text(stringResource(R.string.create_card_impurity_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                        trailingIcon = {
+                            IconButton(onClick = { showImpurityHelp = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = null,
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = dialogTextFieldColors()
+                    )
 
-                    // Row 4: [Độ ẩm %] [Đơn giá đ/kg]
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = moistureRaw,
-                            onValueChange = { input ->
-                                val filtered = input.filter { it.isDigit() || it == '.' }
-                                if (filtered.length <= 4) moistureRaw = filtered
-                            },
-                            label = { Text(stringResource(R.string.create_card_moisture_label)) },
-                            placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodySmall) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).heightIn(min = 60.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = dialogTextFieldColors()
-                        )
+                    // Độ ẩm % (1 dòng)
+                    OutlinedTextField(
+                        value = moistureRaw,
+                        onValueChange = { input ->
+                            val filtered = input.filter { it.isDigit() || it == '.' }
+                            if (filtered.length <= 4) moistureRaw = filtered
+                        },
+                        label = { Text(stringResource(R.string.create_card_moisture_label)) },
+                        placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                        trailingIcon = {
+                            IconButton(onClick = { showMoistureHelp = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = null,
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = dialogTextFieldColors()
+                    )
 
-                        OutlinedTextField(
-                            value = priceRaw,
-                            onValueChange = { input ->
-                                val digits = input.filter { it.isDigit() }
-                                if (digits.length <= 7) priceRaw = digits
-                            },
-                            label = { Text(stringResource(R.string.create_card_price_label)) },
-                            placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodySmall) },
-                            visualTransformation = ThousandSeparatorTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).heightIn(min = 60.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = dialogTextFieldColors()
-                        )
-                    }
+                    // Đơn giá đ/kg (1 dòng)
+                    OutlinedTextField(
+                        value = priceRaw,
+                        onValueChange = { input ->
+                            val digits = input.filter { it.isDigit() }
+                            if (digits.length <= 7) priceRaw = digits
+                        },
+                        label = { Text(stringResource(R.string.create_card_price_label)) },
+                        placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                        visualTransformation = ThousandSeparatorTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = dialogTextFieldColors()
+                    )
 
                     // Row 5: Tiền cọc — full width
                     OutlinedTextField(
@@ -487,7 +485,7 @@ fun CreateCardDialog(
                             if (digits.length <= 10) depositRaw = digits
                         },
                         label = { Text(stringResource(R.string.create_card_deposit_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodySmall) },
+                        placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         visualTransformation = ThousandSeparatorTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -549,29 +547,36 @@ fun CreateCardDialog(
                 }
             }
         }
+
+        // Help Popovers (rendered inside Dialog window so they show on top of it)
+        ExplainingPopover(
+            visible = showCccdHelp,
+            title = stringResource(R.string.create_card_cccd_help_title),
+            description = stringResource(R.string.create_card_cccd_help_description),
+            onDismiss = { showCccdHelp = false }
+        )
+
+        ExplainingPopover(
+            visible = showImpurityHelp,
+            title = stringResource(R.string.create_card_impurity_help_title),
+            description = stringResource(R.string.create_card_impurity_help_description),
+            onDismiss = { showImpurityHelp = false }
+        )
+
+        ExplainingPopover(
+            visible = showBagHelp,
+            title = stringResource(R.string.create_card_bag_help_title),
+            description = stringResource(R.string.create_card_bag_help_description),
+            onDismiss = { showBagHelp = false }
+        )
+
+        ExplainingPopover(
+            visible = showMoistureHelp,
+            title = stringResource(R.string.create_card_moisture_help_title),
+            description = stringResource(R.string.create_card_moisture_help_description),
+            onDismiss = { showMoistureHelp = false }
+        )
     }
-
-    // Help Popovers
-    ExplainingPopover(
-        visible = showCccdHelp,
-        title = stringResource(R.string.create_card_cccd_help_title),
-        description = stringResource(R.string.create_card_cccd_help_description),
-        onDismiss = { showCccdHelp = false }
-    )
-
-    ExplainingPopover(
-        visible = showImpurityHelp,
-        title = stringResource(R.string.create_card_impurity_help_title),
-        description = stringResource(R.string.create_card_impurity_help_description),
-        onDismiss = { showImpurityHelp = false }
-    )
-
-    ExplainingPopover(
-        visible = showBagHelp,
-        title = stringResource(R.string.create_card_bag_help_title),
-        description = stringResource(R.string.create_card_bag_help_description),
-        onDismiss = { showBagHelp = false }
-    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -648,7 +653,7 @@ private fun FormTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        placeholder = { Text(placeholder, style = MaterialTheme.typography.bodySmall) },
+        placeholder = { Text(placeholder, style = MaterialTheme.typography.bodyMedium) },
         singleLine = true,
         modifier = modifier.heightIn(min = 60.dp),
         shape = RoundedCornerShape(14.dp),

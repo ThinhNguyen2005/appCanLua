@@ -474,4 +474,31 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">中文</string>
     <string name="language_chinese_native">中文</string>
+
+    <string name="create_card_cccd_label">身份证号 (可选)</string>
+    <string name="create_card_cccd_placeholder">例：12位数字</string>
+    <string name="create_card_impurity_weight_label">扣除杂质 (kg)</string>
+    <string name="create_card_impurity_weight_placeholder">例：5.0</string>
+    <string name="create_card_bag_weight_label">扣除包装 (kg/袋)</string>
+    <string name="create_card_bag_weight_placeholder">例：1.0</string>
+    <string name="create_card_cccd_help_title">身份证号码</string>
+    <string name="create_card_cccd_help_description">输入合作伙伴的12位身份证号码，作为未来对账和电子合同签署的法律依据。此项非必填。</string>
+    <string name="create_card_impurity_help_title">扣除杂质</string>
+    <string name="create_card_impurity_help_description">杂质（稻草、泥土等）的重量 (kg) 将在计算实际重量时，自动从该称重单的总重量中直接扣除。</string>
+    <string name="create_card_bag_help_title">扣除包装</string>
+    <string name="create_card_moisture_help_title">稻谷水分</string>
+    <string name="create_card_moisture_help_description">称重时稻谷的水分百分比 (%)。此水分用于烘干稻谷时的参考，或协商干谷重量折算扣减比例。</string>
+    <string name="create_card_bag_help_description">每只空稻谷袋的默认重量 (kg/袋)。在输入重量时，系统会自动乘以袋数，以扣除总包装重量。</string>
+    <string name="create_card_contacts_permission_denied">通讯录权限已被拒绝。请手动输入电话号码。</string>
+    <string name="create_card_contacts_select">从通讯录中选择</string>
+    <string name="detail_info_cccd">身份证号</string>
+    <string name="card_detail_delete_blocked_unpaid">未付款账单 — 无法删除</string>
+    <string name="help_btn_feedback">发送反馈</string>
+    <string name="feedback_screen_title">发送反馈</string>
+    <string name="feedback_placeholder">在这里输入您的反馈意见...</string>
+    <string name="feedback_btn_send">发送</string>
+    <string name="feedback_toast_success">感谢您的反馈意见！我们将尽快进行评估。</string>
+    <string name="feedback_toast_empty">请输入反馈内容。</string>
+    <string name="feedback_empty_messages">暂无反馈。请输入您的意见，以便我们为您提供支持！</string>
+    <string name="feedback_admin_name">开发者</string>
 </resources>

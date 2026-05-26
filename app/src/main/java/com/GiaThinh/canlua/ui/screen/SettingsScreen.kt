@@ -61,21 +61,21 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    syncViewModel: SyncViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     TrackScreenRender("settings")
     val isTtsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
     val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
-    val syncViewModel: SyncViewModel = hiltViewModel()
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
     val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
     val backupStatus by syncViewModel.backupStatus.collectAsStateWithLifecycle()
     val lastBackupTime by syncViewModel.lastBackupTime.collectAsStateWithLifecycle()
-    val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
-    val profileViewModel: ProfileViewModel = hiltViewModel()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val premiumInfo by PremiumState.info.collectAsStateWithLifecycle()
     var pendingRole by remember { mutableStateOf<String?>(null) }

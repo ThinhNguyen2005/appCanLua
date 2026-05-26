@@ -12,13 +12,17 @@ import android.content.Context
 import android.content.pm.PackageManager
 import com.GiaThinh.canlua.repository.AuthManager
 import com.GiaThinh.canlua.repository.CardRepository
-import com.GiaThinh.canlua.repository.ProfileRepository
 import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.repository.SyncManager
+import dagger.Lazy
 import com.GiaThinh.canlua.repository.SyncWorker
 import com.GiaThinh.canlua.util.AnalyticsHelper
 import com.GiaThinh.canlua.util.FirebaseRemoteConfigManager
 import com.GiaThinh.canlua.util.PremiumState
+import com.google.firebase.Firebase
+import com.google.firebase.appcheck.appCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,19 +39,16 @@ import javax.inject.Inject
 class CanLuaApplication : Application(), Configuration.Provider {
 
     @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    lateinit var workerFactory: Lazy<HiltWorkerFactory>
 
     @Inject
     lateinit var authManager: AuthManager
 
     @Inject
-    lateinit var cardRepository: CardRepository
+    lateinit var cardRepository: Lazy<CardRepository>
 
     @Inject
-    lateinit var syncManager: SyncManager
-
-    @Inject
-    lateinit var profileRepository: ProfileRepository
+    lateinit var syncManager: Lazy<SyncManager>
 
     @Inject
     lateinit var settingsRepository: SettingsRepository
@@ -58,12 +59,19 @@ class CanLuaApplication : Application(), Configuration.Provider {
     // Thay đổi từ 'fun getWorkManagerConfiguration()' thành 'val workManagerConfiguration'
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
+            .setWorkerFactory(workerFactory.get())
             .build()
     // -------------------
 
     override fun onCreate() {
         super.onCreate()
+        // Khởi tạo Firebase App Check với Debug provider trong bản build DEBUG và Play Integrity trong bản build Release
+        val factory = if (BuildConfig.DEBUG) {
+            DebugAppCheckProviderFactory.getInstance()
+        } else {
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+        }
+        Firebase.appCheck.installAppCheckProviderFactory(factory)
         AnalyticsHelper.init(this)
         PremiumState.init(this)
         FirebaseRemoteConfigManager.init(this)
@@ -115,7 +123,7 @@ class CanLuaApplication : Application(), Configuration.Provider {
         appScope.launch {
             // Đợi đến khi có user sign-in (cold start hoặc lần đăng nhập đầu).
             authManager.authStateFlow.filterNotNull().first()
-            cardRepository.claimOrphanCardsForCurrentUser()
+            cardRepository.get().claimOrphanCardsForCurrentUser()
         }
     }
 
@@ -136,8 +144,14 @@ class CanLuaApplication : Application(), Configuration.Provider {
                 .map { it?.uid }
                 .distinctUntilChanged()
                 .collect { uid ->
-                    if (uid != null && syncManager.isOnline() && settingsRepository.isAutoSyncEnabled()) {
-                        syncManager.pullAllForCurrentUser()
+                    if (uid != null && syncManager.get().isOnline() && settingsRepository.isAutoSyncEnabled()) {
+                        // Chỉ tự động tải dữ liệu từ đám mây về nếu cơ sở dữ liệu trên máy trống (đăng nhập lần đầu / cài mới)
+                        val localCards = cardRepository.get().getAllCards().first()
+                        if (localCards.isEmpty()) {
+                            // Trì hoãn 2 giây để tránh tranh chấp CPU với luồng chính (Main Thread) lúc vẽ UI khởi động
+                            kotlinx.coroutines.delay(2000)
+                            syncManager.get().pullAllForCurrentUser()
+                        }
                     }
                 }
         }

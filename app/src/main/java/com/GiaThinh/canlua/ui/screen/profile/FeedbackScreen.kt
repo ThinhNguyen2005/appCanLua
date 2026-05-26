@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +29,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
@@ -51,8 +51,8 @@ fun FeedbackScreen(
     val focusManager = LocalFocusManager.current
     val listState = rememberLazyListState()
 
-    val feedbacks by viewModel.feedbacks.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val feedbacks by viewModel.feedbacks.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var inputText by remember { mutableStateOf("") }
 
@@ -274,8 +274,7 @@ fun UserFeedbackBubble(feedback: FirestoreFeedback) {
         Text(
             text = formatTime(feedback.timestamp),
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.TextHint,
-            fontSize = 10.sp
+            color = AppColors.TextHint
         )
     }
 }
@@ -306,10 +305,10 @@ fun AdminReplyBubble(feedback: FirestoreFeedback) {
             ) {
                 Text(
                     text = "ADMIN",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.GoldDark,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 8.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = AppColors.GoldDark,
+                        fontWeight = FontWeight.ExtraBold
+                    ),
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                 )
             }
@@ -331,8 +330,7 @@ fun AdminReplyBubble(feedback: FirestoreFeedback) {
         Text(
             text = formatTime(feedback.replyTimestamp ?: 0L),
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.TextHint,
-            fontSize = 10.sp
+            color = AppColors.TextHint
         )
     }
 }

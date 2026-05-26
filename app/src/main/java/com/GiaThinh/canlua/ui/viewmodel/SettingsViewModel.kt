@@ -26,28 +26,28 @@ class SettingsViewModel @Inject constructor(
     val isAutoSyncEnabled: StateFlow<Boolean> = settingsRepository.autoSyncEnabled
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = settingsRepository.isAutoSyncEnabled()
         )
 
     val fontScale: StateFlow<FontScale> = settingsRepository.fontScale
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = settingsRepository.getFontScale()
         )
 
     val language: StateFlow<AppLanguage> = settingsRepository.language
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = settingsRepository.getLanguage()
         )
 
     val weighDefaults: StateFlow<WeighDefaults> = settingsRepository.weighDefaults
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = settingsRepository.getWeighDefaults()
         )
 

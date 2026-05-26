@@ -12,10 +12,17 @@ import com.GiaThinh.canlua.data.model.toInfo
 import com.GiaThinh.canlua.data.remote.HttpClient
 import com.GiaThinh.canlua.data.remote.HttpException
 import com.GiaThinh.canlua.data.remote.weather.OpenWeatherResponse
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -39,6 +46,9 @@ sealed class WeatherState {
  * - Stale: 60 phút–24h → serve cache + refresh ngầm.
  * - Expired: >24h → coi như không có cache (vẫn dùng nếu offline).
  * - HTTP 429: emit RateLimited để UI ẩn card.
+ *
+ * Hot StateFlow singleton: mọi subscriber (WeatherViewModel, DashboardViewModel, ...)
+ * đọc cùng một StateFlow → chỉ 1 network call khi cache stale, không double-fetch.
  */
 @Singleton
 class WeatherRepository @Inject constructor(
@@ -49,13 +59,36 @@ class WeatherRepository @Inject constructor(
     private val freshTtlMs = 60 * 60 * 1000L
     private val usableTtlMs = 24 * 60 * 60 * 1000L
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _state = MutableStateFlow<WeatherState>(WeatherState.Loading)
+
+    /** Hot StateFlow — mọi caller nhận cùng state, không tạo thêm network call. */
+    val state: StateFlow<WeatherState> = _state.asStateFlow()
+
+    init {
+        scope.launch { collectWeather(forceRefresh = false) }
+    }
+
     /**
-     * Cold flow:
-     * 1) Emit cache ngay nếu có (Data với isStale tuỳ tuổi).
-     * 2) Nếu cache không tồn tại hoặc stale → fetch network ngầm, emit khi xong.
-     * 3) Nếu network fail và có cache → giữ cache (đã emit). Nếu không có cache → Error.
+     * Gọi khi user pull-to-refresh hoặc permission được cấp.
+     * Emit lại từ đầu qua cold flow, kết quả cập nhật vào shared StateFlow.
      */
-    fun observeWeather(forceRefresh: Boolean = false): Flow<WeatherState> = flow {
+    fun requestRefresh(forceRefresh: Boolean = true) {
+        scope.launch { collectWeather(forceRefresh = forceRefresh) }
+    }
+
+    /** Tương thích ngược — delegate sang StateFlow để không sửa caller cũ. */
+    fun observeWeather(forceRefresh: Boolean = false): StateFlow<WeatherState> {
+        if (forceRefresh) requestRefresh(forceRefresh = true)
+        return state
+    }
+
+    private suspend fun collectWeather(forceRefresh: Boolean) {
+        coldWeatherFlow(forceRefresh).collect { _state.value = it }
+    }
+
+    private fun coldWeatherFlow(forceRefresh: Boolean): Flow<WeatherState> = flow {
         val cached = cacheDao.get()
         val now = System.currentTimeMillis()
 
@@ -97,16 +130,16 @@ class WeatherRepository @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     /** Force refresh. Dùng cho pull-to-refresh / tap widget. */
-    suspend fun refresh(): Result<WeatherInfo> {
+    suspend fun refresh(): Result<WeatherInfo> = withContext(Dispatchers.IO) {
         val result = fetchFromNetwork(forceFreshLocation = true)
         result.onSuccess { cacheDao.upsert(it.toCache()) }
-        return result
+        result
     }
 
-    private suspend fun fetchFromNetwork(forceFreshLocation: Boolean = false): Result<WeatherInfo> {
+    private suspend fun fetchFromNetwork(forceFreshLocation: Boolean = false): Result<WeatherInfo> = withContext(Dispatchers.IO) {
         if (BuildConfig.OPENWEATHER_API_KEY.isEmpty()) {
             Log.e(TAG, "fetchFromNetwork: OPENWEATHER_API_KEY rỗng — kiểm tra local.properties + BuildConfig")
-            return Result.failure(IllegalStateException(
+            return@withContext Result.failure(IllegalStateException(
                 "Thiếu OPENWEATHER_API_KEY trong local.properties"
             ))
         }
@@ -118,7 +151,7 @@ class WeatherRepository @Inject constructor(
         }
         val location = locFromProvider ?: GeoPoint(10.045, 105.746)
 
-        return try {
+        return@withContext try {
             val url = "https://api.openweathermap.org/data/2.5/weather" +
                 "?lat=${location.lat}&lon=${location.lon}" +
                 "&appid=${BuildConfig.OPENWEATHER_API_KEY}" +

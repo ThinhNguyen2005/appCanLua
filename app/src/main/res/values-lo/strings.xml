@@ -474,4 +474,31 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">ພາສາຈີນ</string>
     <string name="language_chinese_native">中文</string>
+
+    <string name="create_card_cccd_label">ເລກບັດປະຈຳຕົວ (ທາງເລືອກ)</string>
+    <string name="create_card_cccd_placeholder">ຕົວຢ່າງ: 12 ຕົວເລກ</string>
+    <string name="create_card_impurity_weight_label">ຫັກສິ່ງເຈືອປົນ (kg)</string>
+    <string name="create_card_impurity_weight_placeholder">ຕົວຢ່າງ: 5.0</string>
+    <string name="create_card_bag_weight_label">ຫັກການຫຸ້ມຫໍ່ (kg/ເປົ໋າ)</string>
+    <string name="create_card_bag_weight_placeholder">ຕົວຢ່າງ: 1.0</string>
+    <string name="create_card_cccd_help_title">ເລກບັດປະຈຳຕົວປະຊາຊົນ</string>
+    <string name="create_card_cccd_help_description">ປ້ອນເລກບັດປະຈຳຕົວ 12 ຕົວເລກຂອງຄູ່ຮ່ວມງານເພື່ອເປັນຫຼັກຖານທາງກົດໝາຍໃນການກວດສອບ ແລະ ເຊັນສັນຍາເອເລັກໂຕຣນິກໃນອະນາຄົດ. ຫ້ອງນີ້ແມ່ນບໍ່ບັງຄັບ.</string>
+    <string name="create_card_impurity_help_title">ຫັກສິ່ງເຈືອປົນ</string>
+    <string name="create_card_impurity_help_description">ນ້ຳໜັກ (kg) ຂອງສິ່ງເຈືອປົນ (ເຟືອງ, ດິນ...) ຈະຖືກຫັກໂດຍອັດຕະໂນມັດໂດຍກົງຈາກນ້ຳໜັກເຂົ້າທັງໝົດຂອງໃບນີ້ໃນເວລານຳມາຄິດໄລ່ນ້ຳໜັກຕົວຈິງ.</string>
+    <string name="create_card_bag_help_title">ຫັກການຫຸ້ມຫໍ່</string>
+    <string name="create_card_moisture_help_title">ຄວາມຊຸ່ມຂອງເຂົ້າ</string>
+    <string name="create_card_moisture_help_description">ເປີເຊັນຄວາມຊຸ່ມຂອງເຂົ້າເວລາຊັ່ງນໍ້າໜັກ (%). ຄວາມຊຸ່ມນີ້ແມ່ນໃຊ້ສໍາລັບການອ້າງອີງໃນລະຫວ່າງການຕາກເຂົ້າ ຫຼື ການເຈລະຈາອັດຕາການຫຼຸດຜ່ອນນໍ້າໜັກສໍາລັບເຂົ້າແຫ້ງ.</string>
+    <string name="create_card_bag_help_description">ນ້ຳໜັກມາດຕະຖານຂອງເປົ໋າເຂົ້າເປົ່າ (kg/ເປົ໋າ). ເມື່ອປ້ອນນ້ຳໜັກ, ລະບົບຈະຄູນດ້ວຍຈຳນວນເປົ໋າໂດຍອັດຕະໂນມັດເພື່ອຫັກນ້ຳໜັກຂອງເປົ໋າທັງໝົດ.</string>
+    <string name="create_card_contacts_permission_denied">ປະຕິເສດສິດເຂົ້າເຖິງລາຍຊື່ຜູ້ຕິດຕໍ່. ກະລຸນາປ້ອນເບີໂທລະສັບດ້ວຍຕົນເອງ.</string>
+    <string name="create_card_contacts_select">ເລືອກຈາກລາຍຊື່ຜູ້ຕິດຕໍ່</string>
+    <string name="detail_info_cccd">ເລກບັດປະຈຳຕົວ</string>
+    <string name="card_detail_delete_blocked_unpaid">ໃບທີ່ຍັງບໍ່ທັນຊຳລະເງິນ — ບໍ່ສາມາດລຶບໄດ້</string>
+    <string name="help_btn_feedback">ສົ່ງຄຳຄິດເຫັນ</string>
+    <string name="feedback_screen_title">ສົ່ງຄຳຄິດເຫັນ</string>
+    <string name="feedback_placeholder">ປ້ອນຄຳຄິດເຫັນຂອງທ່ານຢູ່ບ່ອນນີ້...</string>
+    <string name="feedback_btn_send">ສົ່ງ</string>
+    <string name="feedback_toast_success">ຂໍຂອບໃຈສຳລັບຄຳຄິດເຫັນຂອງທ່ານ! ພວກເຮົາຈະພິຈາລະນາໂດຍໄວທີ່ສຸດ.</string>
+    <string name="feedback_toast_empty">ກະລຸນາປ້ອນເນື້ອຫາຄຳຄິດເຫັນ.</string>
+    <string name="feedback_empty_messages">ຍັງບໍ່ທັນມີຄຳຄິດເຫັນເທື່ອ. ກະລຸນາສົ່ງຄຳຄິດເຫັນຂອງທ່ານເພື່ອໃຫ້ພວກເຮົາຊ່ວຍເຫຼືອເດີ້!</string>
+    <string name="feedback_admin_name">ຜູ້ພັດທະນາ</string>
 </resources>

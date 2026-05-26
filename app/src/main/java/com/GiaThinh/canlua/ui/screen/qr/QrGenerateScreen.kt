@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
@@ -43,7 +44,7 @@ fun QrGenerateScreen(
     viewModel: CardViewModel = hiltViewModel()
 ) {
     TrackScreenRender("qr_generate")
-    val currentCard by viewModel.currentCard.collectAsState()
+    val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
 

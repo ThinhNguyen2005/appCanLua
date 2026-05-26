@@ -88,6 +88,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.benchmark.traceprocessor)
+    implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.core.splashscreen)
     ksp(libs.androidx.room.compiler)
 
     // Navigation
@@ -112,6 +115,8 @@ dependencies {
     implementation(libs.firebase.perf)
     implementation(libs.firebase.storage)
     implementation(libs.firebase.remoteconfig)
+    implementation(libs.firebase.appcheck.debug)
+    implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.play.services.auth)
 
     // Credentials & Identity

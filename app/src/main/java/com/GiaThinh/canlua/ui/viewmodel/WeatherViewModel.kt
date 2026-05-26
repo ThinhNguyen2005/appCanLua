@@ -34,8 +34,10 @@ class WeatherViewModel @Inject constructor(
 
     private var observerJob: Job? = null
 
-    init {
-        observe(forceRefresh = false)
+    fun startObserving() {
+        if (observerJob == null || observerJob?.isActive == false) {
+            observe(forceRefresh = false)
+        }
     }
 
     private fun observe(forceRefresh: Boolean) {

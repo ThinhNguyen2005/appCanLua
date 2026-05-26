@@ -379,7 +379,6 @@ class CardRepository @Inject constructor(
     fun getTopTraders(season: String): Flow<List<TraderStat>> =
         cardDao.getTopTraders(season, uid())
 
-    /** So sánh giữa nhiều vụ — map từng row Raw → SeasonStats. */
     fun getAllSeasonsComparison(): Flow<List<SeasonStats>> =
         cardDao.getAllSeasonsComparison(uid()).map { rows ->
             rows.map { row ->
@@ -395,7 +394,7 @@ class CardRepository @Inject constructor(
                     totalImpurity = row.totalImpurity,
                     wetCardCount = row.wetCardCount,
                     dryCardCount = row.dryCardCount
-                ).toDomain(row.season)
+                ).toDomain(row.season).copy(lastDate = row.lastDate)
             }
         }
 

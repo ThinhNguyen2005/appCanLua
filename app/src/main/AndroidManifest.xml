@@ -17,6 +17,7 @@
     <application
         android:name=".CanLuaApplication"
         android:allowBackup="true"
+        android:hardwareAccelerated="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
@@ -35,7 +36,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.CanLua"
+            android:theme="@style/Theme.CanLua.Splash"
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>

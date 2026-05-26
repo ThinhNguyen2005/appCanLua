@@ -38,7 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,8 +74,8 @@ fun DeletedCardsScreen(
     viewModel: DeletedCardsViewModel = hiltViewModel()
 ) {
     TrackScreenRender("deleted_cards")
-    val items by viewModel.items.collectAsState()
-    val restored by viewModel.restored.collectAsState()
+    val items by viewModel.items.collectAsStateWithLifecycle()
+    val restored by viewModel.restored.collectAsStateWithLifecycle()
     var pendingPurge by remember { mutableStateOf<DeletedCard?>(null) }
 
     // Sau khi restore thành công → navigate vào card detail.

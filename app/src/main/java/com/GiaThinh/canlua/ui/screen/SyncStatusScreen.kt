@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,8 +31,8 @@ fun SyncStatusScreen(
     viewModel: SyncViewModel = hiltViewModel()
 ) {
     TrackScreenRender("sync_status")
-    val syncStatus by viewModel.syncStatus.collectAsState()
-    val lastSyncTime by viewModel.lastSyncTime.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
+    val lastSyncTime by viewModel.lastSyncTime.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

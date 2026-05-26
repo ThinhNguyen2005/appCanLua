@@ -35,8 +35,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -96,17 +96,17 @@ fun TraderProfileScreen(
     traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
     TrackScreenRender("trader_profile")
-    val profile by profileViewModel.profile.collectAsState(initial = null)
-    val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsState()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Dashboard data
-    val seasons by dashboardViewModel.seasons.collectAsState()
-    val selectedSeason by dashboardViewModel.selectedSeason.collectAsState()
-    val currentStats by dashboardViewModel.currentStats.collectAsState()
-    val previousStats by dashboardViewModel.previousSeasonStats.collectAsState()
-    val varieties by dashboardViewModel.varieties.collectAsState()
-    val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsState()
-    val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsState()
+    val seasons by dashboardViewModel.seasons.collectAsStateWithLifecycle()
+    val selectedSeason by dashboardViewModel.selectedSeason.collectAsStateWithLifecycle()
+    val currentStats by dashboardViewModel.currentStats.collectAsStateWithLifecycle()
+    val previousStats by dashboardViewModel.previousSeasonStats.collectAsStateWithLifecycle()
+    val varieties by dashboardViewModel.varieties.collectAsStateWithLifecycle()
+    val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsStateWithLifecycle()
+    val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsStateWithLifecycle()
 
     val lifetimeStats = remember(traderTransactionsState) {
         TraderLifetimeStats(
@@ -292,7 +292,7 @@ fun TraderProfileScreen(
 
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsState()
+                    val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
                             plan = premiumInfo.plan,

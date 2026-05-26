@@ -72,20 +72,29 @@ class MarketViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    init {
-        seedIfNeeded()
-        marketRepository.startFirestoreSync()
+    private var seedJob: kotlinx.coroutines.Job? = null
+
+    fun seedIfNeededDeferred() {
+        if (seedJob == null || seedJob?.isActive == false) {
+            seedJob = viewModelScope.launch {
+                try {
+                    marketRepository.seedMockDataIfEmpty()
+                } finally {
+                    _isLoading.value = false
+                }
+            }
+        }
     }
 
-    override fun onCleared() {
-        marketRepository.stopFirestoreSync()
-        super.onCleared()
-    }
-
-    private fun seedIfNeeded() {
+    /**
+     * One-shot refresh từ Firestore — gọi khi user mở tab Market hoặc pull-to-refresh.
+     * Không giữ listener thường trực; data cũ trong Room vẫn dùng được nếu mạng lỗi.
+     */
+    fun refreshFromFirestore() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                marketRepository.seedMockDataIfEmpty()
+                marketRepository.refreshFromFirestore()
             } finally {
                 _isLoading.value = false
             }
@@ -117,7 +126,7 @@ class MarketViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                marketRepository.seedMockDataIfEmpty()
+                marketRepository.refreshFromFirestore()
             } finally {
                 _isLoading.value = false
             }

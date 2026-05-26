@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -54,7 +55,7 @@ fun KpiCard(
     highlight: Boolean = false
 ) {
     val padding = if (highlight) 16.dp else 14.dp
-    val valueSize = if (highlight) 22.sp else 18.sp
+    val valueStyle = if (highlight) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge
 
     Card(
         modifier = modifier,
@@ -89,9 +90,10 @@ fun KpiCard(
 
             Text(
                 text = label,
-                fontSize = 12.sp,
-                color = AppColors.TextSecondary,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = AppColors.TextSecondary,
+                    fontWeight = FontWeight.Medium
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -102,9 +104,10 @@ fun KpiCard(
             // giữ chiều cao card đồng nhất giữa "1,2 tr" và "12,5 tr".
             Text(
                 text = value,
-                fontSize = valueSize,
-                fontWeight = FontWeight.ExtraBold,
-                color = AppColors.TextPrimary,
+                style = valueStyle.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AppColors.TextPrimary
+                ),
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -159,9 +162,10 @@ private fun DeltaPill(deltaPercent: Double?, deltaLabel: String?) {
         )
         Text(
             text = text,
-            fontSize = 11.sp,
-            color = color,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.labelMedium.copy(
+                color = color,
+                fontWeight = FontWeight.SemiBold
+            )
         )
     }
 }

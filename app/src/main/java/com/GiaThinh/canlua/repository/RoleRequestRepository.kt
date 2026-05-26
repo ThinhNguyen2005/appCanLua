@@ -3,9 +3,12 @@ package com.GiaThinh.canlua.repository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.MetadataChanges
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -94,7 +97,7 @@ class RoleRequestRepository @Inject constructor(
             return@callbackFlow
         }
         val reg = firestore.collection(COLLECTION).document(uid)
-            .addSnapshotListener(MetadataChanges.EXCLUDE) { snap, _ ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snap, _ ->
                 if (snap == null || !snap.exists()) {
                     trySend(null)
                 } else {
@@ -102,7 +105,7 @@ class RoleRequestRepository @Inject constructor(
                 }
             }
         awaitClose { reg.remove() }
-    }
+    }.distinctUntilChanged()
 
     companion object {
         private const val COLLECTION = "roleRequests"

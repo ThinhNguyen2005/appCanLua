@@ -48,6 +48,10 @@ import androidx.compose.ui.res.stringResource
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
+// Singleton SimpleDateFormat — dùng chung cho mọi PremiumStatusCard.
+private val PROFILE_DATE_FMT: java.text.SimpleDateFormat =
+    java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+
 /**
  * Components dùng chung giữa FarmerProfileScreen và TraderProfileScreen.
  * Tách ra để giữ DRY và đảm bảo UX nhất quán giữa 2 role.
@@ -387,8 +391,7 @@ fun PremiumStatusCard(
     val sinceLabel = remember(sinceMs, activatedLabel, activatedSinceLabel) {
         if (sinceMs <= 0L) activatedLabel
         else {
-            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-            "$activatedSinceLabel ${sdf.format(java.util.Date(sinceMs))}"
+            "$activatedSinceLabel ${PROFILE_DATE_FMT.format(java.util.Date(sinceMs))}"
         }
     }
     Box(

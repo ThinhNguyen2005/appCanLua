@@ -5,10 +5,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.MetadataChanges
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,8 +32,8 @@ class MarketFirestoreRepository @Inject constructor(
         get() = auth.currentUser?.uid
 
     /** TRADER nhập / cập nhật bid. */
-    suspend fun upsertBid(bid: FirestoreRicePrice): Result<String> {
-        return try {
+    suspend fun upsertBid(bid: FirestoreRicePrice): Result<String> = withContext(Dispatchers.IO) {
+        try {
             val docRef = if (bid.id.isNotEmpty()) {
                 pricesCollection.document(bid.id)
             } else {
@@ -47,9 +51,29 @@ class MarketFirestoreRepository @Inject constructor(
         }
     }
 
+    /**
+     * One-shot fetch tất cả bids active — dùng khi FARMER mở tab Market.
+     * Tránh giữ snapshot listener thường trực; client tự refresh khi cần.
+     */
+    suspend fun fetchActiveBids(): Result<List<FirestoreRicePrice>> = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = pricesCollection
+                .whereEqualTo("active", true)
+                .get()
+                .await()
+            val bids = snapshot.documents
+                .mapNotNull { it.toObject(FirestoreRicePrice::class.java) }
+                .sortedByDescending { it.updatedAt }
+            Result.success(bids)
+        } catch (e: Exception) {
+            android.util.Log.w("MarketRepo", "fetchActiveBids error", e)
+            Result.failure(e)
+        }
+    }
+
     /** TRADER xoá / ẩn bid. */
-    suspend fun deactivateBid(bidId: String): Result<Unit> {
-        return try {
+    suspend fun deactivateBid(bidId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             pricesCollection.document(bidId)
                 .update(mapOf("active" to false, "updatedAt" to System.currentTimeMillis()))
                 .await()
@@ -68,7 +92,7 @@ class MarketFirestoreRepository @Inject constructor(
     fun observeActiveBids(): Flow<List<FirestoreRicePrice>> = callbackFlow {
         val registration: ListenerRegistration = pricesCollection
             .whereEqualTo("active", true)
-            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     android.util.Log.w("MarketRepo", "observeActiveBids error", error)
                     trySend(emptyList())
@@ -81,7 +105,7 @@ class MarketFirestoreRepository @Inject constructor(
                 trySend(bids)
             }
         awaitClose { registration.remove() }
-    }
+    }.distinctUntilChanged()
 
     /**
      * Realtime stream bids của TRADER hiện tại.
@@ -97,7 +121,7 @@ class MarketFirestoreRepository @Inject constructor(
         }
         val registration: ListenerRegistration = pricesCollection
             .whereEqualTo("traderId", uid)
-            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     android.util.Log.w("MarketRepo", "observeMyBids error", error)
                     trySend(emptyList())
@@ -110,5 +134,5 @@ class MarketFirestoreRepository @Inject constructor(
                 trySend(bids)
             }
         awaitClose { registration.remove() }
-    }
+    }.distinctUntilChanged()
 }

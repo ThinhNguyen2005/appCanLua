@@ -2,8 +2,10 @@ package com.GiaThinh.canlua.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.compose.runtime.Immutable
 import java.util.Date
 
+@Immutable
 @Entity(
     tableName = "cards",
     indices = [androidx.room.Index(value = ["ownerUid"])]

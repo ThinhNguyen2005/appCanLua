@@ -78,7 +78,7 @@ class AiChatViewModel @Inject constructor(
         VoiceState(state = s, partial = partial, error = err, available = stt.isAvailable)
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = VoiceState(available = stt.isAvailable)
     )
 
@@ -86,7 +86,7 @@ class AiChatViewModel @Inject constructor(
     private val ricePrices: StateFlow<List<RicePrice>> = marketRepository.getAllPrices()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
 
@@ -94,7 +94,7 @@ class AiChatViewModel @Inject constructor(
     private val profile: StateFlow<Profile?> = profileRepository.latestProfile()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = null
         )
 
@@ -106,7 +106,7 @@ class AiChatViewModel @Inject constructor(
         .map { st -> if (st is WeatherState.Data) st.info else null }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = null
         )
 

@@ -3,6 +3,9 @@ package com.GiaThinh.canlua.ui.screen
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -47,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -78,6 +80,10 @@ import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
+// Singleton — dùng chung cho mọi instance CardDetailScreen.
+private val DETAIL_DATE_FMT: SimpleDateFormat =
+    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
@@ -97,6 +103,10 @@ fun CardDetailScreen(
     val scrollState = rememberLazyListState()
     val density = LocalDensity.current
 
+    // Tính 1 lần mỗi khi weightEntries đổi — dùng cho cả header lẫn nội dung bên trong.
+    val lastEntryTimeForHeader = remember(currentCard, weightEntries) {
+        if (currentCard == null) null else weightEntries.maxOfOrNull { it.timestamp }
+    }
 
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -108,7 +118,7 @@ fun CardDetailScreen(
     val pullState = rememberPullToRefreshState()
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
-            delay(550) // perceptible feedback even on cache hit
+            delay(150) // perceptible feedback even on cache hit
             viewModel.loadCardById(cardId)
             isRefreshing = false
         }
@@ -178,8 +188,9 @@ fun CardDetailScreen(
                         text = {
                             Text(
                                 stringResource(R.string.card_detail_weigh_action),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             )
                         },
                         expanded = true,
@@ -209,7 +220,12 @@ fun CardDetailScreen(
             )
         }
         val displayCard = currentCard ?: placeholderCard
-        val isLoading = currentCard == null
+        var isTransitionFinished by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            delay(150L) // Đợi transition 300ms của NavHost kết thúc một nửa để dựng layout trước
+            isTransitionFinished = true
+        }
+        val isLoading = currentCard == null || !isTransitionFinished
 
         Box(
             modifier = Modifier
@@ -217,10 +233,26 @@ fun CardDetailScreen(
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // === Content layer ===
-            if (isLoading) {
-                Column {
-                    Spacer(Modifier.height(heights.expanded + 16.dp))
-                    DetailSkeleton()
+            Crossfade(
+                targetState = isLoading,
+                animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing),
+                label = "detail_content_fade"
+            ) { loading ->
+            if (loading) {
+                PullToRefreshBox(
+                    isRefreshing = false,
+                    onRefresh = {},
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    LazyColumn(
+                        state = scrollState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.height(heights.expanded + 16.dp)) }
+                        item { DetailSkeleton() }
+                    }
                 }
             } else {
                 val card = currentCard!!
@@ -230,8 +262,6 @@ fun CardDetailScreen(
                     pageCount = { tables.size.coerceAtLeast(1) }
                 )
                 val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
-
-                val lastEntryTime = weightEntries.maxOfOrNull { it.timestamp }
 
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
@@ -266,7 +296,7 @@ fun CardDetailScreen(
                         item {
                             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                                 val createdLabel = remember(card.date) {
-                                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(card.date)
+                                    DETAIL_DATE_FMT.format(card.date)
                                 }
                                 CardInfoCard(
                                     traderName = card.traderName,
@@ -438,6 +468,7 @@ fun CardDetailScreen(
                     )
                 }
             }
+            } // end Crossfade
 
             // === HEADER LAYER (luôn render từ frame 0) ===
             // Đặt OUT of if/else → header tồn tại NGAY khi composable mount,
@@ -446,7 +477,7 @@ fun CardDetailScreen(
             CustomHeader(
                 card = displayCard,
                 collapseFraction = collapseFraction,
-                lastEntryTime = if (isLoading) null else weightEntries.maxOfOrNull { it.timestamp },
+                lastEntryTime = lastEntryTimeForHeader,
                 modifier = Modifier.height(headerHeight),
                 onBack = { navController.popBackStack() },
                 onAdd = {

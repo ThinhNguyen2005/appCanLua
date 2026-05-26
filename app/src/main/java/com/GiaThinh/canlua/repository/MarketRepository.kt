@@ -4,30 +4,29 @@ import com.GiaThinh.canlua.data.dao.RicePriceDao
 import com.GiaThinh.canlua.data.firestore.FirestoreRicePrice
 import com.GiaThinh.canlua.data.model.PricePoint
 import com.GiaThinh.canlua.data.model.RicePrice
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
+import kotlinx.coroutines.withContext
+
 /**
  * Phase 2.1 — MVP với mock data realistic dựa trên giá thị trường ĐBSCL 2026.
- * Phase 2.2 — Firestore sync: TRADER write, FARMER read realtime.
+ * Phase 2.2 — Firestore sync: TRADER write, FARMER read on-demand.
+ *
+ * v3 (2026-05-26): Bỏ snapshot listener thường trực. FARMER chỉ refresh khi mở tab
+ * Market (one-shot fetch + cache vào Room). Lý do: listener treo singleton scope
+ * không bao giờ hủy → bombard main thread cả khi user không xem giá.
  */
 @Singleton
 class MarketRepository @Inject constructor(
     private val ricePriceDao: RicePriceDao,
     private val firestore: MarketFirestoreRepository
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var firestoreJob: kotlinx.coroutines.Job? = null
-
     fun getAllPrices(): Flow<List<RicePrice>> = ricePriceDao.getAllPrices()
 
     fun getPriceByVariety(variety: String): Flow<RicePrice?> =
@@ -39,25 +38,20 @@ class MarketRepository @Inject constructor(
     }
 
     /**
-     * Bắt đầu lắng nghe realtime từ Firestore. Idempotent — gọi nhiều lần không tạo nhiều listener.
-     * Mỗi khi Firestore thay đổi, mirror sang Room để FARMER đọc offline.
+     * One-shot fetch từ Firestore → mirror vào Room. UI gọi khi vào tab Market.
+     * Empty list không overwrite Room (giữ mock + dữ liệu cũ làm fallback).
      */
-    fun startFirestoreSync() {
-        if (firestoreJob?.isActive == true) return
-        firestoreJob = scope.launch {
-            firestore.observeActiveBids()
-                .catch { /* lỗi network — Room vẫn còn data cũ */ }
-                .collect { bids ->
-                    if (bids.isEmpty()) return@collect
-                    val rooms = bids.map { it.toRicePrice() }
-                    ricePriceDao.upsertAll(rooms)
+    suspend fun refreshFromFirestore(): Result<Unit> = withContext(Dispatchers.IO) {
+        val result = firestore.fetchActiveBids()
+        result.fold(
+            onSuccess = { bids ->
+                if (bids.isNotEmpty()) {
+                    ricePriceDao.upsertAll(bids.map { it.toRicePrice() })
                 }
-        }
-    }
-
-    fun stopFirestoreSync() {
-        firestoreJob?.cancel()
-        firestoreJob = null
+                Result.success(Unit)
+            },
+            onFailure = { Result.failure(it) }
+        )
     }
 
     /** TRADER submit / update bid. */
@@ -100,8 +94,8 @@ class MarketRepository @Inject constructor(
      * Seed mock data nếu DB trống. Chạy 1 lần ở app startup cho demo.
      * Khi Firestore có data thật, mock sẽ bị overwrite (mock dùng id "mock_*").
      */
-    suspend fun seedMockDataIfEmpty() {
-        if (ricePriceDao.countPrices() > 0) return
+    suspend fun seedMockDataIfEmpty() = withContext(Dispatchers.IO) {
+        if (ricePriceDao.countPrices() > 0) return@withContext
         val now = System.currentTimeMillis()
         val varieties = listOf(
             VarietyDef("ST25", 8000.0, 8500.0, "UP"),

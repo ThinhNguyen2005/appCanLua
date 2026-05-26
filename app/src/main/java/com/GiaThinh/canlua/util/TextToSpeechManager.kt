@@ -16,9 +16,19 @@ class TextToSpeechManager @Inject constructor(
     private var tts: TextToSpeech? = null
     private var isEnabled = false
     private var isInitialized = false
+    private var isInitializing = false
     
     fun initialize(onInit: (Boolean) -> Unit = {}) {
+        if (isInitialized) {
+            onInit(true)
+            return
+        }
+        if (isInitializing) {
+            return
+        }
+        isInitializing = true
         tts = TextToSpeech(context) { status ->
+            isInitializing = false
             if (status == TextToSpeech.SUCCESS) {
                 val result = tts?.setLanguage(Locale.forLanguageTag("vi-VN"))
                 isInitialized = result != TextToSpeech.LANG_MISSING_DATA && 
@@ -145,6 +155,9 @@ class TextToSpeechManager @Inject constructor(
     
     fun setEnabled(enabled: Boolean) {
         isEnabled = enabled
+        if (enabled && !isInitialized) {
+            initialize()
+        }
     }
     
     fun isEnabled(): Boolean = isEnabled

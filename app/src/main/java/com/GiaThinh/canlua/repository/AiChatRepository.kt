@@ -34,10 +34,13 @@ import javax.inject.Singleton
 class AiChatRepository @Inject constructor(
     private val httpClient: HttpClient
 ) {
+    // Session cache: tránh gọi API lại cho cùng một vụ trong cùng phiên làm việc.
+    // Key = hash của seasonSummary (nội dung đầy đủ); value = markdown kết quả.
+    private val seasonCache = HashMap<Int, String>()
     companion object {
         // Chỉ dùng 1 free model duy nhất — bỏ fallback cho đơn giản và predictable cost.
         // Đổi constant này nếu muốn thử model khác (nhớ giữ suffix `:free`).
-        private const val MODEL = "deepseek/deepseek-v4-flash:free"
+        private const val MODEL = "openrouter/free"
         private const val URL = "https://openrouter.ai/api/v1/chat/completions"
 
         private const val FARMER_PROMPT_BASE = """
@@ -133,12 +136,18 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
                 "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
         }
+        // Trả về kết quả đã cache nếu cùng summary trong phiên này — tránh gọi API lặp.
+        val cacheKey = seasonSummary.hashCode()
+        seasonCache[cacheKey]?.let { return@withContext Result.success(it) }
+
         val systemPrompt = buildSeasonAnalysisPrompt(profile, weather)
         val messages = listOf(
             ChatMessage("system", systemPrompt),
             ChatMessage("user", seasonSummary)
         )
-        callOnce(messages, context = "analyzeSeason")
+        val result = callOnce(messages, context = "analyzeSeason")
+        result.onSuccess { markdown -> seasonCache[cacheKey] = markdown }
+        result
     }
 
     /**

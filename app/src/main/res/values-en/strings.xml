@@ -478,4 +478,31 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">Chinese</string>
     <string name="language_chinese_native">中文</string>
+
+    <string name="create_card_cccd_label">ID Number (optional)</string>
+    <string name="create_card_cccd_placeholder">e.g., 12 digits</string>
+    <string name="create_card_impurity_weight_label">Deduct impurities (kg)</string>
+    <string name="create_card_impurity_weight_placeholder">e.g., 5.0</string>
+    <string name="create_card_bag_weight_label">Deduct packaging (kg/bag)</string>
+    <string name="create_card_bag_weight_placeholder">e.g., 1.0</string>
+    <string name="create_card_cccd_help_title">ID Card Number</string>
+    <string name="create_card_cccd_help_description">Enter the partner\'s 12-digit ID card number to serve as legal proof for future verification and electronic contract signing. This field is optional.</string>
+    <string name="create_card_impurity_help_title">Deduct Impurities</string>
+    <string name="create_card_impurity_help_description">The weight (kg) of impurities (straw, soil...) will be automatically deducted directly from the total rice weight of this card when calculating the actual weight.</string>
+    <string name="create_card_bag_help_title">Deduct Packaging</string>
+    <string name="create_card_bag_help_description">The default weight of an empty rice bag (kg/bag). During weighing input, the system will automatically multiply it by the bag count to deduct the total packaging weight.</string>
+    <string name="create_card_moisture_help_title">Rice Moisture</string>
+    <string name="create_card_moisture_help_description">The percentage of rice moisture when weighing (%). This moisture is used for reference during rice drying or negotiating weight reduction rates for dry rice.</string>
+    <string name="create_card_contacts_permission_denied">Contacts permission denied. Please enter the phone number manually.</string>
+    <string name="create_card_contacts_select">Select from Contacts</string>
+    <string name="detail_info_cccd">ID Number</string>
+    <string name="card_detail_delete_blocked_unpaid">Unpaid card — cannot be deleted</string>
+    <string name="help_btn_feedback">Send Feedback</string>
+    <string name="feedback_screen_title">Send Feedback</string>
+    <string name="feedback_placeholder">Enter your feedback here...</string>
+    <string name="feedback_btn_send">Send</string>
+    <string name="feedback_toast_success">Thank you for your feedback! We will review it as soon as possible.</string>
+    <string name="feedback_toast_empty">Please enter your feedback content.</string>
+    <string name="feedback_empty_messages">No feedback yet. Please send us your feedback so we can support you!</string>
+    <string name="feedback_admin_name">Developer</string>
 </resources>

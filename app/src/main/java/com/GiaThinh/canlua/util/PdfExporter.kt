@@ -156,9 +156,11 @@ object PdfExporter {
 
         if (entries.isNotEmpty()) {
             val showTareImpurity = entries.any { it.bagWeight > 0.0 || it.impurityWeight > 0.0 }
-            ensureSpace(72f)
+            ensureSpace(78f)
             canvas.drawText(labels.bagDetailsCount(entries.size), MARGIN, y, sectionPaint)
-            y += 13f
+            // +18f thay vì +13f — section font 12.5f, baseline→border chỉ 13f
+            // làm chữ "Chi tiết theo bao" dính sát header bảng. 18f cho thoáng visual.
+            y += 18f
             y = drawWeightTableHeader(canvas, y, labelPaint, borderPaint, fillPaint, labels, showTareImpurity)
 
             entries.forEachIndexed { idx, entry ->
@@ -171,7 +173,8 @@ object PdfExporter {
         } else {
             ensureSpace(48f)
             canvas.drawText(labels.bagDetails, MARGIN, y, sectionPaint)
-            y += 16f
+            // +20f thay vì +16f — chữ "Chi tiết theo bao" cách body "Không có" thoáng hơn.
+            y += 20f
             canvas.drawText(labels.noBags, MARGIN, y, bodyPaint)
             y += 18f
         }
@@ -242,7 +245,9 @@ object PdfExporter {
     ): Float {
         var cursor = y
         canvas.drawText(title, MARGIN, cursor, sectionPaint)
-        cursor += 9f
+        // +14f thay vì +9f — sectionPaint baseline → box top chỉ 9f làm chữ tiêu đề
+        // sát border bảng. Tăng lên 14f cho thoáng (font 12.5f cần ≥ font_size).
+        cursor += 14f
 
         val boxTop = cursor
         val rowHeight = 24f
@@ -286,7 +291,9 @@ object PdfExporter {
 
         canvas.drawText(labels.weightMetrics, leftX, cursor, sectionPaint)
         canvas.drawText(labels.payment, rightX, cursor, sectionPaint)
-        cursor += 9f
+        // +14f thay vì +9f — chữ "Chỉ số cân"/"Thanh toán" cách 2 box bên dưới thoáng hơn,
+        // không còn dính sát border.
+        cursor += 14f
 
         val boxTop = cursor
         val boxBottom = boxTop + rowHeight * 7f + 10f
@@ -458,7 +465,8 @@ object PdfExporter {
         labels: PdfLabels
     ) {
         canvas.drawText(labels.confirmationSection, MARGIN, y, sectionPaint)
-        val top = y + 12f
+        // +16f thay vì +12f — tiêu đề "Xác nhận" cách 3 ô ký tên thoáng hơn.
+        val top = y + 16f
         val bottom = top + 78f
         val colWidth = (PAGE_WIDTH - MARGIN * 2) / 3f
         val titles = listOf(labels.sender, labels.receiver, labels.creator)

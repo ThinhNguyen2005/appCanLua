@@ -13,12 +13,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,7 +49,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,7 +68,7 @@ import com.GiaThinh.canlua.repository.SyncStatus
 import com.GiaThinh.canlua.ui.component.CardItem
 import com.GiaThinh.canlua.ui.component.CreateCardDialog
 import com.GiaThinh.canlua.ui.component.CreateCardMode
-import com.GiaThinh.canlua.ui.component.SkeletonList
+import com.GiaThinh.canlua.ui.component.CardListSkeleton
 import com.GiaThinh.canlua.ui.component.cardlist.CardListEmptyState
 import com.GiaThinh.canlua.ui.component.cardlist.CardListFilterBar
 import com.GiaThinh.canlua.ui.component.cardlist.CardListFilterSheet
@@ -101,17 +100,22 @@ fun CardListScreen(
     syncViewModel: SyncViewModel = hiltViewModel()
 ) {
     com.GiaThinh.canlua.util.TrackScreenRender("scale")
-    val cards by viewModel.cards.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val selectedFilter by viewModel.selectedVarietyFilter.collectAsState()
-    val availableVarieties by viewModel.availableVarieties.collectAsState()
-    val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsState()
-    val selectedSeason by viewModel.selectedSeasonFilter.collectAsState()
-    val availableSeasons by viewModel.availableSeasons.collectAsState()
-    val profileState by profileViewModel.profile.collectAsState(initial = null)
-    val syncStatus by syncViewModel.syncStatus.collectAsState()
-    val isPremium by com.GiaThinh.canlua.util.PremiumState.isPremium.collectAsState()
-    val cardsToday by com.GiaThinh.canlua.util.PremiumState.dailyCreated.collectAsState()
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    // Skeleton hiện đến khi Room thực sự emit data (không min duration cứng).
+    // Vì InitViewModel đã warm Room page cache ở splash → isLoading flip false
+    // gần như tức thì; nếu DB chậm bất thường (thiết bị yếu, lần đầu), skeleton
+    // sẽ tự giữ lâu hơn — đúng tinh thần "đến khi load xong".
+    val showSkeleton = isLoading
+    val selectedFilter by viewModel.selectedVarietyFilter.collectAsStateWithLifecycle()
+    val availableVarieties by viewModel.availableVarieties.collectAsStateWithLifecycle()
+    val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
+    val selectedSeason by viewModel.selectedSeasonFilter.collectAsStateWithLifecycle()
+    val availableSeasons by viewModel.availableSeasons.collectAsStateWithLifecycle()
+    val profileState by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
+    val isPremium by com.GiaThinh.canlua.util.PremiumState.isPremium.collectAsStateWithLifecycle()
+    val cardsToday by com.GiaThinh.canlua.util.PremiumState.dailyCreated.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
@@ -121,11 +125,15 @@ fun CardListScreen(
     var manualRefreshing by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scrollingUp = listState.isScrollingUp()
-    val fabVisible = scrollingUp || cards.isEmpty()
+    // derivedStateOf: chỉ trigger recompose khi giá trị BOOLEAN thay đổi,
+    // không phải mỗi khi scrollingUp hoặc cards.isEmpty() State đọc lại.
+    val fabVisible by remember {
+        derivedStateOf { scrollingUp || cards.isEmpty() }
+    }
 
     // Đồng bộ ẩn/hiện bottom bar theo hướng cuộn — FAB không bị thanh điều hướng chồng.
-    LaunchedEffect(scrollingUp, cards.isEmpty()) {
-        com.GiaThinh.canlua.ui.util.BottomBarVisibility.set(scrollingUp || cards.isEmpty())
+    LaunchedEffect(fabVisible) {
+        com.GiaThinh.canlua.ui.util.BottomBarVisibility.set(fabVisible)
     }
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose { com.GiaThinh.canlua.ui.util.BottomBarVisibility.reset() }
@@ -134,7 +142,7 @@ fun CardListScreen(
     // Tự động tắt refreshing khi sync xong (hoặc hết 800ms giả lập để user thấy phong cách)
     LaunchedEffect(manualRefreshing, syncStatus) {
         if (manualRefreshing && syncStatus !is SyncStatus.Syncing) {
-            delay(600)
+            delay(150)
             manualRefreshing = false
         }
     }
@@ -144,31 +152,45 @@ fun CardListScreen(
     val ownerName = profileState?.name ?: if (isTrader) "Thương lái" else "Nông dân"
 
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
-    val today = Calendar.getInstance()
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
 
-    // Calculate today's stats
-    val todayCards = cards.filter { card ->
-        val cardCal = Calendar.getInstance().apply { time = card.date }
-        cardCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
-                cardCal.get(Calendar.YEAR) == today.get(Calendar.YEAR)
+    // Calculate today's stats - Optimizing recomposition with remember
+    val todayCards = remember(cards) {
+        val todayCal = Calendar.getInstance()
+        cards.filter { card ->
+            val cardCal = Calendar.getInstance().apply { time = card.date }
+            cardCal.get(Calendar.DAY_OF_YEAR) == todayCal.get(Calendar.DAY_OF_YEAR) &&
+                    cardCal.get(Calendar.YEAR) == todayCal.get(Calendar.YEAR)
+        }
     }
-    val todayTotalKg = todayCards.sumOf { it.totalWeight }
-    val todayTotalAmount = todayCards.sumOf { it.totalAmount }
+    val todayTotalKg = remember(todayCards) { todayCards.sumOf { it.totalWeight } }
+    val todayTotalAmount = remember(todayCards) { todayCards.sumOf { it.totalAmount } }
+
+    // Lift lambda ra ngoài items{} → 1 instance dùng chung cho cả danh sách,
+    // tránh tạo 200 closure mới mỗi khi cards thay đổi (sync/filter).
+    val onCardClick = remember(navController) {
+        { id: Long -> navController.navigate("card_detail/$id") }
+    }
+    val onCardDelete: (com.GiaThinh.canlua.data.model.Card) -> Unit = remember {
+        { card ->
+            cardToDelete = card
+            showDeleteConfirmDialog = true
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // === Card List (chứa cả Summary + Filter chips để cuộn theo) ===
             AnimatedVisibility(
-                visible = isLoading,
+                visible = showSkeleton,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                SkeletonList(count = 3)
+                CardListSkeleton(count = 3)
             }
 
             AnimatedVisibility(
-                visible = !isLoading,
+                visible = !showSkeleton,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
@@ -183,7 +205,9 @@ fun CardListScreen(
                     state = pullState,
                     modifier = Modifier.fillMaxSize(),
                     indicator = {
-                        val progress = pullState.distanceFraction.coerceIn(0f, 1f)
+                        // Đọc distanceFraction TRONG lambda graphicsLayer → defer xuống
+                        // draw phase, không trigger recompose toàn bộ PullToRefreshBox
+                        // mỗi tick (~60fps khi user kéo).
                         PullToRefreshDefaults.Indicator(
                             state = pullState,
                             isRefreshing = manualRefreshing,
@@ -192,17 +216,20 @@ fun CardListScreen(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .graphicsLayer {
-                                    scaleX = progress
-                                    scaleY = progress
-                                    alpha = progress
+                                    val p = pullState.distanceFraction.coerceIn(0f, 1f)
+                                    scaleX = p
+                                    scaleY = p
+                                    alpha = p
                                 }
                         )
                     }
                 ) {
                     // Group cards by date — fallback empty list nếu chưa có phiếu nào
                     // (vẫn render summary + filter chips trong LazyColumn để user đọc trước khi tạo).
-                    val groupedCards = cards.groupBy { card ->
-                        dateFormat.format(card.date)
+                    val groupedCards = remember(cards, dateFormat) {
+                        cards.groupBy { card ->
+                            dateFormat.format(card.date)
+                        }
                     }
 
                     LazyColumn(
@@ -245,7 +272,10 @@ fun CardListScreen(
                         // ─── Empty state hoặc danh sách phiếu ───
                         if (cards.isEmpty()) {
                             item(key = "empty") {
-                                CardListEmptyState()
+                                CardListEmptyState(
+                                    onSyncClick = { syncViewModel.syncAll() },
+                                    syncing = syncStatus is SyncStatus.Syncing
+                                )
                             }
                         } else {
                             groupedCards.forEach { (date, cardsInDay) ->
@@ -267,13 +297,8 @@ fun CardListScreen(
                                 ) { card ->
                                     CardItem(
                                         card = card,
-                                        onClick = {
-                                            navController.navigate("card_detail/${card.id}")
-                                        },
-                                        onDelete = {
-                                            cardToDelete = card
-                                            showDeleteConfirmDialog = true
-                                        }
+                                        onClick = onCardClick,
+                                        onDelete = onCardDelete
                                     )
                                 }
                             }
@@ -284,18 +309,17 @@ fun CardListScreen(
         }
 
         // FAB — auto-hide khi scroll xuống đọc danh sách; bottom bar cũng tự ẩn theo
-        // (xem LaunchedEffect ở trên). Khi cả hai cùng hiện, FAB sit cao hơn để không
-        // bị thanh điều hướng chồng — dùng WindowInsets.navigationBars + offset bar.
-        val navBarPadding = androidx.compose.foundation.layout.WindowInsets.navigationBars
-            .asPaddingValues()
-            .calculateBottomPadding()
+        // (xem LaunchedEffect ở trên). Dùng Modifier.navigationBarsPadding() thay vì
+        // WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() để
+        // tránh alloc PaddingValues object mỗi recomposition khi scroll danh sách.
         AnimatedVisibility(
             visible = fabVisible,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 96.dp + navBarPadding)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 96.dp)
         ) {
             ExtendedFloatingActionButton(
                 onClick = {

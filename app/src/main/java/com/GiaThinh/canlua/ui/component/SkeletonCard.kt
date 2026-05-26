@@ -111,3 +111,56 @@ fun SkeletonList(count: Int = 3) {
         }
     }
 }
+
+/**
+ * Skeleton "Hôm nay" — placeholder cho [CardListSummaryCard].
+ * Cùng kích thước/khoảng cách để khi data thật xuất hiện không bị "pop in" từ dưới.
+ */
+@Composable
+fun SummaryCardSkeleton(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F4F0)),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth(0.5f)) {
+                ShimmerBlock(widthFraction = 0.8f, height = 14.dp)
+                Spacer(Modifier.height(10.dp))
+                ShimmerBlock(widthFraction = 0.7f, height = 28.dp, corner = 6.dp)
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = androidx.compose.ui.Alignment.End,
+            ) {
+                ShimmerBlock(widthFraction = 0.7f, height = 14.dp)
+                Spacer(Modifier.height(10.dp))
+                ShimmerBlock(widthFraction = 0.9f, height = 28.dp, corner = 6.dp)
+            }
+        }
+    }
+}
+
+/**
+ * Skeleton tổng hợp cho màn "Cân lúa" — summary card + danh sách phiếu.
+ * Layout match với [CardListScreen] để fade-out → fade-in mượt, không pop-in.
+ */
+@Composable
+fun CardListSkeleton(count: Int = 3) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Spacer(Modifier.height(8.dp))
+        SummaryCardSkeleton()
+        Spacer(Modifier.height(12.dp))
+        repeat(count) {
+            SkeletonCard(modifier = Modifier.padding(vertical = 6.dp))
+        }
+    }
+}

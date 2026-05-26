@@ -43,8 +43,7 @@ class NewsViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    init {
-        // Auto refresh khi mở app: empty cache hoặc cache > 1 giờ
+    fun loadData() {
         viewModelScope.launch {
             if (repository.isEmpty() || repository.isStale()) {
                 refresh()

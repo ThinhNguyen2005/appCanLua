@@ -1,6 +1,8 @@
 package com.GiaThinh.canlua.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -45,7 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +70,7 @@ import com.GiaThinh.canlua.ui.component.dashboard.KpiGridItem
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.GiaThinh.canlua.ui.component.dashboard.TopTradersCard
+import com.GiaThinh.canlua.ui.component.profile.FarmerProfileSkeleton
 import com.GiaThinh.canlua.ui.component.profile.GradientProfileHeader
 import com.GiaThinh.canlua.ui.component.profile.ProfileNavigationRow
 import com.GiaThinh.canlua.ui.component.profile.ProfileSectionTitle
@@ -109,17 +112,23 @@ fun FarmerProfileScreen(
     dashboardViewModel: DashboardViewModel = hiltViewModel()
 ) {
     TrackScreenRender("farmer_profile")
-    val profile by profileViewModel.profile.collectAsState(initial = null)
-    val traderHistory by profileViewModel.traderHistory.collectAsState()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle()
 
     // Dashboard data — reuse DashboardViewModel để tránh lặp logic aggregate
-    val seasons by dashboardViewModel.seasons.collectAsState()
-    val selectedSeason by dashboardViewModel.selectedSeason.collectAsState()
-    val currentStats by dashboardViewModel.currentStats.collectAsState()
-    val previousStats by dashboardViewModel.previousSeasonStats.collectAsState()
-    val topTraders by dashboardViewModel.topTraders.collectAsState()
-    val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsState()
-    val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsState()
+    val seasons by dashboardViewModel.seasons.collectAsStateWithLifecycle()
+    val selectedSeason by dashboardViewModel.selectedSeason.collectAsStateWithLifecycle()
+    val currentStats by dashboardViewModel.currentStats.collectAsStateWithLifecycle()
+    val previousStats by dashboardViewModel.previousSeasonStats.collectAsStateWithLifecycle()
+    val topTraders by dashboardViewModel.topTraders.collectAsStateWithLifecycle()
+    val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsStateWithLifecycle()
+    val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsStateWithLifecycle()
+    val isAggregated by dashboardViewModel.isAggregated.collectAsStateWithLifecycle()
+
+    // Skeleton hiện đến khi Room (profile) + DashboardVM aggregate cùng ready.
+    // KHÔNG fixed-time: chờ flow emit thật. Nếu DB nhanh → skeleton flash <100ms;
+    // nếu DB chậm → skeleton giữ đến khi data đến — đúng tinh thần "load xong mới hiện".
+    val showSkeleton = profile == null || !isAggregated
 
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
     val lifetimeStats = remember(seasonsComparison) {
@@ -150,11 +159,19 @@ fun FarmerProfileScreen(
             .fillMaxSize()
             .background(AppColors.Surface)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Crossfade(
+            targetState = showSkeleton,
+            animationSpec = tween(durationMillis = 220),
+            label = "farmer_profile_crossfade"
+        ) { skeleton ->
+            if (skeleton) {
+                FarmerProfileSkeleton()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
             // ─── TIER 0: Gradient Hero Header ───
             item {
                 GradientProfileHeader(
@@ -304,7 +321,7 @@ fun FarmerProfileScreen(
             // ─── Premium card (active hoặc upsell) ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsState()
+                    val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
                             plan = premiumInfo.plan,
@@ -323,6 +340,8 @@ fun FarmerProfileScreen(
             // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
             // Profile giờ tập trung vào "tôi là ai + thống kê của tôi", không còn
             // mix thao tác hành vi app (đổi role, signout) — gọn và đỡ duplicate.
+                }
+            }
         }
     }
 

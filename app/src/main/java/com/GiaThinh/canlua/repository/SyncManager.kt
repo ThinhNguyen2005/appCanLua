@@ -160,6 +160,40 @@ class SyncManager @Inject constructor(
         }
     }
 
+    suspend fun syncCardAndDetails(cardId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        if (auth.currentUser == null) {
+            return@withContext Result.failure(Exception("No user signed in"))
+        }
+        if (!isOnline()) {
+            return@withContext Result.failure(Exception("No internet connection"))
+        }
+
+        return@withContext try {
+            val uid = auth.currentUser?.uid ?: return@withContext Result.failure(Exception("No user signed in"))
+            val card = cardDao.getCardById(cardId, uid) ?: return@withContext Result.failure(Exception("Card not found"))
+            
+            // 1. Đồng bộ Card cha
+            val cardResult = syncCard(card)
+            cardResult.onSuccess { firestoreId ->
+                // 2. Đồng bộ các Weight Entries con
+                val weightEntries = weightEntryDao.getWeightEntriesByCardIdSync(card.id)
+                weightEntries.forEach { entry ->
+                    syncWeightEntry(entry, firestoreId)
+                }
+
+                // 3. Đồng bộ các Transactions con
+                val transactions = transactionDao.getTransactionsByCardId(card.id).first()
+                transactions.forEach { transaction ->
+                    syncTransaction(transaction, firestoreId)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            AnalyticsHelper.logNonFatal(e, tag = "sync_card_details")
+            Result.failure(e)
+        }
+    }
+
     suspend fun syncCard(card: Card): Result<String> {
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))

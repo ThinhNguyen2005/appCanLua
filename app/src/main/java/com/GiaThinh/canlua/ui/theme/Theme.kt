@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.times
 import com.GiaThinh.canlua.data.model.FontScale
+import com.GiaThinh.canlua.ui.util.LocalFontScaleFactor
 
 private val DarkColorScheme = darkColorScheme(
     primary = Green80,
@@ -103,11 +105,13 @@ fun CanLuaTheme(
 
     val scaledTypography = Typography.scale(fontScale.scale)
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = scaledTypography,
-        content = content
-    )
+    CompositionLocalProvider(LocalFontScaleFactor provides fontScale.scale) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = scaledTypography,
+            content = content
+        )
+    }
 }
 
 private fun TextStyle.scale(factor: Float): TextStyle {

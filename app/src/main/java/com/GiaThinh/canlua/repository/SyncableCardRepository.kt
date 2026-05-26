@@ -6,6 +6,13 @@ import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.WeightEntry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +38,22 @@ class SyncableCardRepository @Inject constructor(
     private val authManager: AuthManager,
     private val locationProvider: LocationProvider
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val syncJobs = ConcurrentHashMap<Long, Job>()
+
+    private fun scheduleDebouncedCardSync(cardId: Long) {
+        syncJobs[cardId]?.cancel()
+        syncJobs[cardId] = scope.launch {
+            delay(5000) // Trì hoãn 5 giây để gom cụm các sự kiện gõ liên tiếp
+            syncJobs.remove(cardId)
+            if (syncManager.isOnline()) {
+                syncManager.syncCardAndDetails(cardId)
+            } else {
+                syncManager.scheduleImmediateSync()
+            }
+        }
+    }
+
     fun getAllCards(): Flow<List<Card>> = cardRepository.getAllCards()
 
     fun getDistinctRiceVarieties(): Flow<List<String>> = cardRepository.getDistinctRiceVarieties()
@@ -63,11 +86,7 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun updateCard(card: Card) {
         cardRepository.updateCard(card)
-        if (syncManager.isOnline()) {
-            syncManager.syncCard(card)
-        } else {
-            syncManager.scheduleImmediateSync()
-        }
+        scheduleDebouncedCardSync(card.id)
     }
 
     /**
@@ -117,13 +136,13 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun insertWeightEntry(weightEntry: WeightEntry): Long {
         val id = cardRepository.insertWeightEntry(weightEntry)
-        syncEntryIfPossible(weightEntry.copy(id = id))
+        scheduleDebouncedCardSync(weightEntry.cardId)
         return id
     }
 
     suspend fun updateWeightEntry(weightEntry: WeightEntry) {
         cardRepository.updateWeightEntry(weightEntry)
-        syncEntryIfPossible(weightEntry)
+        scheduleDebouncedCardSync(weightEntry.cardId)
     }
 
     /**
@@ -136,6 +155,7 @@ class SyncableCardRepository @Inject constructor(
             firestoreRepository.deleteWeightEntry(fsId)
         }
         cardRepository.deleteWeightEntry(weightEntry)
+        scheduleDebouncedCardSync(weightEntry.cardId)
     }
 
     fun getTransactionsByCardId(cardId: Long): Flow<List<Transaction>> =
@@ -143,7 +163,7 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun insertTransaction(transaction: Transaction): Long {
         val id = cardRepository.insertTransaction(transaction)
-        syncTransactionIfPossible(transaction.copy(id = id))
+        scheduleDebouncedCardSync(transaction.cardId)
         return id
     }
 
@@ -152,30 +172,19 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun updateCardCalculations(cardId: Long) {
         cardRepository.updateCardCalculations(cardId)
-        cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isOnline()) {
-                syncManager.syncCard(updatedCard)
-            } else {
-                syncManager.scheduleImmediateSync()
-            }
-        }
+        scheduleDebouncedCardSync(cardId)
     }
 
     suspend fun findByQrToken(token: String): Card? = cardRepository.findByQrToken(token)
 
     suspend fun updateQrToken(cardId: Long, token: String) {
         cardRepository.updateQrToken(cardId, token)
-        cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isOnline()) {
-                syncManager.syncCard(updatedCard)
-            } else {
-                syncManager.scheduleImmediateSync()
-            }
-        }
+        scheduleDebouncedCardSync(cardId)
     }
 
     suspend fun lockCard(cardId: Long, traderId: String) {
         cardRepository.lockCard(cardId, traderId)
+        // Lock card là hành động one-off quan trọng cuối cùng, đồng bộ tức thì
         cardRepository.getCardById(cardId)?.let { updatedCard ->
             if (syncManager.isOnline()) {
                 syncManager.syncCard(updatedCard)

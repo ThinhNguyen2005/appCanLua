@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,7 +52,7 @@ fun VarietyPieChart(
     items: List<VarietyStat>,
     modifier: Modifier = Modifier
 ) {
-    val total = items.sumOf { it.weight }
+    val total = remember(items) { items.sumOf { it.weight } }
     val palette = remember { piePalette() }
 
     // Animation: vẽ từ 0% → 100% khi data về
@@ -77,9 +78,10 @@ fun VarietyPieChart(
         ) {
             Text(
                 text = stringResource(R.string.profile_variety_distribution_title),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.TextPrimary
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.TextPrimary
+                )
             )
 
             Spacer(Modifier.height(16.dp))
@@ -131,13 +133,14 @@ fun VarietyPieChart(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = DashboardFormatter.weight(total),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = AppColors.TextPrimary
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = AppColors.TextPrimary
+                                )
                             )
                             Text(
                                 text = stringResource(R.string.profile_total),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = AppColors.TextHint
                             )
                         }
@@ -181,13 +184,14 @@ private fun LegendItem(color: Color, name: String, weight: Double, percent: Doub
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = name,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = AppColors.TextPrimary
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.TextPrimary
+                )
             )
             Text(
                 text = "${DashboardFormatter.weight(weight)} · ${DashboardFormatter.percent(percent)}",
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelMedium,
                 color = AppColors.TextSecondary
             )
         }
@@ -204,7 +208,7 @@ private fun EmptyChartHint(message: String) {
     ) {
         Text(
             text = message,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = AppColors.TextHint
         )
     }

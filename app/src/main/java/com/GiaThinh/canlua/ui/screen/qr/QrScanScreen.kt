@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,7 +62,7 @@ fun QrScanScreen(
     val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
 
-    val qrVerificationState by viewModel.qrVerificationState.collectAsState()
+    val qrVerificationState by viewModel.qrVerificationState.collectAsStateWithLifecycle()
     var pendingResult by remember { mutableStateOf<ScanResult?>(null) }
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
     var isProcessing by remember { mutableStateOf(false) }

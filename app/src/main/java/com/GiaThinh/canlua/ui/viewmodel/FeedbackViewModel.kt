@@ -34,7 +34,7 @@ class FeedbackViewModel @Inject constructor(
     val unreadCount: StateFlow<Int> = feedbackRepository.observeUnreadReplyCount()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(5_000),
             initialValue = 0
         )
 

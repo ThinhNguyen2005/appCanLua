@@ -16,6 +16,9 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 /**
  * Aggregator + cache cho NewsFeed.
  *
@@ -40,37 +43,41 @@ class NewsRepository @Inject constructor(
      * Fetch song song mọi nguồn, dedupe theo hash(link), upsert Room, dọn bài > 14 ngày.
      * @return số bài unique đã cache
      */
-    suspend fun refresh(): Result<Int> = runCatching {
-        val now = System.currentTimeMillis()
-        coroutineScope {
-            val perSource = NewsSource.values().map { src ->
-                async {
-                    runCatching { rssFetcher.fetch(src.rssUrl) }
-                        .getOrDefault(emptyList())
-                        .mapNotNull { item -> item.toArticle(src, now) }
+    suspend fun refresh(): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            val now = System.currentTimeMillis()
+            coroutineScope {
+                val perSource = NewsSource.values().map { src ->
+                    async {
+                        runCatching { rssFetcher.fetch(src.rssUrl) }
+                            .getOrDefault(emptyList())
+                            .mapNotNull { item -> item.toArticle(src, now) }
+                    }
+                }.awaitAll().flatten()
+
+                val unique = perSource
+                    .distinctBy { it.id }
+                    // bỏ bài quá cũ (> 30 ngày) ngay từ tầng repo
+                    .filter { now - it.publishedAt < TimeUnit.DAYS.toMillis(30) }
+
+                if (unique.isNotEmpty()) {
+                    dao.upsertAll(unique)
+                    dao.deleteOlderThan(now - TimeUnit.DAYS.toMillis(14))
                 }
-            }.awaitAll().flatten()
-
-            val unique = perSource
-                .distinctBy { it.id }
-                // bỏ bài quá cũ (> 30 ngày) ngay từ tầng repo
-                .filter { now - it.publishedAt < TimeUnit.DAYS.toMillis(30) }
-
-            if (unique.isNotEmpty()) {
-                dao.upsertAll(unique)
-                dao.deleteOlderThan(now - TimeUnit.DAYS.toMillis(14))
+                unique.size
             }
-            unique.size
         }
     }
 
     /** Cache cũ hơn [maxAgeMs] hoặc rỗng → cần refresh. */
-    suspend fun isStale(maxAgeMs: Long = TimeUnit.HOURS.toMillis(1)): Boolean {
-        val newest = dao.getNewestCachedAt() ?: return true
-        return System.currentTimeMillis() - newest > maxAgeMs
+    suspend fun isStale(maxAgeMs: Long = TimeUnit.HOURS.toMillis(1)): Boolean = withContext(Dispatchers.IO) {
+        val newest = dao.getNewestCachedAt() ?: return@withContext true
+        System.currentTimeMillis() - newest > maxAgeMs
     }
 
-    suspend fun isEmpty(): Boolean = dao.count() == 0
+    suspend fun isEmpty(): Boolean = withContext(Dispatchers.IO) {
+        dao.count() == 0
+    }
 
     private fun RssItem.toArticle(src: NewsSource, now: Long): NewsArticle? {
         val link = link.takeIf { it.isNotBlank() } ?: return null

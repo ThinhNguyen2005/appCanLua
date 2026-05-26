@@ -57,7 +57,8 @@ data class SeasonStats(
     // === NEW: Secondary metrics ===
     val totalImpurity: Double = 0.0,
     val wetCardCount: Int = 0,
-    val dryCardCount: Int = 0
+    val dryCardCount: Int = 0,
+    val lastDate: Long = 0L
 ) {
     val isEmpty: Boolean get() = cardCount == 0
 
@@ -91,6 +92,7 @@ data class TraderStat(
 data class TraderHistoryItem(
     val traderName: String,
     val traderPhone: String,
+    val traderCccd: String? = null,
     val deals: Int,
     val totalRevenue: Double,
     val totalWeight: Double,

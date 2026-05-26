@@ -181,6 +181,7 @@ interface CardDao {
         SELECT
             traderName,
             COALESCE(traderPhone, '') as traderPhone,
+            MAX(cccd) as traderCccd,
             COUNT(*) as deals,
             SUM(totalAmount) as totalRevenue,
             SUM(netWeight) as totalWeight,

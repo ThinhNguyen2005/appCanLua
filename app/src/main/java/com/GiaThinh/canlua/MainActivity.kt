@@ -4,25 +4,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.ui.MainScreen
+import com.GiaThinh.canlua.ui.screen.AppSplashScreen
 import com.GiaThinh.canlua.ui.screen.AuthScreen
 import com.GiaThinh.canlua.ui.screen.ProfileSetupScreen
 import com.GiaThinh.canlua.ui.screen.RoleRequestScreen
 import com.GiaThinh.canlua.ui.theme.CanLuaTheme
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.GiaThinh.canlua.ui.viewmodel.InitViewModel
 import com.GiaThinh.canlua.util.LocaleUtil
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,112 +30,109 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    // Tạo InitViewModel trước setContent để dùng với setKeepOnScreenCondition.
+    // @AndroidEntryPoint đã override defaultViewModelProviderFactory → Hilt factory.
+    private lateinit var initViewModel: InitViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // installSplashScreen() PHẢI gọi trước super.onCreate().
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        // Khởi tạo InitViewModel sau super() (Hilt đã inject xong).
+        initViewModel = ViewModelProvider(this)[InitViewModel::class.java]
+
+        // Giữ native splash cho đến khi Room DB đã warm-up xong.
+        // Condition được kiểm tra mỗi frame — trả false → splash exit.
+        splashScreen.setKeepOnScreenCondition { !initViewModel.isDataReady.value }
+
         enableEdgeToEdge()
-        // Đăng ký Activity đo hiệu năng và khung hình vẽ UI
         com.GiaThinh.canlua.util.PerformanceTracker.setActivity(this)
+
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val authViewModel: AuthViewModel = hiltViewModel()
-            val fontScale by settingsViewModel.fontScale.collectAsState(FontScale.NORMAL)
-            val language by settingsViewModel.language.collectAsState()
-            val authState by authViewModel.uiState.collectAsState()
+            val fontScale by settingsViewModel.fontScale.collectAsStateWithLifecycle(FontScale.NORMAL)
+            val language by settingsViewModel.language.collectAsStateWithLifecycle()
+            val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+            // isDataReady đã true khi native splash exit; subscribe ở đây để trigger
+            // LaunchedEffect khi trạng thái thay đổi (edge case: auth nhanh hơn DB).
+            val isDataReady by initViewModel.isDataReady.collectAsStateWithLifecycle()
             LocaleUtil.applyLanguage(this, language)
 
             CanLuaTheme(fontScale = fontScale) {
                 com.GiaThinh.canlua.ui.feedback.AppToastHost {
-                val rootNavController = rememberNavController()
+                    val rootNavController = rememberNavController()
 
-                // Theo dõi điều hướng và đo hiệu năng cho các màn hình ngoài luồng chính
-                LaunchedEffect(rootNavController) {
-                    rootNavController.addOnDestinationChangedListener { _, destination, _ ->
-                        val route = destination.route
-                        if (route != null && !route.startsWith("main")) {
-                            com.GiaThinh.canlua.util.PerformanceTracker.onScreenChanged(route)
-                        }
-                    }
-                }
-
-                // Tính start destination dựa trên cả 2 flag.
-                // Khi needsProfileSetup == null (đang load) → "splash" để tránh flash sai màn.
-                val startDest = when {
-                    !authState.isSignedIn -> "login"
-                    authState.needsProfileSetup == null -> "splash"
-                    authState.needsProfileSetup == true -> "profile_setup"
-                    else -> "main"
-                }
-
-                // Khi state thay đổi (login mới, profile vừa save, signOut), điều hướng lại.
-                // Bỏ qua khi đang ở route phụ ('role_request') để tránh popup ngược về profile_setup.
-                LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup) {
-                    val currentRoute = rootNavController.currentDestination?.route
-                    if (currentRoute == "role_request") return@LaunchedEffect
-
-                    val target = when {
+                    // startDest chờ cả hai: auth state xác định + DB đã warm-up.
+                    val startDest = when {
                         !authState.isSignedIn -> "login"
-                        authState.needsProfileSetup == null -> null // chờ
+                        authState.needsProfileSetup == null || !isDataReady -> "splash"
                         authState.needsProfileSetup == true -> "profile_setup"
                         else -> "main"
-                    } ?: return@LaunchedEffect
+                    }
 
-                    if (currentRoute != target) {
-                        rootNavController.navigate(target) {
-                            popUpTo(rootNavController.graph.id) { inclusive = true }
+                    // Khi bất kỳ điều kiện nào thay đổi, điều hướng đến đúng màn.
+                    LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup, isDataReady) {
+                        val currentRoute = rootNavController.currentDestination?.route
+                        if (currentRoute == "role_request") return@LaunchedEffect
+
+                        val target = when {
+                            !authState.isSignedIn -> "login"
+                            authState.needsProfileSetup == null || !isDataReady -> null // chờ
+                            authState.needsProfileSetup == true -> "profile_setup"
+                            else -> "main"
+                        } ?: return@LaunchedEffect
+
+                        if (currentRoute != target) {
+                            rootNavController.navigate(target) {
+                                popUpTo(rootNavController.graph.id) { inclusive = true }
+                            }
                         }
                     }
-                }
 
-                NavHost(
-                    navController = rootNavController,
-                    startDestination = startDest
-                ) {
-                    composable("splash") {
-                        // Loading screen ngắn trong khi AuthViewModel đọc Profile từ Room.
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                    NavHost(
+                        navController = rootNavController,
+                        startDestination = startDest
+                    ) {
+                        composable("splash") {
+                            // Màn hình chờ có thương hiệu — hiển thị trong khoảng thời gian
+                            // auth đang xác định HOẶC Room chưa warm-up xong (thường < 300ms).
+                            AppSplashScreen()
+                        }
+
+                        composable("login") {
+                            AuthScreen(onSuccess = { /* no-op */ })
+                        }
+
+                        composable("profile_setup") {
+                            ProfileSetupScreen(
+                                navController = rootNavController,
+                                onComplete = { authViewModel.markProfileCompleted() }
+                            )
+                        }
+
+                        composable("role_request") {
+                            RoleRequestScreen(navController = rootNavController)
+                        }
+
+                        composable(
+                            route = "main?cardId={cardId}",
+                            deepLinks = listOf(
+                                navDeepLink {
+                                    uriPattern = "https://canluavn.web.app/share/{cardId}"
+                                },
+                                navDeepLink {
+                                    uriPattern = "https://canluavn.firebaseapp.com/share/{cardId}"
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val cardId = backStackEntry.arguments?.getString("cardId")
+                            MainScreen(deeplinkCardId = cardId)
                         }
                     }
-
-                    composable("login") {
-                        AuthScreen(
-                            // Không hard-code đích đến — LaunchedEffect ở trên sẽ điều hướng đúng
-                            // dựa trên needsProfileSetup được AuthViewModel cập nhật sau sign-in.
-                            onSuccess = { /* no-op */ }
-                        )
-                    }
-
-                    composable("profile_setup") {
-                        ProfileSetupScreen(
-                            navController = rootNavController,
-                            onComplete = {
-                                // Sau khi save profile, refresh flag để LaunchedEffect đẩy vào main.
-                                authViewModel.markProfileCompleted()
-                            }
-                        )
-                    }
-
-                    // Route 'role_request' phải nằm trong root NavHost vì được trigger
-                    // từ ProfileSetupScreen (chưa vào 'main' → AppNavHost chưa tồn tại).
-                    composable("role_request") {
-                        RoleRequestScreen(navController = rootNavController)
-                    }
-
-                    composable(
-                        route = "main?cardId={cardId}",
-                        deepLinks = listOf(
-                            navDeepLink {
-                                uriPattern = "https://canluavn.web.app/share/{cardId}"
-                            },
-                            navDeepLink {
-                                uriPattern = "https://canluavn.firebaseapp.com/share/{cardId}"
-                            }
-                        )
-                    ) { backStackEntry ->
-                        val cardId = backStackEntry.arguments?.getString("cardId")
-                        MainScreen(deeplinkCardId = cardId)
-                    }
-                }
                 }
             }
         }

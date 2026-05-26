@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,7 +27,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
@@ -115,15 +115,17 @@ private fun SecondaryPill(
         Column {
             Text(
                 text = label,
-                fontSize = 10.sp,
-                color = AppColors.TextHint,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = AppColors.TextHint,
+                    fontWeight = FontWeight.Medium
+                )
             )
             Text(
                 text = value,
-                fontSize = 13.sp,
-                color = AppColors.TextPrimary,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = AppColors.TextPrimary,
+                    fontWeight = FontWeight.Bold
+                ),
                 maxLines = 1
             )
         }
@@ -195,16 +197,18 @@ private fun SplitHalf(
         Column {
             Text(
                 text = label,
-                fontSize = 10.sp,
-                color = AppColors.TextHint,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = AppColors.TextHint,
+                    fontWeight = FontWeight.Medium
+                ),
                 maxLines = 1
             )
             Text(
                 text = value,
-                fontSize = 12.sp,
-                color = tint,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = tint,
+                    fontWeight = FontWeight.Bold
+                ),
                 maxLines = 1
             )
         }

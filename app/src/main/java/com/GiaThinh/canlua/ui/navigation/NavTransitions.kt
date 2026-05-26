@@ -4,50 +4,106 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavBackStackEntry
 
 /**
- * Bộ preset transition chuẩn cho NavHost — FADE-ONLY (no scale).
+ * Horizontal slide transitions cho NavHost.
  *
- * v2 (2026-05-19): Bỏ scaleIn/scaleOut vì gây jank trên CardDetailScreen.
+ * v6 (2026-05-26): Tab-aware direction ở CẢ 4 slot.
  *
- * ROOT CAUSE phân tích:
- *  - scale + fade ép Compose tạo offscreen layer cho mỗi screen → render
- *    toàn bộ content tree vào texture, apply transform matrix mỗi frame.
- *  - CardDetailScreen có LazyColumn + 5 cards + dividers + ripples → texture
- *    lớn → mỗi frame transition copy ~full screen → drop frame trên máy yếu.
- *  - Cộng thêm DetailSkeleton's rememberInfiniteTransition + data swap giữa
- *    transition → 3 animation tranh GPU cùng lúc → cảm giác "không mượt".
+ * Lý do: Navigation Compose với `popUpTo(start, saveState=true) + restoreState=true`
+ * khi quay lại tab cũ → framework dùng popEnter/popExit, không phải enter/exit.
+ * v5 chỉ smart trong enter/exit nên Cá nhân → Thị trường (Market đã visit trước đó)
+ * vẫn ngược hướng. Fix bằng cách áp dụng smart direction cho cả 4 hook.
  *
- * Fade-only thì sao?
- *  - Không cần offscreen layer cho transform → animate alpha trực tiếp trên
- *    view layer → cực rẻ với GPU compositor.
- *  - Material 3 standard cho navigation: fade là transition mặc định an toàn,
- *    không gây mất phương hướng.
- *  - Duration 220ms: nhanh hơn 250ms tiêu chuẩn để content stabilize sớm.
+ * Logic:
+ *  - tab→tab switch (cả 2 route đều trong TAB_ORDER): hướng = sign(toIdx - fromIdx)
+ *  - non-tab navigation (sub-screen push): enter/exit dùng forward, popEnter/popExit dùng backward
+ *
+ * Duration 300ms với FastOutSlowInEasing — M3 motion standard.
  */
-private const val NAV_DURATION_MS = 220
+private const val NAV_DURATION_MS = 300
 
-/** Forward navigation — trang mới xuất hiện. */
+private val OFFSET_TWEEN = tween<IntOffset>(
+    durationMillis = NAV_DURATION_MS,
+    easing = FastOutSlowInEasing
+)
+
+/**
+ * Thứ tự tab — index càng cao càng "ở bên phải" trong bottom bar.
+ * Bao gồm cả farmer (ACCOUNT) và trader (TRADER_MAP, TRADER_PROFILE).
+ * User không switch chéo giữa farmer-only ↔ trader-only tab nên không xung đột.
+ */
+private val TAB_ORDER: List<String> = listOf(
+    BottomNavItem.SCALE.route,           // 0
+    BottomNavItem.MARKET.route,          // 1
+    BottomNavItem.AI_CHAT.route,         // 2
+    BottomNavItem.TRADER_MAP.route,      // 3 (trader only)
+    BottomNavItem.ACCOUNT.route,         // 4 (farmer profile)
+    BottomNavItem.TRADER_PROFILE.route   // 5 (trader profile)
+)
+
+/**
+ * +1 nếu target nằm BÊN PHẢI source trong bottom bar (forward swipe).
+ * -1 nếu BÊN TRÁI (backward swipe).
+ *  0 nếu không phải tab→tab switch (1 trong 2 route là sub-screen).
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.tabDirection(): Int {
+    val fromIdx = TAB_ORDER.indexOf(initialState.destination.route)
+    val toIdx = TAB_ORDER.indexOf(targetState.destination.route)
+    if (fromIdx < 0 || toIdx < 0) return 0
+    return when {
+        toIdx > fromIdx -> 1
+        toIdx < fromIdx -> -1
+        else -> 0
+    }
+}
+
+/** Slide-in helper. `forward=true` → vào từ PHẢI; false → vào từ TRÁI. */
+private fun buildEnter(forward: Boolean): EnterTransition = slideInHorizontally(
+    initialOffsetX = { if (forward) it else -it },
+    animationSpec = OFFSET_TWEEN
+)
+
+/** Slide-out helper. `forward=true` → ra qua TRÁI; false → ra qua PHẢI. */
+private fun buildExit(forward: Boolean): ExitTransition = slideOutHorizontally(
+    targetOffsetX = { if (forward) -it else it },
+    animationSpec = OFFSET_TWEEN
+)
+
+/**
+ * Forward push (navigate sub-screen). Sub-screen: → (slide from right).
+ * Nếu tab→tab: dùng hướng theo TAB_ORDER.
+ */
 val FadeScaleEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing))
+    val dir = tabDirection()
+    val forward = if (dir != 0) dir > 0 else true
+    buildEnter(forward)
 }
 
-/** Forward navigation — trang cũ thoát ra. */
 val FadeScaleExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing))
+    val dir = tabDirection()
+    val forward = if (dir != 0) dir > 0 else true
+    buildExit(forward)
 }
 
-/** Pop back — trang trước hiện lại. */
+/**
+ * Pop back (popBackStack hoặc restoreState từ saved tab).
+ * Sub-screen pop: ← (slide from left).
+ * Nếu tab→tab: dùng hướng theo TAB_ORDER (không phụ thuộc framework gọi pop hay push).
+ */
 val FadeScalePopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(NAV_DURATION_MS, easing = LinearOutSlowInEasing))
+    val dir = tabDirection()
+    val forward = if (dir != 0) dir > 0 else false
+    buildEnter(forward)
 }
 
-/** Pop back — trang hiện tại biến mất. */
 val FadeScalePopExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(NAV_DURATION_MS, easing = FastOutSlowInEasing))
+    val dir = tabDirection()
+    val forward = if (dir != 0) dir > 0 else false
+    buildExit(forward)
 }

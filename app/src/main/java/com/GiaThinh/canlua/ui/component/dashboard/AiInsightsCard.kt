@@ -34,6 +34,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -148,9 +149,10 @@ private fun HeaderRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.ai_insights_title),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
             )
             Text(
                 text = when (state) {
@@ -159,7 +161,7 @@ private fun HeaderRow(
                     is AiAnalysisState.Error -> stringResource(R.string.ai_insights_error_subtitle)
                     else -> stringResource(R.string.ai_insights_idle_subtitle)
                 },
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelMedium,
                 color = AppColors.TextSecondary
             )
         }
@@ -176,7 +178,7 @@ private fun HeaderRow(
                     horizontal = 10.dp, vertical = 4.dp
                 )
             ) {
-                Text(stringResource(R.string.ai_insights_close), fontSize = 11.sp)
+                Text(stringResource(R.string.ai_insights_close), style = MaterialTheme.typography.labelMedium)
             }
         }
     }
@@ -191,9 +193,8 @@ private fun IdleContent(
     Column {
         Text(
             text = stringResource(R.string.ai_insights_idle_body),
-            fontSize = 12.sp,
-            color = AppColors.TextSecondary,
-            lineHeight = 18.sp
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.TextSecondary
         )
         Spacer(Modifier.height(12.dp))
         Button(
@@ -213,8 +214,9 @@ private fun IdleContent(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.ai_insights_analyze_action),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                )
             )
         }
     }
@@ -275,9 +277,8 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
     Column {
         Text(
             text = message,
-            fontSize = 12.sp,
-            color = AppColors.Error,
-            lineHeight = 18.sp
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.Error
         )
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
@@ -290,7 +291,7 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.ai_insights_retry), fontSize = 13.sp)
+            Text(stringResource(R.string.ai_insights_retry), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -312,18 +313,20 @@ private fun MarkdownBlocks(markdown: String) {
             line.startsWith("## ") -> {
                 Text(
                     text = parseInlineMarkdown(line.removePrefix("## ").trim()),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.GreenPrimary,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenPrimary
+                    ),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
             line.startsWith("# ") -> {
                 Text(
                     text = parseInlineMarkdown(line.removePrefix("# ").trim()),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = AppColors.GreenPrimary
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppColors.GreenPrimary
+                    )
                 )
             }
             line.startsWith("- ") || line.startsWith("• ") -> {
@@ -334,25 +337,24 @@ private fun MarkdownBlocks(markdown: String) {
                 ) {
                     Text(
                         text = "•",
-                        fontSize = 13.sp,
-                        color = AppColors.GreenPrimary,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = AppColors.GreenPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = parseInlineMarkdown(text),
-                        fontSize = 12.sp,
-                        color = AppColors.TextPrimary,
-                        lineHeight = 18.sp
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextPrimary
                     )
                 }
             }
             else -> {
                 Text(
                     text = parseInlineMarkdown(line.trim()),
-                    fontSize = 12.sp,
-                    color = AppColors.TextPrimary,
-                    lineHeight = 18.sp
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextPrimary
                 )
             }
         }

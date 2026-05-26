@@ -32,8 +32,6 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,19 +49,28 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+// Singleton formatter — chia sẻ giữa tất cả CardItem instances.
+// Trước đây mỗi CardItem có remember riêng → 200 cards = 400 formatter instances (~600KB).
+// SimpleDateFormat KHÔNG thread-safe nhưng CardItem chỉ format trên UI thread → an toàn.
+private val VI_LOCALE: Locale = Locale.forLanguageTag("vi-VN")
+private val NUMBER_FMT: NumberFormat = NumberFormat.getNumberInstance(VI_LOCALE)
+private val DATE_FMT: SimpleDateFormat = SimpleDateFormat("dd/MM/yyyy", VI_LOCALE)
+
 /**
  * Card item cho danh sách phiếu cân — hiển thị thông tin tóm tắt.
  * Hỗ trợ swipe-to-delete và click để xem chi tiết.
+ *
+ * Lambda nhận tham số (id / card) thay vì capture trực tiếp để parent có thể
+ * remember 1 instance dùng chung cho toàn bộ items{} — tránh tạo 200 closure mới
+ * mỗi khi danh sách recompose (sync/filter).
  */
 @Composable
 fun CardItem(
     card: CardModel,
-    onClick: () -> Unit,
-    onDelete: () -> Unit,
+    onClick: (Long) -> Unit,
+    onDelete: (CardModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
     val context = LocalContext.current
 
     @Suppress("DEPRECATION")
@@ -71,7 +78,7 @@ fun CardItem(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked && card.isPaid) {
                 HapticUtil.error(context)
-                onDelete()
+                onDelete(card)
                 false
             } else {
                 false
@@ -86,7 +93,7 @@ fun CardItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                .clickable { onClick(card.id) },
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 2.dp
@@ -127,7 +134,7 @@ fun CardItem(
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = dateFormat.format(card.date),
+                            text = DATE_FMT.format(card.date),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextSecondary
                         )
@@ -236,7 +243,7 @@ fun CardItem(
                 ) {
                     Column {
                         Text(
-                            text = stringResource(R.string.card_list_weight_kg, numberFormat.format(card.totalWeight)),
+                            text = stringResource(R.string.card_list_weight_kg, NUMBER_FMT.format(card.totalWeight)),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -250,7 +257,7 @@ fun CardItem(
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = stringResource(R.string.card_list_money_vnd, numberFormat.format(card.totalAmount.toLong())),
+                            text = stringResource(R.string.card_list_money_vnd, NUMBER_FMT.format(card.totalAmount.toLong())),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GreenPrimary
@@ -259,7 +266,7 @@ fun CardItem(
                             Text(
                                 text = stringResource(
                                     R.string.card_item_remaining_amount,
-                                    numberFormat.format(card.remainingAmount.toLong())
+                                    NUMBER_FMT.format(card.remainingAmount.toLong())
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.Warning

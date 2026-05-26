@@ -38,8 +38,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,8 +73,8 @@ fun TraderTransactionsScreen(
     viewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
     TrackScreenRender("trader_transactions")
-    val state by viewModel.uiState.collectAsState()
-    val filter by viewModel.filter.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
 
     Scaffold(containerColor = AppColors.Surface) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {

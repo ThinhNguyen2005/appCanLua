@@ -58,7 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -101,8 +101,8 @@ fun AiChatScreen(
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
     TrackScreenRender("ai_chat")
-    val state by viewModel.state.collectAsState()
-    val voice by viewModel.voiceState.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val voice by viewModel.voiceState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val imeVisible = WindowInsets.isImeVisible

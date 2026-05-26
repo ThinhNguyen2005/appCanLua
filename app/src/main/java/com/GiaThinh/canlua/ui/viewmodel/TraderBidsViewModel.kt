@@ -52,10 +52,14 @@ class TraderBidsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TraderBidUiState())
     val uiState: StateFlow<TraderBidUiState> = _uiState.asStateFlow()
 
-    init {
-        // Đảm bảo Trader thấy được bảng giá thị trường (mock + bid của các thương lái khác)
-        // ngay khi mở tab Rao mua, không cần đợi MarketViewModel bị mount.
-        marketRepository.startFirestoreSync()
+    private var syncJob: kotlinx.coroutines.Job? = null
+
+    fun syncBids() {
+        if (syncJob == null || syncJob?.isActive == false) {
+            syncJob = viewModelScope.launch {
+                marketRepository.refreshFromFirestore()
+            }
+        }
     }
 
     fun submitBid(

@@ -12,6 +12,7 @@ import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.util.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +24,10 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Date
 import javax.inject.Inject
 
@@ -56,11 +60,25 @@ class CardViewModel @Inject constructor(
     private val _weightInputState = MutableStateFlow(WeightInputUiState())
     val weightInputState: StateFlow<WeightInputUiState> = _weightInputState.asStateFlow()
 
+    private val _manualTableCount = MutableStateFlow(0)
+    val manualTableCount: StateFlow<Int> = _manualTableCount.asStateFlow()
+
+    val tables: StateFlow<List<List<List<Double?>>>> =
+        combine(_weightEntries, _manualTableCount) { entries, count ->
+            withContext(Dispatchers.Default) {
+                organizeIntoTables(entries, count)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _qrVerificationState = MutableStateFlow<QrVerificationState>(QrVerificationState.Idle)
     val qrVerificationState: StateFlow<QrVerificationState> = _qrVerificationState.asStateFlow()
+
+    // TTS enabled — observe StateFlow để tránh poll SharedPreferences mỗi keystroke
+    private val ttsEnabledState: StateFlow<Boolean> = settingsRepository.ttsEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.isTtsEnabled())
 
     // === Filter state — cả 2 filter combine với nhau ===
     private val _selectedVarietyFilter = MutableStateFlow<String?>(null)
@@ -95,27 +113,10 @@ class CardViewModel @Inject constructor(
     val availableSeasons: StateFlow<List<String>> = repository.getDistinctSeasons()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /**
-     * Số phiếu user đã tạo HÔM NAY (00:00 local timezone → bây giờ).
-     * Reactive từ `getAllCards()` flow — tự động cập nhật khi user tạo/xoá phiếu.
-     * UI dùng để check Premium quota (free user: 3 phiếu/ngày).
-     */
-    val cardsCreatedTodayCount: StateFlow<Int> = repository.getAllCards()
-        .map { all ->
-            val cal = java.util.Calendar.getInstance().apply {
-                set(java.util.Calendar.HOUR_OF_DAY, 0)
-                set(java.util.Calendar.MINUTE, 0)
-                set(java.util.Calendar.SECOND, 0)
-                set(java.util.Calendar.MILLISECOND, 0)
-            }
-            val startOfDay = cal.timeInMillis
-            all.count { it.date.time >= startOfDay }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
 
     init {
-        ttsManager.initialize()
-        ttsManager.setEnabled(settingsRepository.isTtsEnabled())
+        // Khởi tạo CardViewModel - không tự động kích hoạt TTS tại đây để tối ưu hóa hiệu năng chuyển màn hình
     }
 
     fun refreshCards() {
@@ -137,8 +138,10 @@ class CardViewModel @Inject constructor(
     }
 
     fun loadCardById(cardId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
+            _manualTableCount.value = 0
+
             val card = repository.getCardById(cardId)
             _currentCard.value = card
             
@@ -150,6 +153,21 @@ class CardViewModel @Inject constructor(
             } else {
                 _isLoading.value = false
             }
+        }
+    }
+
+    fun incrementManualTableCount() {
+        _manualTableCount.value = _manualTableCount.value + 1
+    }
+
+    /**
+     * Chỉ kích hoạt và khởi tạo Text-To-Speech khi người dùng vào màn hình nhập cân (WeightInputScreen).
+     * Tránh khởi tạo ở các màn hình khác (danh sách, chi tiết, bản đồ...) gây nghẽn luồng chính (Main Thread)
+     * do giao dịch binder đồng bộ với dịch vụ TTS của hệ thống.
+     */
+    fun startTts() {
+        viewModelScope.launch(Dispatchers.IO) {
+            ttsManager.setEnabled(ttsEnabledState.value)
         }
     }
 
@@ -166,7 +184,7 @@ class CardViewModel @Inject constructor(
         bagWeight: Double = 0.0,
         impurityWeight: Double = 0.0
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) return@launch
 
@@ -233,7 +251,7 @@ class CardViewModel @Inject constructor(
         if (current != null && current.id == card.id) {
             _currentCard.value = card
         }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val oldCard = repository.getCardById(card.id)
             repository.updateCard(card)
 
@@ -279,7 +297,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun deleteCard(card: Card) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.deleteCard(card)
         }
     }
@@ -290,7 +308,7 @@ class CardViewModel @Inject constructor(
         bagWeight: Double = 0.0,
         impurityWeight: Double = 0.0
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             val moisture = card?.moisturePercent ?: 0.0
 
@@ -315,7 +333,7 @@ class CardViewModel @Inject constructor(
             repository.updateCardCalculations(cardId)
             _currentCard.value = repository.getCardById(cardId)
 
-            val ttsEnabled = settingsRepository.isTtsEnabled()
+            val ttsEnabled = ttsEnabledState.value
             ttsManager.setEnabled(ttsEnabled)
             if (ttsEnabled && ttsManager.isEnabled()) {
                 ttsManager.speakNumber(weight, completesColumn = isColumnCompleted)
@@ -326,7 +344,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateWeightEntry(weightEntry: WeightEntry) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.updateWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
             _currentCard.value = repository.getCardById(weightEntry.cardId)
@@ -334,7 +352,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun deleteWeightEntry(weightEntry: WeightEntry) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.deleteWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
             _currentCard.value = repository.getCardById(weightEntry.cardId)
@@ -342,7 +360,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun addPayment(cardId: Long, amount: Double, description: String? = null) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.insertTransaction(
                 com.GiaThinh.canlua.data.model.Transaction(
                     cardId = cardId,
@@ -356,7 +374,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun toggleCardLock(cardId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(isLocked = !it.isLocked)
@@ -369,7 +387,7 @@ class CardViewModel @Inject constructor(
     // === QR Handshake ===
 
     fun generateQrToken(cardId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId) ?: return@launch
             val token = RiceCalculator.generateQrToken(
                 cardId = card.id,
@@ -389,7 +407,7 @@ class CardViewModel @Inject constructor(
      * vẫn cập nhật Firestore để Sổ thương nhân nhận diện qua observeMyTraderCards.
      */
     fun verifyAndLockTransaction(scannedToken: String, traderId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _qrVerificationState.value = QrVerificationState.Loading
             val result = firestoreRepository.lockCardByQrToken(scannedToken, traderId)
             _qrVerificationState.value = when (result) {
@@ -454,11 +472,13 @@ class CardViewModel @Inject constructor(
         _weightInputState.value = _weightInputState.value.copy(
             currentWeight = current + digit
         )
-        
-        val ttsEnabled = settingsRepository.isTtsEnabled()
-        ttsManager.setEnabled(ttsEnabled)
-        if (ttsEnabled && ttsManager.isEnabled()) {
-            ttsManager.speak(digit)
+
+        viewModelScope.launch(Dispatchers.Default) {
+            val ttsEnabled = ttsEnabledState.value
+            ttsManager.setEnabled(ttsEnabled)
+            if (ttsEnabled && ttsManager.isEnabled()) {
+                ttsManager.speak(digit)
+            }
         }
     }
 
@@ -472,7 +492,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardName(cardId: Long, name: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (name.isBlank()) return@launch
             val card = repository.getCardById(cardId)
             card?.let {
@@ -482,7 +502,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardBagWeight(cardId: Long, bagWeight: Double) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(bagWeight = bagWeight)
@@ -494,7 +514,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardImpurityWeight(cardId: Long, impurityWeight: Double) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(impurityWeight = impurityWeight)
@@ -506,7 +526,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardPricePerKg(cardId: Long, pricePerKg: Double) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(pricePerKg = pricePerKg)
@@ -518,7 +538,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardMoisture(cardId: Long, moisturePercent: Double) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(moisturePercent = moisturePercent)
@@ -530,7 +550,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardRiceVariety(cardId: Long, variety: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(riceVariety = variety))
@@ -540,7 +560,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardSeasonLabel(cardId: Long, seasonLabel: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(seasonLabel = seasonLabel))
@@ -550,7 +570,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardTraderPhone(cardId: Long, phone: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(traderPhone = phone.trim()))
@@ -560,7 +580,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun updateCardFieldAddress(cardId: Long, address: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(fieldAddress = address.trim()))
@@ -571,7 +591,7 @@ class CardViewModel @Inject constructor(
 
     /** Refresh GPS + địa chỉ ruộng cho phiếu hiện tại (gọi lại Geocoder) */
     fun refreshFieldLocation(cardId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val geo = runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull() ?: return@launch
             val address = runCatching { locationProvider.reverseGeocode(geo.lat, geo.lon) }.getOrNull().orEmpty()
             val card = repository.getCardById(cardId) ?: return@launch
@@ -587,7 +607,7 @@ class CardViewModel @Inject constructor(
     }
 
     fun addWeightEntryDirectly(cardId: Long, weight: Double) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val netWeight = RiceCalculator.calcNetWeight(
@@ -610,7 +630,7 @@ class CardViewModel @Inject constructor(
                 repository.updateCardCalculations(cardId)
                 _currentCard.value = repository.getCardById(cardId)
 
-                val ttsEnabled = settingsRepository.isTtsEnabled()
+                val ttsEnabled = ttsEnabledState.value
                 ttsManager.setEnabled(ttsEnabled)
                 if (ttsEnabled && ttsManager.isEnabled()) {
                     ttsManager.speakNumber(weight, completesColumn = isColumnCompleted)
@@ -639,7 +659,7 @@ class CardViewModel @Inject constructor(
         bagSampleTotalWeight: Double,
         weightInputMode: String
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId) ?: return@launch
             val updated = card.copy(
                 impurityIsPercent = impurityIsPercent,
@@ -653,4 +673,26 @@ class CardViewModel @Inject constructor(
             loadCardById(cardId)
         }
     }
+}
+
+private fun organizeIntoTables(entries: List<WeightEntry>, manualCount: Int): List<List<List<Double?>>> {
+    val totalEntries = entries.size
+    val calculatedNumTables = (totalEntries / 25) + 1
+    val numTables = (calculatedNumTables + manualCount).coerceAtLeast(1)
+
+    val tables = mutableListOf<List<List<Double?>>>()
+
+    for (t in 0 until numTables) {
+        val tableGrid = MutableList(5) { MutableList<Double?>(5) { null } }
+        for (c in 0 until 5) {
+            for (r in 0 until 5) {
+                val entryIdx = (t * 25) + (c * 5) + r
+                if (entryIdx < totalEntries) {
+                    tableGrid[r][c] = entries[entryIdx].weight
+                }
+            }
+        }
+        tables.add(tableGrid.map { it.toList() })
+    }
+    return tables
 }

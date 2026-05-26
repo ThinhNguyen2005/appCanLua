@@ -141,9 +141,7 @@ fun CustomHeader(
                     }
                     Text(
                         text = titleText,
-                        style = TextStyle(
-                            fontSize = 17.sp,                       // 15 → 17 (người lớn tuổi)
-                            fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleLarge.copy(
                             color = Color.White
                         ),
                         maxLines = 1,
@@ -218,7 +216,7 @@ fun CustomHeader(
                                 .background(AppColors.SurfaceContainer, RoundedCornerShape(14.dp))
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_delete_card), fontSize = 15.sp, color = AppColors.Error) },
+                                text = { Text(stringResource(R.string.header_delete_card), style = MaterialTheme.typography.bodyLarge, color = AppColors.Error) },
                                 leadingIcon = {
                                     Icon(Icons.Default.Delete, null, tint = AppColors.Error)
                                 },
@@ -229,14 +227,14 @@ fun CustomHeader(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_create_qr), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_create_qr), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.QrCode2, null, tint = HeaderGreen)
                                 },
                                 onClick = { onOverflowChange(false); onCreateQr() }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_scan_qr_trader), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_scan_qr_trader), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.CameraAlt, null, tint = HeaderGreen)
                                 },
@@ -247,7 +245,7 @@ fun CustomHeader(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_export_pdf), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_export_pdf), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.PictureAsPdf, null, tint = HeaderGreen)
                                 },
@@ -286,19 +284,18 @@ private fun MetaItem(
             modifier = Modifier.size(18.dp))                    // 15 → 18 (lớn hơn, dễ thấy)
         Text(
             text  = label,
-            fontSize  = 12.sp,           // 10 → 12 (người lớn tuổi đọc rõ)
+            style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.7f),
-            lineHeight = 14.sp,
             fontWeight = FontWeight.Medium
         )
         Text(
             text  = value,
-            fontSize  = 15.sp,           // 13 → 15 (chuẩn body lớn)
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            ),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 17.sp
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -328,16 +325,17 @@ private fun MetricChip(label: String, value: String, modifier: Modifier = Modifi
         ) { current ->
             Text(
                 text  = current,
-                fontSize  = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
         Text(
             text  = label,
-            fontSize  = 11.sp,
+            style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.7f)
         )
     }

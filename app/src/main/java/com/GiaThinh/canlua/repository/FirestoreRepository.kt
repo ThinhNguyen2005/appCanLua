@@ -11,7 +11,10 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -251,7 +254,7 @@ class FirestoreRepository @Inject constructor(
         // Sort client-side vì 1 trader chỉ có vài chục/trăm card đã verify.
         val registration: ListenerRegistration = cardsCollection
             .whereEqualTo("lockedByTraderId", uid)
-            .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     // Không crash app — trả emptyList, để UI tự hiển thị empty state.
                     trySend(emptyList())
@@ -264,7 +267,7 @@ class FirestoreRepository @Inject constructor(
                 trySend(cards)
             }
         awaitClose { registration.remove() }
-    }
+    }.distinctUntilChanged()
 
     /**
      * Realtime stream transactions thuộc về list cardId của trader.
@@ -284,7 +287,7 @@ class FirestoreRepository @Inject constructor(
         chunks.forEachIndexed { index, chunk ->
             val registration = transactionsCollection
                 .whereIn("cardId", chunk)
-                .addSnapshotListener(MetadataChanges.EXCLUDE) { snapshot, error ->
+                .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                     latestByChunk[index] = if (error != null) {
                         emptyList()
                     } else {
@@ -298,7 +301,7 @@ class FirestoreRepository @Inject constructor(
         }
 
         awaitClose { registrations.forEach { it.remove() } }
-    }
+    }.distinctUntilChanged()
 
     // ========== Analytics Counter Operations ==========
 

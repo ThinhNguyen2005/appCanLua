@@ -41,6 +41,9 @@ class SettingsRepository @Inject constructor(
     private val _weighDefaults = MutableStateFlow(readWeighDefaults())
     val weighDefaults: Flow<WeighDefaults> = _weighDefaults.asStateFlow()
 
+    private val _ttsEnabled = MutableStateFlow(prefs.getBoolean(KEY_TTS_ENABLED, true))
+    val ttsEnabled: Flow<Boolean> = _ttsEnabled.asStateFlow()
+
     init {
         prefs.registerOnSharedPreferenceChangeListener { _, key ->
             if (key == KEY_FONT_SCALE) {
@@ -52,19 +55,23 @@ class SettingsRepository @Inject constructor(
             if (key == KEY_AUTO_SYNC_ENABLED) {
                 _autoSyncEnabled.value = isAutoSyncEnabled()
             }
+            if (key == KEY_TTS_ENABLED) {
+                _ttsEnabled.value = prefs.getBoolean(KEY_TTS_ENABLED, true)
+            }
         }
     }
-    
+
     fun isTtsEnabled(): Boolean {
-        return prefs.getBoolean(KEY_TTS_ENABLED, true)
+        return _ttsEnabled.value
     }
 
     fun setTtsEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_TTS_ENABLED, enabled).apply()
+        _ttsEnabled.value = enabled
     }
 
     fun isAutoSyncEnabled(): Boolean {
-        return prefs.getBoolean(KEY_AUTO_SYNC_ENABLED, true)
+        return prefs.getBoolean(KEY_AUTO_SYNC_ENABLED, false)
     }
 
     fun setAutoSyncEnabled(enabled: Boolean) {

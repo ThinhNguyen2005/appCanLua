@@ -2,6 +2,7 @@ package com.GiaThinh.canlua.ui.theme
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -25,7 +26,7 @@ object AppColors {
 
     // Neutral (Dynamic with animation for Dark/Light mode)
     val Surface: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.Surface else Color(0xFFFAFAFA), label = "Surface").value
+        @Composable get() = animateColorAsState(MaterialTheme.colorScheme.background, label = "Surface").value
     
     val CardBg: Color
         @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.CardBg else Color(0xFFFFFFFF), label = "CardBg").value
