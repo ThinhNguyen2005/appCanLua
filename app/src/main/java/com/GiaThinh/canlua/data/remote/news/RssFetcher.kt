@@ -26,13 +26,9 @@ import javax.inject.Singleton
  * Bỏ qua bài lỗi parse — không throw để 1 item hỏng không phá toàn bộ feed.
  */
 @Singleton
-class RssFetcher @Inject constructor() {
-
-    // OkHttp riêng — User-Agent browser-like để tránh 403 từ vài site có anti-bot.
-    private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
+class RssFetcher @Inject constructor(
+    private val client: OkHttpClient
+) {
 
     private val userAgent =
         "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 CanLua/1.0"

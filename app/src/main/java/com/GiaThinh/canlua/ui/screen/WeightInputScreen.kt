@@ -54,7 +54,7 @@ import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.ui.component.weight.WeightMetricsCard
 import com.GiaThinh.canlua.ui.component.pressableScale
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.WeightInputViewModel
 import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.util.TrackScreenRender
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,7 +66,7 @@ import kotlinx.collections.immutable.toPersistentList
 fun WeightInputScreen(
     cardId: Long,
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel(),
+    viewModel: WeightInputViewModel = hiltViewModel(),
     onEditCard: () -> Unit = {},
     onDeleteCard: () -> Unit = {},
     onCreateQr: () -> Unit = {},
@@ -277,7 +277,9 @@ fun WeightInputScreen(
                         )
 
                         // 2. Chỉ số cân thu gọn (Khi cuộn lên)
-                        val totalWeightStr = "%.1f".format(liveTotalWeight).replace(".", ",")
+                        val totalWeightStr = remember(liveTotalWeight) {
+                            "%.1f".format(java.util.Locale.US, liveTotalWeight).replace(".", ",")
+                        }
                         Text(
                             text = stringResource(R.string.weight_input_collapsed_title, totalWeightStr, liveBagCount),
                             style = MaterialTheme.typography.titleLarge.copy(
@@ -382,7 +384,8 @@ fun WeightInputScreen(
                                     contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                                modifier = Modifier.heightIn(min = 48.dp)
                             ) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))

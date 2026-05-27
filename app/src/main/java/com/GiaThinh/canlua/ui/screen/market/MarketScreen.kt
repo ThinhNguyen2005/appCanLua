@@ -81,6 +81,10 @@ import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
 import com.GiaThinh.canlua.util.PremiumState
 import com.GiaThinh.canlua.util.TrackScreenRender
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.launch
 
 /**
@@ -105,6 +109,7 @@ fun MarketScreen(
     TrackScreenRender("market")
     val prices by viewModel.prices.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val refreshError by viewModel.refreshError.collectAsStateWithLifecycle()
     val selectedVariety by viewModel.selectedVariety.collectAsStateWithLifecycle()
     val timeRangeDays by viewModel.timeRangeDays.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
@@ -139,8 +144,20 @@ fun MarketScreen(
     // FAB chỉ hiện ở tab "Bảng giá lúa" — nơi thương lái thực sự đăng giá.
     val fabExpanded = pricesListState.isScrollingUp() || myBids.isEmpty()
 
-    var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
     var showEditor by remember { mutableStateOf(false) }
+    var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
+
+    val onSubmitBid = remember(bidsViewModel) {
+        { variety: String, pMin: Double, pMax: Double, region: String, trend: String, note: String, existingId: String? ->
+            bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
+        }
+    }
+    val onDismissEditor = remember {
+        {
+            showEditor = false
+            editingBid = null
+        }
+    }
 
     LaunchedEffect(bidUiState.successMessage, bidUiState.errorMessage) {
         bidUiState.successMessage?.let {
@@ -162,6 +179,14 @@ fun MarketScreen(
         weatherViewModel.startObserving()
         newsViewModel.loadData()
         bidsViewModel.syncBids()
+    }
+
+    // H-08: Hiển thị Snackbar khi Market refresh thất bại (lỗi mạng / Firestore)
+    LaunchedEffect(refreshError) {
+        refreshError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearRefreshError()
+        }
     }
 
     Scaffold(
@@ -214,13 +239,14 @@ fun MarketScreen(
                     weatherViewModel.load(forceRefresh = true)
                 }
             }
-            val onNewsRefresh = remember { { newsViewModel.refresh() } }
+            val onNewsRefresh = remember { { newsViewModel.refresh(forceLocalScrape = true) } }
             val onRefreshNewsPage = remember {
                 {
-                    newsViewModel.refresh()
+                    newsViewModel.refresh(forceLocalScrape = true)
                     weatherViewModel.load(forceRefresh = true)
                 }
             }
+
             val onSelectTopic = remember { newsViewModel::selectTopic }
             val onDismissError = remember { newsViewModel::clearError }
             val onRefreshPrices = remember { { viewModel.refreshFromFirestore() } }
@@ -303,23 +329,15 @@ fun MarketScreen(
 
     if (showEditor && isTrader) {
         ModalBottomSheet(
-            onDismissRequest = { 
-                showEditor = false 
-                editingBid = null
-            },
+            onDismissRequest = onDismissEditor,
             sheetState = editorSheetState,
             containerColor = AppColors.Surface
         ) {
             BidEditorSheet(
                 existing = editingBid,
                 isSaving = bidUiState.isSaving,
-                onSubmit = { variety, pMin, pMax, region, trend, note, existingId ->
-                    bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
-                },
-                onDismiss = { 
-                    showEditor = false 
-                    editingBid = null
-                }
+                onSubmit = onSubmitBid,
+                onDismiss = onDismissEditor
             )
         }
     }
@@ -385,7 +403,7 @@ private fun NewsPage(
                     enter = fadeIn(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
-                    NativeAdPlaceholder(onClick = { /* TODO: deep link landing page */ })
+                    NativeAdPlaceholder(onClick = {})
                 }
             }
 
@@ -443,9 +461,10 @@ private fun PricesPage(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (isTrader && myBids.isNotEmpty()) {
+                val isOffline = myBids.any { it.isFromCache }
                 item {
                     SectionTitle(
-                        title = "Giá rao của bạn",
+                        title = if (isOffline) "Giá rao của bạn (đang xem ngoại tuyến)" else "Giá rao của bạn",
                         subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
                     )
                 }
@@ -520,7 +539,7 @@ private fun MarketTabRow(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Article,
-                    contentDescription = null,
+                    contentDescription = "Tin tức",
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
@@ -543,7 +562,7 @@ private fun MarketTabRow(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.PriceChange,
-                    contentDescription = null,
+                    contentDescription = "Bảng giá lúa",
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
@@ -600,6 +619,7 @@ private fun FilterChipsRow(
     selectedTrend: String?,
     onSelectTrend: (String?) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val options = listOf(
         Triple<String?, String, Color>(null, "Tất cả", AppColors.GreenPrimary),
         Triple<String?, String, Color>("UP", "Đang tăng", AppColors.Success),
@@ -613,10 +633,17 @@ private fun FilterChipsRow(
         items(options) { (key, label, color) ->
             val selected = selectedTrend == key
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
+                    // H-10: Đảm bảo touch target tối thiểu 48dp theo Material guidelines
+                    .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(if (selected) color.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
-                    .clickable { onSelectTrend(key) }
+                    .clickable {
+                        // H-10: Haptic feedback khi chọn filter
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onSelectTrend(key)
+                    }
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
@@ -651,12 +678,16 @@ private fun MyBidCard(
         "DOWN" -> "Đang giảm"
         else -> "Ổn định"
     }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(AppColors.GreenSurface)
-            .clickable(onClick = onEdit)
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onEdit()
+            }
             .padding(16.dp)
     ) {
         Column {

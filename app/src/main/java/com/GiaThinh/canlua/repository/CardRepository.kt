@@ -12,11 +12,14 @@ import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.TransactionType
 import com.GiaThinh.canlua.data.model.VarietyStat
 import com.GiaThinh.canlua.data.model.WeightEntry
+import com.GiaThinh.canlua.data.model.serialize
+import com.GiaThinh.canlua.data.model.deserializeCard
 import com.GiaThinh.canlua.util.RiceCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import com.GiaThinh.canlua.util.CccdCrypto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,9 +44,13 @@ class CardRepository @Inject constructor(
     /** Empty string khi chưa sign-in → DAO query trả empty (không match row nào). */
     private fun uid(): String = authManager.currentUser?.uid.orEmpty()
 
-    fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid())
+    fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid()).map { list ->
+        list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
+    }
 
-    suspend fun getCardById(id: Long): Card? = cardDao.getCardById(id, uid())
+    suspend fun getCardById(id: Long): Card? = cardDao.getCardById(id, uid())?.let {
+        it.copy(cccd = CccdCrypto.decrypt(it.cccd))
+    }
 
     /**
      * Insert card mới. Tự stamp `ownerUid` từ session hiện tại + `lastModifiedMs`
@@ -53,7 +60,8 @@ class CardRepository @Inject constructor(
         val now = System.currentTimeMillis()
         val owned = card.copy(
             ownerUid = if (card.ownerUid.isBlank()) uid() else card.ownerUid,
-            lastModifiedMs = if (card.lastModifiedMs == 0L) now else card.lastModifiedMs
+            lastModifiedMs = if (card.lastModifiedMs == 0L) now else card.lastModifiedMs,
+            cccd = CccdCrypto.encrypt(card.cccd)
         )
         return cardDao.insertCard(owned)
     }
@@ -63,7 +71,10 @@ class CardRepository @Inject constructor(
      * bản local mới hơn cloud (cloud sẽ chỉ overwrite local nếu cloud mới hơn).
      */
     suspend fun updateCard(card: Card) {
-        cardDao.updateCard(card.copy(lastModifiedMs = System.currentTimeMillis()))
+        cardDao.updateCard(card.copy(
+            lastModifiedMs = System.currentTimeMillis(),
+            cccd = CccdCrypto.encrypt(card.cccd)
+        ))
     }
 
     /**
@@ -84,7 +95,7 @@ class CardRepository @Inject constructor(
                     ownerUid = ownerUid,
                     firestoreId = card.firestoreId,
                     localId = card.id,
-                    cardJson = serializeCard(card),
+                    cardJson = card.serialize(),
                     name = card.name,
                     traderName = card.traderName,
                     totalWeight = card.totalWeight,
@@ -124,7 +135,7 @@ class CardRepository @Inject constructor(
         return newId
     }
 
-    suspend fun getDeletedCards(uid: String) = deletedCardDao.observe(uid)
+    fun getDeletedCards(uid: String) = deletedCardDao.observe(uid)
 
     suspend fun isCardTombstoned(uid: String, firestoreId: String): Boolean =
         deletedCardDao.isTombstoned(uid, firestoreId)
@@ -135,99 +146,6 @@ class CardRepository @Inject constructor(
     suspend fun markTombstoneCloudDeleted(id: Long) = deletedCardDao.markCloudDeleted(id)
 
     suspend fun purgeTombstone(id: Long) = deletedCardDao.purge(id)
-
-    /**
-     * Serialize card → JSON minimal cho tombstone restore.
-     * Dùng key=value đơn giản thay vì Gson để tránh thêm dep + giữ schema control.
-     */
-    private fun serializeCard(card: Card): String {
-        val sb = StringBuilder("{")
-        sb.append("\"name\":${jsonString(card.name)},")
-        sb.append("\"cccd\":${jsonNullable(card.cccd)},")
-        sb.append("\"traderName\":${jsonString(card.traderName)},")
-        sb.append("\"date\":${card.date.time},")
-        sb.append("\"totalWeight\":${card.totalWeight},")
-        sb.append("\"bagWeight\":${card.bagWeight},")
-        sb.append("\"impurityWeight\":${card.impurityWeight},")
-        sb.append("\"netWeight\":${card.netWeight},")
-        sb.append("\"depositAmount\":${card.depositAmount},")
-        sb.append("\"pricePerKg\":${card.pricePerKg},")
-        sb.append("\"totalAmount\":${card.totalAmount},")
-        sb.append("\"paidAmount\":${card.paidAmount},")
-        sb.append("\"remainingAmount\":${card.remainingAmount},")
-        sb.append("\"bagCount\":${card.bagCount},")
-        sb.append("\"isLocked\":${card.isLocked},")
-        sb.append("\"isPaid\":${card.isPaid},")
-        sb.append("\"riceVariety\":${jsonString(card.riceVariety)},")
-        sb.append("\"moisturePercent\":${card.moisturePercent},")
-        sb.append("\"seasonLabel\":${jsonString(card.seasonLabel)},")
-        sb.append("\"qrToken\":${jsonNullable(card.qrToken)},")
-        sb.append("\"lockedByTraderId\":${jsonNullable(card.lockedByTraderId)},")
-        sb.append("\"latitude\":${card.latitude ?: "null"},")
-        sb.append("\"longitude\":${card.longitude ?: "null"},")
-        sb.append("\"traderPhone\":${jsonString(card.traderPhone)},")
-        sb.append("\"fieldAddress\":${jsonString(card.fieldAddress)},")
-        sb.append("\"impurityIsPercent\":${card.impurityIsPercent},")
-        sb.append("\"bagMethodIsSampling\":${card.bagMethodIsSampling},")
-        sb.append("\"bagSampleCount\":${card.bagSampleCount},")
-        sb.append("\"bagSampleTotalWeight\":${card.bagSampleTotalWeight},")
-        sb.append("\"weightInputMode\":${jsonString(card.weightInputMode)}")
-        sb.append("}")
-        return sb.toString()
-    }
-
-    private fun deserializeCard(json: String): Card? = runCatching {
-        val map = parseSimpleJson(json)
-        Card(
-            ownerUid = "",
-            name = map["name"]?.toString().orEmpty(),
-            cccd = map["cccd"] as? String,
-            traderName = map["traderName"]?.toString().orEmpty(),
-            date = java.util.Date((map["date"] as? Number)?.toLong() ?: 0L),
-            totalWeight = (map["totalWeight"] as? Number)?.toDouble() ?: 0.0,
-            bagWeight = (map["bagWeight"] as? Number)?.toDouble() ?: 0.0,
-            impurityWeight = (map["impurityWeight"] as? Number)?.toDouble() ?: 0.0,
-            netWeight = (map["netWeight"] as? Number)?.toDouble() ?: 0.0,
-            depositAmount = (map["depositAmount"] as? Number)?.toDouble() ?: 0.0,
-            pricePerKg = (map["pricePerKg"] as? Number)?.toDouble() ?: 0.0,
-            totalAmount = (map["totalAmount"] as? Number)?.toDouble() ?: 0.0,
-            paidAmount = (map["paidAmount"] as? Number)?.toDouble() ?: 0.0,
-            remainingAmount = (map["remainingAmount"] as? Number)?.toDouble() ?: 0.0,
-            bagCount = (map["bagCount"] as? Number)?.toInt() ?: 0,
-            isLocked = map["isLocked"] as? Boolean ?: false,
-            isPaid = map["isPaid"] as? Boolean ?: false,
-            riceVariety = map["riceVariety"]?.toString().orEmpty(),
-            moisturePercent = (map["moisturePercent"] as? Number)?.toDouble() ?: 0.0,
-            seasonLabel = map["seasonLabel"]?.toString().orEmpty(),
-            qrToken = map["qrToken"] as? String,
-            lockedByTraderId = map["lockedByTraderId"] as? String,
-            latitude = (map["latitude"] as? Number)?.toDouble(),
-            longitude = (map["longitude"] as? Number)?.toDouble(),
-            traderPhone = map["traderPhone"]?.toString().orEmpty(),
-            fieldAddress = map["fieldAddress"]?.toString().orEmpty(),
-            impurityIsPercent = map["impurityIsPercent"] as? Boolean ?: false,
-            bagMethodIsSampling = map["bagMethodIsSampling"] as? Boolean ?: false,
-            bagSampleCount = (map["bagSampleCount"] as? Number)?.toInt() ?: 0,
-            bagSampleTotalWeight = (map["bagSampleTotalWeight"] as? Number)?.toDouble() ?: 0.0,
-            weightInputMode = map["weightInputMode"]?.toString().takeIf { !it.isNullOrBlank() } ?: "SMALL"
-        )
-    }.getOrNull()
-
-    private fun jsonString(s: String): String =
-        "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-
-    private fun jsonNullable(s: String?): String =
-        if (s == null) "null" else jsonString(s)
-
-    /** Parser minimal cho format do `serializeCard` sinh — không general-purpose. */
-    private fun parseSimpleJson(json: String): Map<String, Any?> {
-        val obj = org.json.JSONObject(json)
-        return buildMap {
-            obj.keys().forEach { k ->
-                put(k, if (obj.isNull(k)) null else obj.get(k))
-            }
-        }
-    }
 
     // Weight Entry operations — không cần filter uid vì FK CASCADE qua cardId,
     // và caller chỉ truy cập sau khi đã có cardId từ getAllCards (đã filter).
@@ -302,6 +220,9 @@ class CardRepository @Inject constructor(
             )
             val singleImpurityWeight = totalImpurity / validBagCount
 
+            // H-01: Gồm tất cả entries cần đổi vào 1 list, gọi updateWeightEntries 1 lần
+            // thay vì N lần updateWeightEntry — giảm N transaction xuống 1 transaction.
+            val entriesToUpdate = mutableListOf<com.GiaThinh.canlua.data.model.WeightEntry>()
             entries.forEach { entry ->
                 val (bagW, impW, netW) = if (entry.weight > 0.0) {
                     val entryNetWeight = RiceCalculator.calcNetWeight(
@@ -316,26 +237,19 @@ class CardRepository @Inject constructor(
                 }
 
                 if (entry.bagWeight != bagW || entry.impurityWeight != impW || entry.netWeight != netW) {
-                    weightEntryDao.updateWeightEntry(
-                        entry.copy(
-                            bagWeight = bagW,
-                            impurityWeight = impW,
-                            netWeight = netW
-                        )
-                    )
+                    entriesToUpdate.add(entry.copy(bagWeight = bagW, impurityWeight = impW, netWeight = netW))
                 }
             }
+            if (entriesToUpdate.isNotEmpty()) {
+                weightEntryDao.updateWeightEntries(entriesToUpdate)
+            }
         } else {
-            entries.forEach { entry ->
-                if (entry.bagWeight != 0.0 || entry.impurityWeight != 0.0 || entry.netWeight != 0.0) {
-                    weightEntryDao.updateWeightEntry(
-                        entry.copy(
-                            bagWeight = 0.0,
-                            impurityWeight = 0.0,
-                            netWeight = 0.0
-                        )
-                    )
-                }
+            // H-01: Tương tự — gồm các entry cần reset vào1 list
+            val entriesToReset = entries.filter {
+                it.bagWeight != 0.0 || it.impurityWeight != 0.0 || it.netWeight != 0.0
+            }.map { it.copy(bagWeight = 0.0, impurityWeight = 0.0, netWeight = 0.0) }
+            if (entriesToReset.isNotEmpty()) {
+                weightEntryDao.updateWeightEntries(entriesToReset)
             }
         }
 
@@ -382,7 +296,9 @@ class CardRepository @Inject constructor(
     // card qua qrToken để xác thực giao dịch chéo. Token đã đủ entropy + được
     // bảo vệ bởi Firestore rule.
 
-    suspend fun findByQrToken(token: String): Card? = cardDao.findByQrToken(token)
+    suspend fun findByQrToken(token: String): Card? = cardDao.findByQrToken(token)?.let {
+        it.copy(cccd = CccdCrypto.decrypt(it.cccd))
+    }
 
     suspend fun updateQrToken(cardId: Long, token: String) = cardDao.updateQrToken(cardId, token)
 
@@ -391,7 +307,9 @@ class CardRepository @Inject constructor(
     // === Phase 1: Filter ===
 
     fun getCardsByRiceVariety(variety: String): Flow<List<Card>> =
-        cardDao.getCardsByRiceVariety(variety, uid())
+        cardDao.getCardsByRiceVariety(variety, uid()).map { list ->
+            list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
+        }
 
     fun getDistinctRiceVarieties(): Flow<List<String>> =
         cardDao.getDistinctRiceVarieties(uid())

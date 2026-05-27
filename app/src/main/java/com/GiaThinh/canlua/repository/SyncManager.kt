@@ -68,6 +68,14 @@ class SyncManager @Inject constructor(
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
+    fun canSync(): Boolean {
+        return if (settingsRepository.isSyncOnlyWifi()) {
+            isWifiConnected()
+        } else {
+            isOnline()
+        }
+    }
+
     /**
      * Enqueue 1 lần SyncWorker chạy ngay khi có mạng và Wi-Fi (không đợi periodic 24h).
      *
@@ -109,9 +117,10 @@ class SyncManager @Inject constructor(
             _syncStatus.value = SyncStatus.Error("Yêu cầu đăng nhập để đồng bộ")
             return@withContext Result.failure(Exception("No user signed in"))
         }
-        if (!isWifiConnected()) {
-            _syncStatus.value = SyncStatus.Error("Yêu cầu kết nối Wi-Fi để đồng bộ")
-            return@withContext Result.failure(Exception("Not connected to Wi-Fi"))
+        if (!canSync()) {
+            val errorMsg = if (settingsRepository.isSyncOnlyWifi()) "Yêu cầu kết nối Wi-Fi để đồng bộ" else "Yêu cầu kết nối mạng để đồng bộ"
+            _syncStatus.value = SyncStatus.Error(errorMsg)
+            return@withContext Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "Not connected to Wi-Fi" else "Not connected to network"))
         }
 
         return@withContext try {
@@ -276,8 +285,8 @@ class SyncManager @Inject constructor(
         if (auth.currentUser == null) {
             return@withContext Result.failure(Exception("No user signed in"))
         }
-        if (!isWifiConnected()) {
-            return@withContext Result.failure(Exception("No Wi-Fi connection"))
+        if (!canSync()) {
+            return@withContext Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return@withContext try {
@@ -343,8 +352,8 @@ class SyncManager @Inject constructor(
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))
         }
-        if (!isWifiConnected()) {
-            return Result.failure(Exception("No Wi-Fi connection"))
+        if (!canSync()) {
+            return Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return try {
@@ -371,8 +380,8 @@ class SyncManager @Inject constructor(
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))
         }
-        if (!isWifiConnected()) {
-            return Result.failure(Exception("No Wi-Fi connection"))
+        if (!canSync()) {
+            return Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return try {
@@ -394,8 +403,8 @@ class SyncManager @Inject constructor(
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))
         }
-        if (!isWifiConnected()) {
-            return Result.failure(Exception("No Wi-Fi connection"))
+        if (!canSync()) {
+            return Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return try {
@@ -431,7 +440,7 @@ class SyncManager @Inject constructor(
         val currentUid = auth.currentUser?.uid ?: return@withContext Result.failure(
             Exception("No user signed in")
         )
-        if (!isWifiConnected()) return@withContext Result.failure(Exception("No Wi-Fi connection"))
+        if (!canSync()) return@withContext Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
 
         return@withContext try {
             val cardsResult = firestoreRepository.getAllCards()
@@ -479,13 +488,20 @@ class SyncManager @Inject constructor(
                 }
             }
 
+            // Fetch all weight entries and transactions in bulk to avoid N+1 queries
+            val allWeightEntries = firestoreRepository.getAllWeightEntries().getOrDefault(emptyList())
+            val allTransactions = firestoreRepository.getAllTransactions().getOrDefault(emptyList())
+
+            val weightEntriesByCard = allWeightEntries.groupBy { it.cardId }
+            val transactionsByCard = allTransactions.groupBy { it.cardId }
+
             // Retry pending cloud deletes — tombstone từ delete khi offline.
             cardRepository.getPendingCloudDeletes(currentUid).forEach { tomb ->
                 val fsId = tomb.firestoreId ?: return@forEach
                 val ok = runCatching {
-                    firestoreRepository.getWeightEntriesByCardId(fsId).getOrNull().orEmpty()
+                    weightEntriesByCard[fsId].orEmpty()
                         .forEach { e -> if (e.id.isNotBlank()) firestoreRepository.deleteWeightEntry(e.id) }
-                    firestoreRepository.getTransactionsByCardId(fsId).getOrNull().orEmpty()
+                    transactionsByCard[fsId].orEmpty()
                         .forEach { t -> if (t.id.isNotBlank()) firestoreRepository.deleteTransaction(t.id) }
                     firestoreRepository.deleteCard(fsId).getOrNull()
                 }.isSuccess
@@ -493,10 +509,9 @@ class SyncManager @Inject constructor(
             }
 
             // Pull weight entries + transactions cho từng card đã pull.
-            // Lỗi 1 card không phá toàn bộ — log silent qua getOrNull.
             firestoreToLocalId.forEach { (fsCardId, localCardId) ->
-                val entries = firestoreRepository.getWeightEntriesByCardId(fsCardId)
-                    .getOrNull().orEmpty()
+                val entries = weightEntriesByCard[fsCardId].orEmpty()
+                    .sortedByDescending { it.timestamp }
                 entries.forEach { fsEntry ->
                     if (fsEntry.id.isBlank()) return@forEach
                     val existing = weightEntryDao.getByFirestoreId(fsEntry.id)
@@ -505,8 +520,8 @@ class SyncManager @Inject constructor(
                     }
                 }
 
-                val transactions = firestoreRepository.getTransactionsByCardId(fsCardId)
-                    .getOrNull().orEmpty()
+                val transactions = transactionsByCard[fsCardId].orEmpty()
+                    .sortedByDescending { it.date }
                 transactions.forEach { fsTx ->
                     if (fsTx.id.isBlank()) return@forEach
                     val existing = transactionDao.getByFirestoreId(fsTx.id)

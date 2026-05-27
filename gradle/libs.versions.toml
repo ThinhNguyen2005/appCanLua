@@ -61,6 +61,7 @@ profileinstaller = "1.4.1"
 splashscreen = "1.0.1"
 # Kotlinx Collections Immutable — Compose Compiler nhận diện natively là Stable
 kotlinxCollectionsImmutable = "0.3.8"
+securityCrypto = "1.1.0-alpha06"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -146,6 +147,7 @@ androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profi
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 # Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện natively là Stable
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -206,33 +206,79 @@ interface CardDao {
     suspend fun getUnsyncedCards(uid: String): List<Card>
 
     companion object {
-        private const val IMPURITY_KG_EXPR = """
-            CASE WHEN impurityIsPercent = 1 THEN
-                (CASE WHEN (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END)) < 0.0 THEN 0.0
-                 ELSE (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END))
-                 END) * (impurityWeight / 100.0)
-            ELSE
-                impurityWeight
-            END
+        const val QUERY_SEASON_STATS = """
+            SELECT 
+                COUNT(*) as cardCount,
+                SUM(netWeight) as totalNetWeight,
+                SUM(totalAmount) as totalRevenue,
+                SUM(paidAmount) as totalPaid,
+                SUM(remainingAmount) as totalRemaining,
+                AVG(NULLIF(pricePerKg, 0)) as avgPrice,
+                AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
+                SUM(bagCount) as totalBags,
+                SUM(CASE WHEN impurityIsPercent = 1 THEN
+                    (CASE WHEN (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END)) < 0.0 THEN 0.0
+                     ELSE (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END))
+                     END) * (impurityWeight / 100.0)
+                ELSE
+                    impurityWeight
+                END) as totalImpurity,
+                SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
+                SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
+            FROM cards 
+            WHERE ownerUid = :uid AND seasonLabel = :season
+        """
+        
+        const val QUERY_OVERALL_STATS = """
+            SELECT 
+                COUNT(*) as cardCount,
+                SUM(netWeight) as totalNetWeight,
+                SUM(totalAmount) as totalRevenue,
+                SUM(paidAmount) as totalPaid,
+                SUM(remainingAmount) as totalRemaining,
+                AVG(NULLIF(pricePerKg, 0)) as avgPrice,
+                AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
+                SUM(bagCount) as totalBags,
+                SUM(CASE WHEN impurityIsPercent = 1 THEN
+                    (CASE WHEN (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END)) < 0.0 THEN 0.0
+                     ELSE (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END))
+                     END) * (impurityWeight / 100.0)
+                ELSE
+                    impurityWeight
+                END) as totalImpurity,
+                SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
+                SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
+            FROM cards 
+            WHERE ownerUid = :uid
         """
 
-        private const val STATS_COLUMNS = """
-            COUNT(*) as cardCount,
-            SUM(netWeight) as totalNetWeight,
-            SUM(totalAmount) as totalRevenue,
-            SUM(paidAmount) as totalPaid,
-            SUM(remainingAmount) as totalRemaining,
-            AVG(NULLIF(pricePerKg, 0)) as avgPrice,
-            AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
-            SUM(bagCount) as totalBags,
-            SUM($IMPURITY_KG_EXPR) as totalImpurity,
-            SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
-            SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
+        const val QUERY_SEASON_COMPARISON = """
+            SELECT 
+                seasonLabel as season,
+                COUNT(*) as cardCount,
+                SUM(netWeight) as totalNetWeight,
+                SUM(totalAmount) as totalRevenue,
+                SUM(paidAmount) as totalPaid,
+                SUM(remainingAmount) as totalRemaining,
+                AVG(NULLIF(pricePerKg, 0)) as avgPrice,
+                AVG(NULLIF(moisturePercent, 0)) as avgMoisture,
+                SUM(bagCount) as totalBags,
+                SUM(CASE WHEN impurityIsPercent = 1 THEN
+                    (CASE WHEN (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END)) < 0.0 THEN 0.0
+                     ELSE (totalWeight - (CASE WHEN bagMethodIsSampling = 1 AND bagSampleCount > 0 THEN (bagSampleTotalWeight * 1.0 / bagSampleCount) * bagCount ELSE bagCount * bagWeight END))
+                     END) * (impurityWeight / 100.0)
+                ELSE
+                    impurityWeight
+                END) as totalImpurity,
+                SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
+                SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount,
+                MAX(date) as lastDate 
+            FROM cards 
+            WHERE ownerUid = :uid AND seasonLabel != '' 
+            GROUP BY seasonLabel 
+            ORDER BY lastDate DESC 
+            LIMIT 6
         """
-
-        const val QUERY_SEASON_STATS = "SELECT $STATS_COLUMNS FROM cards WHERE ownerUid = :uid AND seasonLabel = :season"
-        const val QUERY_OVERALL_STATS = "SELECT $STATS_COLUMNS FROM cards WHERE ownerUid = :uid"
-        const val QUERY_SEASON_COMPARISON = "SELECT seasonLabel as season, $STATS_COLUMNS, MAX(date) as lastDate FROM cards WHERE ownerUid = :uid AND seasonLabel != '' GROUP BY seasonLabel ORDER BY lastDate DESC LIMIT 6"
     }
 }
 

@@ -76,6 +76,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(deeplinkCardId: String? = null) {
     val navController = rememberNavController()
+    var currentDeeplinkCardId by remember(deeplinkCardId) { mutableStateOf(deeplinkCardId) }
     
     // Tự động đo hiệu năng, thời gian tải màn hình, và khung hình cho mọi màn hình chính
     LaunchedEffect(navController) {
@@ -162,20 +163,26 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
     // Title theo tab/route — riêng AI Chat đổi theo audience để truyền tải đúng identity của bot.
     val defaultScaleTitle = stringResource(com.GiaThinh.canlua.R.string.nav_scale)
-    val topBarTitle = when (currentRoute) {
-        BottomNavItem.AI_CHAT.route ->
-            stringResource(if (isTrader) com.GiaThinh.canlua.R.string.topbar_ai_trader else com.GiaThinh.canlua.R.string.topbar_ai_farmer)
-        "settings" -> stringResource(com.GiaThinh.canlua.R.string.topbar_settings)
-        "sync_status" -> stringResource(com.GiaThinh.canlua.R.string.topbar_sync_status)
-        "trader_transactions" -> stringResource(com.GiaThinh.canlua.R.string.topbar_trader_transactions)
-        else -> currentTab?.let { stringResource(it.labelRes) } ?: defaultScaleTitle
+    val topBarTitleRes = remember(currentRoute, isTrader, currentTab) {
+        when (currentRoute) {
+            BottomNavItem.AI_CHAT.route ->
+                if (isTrader) com.GiaThinh.canlua.R.string.topbar_ai_trader else com.GiaThinh.canlua.R.string.topbar_ai_farmer
+            "settings" -> com.GiaThinh.canlua.R.string.topbar_settings
+            "sync_status" -> com.GiaThinh.canlua.R.string.topbar_sync_status
+            "trader_transactions" -> com.GiaThinh.canlua.R.string.topbar_trader_transactions
+            else -> currentTab?.labelRes
+        }
     }
+    val topBarTitle = if (topBarTitleRes != null) stringResource(topBarTitleRes) else defaultScaleTitle
 
     // Subtitle — AI Chat hiện brand, các route khác ẩn.
-    val topBarSubtitle = when (currentRoute) {
-        BottomNavItem.AI_CHAT.route -> stringResource(com.GiaThinh.canlua.R.string.topbar_ai_subtitle)
-        else -> null
+    val topBarSubtitleRes = remember(currentRoute) {
+        when (currentRoute) {
+            BottomNavItem.AI_CHAT.route -> com.GiaThinh.canlua.R.string.topbar_ai_subtitle
+            else -> null
+        }
     }
+    val topBarSubtitle = if (topBarSubtitleRes != null) stringResource(topBarSubtitleRes) else null
 
     val showTopBar = currentRoute in navItems.map { it.route } || currentRoute == "trader_transactions"
 
@@ -334,7 +341,8 @@ fun MainScreen(deeplinkCardId: String? = null) {
                     startDestination = navItems.first().route,
                     modifier = Modifier.fillMaxSize(),
                     aiChatDrawerState = aiChatDrawerState,
-                    deeplinkCardId = deeplinkCardId
+                    deeplinkCardId = currentDeeplinkCardId,
+                    onDeeplinkConsumed = { currentDeeplinkCardId = null }
                 )
 
                 androidx.compose.animation.AnimatedVisibility(

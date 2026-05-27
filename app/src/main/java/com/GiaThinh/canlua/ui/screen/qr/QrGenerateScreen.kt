@@ -25,7 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardDetailViewModel
 import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.util.QrBitmapGenerator
 import com.GiaThinh.canlua.util.TrackScreenRender
@@ -41,7 +41,7 @@ import java.util.Locale
 fun QrGenerateScreen(
     cardId: Long,
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: CardDetailViewModel = hiltViewModel()
 ) {
     TrackScreenRender("qr_generate")
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
@@ -123,7 +123,8 @@ fun QrGenerateScreen(
             Spacer(Modifier.height(24.dp))
 
             // QR Code display
-            if (qrBitmap != null) {
+            val bitmap = qrBitmap
+            if (bitmap != null) {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -134,7 +135,7 @@ fun QrGenerateScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Image(
-                            bitmap = qrBitmap!!.asImageBitmap(),
+                            bitmap = bitmap.asImageBitmap(),
                             contentDescription = stringResource(R.string.qr_generate_content_description),
                             modifier = Modifier
                                 .size(240.dp)

@@ -21,7 +21,6 @@ import com.GiaThinh.canlua.util.FirebaseRemoteConfigManager
 import com.GiaThinh.canlua.util.PremiumState
 import com.google.firebase.Firebase
 import com.google.firebase.appcheck.appCheck
-import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -65,22 +64,27 @@ class CanLuaApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        // Khởi tạo Firebase App Check với Debug provider trong bản build DEBUG và Play Integrity trong bản build Release
+        // Khởi tạo Firebase App Check với Debug provider trong bản build DEBUG (dùng reflection để tránh leak class vào release)
+        // và Play Integrity trong bản build Release.
         val factory = if (BuildConfig.DEBUG) {
-            DebugAppCheckProviderFactory.getInstance()
+            runCatching {
+                val clazz = Class.forName("com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory")
+                clazz.getMethod("getInstance").invoke(null) as com.google.firebase.appcheck.AppCheckProviderFactory
+            }.getOrNull() ?: PlayIntegrityAppCheckProviderFactory.getInstance()
         } else {
             PlayIntegrityAppCheckProviderFactory.getInstance()
         }
         Firebase.appCheck.installAppCheckProviderFactory(factory)
-        AnalyticsHelper.init(this)
-        PremiumState.init(this)
-        FirebaseRemoteConfigManager.init(this)
-        // Sync: dùng cached/default → chạy ngay để user nhận premium nếu đã từng cài trước cutoff.
-        // Nhưng firstInstallTime > cutoff (user cài hôm nay) → không nhận.
-        applyEarlyAdopterPremiumSync()
-        // Async: fetch Firebase → force update → check lại nếu cần.
-        // Gọi forceFetch trước check để lấy giá trị mới nhất trước khi apply.
+        // M-02: Khởi tạo async để không block luồng UI lúc khởi chạy
         appScope.launch {
+            AnalyticsHelper.init(this@CanLuaApplication)
+            PremiumState.init(this@CanLuaApplication)
+            FirebaseRemoteConfigManager.init(this@CanLuaApplication)
+            // Sync: dùng cached/default → chạy ngay để user nhận premium nếu đã từng cài trước cutoff.
+            // Nhưng firstInstallTime > cutoff (user cài hôm nay) → không nhận.
+            applyEarlyAdopterPremiumSync()
+            // Async: fetch Firebase → force update → check lại nếu cần.
+            // Gọi forceFetch trước check để lấy giá trị mới nhất trước khi apply.
             val fetched = FirebaseRemoteConfigManager.forceFetch()
             if (fetched) {
                 // Config mới → check lại (phòng trường hợp cutoff mới đã pass).
@@ -144,12 +148,12 @@ class CanLuaApplication : Application(), Configuration.Provider {
                 .map { it?.uid }
                 .distinctUntilChanged()
                 .collect { uid ->
-                    if (uid != null && syncManager.get().isWifiConnected() && settingsRepository.isAutoSyncEnabled()) {
+                    if (uid != null && syncManager.get().canSync() && settingsRepository.isAutoSyncEnabled()) {
                         // Chỉ tự động tải dữ liệu từ đám mây về nếu cơ sở dữ liệu trên máy trống (đăng nhập lần đầu / cài mới)
                         val localCards = cardRepository.get().getAllCards().first()
                         if (localCards.isEmpty()) {
-                            // Trì hoãn 2 giây để tránh tranh chấp CPU với luồng chính (Main Thread) lúc vẽ UI khởi động
-                            kotlinx.coroutines.delay(2000)
+                            // M-03: Nhường CPU cho luồng chính vẽ giao diện khởi động
+                            kotlinx.coroutines.yield()
                             syncManager.get().pullAllForCurrentUser()
                         }
                     }

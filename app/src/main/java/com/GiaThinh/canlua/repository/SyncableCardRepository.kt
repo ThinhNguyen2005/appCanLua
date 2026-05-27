@@ -46,7 +46,7 @@ class SyncableCardRepository @Inject constructor(
         syncJobs[cardId] = scope.launch {
             delay(5000) // Trì hoãn 5 giây để gom cụm các sự kiện gõ liên tiếp
             syncJobs.remove(cardId)
-            if (syncManager.isWifiConnected()) {
+            if (syncManager.canSync()) {
                 syncManager.syncCardAndDetails(cardId)
             } else {
                 syncManager.scheduleImmediateSync()
@@ -66,7 +66,7 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun insertCard(card: Card): Long {
         val id = cardRepository.insertCard(card)
-        if (syncManager.isWifiConnected()) {
+        if (syncManager.canSync()) {
             val cardWithId = card.copy(id = id)
             syncManager.syncCard(cardWithId)
         } else {
@@ -100,7 +100,7 @@ class SyncableCardRepository @Inject constructor(
         cardRepository.deleteCard(card)
 
         // 2. Đẩy delete lên cloud nếu online + có firestoreId.
-        if (fsCardId != null && syncManager.isWifiConnected()) {
+        if (fsCardId != null && syncManager.canSync()) {
             val ok = runCatching {
                 firestoreRepository.getWeightEntriesByCardId(fsCardId).getOrNull().orEmpty()
                     .forEach { entry ->
@@ -144,7 +144,7 @@ class SyncableCardRepository @Inject constructor(
      */
     suspend fun deleteWeightEntry(weightEntry: WeightEntry) {
         val fsId = weightEntry.firestoreId
-        if (fsId != null && syncManager.isWifiConnected()) {
+        if (fsId != null && syncManager.canSync()) {
             firestoreRepository.deleteWeightEntry(fsId)
         }
         cardRepository.deleteWeightEntry(weightEntry)
@@ -179,7 +179,7 @@ class SyncableCardRepository @Inject constructor(
         cardRepository.lockCard(cardId, traderId)
         // Lock card là hành động one-off quan trọng cuối cùng, đồng bộ tức thì
         cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isWifiConnected()) {
+            if (syncManager.canSync()) {
                 syncManager.syncCard(updatedCard)
             } else {
                 syncManager.scheduleImmediateSync()

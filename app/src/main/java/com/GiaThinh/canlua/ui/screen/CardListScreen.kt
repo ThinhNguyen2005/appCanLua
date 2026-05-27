@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Grass
 import androidx.compose.material.icons.outlined.Scale
@@ -79,7 +81,7 @@ import com.GiaThinh.canlua.ui.component.cardlist.DeleteCardConfirmDialog
 import com.GiaThinh.canlua.ui.component.cardlist.PremiumQuotaDialog
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.isScrollingUp
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardListViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
 import com.GiaThinh.canlua.util.HapticUtil
@@ -97,7 +99,7 @@ import java.util.Locale
 @Composable
 fun CardListScreen(
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel(),
+    viewModel: CardListViewModel = hiltViewModel(),
     profileViewModel: ProfileViewModel = hiltViewModel(),
     syncViewModel: SyncViewModel = hiltViewModel()
 ) {
@@ -187,6 +189,8 @@ fun CardListScreen(
             // GIỜ CÙNG cấu trúc LazyColumn → swap mượt, không unmeasure → measure lại.
             // listState DÙNG CHUNG giữa skeleton và real content → scroll position
             // được bảo toàn khi skeleton → content (sau khi InitViewModel warm cache).
+            // C-05: pullState khai báo NGOÀI Crossfade → không bị reset khi transition.
+            val pullState = rememberPullToRefreshState()
             Crossfade(
                 targetState = showSkeleton,
                 animationSpec = tween(durationMillis = 300),
@@ -195,7 +199,6 @@ fun CardListScreen(
                 if (skeleton) {
                     CardListSkeleton(count = 3, listState = listState)
                 } else {
-                    val pullState = rememberPullToRefreshState()
                     PullToRefreshBox(
                         isRefreshing = manualRefreshing,
                         onRefresh = {
@@ -222,7 +225,7 @@ fun CardListScreen(
                             )
                         }
                     ) {
-                        val groupedCards = remember(cards, dateFormat) {
+                        val groupedCards = remember(cards) {
                             cards.groupBy { card ->
                                 dateFormat.format(card.date)
                             }
@@ -262,11 +265,21 @@ fun CardListScreen(
                             }
 
                             if (cards.isEmpty()) {
+                                val isFiltered = selectedFilter != null || selectedSeason != null
                                 item(key = "empty") {
-                                    CardListEmptyState(
-                                        onSyncClick = { syncViewModel.syncAll() },
-                                        syncing = syncStatus is SyncStatus.Syncing
-                                    )
+                                    if (isFiltered) {
+                                        CardListEmptyState(
+                                            icon = Icons.Default.Info,
+                                            title = stringResource(com.GiaThinh.canlua.R.string.card_list_empty_filter_title),
+                                            subtitle = stringResource(com.GiaThinh.canlua.R.string.card_list_empty_filter_subtitle),
+                                            onSyncClick = null
+                                        )
+                                    } else {
+                                        CardListEmptyState(
+                                            onSyncClick = { syncViewModel.syncAll() },
+                                            syncing = syncStatus is SyncStatus.Syncing
+                                        )
+                                    }
                                 }
                             } else {
                                 groupedCards.forEach { (date, cardsInDay) ->
@@ -378,7 +391,7 @@ fun CardListScreen(
     }
 
     if (showDeleteConfirmDialog && cardToDelete != null) {
-        val targetCard = cardToDelete!!
+        val targetCard = cardToDelete ?: return
         DeleteCardConfirmDialog(
             card = targetCard,
             onConfirm = {

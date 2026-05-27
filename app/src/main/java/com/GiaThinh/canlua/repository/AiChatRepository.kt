@@ -10,6 +10,7 @@ import com.GiaThinh.canlua.data.remote.ai.ChatMessage
 import com.GiaThinh.canlua.data.remote.ai.OpenRouterRequest
 import com.GiaThinh.canlua.data.remote.ai.OpenRouterResponse
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.GiaThinh.canlua.util.ApiKeyObfuscator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -106,7 +107,7 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
         knowledgeHits: List<KnowledgeBaseRepository.KnowledgeEntry> = emptyList(),
         audience: KnowledgeBaseRepository.Audience = KnowledgeBaseRepository.Audience.FARMER
     ): Result<String> = withContext(Dispatchers.IO) {
-        if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
+        if (ApiKeyObfuscator.decode(BuildConfig.OPENROUTER_API_KEY).isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
                 "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
@@ -133,7 +134,7 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
         profile: Profile? = null,
         weather: WeatherInfo? = null
     ): Result<String> = withContext(Dispatchers.IO) {
-        if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
+        if (ApiKeyObfuscator.decode(BuildConfig.OPENROUTER_API_KEY).isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
                 "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
@@ -166,7 +167,7 @@ NGÔN NGỮ — RẤT QUAN TRỌNG:
                     url = URL,
                     body = req,
                     headers = mapOf(
-                        "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
+                        "Authorization" to "Bearer ${ApiKeyObfuscator.decode(BuildConfig.OPENROUTER_API_KEY)}",
                         "HTTP-Referer" to "https://canlua.app",
                         "X-Title" to "CanLua"
                     )

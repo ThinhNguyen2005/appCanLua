@@ -3,13 +3,13 @@ package com.GiaThinh.canlua.ui.component
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -144,10 +144,15 @@ private fun LabeledNavItem(
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "nav_label_tint"
     )
-    val indicatorWidth by animateDpAsState(
-        targetValue = if (selected) 40.dp else 0.dp,
+    val indicatorAlpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "nav_indicator_width"
+        label = "nav_indicator_alpha"
+    )
+    val indicatorScaleX by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.5f,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "nav_indicator_scale_x"
     )
 
     Column(
@@ -163,24 +168,24 @@ private fun LabeledNavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Indicator pill bao icon — width animate, height cố định.
+        // Indicator pill bao icon — width/alpha animate, height cố định.
         Box(
             modifier = Modifier
                 .height(28.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Background pill — nằm dưới icon, animate width khi selected.
-            Box(
-                modifier = Modifier
-                    .size(width = indicatorWidth.coerceAtLeast(0.dp), height = 28.dp)
-            ) {
-                if (indicatorWidth > 0.dp) {
-                    Surface(
-                        color = activeColor,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth().height(28.dp)
-                    ) {}
-                }
+            // Background pill — nằm dưới icon, dùng graphicsLayer để không bị méo hình
+            if (indicatorAlpha > 0f) {
+                Surface(
+                    color = activeColor,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .size(width = 40.dp, height = 28.dp)
+                        .graphicsLayer {
+                            alpha = indicatorAlpha
+                            scaleX = indicatorScaleX
+                        }
+                ) {}
             }
             // Icon ở trên indicator — crossfade outlined ↔ filled khi đổi state.
             AnimatedContent(

@@ -93,7 +93,10 @@ fun CardItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onClick(card.id) },
+                .clickable {
+                    HapticUtil.tick(context)
+                    onClick(card.id)
+                },
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 2.dp
@@ -141,7 +144,7 @@ fun CardItem(
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = null,
+                            contentDescription = "Xem chi tiết",
                             tint = AppColors.TextHint,
                             modifier = Modifier.size(18.dp)
                         )
@@ -160,7 +163,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Grass,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.detail_info_rice_variety),
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.GreenPrimary
                                 )
@@ -177,7 +180,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.WaterDrop,
-                                    contentDescription = null,
+                                    contentDescription = "Độ ẩm",
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.Info
                                 )
@@ -196,7 +199,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Inventory2,
-                                    contentDescription = null,
+                                    contentDescription = "Trọng lượng bao bì",
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.TextSecondary
                                 )
@@ -215,7 +218,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Scale,
-                                    contentDescription = null,
+                                    contentDescription = "Tỷ lệ tạp chất",
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.TextSecondary
                                 )

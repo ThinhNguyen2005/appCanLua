@@ -46,7 +46,7 @@ import com.GiaThinh.canlua.BuildConfig
 import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardListViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -80,11 +80,12 @@ import kotlinx.coroutines.launch
 @Composable
 fun RiceMapScreen(
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: CardListViewModel = hiltViewModel()
 ) {
     TrackScreenRender("trader_map")
-    if (BuildConfig.MAPS_API_KEY.isBlank() ||
-        BuildConfig.MAPS_API_KEY == "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+    val decodedMapsKey = remember { com.GiaThinh.canlua.util.ApiKeyObfuscator.decode(BuildConfig.MAPS_API_KEY) }
+    if (decodedMapsKey.isBlank() ||
+        decodedMapsKey == "YOUR_GOOGLE_MAPS_API_KEY_HERE"
     ) {
         MapComingSoonPlaceholder()
         return

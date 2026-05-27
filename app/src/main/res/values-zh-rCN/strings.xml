@@ -501,4 +501,25 @@
     <string name="feedback_toast_empty">请输入反馈内容。</string>
     <string name="feedback_empty_messages">暂无反馈。请输入您的意见，以便我们为您提供支持！</string>
     <string name="feedback_admin_name">开发者</string>
-</resources>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">未找到结果</string>
+    <string name="card_list_empty_filter_subtitle">没有称重单匹配筛选条件。请尝试清除筛选以显示全部。</string>
+    <string name="weather_error_missing_api_key">在 local.properties 中缺少 OPENWEATHER_API_KEY</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">亿</string>
+    <string name="money_unit_million">百万</string>
+    <string name="money_unit_hundred_thousand">十万</string>
+    <string name="money_unit_thousand">千</string>
+    <string name="money_unit_dong">盾</string>
+    <string name="money_unit_hundred">百</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">未知</string>
+    <string name="weather_your_location">您的位置</string>
+    <string name="weather_advisory_thunderstorm">雷暴 — 勿喷药，减少下田</string>
+    <string name="weather_advisory_rain">强降雨 — 推迟24小时喷药，加固田埂</string>
+    <string name="weather_advisory_hot_sun">烈日 — 检查稻田水量，傍晚凉爽时浇水</string>
+    <string name="weather_advisory_high_humidity">高湿 — 注意稻瘟病、褐飞虱</string>
+</resources>

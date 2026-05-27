@@ -203,7 +203,8 @@ class DashboardViewModel @Inject constructor(
         topTraders,
         seasonsComparison,
         varieties,
-        aiAnalysis
+        aiAnalysis,
+        _isAggregated  // H-04: thêm vào combine để dashboardData emit khi isAggregated flip
     ) { arr ->
         @Suppress("UNCHECKED_CAST")
         val seasonsVal = arr[0] as List<String>
@@ -217,6 +218,7 @@ class DashboardViewModel @Inject constructor(
         @Suppress("UNCHECKED_CAST")
         val varietiesVal = arr[6] as List<VarietyStat>
         val aiAnalysisVal = arr[7] as AiAnalysisState
+        val isAggregatedVal = arr[8] as Boolean
 
         DashboardData(
             seasons = seasonsVal,
@@ -227,7 +229,7 @@ class DashboardViewModel @Inject constructor(
             seasonsComparison = seasonsComparisonVal,
             varieties = varietiesVal,
             aiAnalysis = aiAnalysisVal,
-            isAggregated = _isAggregated.value
+            isAggregated = isAggregatedVal
         )
     }
 

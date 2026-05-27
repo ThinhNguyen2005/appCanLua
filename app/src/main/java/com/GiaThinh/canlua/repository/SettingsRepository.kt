@@ -23,6 +23,7 @@ class SettingsRepository @Inject constructor(
     private val KEY_LANGUAGE = "language"
     private val KEY_AUTO_SYNC_ENABLED = "auto_sync_enabled"
     private val KEY_THEME_MODE = "theme_mode"
+    private val KEY_SYNC_ONLY_WIFI = "sync_only_wifi"
 
     // Weigh-options defaults (v17): áp dụng cho phiếu mới tạo. Phiếu cũ giữ mode đã lưu.
     private val KEY_IMPURITY_IS_PERCENT = "weigh_impurity_is_percent"
@@ -43,6 +44,9 @@ class SettingsRepository @Inject constructor(
     private val _autoSyncEnabled = MutableStateFlow(isAutoSyncEnabled())
     val autoSyncEnabled: Flow<Boolean> = _autoSyncEnabled.asStateFlow()
 
+    private val _syncOnlyWifi = MutableStateFlow(prefs.getBoolean(KEY_SYNC_ONLY_WIFI, true))
+    val syncOnlyWifi: Flow<Boolean> = _syncOnlyWifi.asStateFlow()
+
     private val _weighDefaults = MutableStateFlow(readWeighDefaults())
     val weighDefaults: Flow<WeighDefaults> = _weighDefaults.asStateFlow()
 
@@ -59,6 +63,9 @@ class SettingsRepository @Inject constructor(
             }
             if (key == KEY_AUTO_SYNC_ENABLED) {
                 _autoSyncEnabled.value = isAutoSyncEnabled()
+            }
+            if (key == KEY_SYNC_ONLY_WIFI) {
+                _syncOnlyWifi.value = prefs.getBoolean(KEY_SYNC_ONLY_WIFI, true)
             }
             if (key == KEY_TTS_ENABLED) {
                 _ttsEnabled.value = prefs.getBoolean(KEY_TTS_ENABLED, true)
@@ -92,6 +99,15 @@ class SettingsRepository @Inject constructor(
     fun setAutoSyncEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_AUTO_SYNC_ENABLED, enabled).apply()
         _autoSyncEnabled.value = enabled
+    }
+
+    fun isSyncOnlyWifi(): Boolean {
+        return prefs.getBoolean(KEY_SYNC_ONLY_WIFI, true)
+    }
+
+    fun setSyncOnlyWifi(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SYNC_ONLY_WIFI, enabled).apply()
+        _syncOnlyWifi.value = enabled
     }
 
     fun setFontScale(scale: FontScale) {

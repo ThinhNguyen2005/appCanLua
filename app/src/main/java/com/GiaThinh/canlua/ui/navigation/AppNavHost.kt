@@ -6,6 +6,8 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -39,11 +41,13 @@ fun AppNavHost(
     startDestination: String = BottomNavItem.SCALE.route,
     modifier: Modifier = Modifier,
     aiChatDrawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
-    deeplinkCardId: String? = null
+    deeplinkCardId: String? = null,
+    onDeeplinkConsumed: () -> Unit = {}
 ) {
     LaunchedEffect(deeplinkCardId) {
         if (!deeplinkCardId.isNullOrBlank()) {
             navController.navigate("card_detail/$deeplinkCardId")
+            onDeeplinkConsumed()
         }
     }
     NavHost(
@@ -108,13 +112,15 @@ fun AppNavHost(
 
         // === Tab 4: Tài khoản (FARMER) ===
         composable(BottomNavItem.ACCOUNT.route) {
-            FarmerProfileScreen(navController = navController)
+            RoleAwareProfileWrapper(navController = navController)
         }
 
         // === Premium upgrade screen — share cho cả farmer & trader ===
         composable("premium") {
             PremiumScreen(navController = navController)
         }
+
+
 
         composable("trader_history") {
             TraderHistoryScreen(navController = navController)
@@ -132,7 +138,7 @@ fun AppNavHost(
         }
 
         composable("trader_profile") {
-            TraderProfileScreen(navController = navController)
+            RoleAwareProfileWrapper(navController = navController)
         }
 
         // Sub-screen của trader_profile (mở qua row "Sổ giao dịch").
@@ -149,5 +155,18 @@ fun AppNavHost(
         composable("feedback") {
             FeedbackScreen(navController = navController)
         }
+    }
+}
+
+@Composable
+fun RoleAwareProfileWrapper(
+    navController: NavHostController,
+    profileViewModel: com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+) {
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    if (profile?.role == "TRADER") {
+        TraderProfileScreen(navController = navController)
+    } else {
+        FarmerProfileScreen(navController = navController)
     }
 }

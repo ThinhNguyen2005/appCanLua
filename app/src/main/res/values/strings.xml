@@ -537,5 +537,26 @@
     <string name="feedback_toast_empty">Vui lòng nhập nội dung phản hồi.</string>
     <string name="feedback_empty_messages">Chưa có phản hồi nào. Hãy gửi ý kiến của bà con để chúng tôi hỗ trợ nhé!</string>
     <string name="feedback_admin_name">Nhà phát triển</string>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">Không tìm thấy kết quả</string>
+    <string name="card_list_empty_filter_subtitle">Không có phiếu cân nào khớp với bộ lọc. Hãy thử xóa bộ lọc để hiển thị đầy đủ.</string>
+    <string name="weather_error_missing_api_key">Thiếu OPENWEATHER_API_KEY trong local.properties</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">tỷ</string>
+    <string name="money_unit_million">triệu</string>
+    <string name="money_unit_hundred_thousand">trăm nghìn</string>
+    <string name="money_unit_thousand">nghìn</string>
+    <string name="money_unit_dong">đồng</string>
+    <string name="money_unit_hundred">trăm</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">Không rõ</string>
+    <string name="weather_your_location">Vị trí của bạn</string>
+    <string name="weather_advisory_thunderstorm">Sấm sét — không phun thuốc, hạn chế ra đồng</string>
+    <string name="weather_advisory_rain">Mưa nhiều — hoãn phun thuốc 24h, gia cố bờ</string>
+    <string name="weather_advisory_hot_sun">Nắng gắt — kiểm tra đủ nước ruộng, tưới chiều mát</string>
+    <string name="weather_advisory_high_humidity">Ẩm cao — chú ý đạo ôn, rầy nâu</string>
 </resources>
 

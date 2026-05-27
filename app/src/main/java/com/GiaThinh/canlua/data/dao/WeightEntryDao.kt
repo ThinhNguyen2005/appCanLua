@@ -18,6 +18,11 @@ interface WeightEntryDao {
     @Update
     suspend fun updateWeightEntry(weightEntry: WeightEntry)
 
+    // H-01: Bulk update — Room gồm tất cả cập nhật vào 1 DB transaction
+    // thay vì N transaction riêng lẻ → giảm disk write và WAL pressure.
+    @Update
+    suspend fun updateWeightEntries(entries: List<WeightEntry>)
+
     @Delete
     suspend fun deleteWeightEntry(weightEntry: WeightEntry)
 

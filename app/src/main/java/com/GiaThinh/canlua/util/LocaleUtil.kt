@@ -1,17 +1,19 @@
 package com.GiaThinh.canlua.util
 
 import android.content.Context
-import android.content.res.Configuration
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import com.GiaThinh.canlua.data.model.AppLanguage
-import java.util.Locale
 
 object LocaleUtil {
+    /**
+     * Áp dụng ngôn ngữ cho toàn app.
+     * Dùng AppCompatDelegate.setApplicationLocales thay cho updateConfiguration() deprecated.
+     * - Android 13+: native per-app language (không cần restart Activity)
+     * - Android < 13: AppCompat handle tự động qua resource configuration
+     */
     fun applyLanguage(context: Context, language: AppLanguage) {
-        val locale = Locale.forLanguageTag(language.tag)
-        Locale.setDefault(locale)
-        val configuration = Configuration(context.resources.configuration)
-        configuration.setLocale(locale)
-        @Suppress("DEPRECATION")
-        context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
+        val localeList = LocaleListCompat.forLanguageTags(language.tag)
+        AppCompatDelegate.setApplicationLocales(localeList)
     }
 }

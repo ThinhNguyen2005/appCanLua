@@ -71,7 +71,7 @@ import com.GiaThinh.canlua.ui.component.rememberHeaderHeights
 import com.GiaThinh.canlua.ui.feedback.LocalAppToast
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.isScrollingUp
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardDetailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -89,7 +89,7 @@ private val DETAIL_DATE_FMT: SimpleDateFormat =
 fun CardDetailScreen(
     cardId: Long,
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: CardDetailViewModel = hiltViewModel()
 ) {
     com.GiaThinh.canlua.util.TrackScreenRender("card_detail")
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
@@ -113,14 +113,18 @@ fun CardDetailScreen(
     val appToast = LocalAppToast.current
     val scope = rememberCoroutineScope()
 
+    val viewModelLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     // Pull-to-refresh state
     var isRefreshing by remember { mutableStateOf(false) }
     val pullState = rememberPullToRefreshState()
+    LaunchedEffect(viewModelLoading) {
+        if (!viewModelLoading) {
+            isRefreshing = false
+        }
+    }
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
-            delay(150) // perceptible feedback even on cache hit
             viewModel.loadCardById(cardId)
-            isRefreshing = false
         }
     }
 
@@ -163,7 +167,10 @@ fun CardDetailScreen(
         floatingActionButton = {
             // Drive-style Extended FAB — chỉ hiện khi card đã load và user đang ở đầu trang
             currentCard?.let { c ->
-                val fabVisible = scrollState.isScrollingUp() && entryActionTarget == null
+                val isScrollingUp = scrollState.isScrollingUp()
+                val fabVisible = remember(isScrollingUp, entryActionTarget) {
+                    isScrollingUp && entryActionTarget == null
+                }
                 AnimatedVisibility(
                     visible = fabVisible,
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
@@ -195,7 +202,7 @@ fun CardDetailScreen(
                         },
                         expanded = true,
                         containerColor = if (c.isLocked) AppColors.GreenPrimary.copy(alpha = 0.45f) else AppColors.GreenPrimary,
-                        contentColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         shape = RoundedCornerShape(16.dp),
                         elevation = FloatingActionButtonDefaults.elevation(
                             defaultElevation = 6.dp,
@@ -227,6 +234,14 @@ fun CardDetailScreen(
         }
         val isLoading = currentCard == null || !isTransitionFinished
 
+        // C-06: tables và pagerState khai báo NGOÀI Crossfade → không bị reset về page 0
+        // mỗi khi skeleton → content transition. User giữ được vị trí trang hiện tại.
+        val tables = remember(weightEntries) { weightEntries.chunked(25) }
+        val pagerState = rememberPagerState(
+            initialPage = 0,
+            pageCount = { tables.size.coerceAtLeast(1) }
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -255,12 +270,7 @@ fun CardDetailScreen(
                     }
                 }
             } else {
-                val card = currentCard!!
-                val tables = remember(weightEntries) { weightEntries.chunked(25) }
-                val pagerState = rememberPagerState(
-                    initialPage = 0,
-                    pageCount = { tables.size.coerceAtLeast(1) }
-                )
+                val card = displayCard
                 val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
 
                 PullToRefreshBox(
@@ -425,6 +435,7 @@ fun CardDetailScreen(
                         text = { Text(stringResource(R.string.card_detail_delete_message)) },
                         confirmButton = {
                             TextButton(onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 showDeleteConfirm = false
                                 scope.launch {
                                     viewModel.deleteCard(card)

@@ -50,7 +50,7 @@ class NewsRepository @Inject constructor(
      *
      * @return số bài unique đã upsert vào Room
      */
-    suspend fun refresh(): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun refresh(forceLocalScrape: Boolean = false): Result<Int> = withContext(Dispatchers.IO) {
         runCatching {
             val now = System.currentTimeMillis()
             val cutoffMs = now - TimeUnit.DAYS.toMillis(14)
@@ -83,12 +83,13 @@ class NewsRepository @Inject constructor(
             }
 
             val cloudArticles = firestoreResult.getOrNull().orEmpty()
-            if (cloudArticles.isNotEmpty()) {
-                dao.upsertAll(cloudArticles)
-                dao.deleteOlderThan(cutoffMs)
-                fetchedCount = cloudArticles.size
-            } else {
-                // 2. Fallback: Cào trực tiếp từ RSS các trang báo nếu Firestore trống/lỗi
+            val shouldScrapeLocal = forceLocalScrape || cloudArticles.isEmpty()
+
+            val allArticles = mutableListOf<NewsArticle>()
+            allArticles.addAll(cloudArticles)
+
+            if (shouldScrapeLocal) {
+                // 2. Fallback hoặc chủ động cào tin từ RSS các trang báo
                 val localArticles = mutableListOf<NewsArticle>()
                 val jobs = NewsSource.entries.map { src ->
                     async {
@@ -122,11 +123,13 @@ class NewsRepository @Inject constructor(
                     .sortedByDescending { it.publishedAt }
                     .take(60)
 
-                if (filteredLocal.isNotEmpty()) {
-                    dao.upsertAll(filteredLocal)
-                    dao.deleteOlderThan(cutoffMs)
-                    fetchedCount = filteredLocal.size
-                }
+                allArticles.addAll(filteredLocal)
+            }
+
+            if (allArticles.isNotEmpty()) {
+                dao.upsertAll(allArticles)
+                dao.deleteOlderThan(cutoffMs)
+                fetchedCount = allArticles.distinctBy { it.id }.size
             }
 
             fetchedCount

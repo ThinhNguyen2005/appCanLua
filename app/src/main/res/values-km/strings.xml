@@ -503,4 +503,25 @@
     <string name="feedback_toast_empty">សូមបញ្ចូលខ្លឹមសារមតិកែលម្អរបស់អ្នក។</string>
     <string name="feedback_empty_messages">មិនទាន់មានមតិកែលម្អនៅឡើយទេ។ សូមផ្ញើមតិរបស់អ្នកមកយើងខ្ញុំដើម្បីឱ្យយើងអាចគាំទ្រអ្នកបាន!</string>
     <string name="feedback_admin_name">អ្នកអភិវឌ្ឍន៍</string>
-</resources>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">រកមិនឃើញលទ្ធផលទេ</string>
+    <string name="card_list_empty_filter_subtitle">គ្មានវិក្កយបត្រថ្លឹងត្រូវគ្នានឹងតម្រងទេ។ ព្យាយាមសម្អាតតម្រងដើម្បីបង្ហាញទាំងអស់។</string>
+    <string name="weather_error_missing_api_key">បាត់ OPENWEATHER_API_KEY នៅក្នុង local.properties</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">ពាន់លាន</string>
+    <string name="money_unit_million">លាន</string>
+    <string name="money_unit_hundred_thousand">សែន</string>
+    <string name="money_unit_thousand">ពាន់</string>
+    <string name="money_unit_dong">ដុង</string>
+    <string name="money_unit_hundred">រយ</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">មិនច្បាស់</string>
+    <string name="weather_your_location">ទីតាំងរបស់អ្នក</string>
+    <string name="weather_advisory_thunderstorm">រន្ទះ — កុំបាញ់ថ្នាំ ជៀសវាងទៅស្រែ</string>
+    <string name="weather_advisory_rain">ភ្លៀងធ្លាក់ខ្លាំង — ពន្យារពេលបាញ់ថ្នាំ ២៤ម៉ោង ពង្រឹងច្រាំង</string>
+    <string name="weather_advisory_hot_sun">ថ្ងៃក្តៅខ្លាំង — ពិនិត្យទឹកស្រែ ស្រោចទឹកពេលល្ងាចត្រជាក់</string>
+    <string name="weather_advisory_high_humidity">សំណើមខ្ពស់ — ប្រយ័ត្នជំងឺស្រពោន និងមមាចត្នោត</string>
+</resources>

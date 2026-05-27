@@ -82,6 +82,7 @@ fun SettingsScreen(
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val premiumInfo by PremiumState.info.collectAsStateWithLifecycle()
     var pendingRole by remember { mutableStateOf<String?>(null) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -196,6 +197,7 @@ fun SettingsScreen(
                                         }
                                     }
                                 }
+                                val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
                                 val activatedLabel = stringResource(R.string.settings_premium_activated)
                                 val earlyAdopterLabel = stringResource(R.string.settings_premium_early_adopter)
                                 val subtitle = if (premiumInfo.isActive) {
@@ -203,7 +205,6 @@ fun SettingsScreen(
                                         ?: if (premiumInfo.isEarlyAdopter) earlyAdopterLabel
                                         else activatedLabel
                                     val sinceLabel = if (premiumInfo.sinceMs > 0L) {
-                                        val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
                                         stringResource(
                                             R.string.settings_premium_since,
                                             sdf.format(Date(premiumInfo.sinceMs))
@@ -658,7 +659,7 @@ fun SettingsScreen(
                         )
 
                         Button(
-                            onClick = { authViewModel.signOut() },
+                            onClick = { showLogoutConfirm = true },
                             enabled = authState.isSignedIn,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -677,6 +678,33 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    // H-09: Logout confirmation dialog — tránh đăng xuất vô ý do nhấn nhầm
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirm = false },
+            title = { Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold) },
+            text = { Text("Bạn có chắc chắn muốn đăng xuất không? Dữ liệu chưa đồng bộ có thể bị mất.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.signOut()
+                        showLogoutConfirm = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
+                ) {
+                    Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
+        )
     }
 
     // Confirm dialog đổi role — đối xứng với flow cũ ở Profile.

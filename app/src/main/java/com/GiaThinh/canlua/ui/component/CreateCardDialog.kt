@@ -358,10 +358,15 @@ fun CreateCardDialog(
                         label = { Text(stringResource(R.string.create_card_cccd_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         trailingIcon = {
-                            IconButton(onClick = { showCccdHelp = true }) {
+                            IconButton(
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    showCccdHelp = true
+                                }
+                            ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Giải thích CCCD",
                                     tint = AppColors.GreenPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -396,10 +401,15 @@ fun CreateCardDialog(
                         label = { Text(stringResource(R.string.create_card_bag_weight_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_bag_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         trailingIcon = {
-                            IconButton(onClick = { showBagHelp = true }) {
+                            IconButton(
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    showBagHelp = true
+                                }
+                            ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Giải thích trừ bì",
                                     tint = AppColors.GreenPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -422,10 +432,15 @@ fun CreateCardDialog(
                         label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_impurity_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         trailingIcon = {
-                            IconButton(onClick = { showImpurityHelp = true }) {
+                            IconButton(
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    showImpurityHelp = true
+                                }
+                            ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Giải thích tạp chất",
                                     tint = AppColors.GreenPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -448,10 +463,15 @@ fun CreateCardDialog(
                         label = { Text(stringResource(R.string.create_card_moisture_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         trailingIcon = {
-                            IconButton(onClick = { showMoistureHelp = true }) {
+                            IconButton(
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    showMoistureHelp = true
+                                }
+                            ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Giải thích độ ẩm",
                                     tint = AppColors.GreenPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )

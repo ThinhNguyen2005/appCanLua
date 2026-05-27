@@ -292,7 +292,8 @@ fun WeightMetricsCard(
                 )
             }
             // Dòng đọc tiếng Việt — căn phải, ngay dưới số tiền để bà con đọc theo
-            MoneyFormatter.toVietnameseWords(totalAmount).takeIf { it.isNotEmpty() }?.let { words ->
+            val context = androidx.compose.ui.platform.LocalContext.current
+            MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
                 Text(
                     text = words,
                     style = MaterialTheme.typography.bodyMedium,

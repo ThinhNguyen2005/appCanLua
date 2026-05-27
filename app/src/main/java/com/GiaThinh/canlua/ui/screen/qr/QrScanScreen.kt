@@ -33,7 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.QrScanViewModel
 import com.GiaThinh.canlua.ui.viewmodel.QrVerificationState
 import com.GiaThinh.canlua.util.HapticUtil
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -55,7 +55,7 @@ import java.util.concurrent.Executors
 @Composable
 fun QrScanScreen(
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: QrScanViewModel = hiltViewModel()
 ) {
     TrackScreenRender("qr_scan")
     val context = LocalContext.current
@@ -144,7 +144,7 @@ fun QrScanScreen(
             }
         } else if (scanResult != null) {
             // Scan success
-            val result = scanResult!!
+            val result = scanResult ?: return
             Column(
                 Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

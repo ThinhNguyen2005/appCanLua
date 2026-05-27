@@ -501,4 +501,25 @@
     <string name="feedback_toast_empty">ກະລຸນາປ້ອນເນື້ອຫາຄຳຄິດເຫັນ.</string>
     <string name="feedback_empty_messages">ຍັງບໍ່ທັນມີຄຳຄິດເຫັນເທື່ອ. ກະລຸນາສົ່ງຄຳຄິດເຫັນຂອງທ່ານເພື່ອໃຫ້ພວກເຮົາຊ່ວຍເຫຼືອເດີ້!</string>
     <string name="feedback_admin_name">ຜູ້ພັດທະນາ</string>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">ບໍ່ພົບຜົນການຄົ້ນຫາ</string>
+    <string name="card_list_empty_filter_subtitle">ບໍ່ມີໃບຊັ່ງທີ່ກົງກັບຕົວຊອກຫາ. ລອງລຶບການກັ່ນຕອງເພື່ອສະແດງທັງໝົດ.</string>
+    <string name="weather_error_missing_api_key">ຂາດ OPENWEATHER_API_KEY ໃນ local.properties</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">ຕື້</string>
+    <string name="money_unit_million">ລ້ານ</string>
+    <string name="money_unit_hundred_thousand">ແສນ</string>
+    <string name="money_unit_thousand">ພັນ</string>
+    <string name="money_unit_dong">ດົງ</string>
+    <string name="money_unit_hundred">ຮ້ອຍ</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">ບໍ່ຈະແຈ້ງ</string>
+    <string name="weather_your_location">ຕຳແໜ່ງຂອງທ່ານ</string>
+    <string name="weather_advisory_thunderstorm">ຟ້າຜ່າ — ຫ້າມສີດຢາ, ຫຼີກເວັ້ນການລົງທົ່ງນາ</string>
+    <string name="weather_advisory_rain">ຝົນຕົກໜັກ — ເລື່ອນການສີດຢາ 24 ຊົ່ວໂມງ, ເສີມຄັນນາ</string>
+    <string name="weather_advisory_hot_sun">ແດດຮ້ອນຈັດ — ກວດສອບນ້ຳໃນນາ, ຫົດນ້ຳຍາມແລງທີ່ເຢັນ</string>
+    <string name="weather_advisory_high_humidity">ຄວາມຊຸ່ມຊື່ນສູງ — ລະວັງໂລກໃບໄໝ້ ແລະ ເພ້ຍກະໂດດສີນ້ຳຕານ</string>
 </resources>

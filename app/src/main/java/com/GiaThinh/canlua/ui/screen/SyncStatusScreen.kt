@@ -113,10 +113,11 @@ fun SyncStatusScreen(
                         )
                     }
 
-                    if (lastSyncTime != null) {
+                    val time = lastSyncTime
+                    if (time != null) {
                         val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()) }
                         Text(
-                            text = "Lần đồng bộ cuối: ${dateFormat.format(Date(lastSyncTime!!))}",
+                            text = "Lần đồng bộ cuối: ${dateFormat.format(Date(time))}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -1,0 +1,20 @@
+## local.properties configuration example
+#
+# Coppy file nay thanh 'local.properties' o thu muc goc va dien day du cac thong tin key duoi day.
+# Chu y: KHONG commit file local.properties thuc te len git vi no chua cac thong tin bao mat.
+
+# Location of the SDK (Tu dong boi Android Studio hoac nhap thu cong)
+sdk.dir=YOUR_ANDROID_SDK_DIR_PATH
+
+# OpenRouter API Key (Dung cho tinh nang AI Chat)
+OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
+
+# OpenWeather API Key (Dung cho tinh nang Thoi tiet)
+OPENWEATHER_API_KEY=YOUR_OPENWEATHER_API_KEY_HERE
+
+# Google Maps API Key (Dung de hien thi Ban do Lua)
+MAPS_API_KEY=YOUR_MAPS_API_KEY_HERE
+
+# Telegram Configs (Dung cho telegram notification & feedback bots)
+TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+TELEGRAM_ADMIN_CHAT_ID=YOUR_TELEGRAM_ADMIN_CHAT_ID_HERE

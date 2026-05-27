@@ -505,4 +505,26 @@
     <string name="feedback_toast_empty">Please enter your feedback content.</string>
     <string name="feedback_empty_messages">No feedback yet. Please send us your feedback so we can support you!</string>
     <string name="feedback_admin_name">Developer</string>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">No results found</string>
+    <string name="card_list_empty_filter_subtitle">No weigh cards match the filters. Try clearing filters to show all.</string>
+    <string name="weather_error_missing_api_key">Missing OPENWEATHER_API_KEY in local.properties</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">billion</string>
+    <string name="money_unit_million">million</string>
+    <string name="money_unit_hundred_thousand">hundred thousand</string>
+    <string name="money_unit_thousand">thousand</string>
+    <string name="money_unit_dong">dong</string>
+    <string name="money_unit_hundred">hundred</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">Unknown</string>
+    <string name="weather_your_location">Your location</string>
+    <string name="weather_advisory_thunderstorm">Lightning — do not spray, avoid going to fields</string>
+    <string name="weather_advisory_rain">Heavy rain — postpone spraying 24h, reinforce banks</string>
+    <string name="weather_advisory_hot_sun">Intense sun — check field water, water in cool afternoon</string>
+    <string name="weather_advisory_high_humidity">High humidity — watch out for blast disease, brown planthopper</string>
 </resources>
+

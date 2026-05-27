@@ -237,6 +237,20 @@ class FirestoreRepository @Inject constructor(
         }
     }
 
+    suspend fun getAllWeightEntries(): Result<List<FirestoreWeightEntry>> {
+        return try {
+            val query = userId?.let {
+                weightEntriesCollection.whereEqualTo("userId", it)
+            } ?: weightEntriesCollection
+
+            val snapshot = query.get().await()
+            val entries = snapshot.documents.mapNotNull { it.toObject(FirestoreWeightEntry::class.java) }
+            Result.success(entries)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ========== Transaction Operations ==========
 
     suspend fun syncTransaction(transaction: FirestoreTransaction): Result<String> {
@@ -278,6 +292,20 @@ class FirestoreRepository @Inject constructor(
         return try {
             transactionsCollection.document(transactionId).delete().await()
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAllTransactions(): Result<List<FirestoreTransaction>> {
+        return try {
+            val query = userId?.let {
+                transactionsCollection.whereEqualTo("userId", it)
+            } ?: transactionsCollection
+
+            val snapshot = query.get().await()
+            val transactions = snapshot.documents.mapNotNull { it.toObject(FirestoreTransaction::class.java) }
+            Result.success(transactions)
         } catch (e: Exception) {
             Result.failure(e)
         }

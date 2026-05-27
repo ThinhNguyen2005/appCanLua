@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -44,9 +45,9 @@ class NewsViewModel @Inject constructor(
         )
 
     fun loadData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (repository.isEmpty() || repository.isStale()) {
-                refresh()
+                refresh(forceLocalScrape = false)
             }
         }
     }
@@ -55,11 +56,11 @@ class NewsViewModel @Inject constructor(
         _selectedTopic.value = topic
     }
 
-    fun refresh() {
+    fun refresh(forceLocalScrape: Boolean = false) {
         if (_ui.value.isRefreshing) return
         viewModelScope.launch {
             _ui.value = _ui.value.copy(isRefreshing = true, errorMessage = null)
-            val result = repository.refresh()
+            val result = repository.refresh(forceLocalScrape = forceLocalScrape)
             _ui.value = _ui.value.copy(
                 isRefreshing = false,
                 errorMessage = result.exceptionOrNull()?.message?.takeIf { result.isFailure },

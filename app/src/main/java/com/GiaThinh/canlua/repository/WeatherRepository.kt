@@ -1,7 +1,10 @@
 package com.GiaThinh.canlua.repository
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.util.Log
 import com.GiaThinh.canlua.BuildConfig
+import com.GiaThinh.canlua.util.ApiKeyObfuscator
 import com.GiaThinh.canlua.data.dao.WeatherCacheDao
 import com.GiaThinh.canlua.data.location.GeoPoint
 import com.GiaThinh.canlua.data.location.LocationProvider
@@ -53,6 +56,7 @@ sealed class WeatherState {
  */
 @Singleton
 class WeatherRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val httpClient: HttpClient,
     private val locationProvider: LocationProvider,
     private val cacheDao: WeatherCacheDao
@@ -61,6 +65,7 @@ class WeatherRepository @Inject constructor(
     private val usableTtlMs = 24 * 60 * 60 * 1000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var refreshJob: kotlinx.coroutines.Job? = null
 
     private val _state = MutableStateFlow<WeatherState>(WeatherState.Loading)
 
@@ -74,7 +79,8 @@ class WeatherRepository @Inject constructor(
      * Emit lại từ đầu qua cold flow, kết quả cập nhật vào shared StateFlow.
      */
     fun requestRefresh(forceRefresh: Boolean = true) {
-        scope.launch { collectWeather(forceRefresh = forceRefresh) }
+        refreshJob?.cancel()
+        refreshJob = scope.launch { collectWeather(forceRefresh = forceRefresh) }
     }
 
     /** Tương thích ngược — delegate sang StateFlow để không sửa caller cũ. */
@@ -140,10 +146,10 @@ class WeatherRepository @Inject constructor(
     }
 
     private suspend fun fetchFromNetwork(forceFreshLocation: Boolean = false): Result<WeatherInfo> = withContext(Dispatchers.IO) {
-        if (BuildConfig.OPENWEATHER_API_KEY.isEmpty()) {
+        if (ApiKeyObfuscator.decode(BuildConfig.OPENWEATHER_API_KEY).isEmpty()) {
             Log.e(TAG, "fetchFromNetwork: OPENWEATHER_API_KEY rỗng — kiểm tra local.properties + BuildConfig")
             return@withContext Result.failure(IllegalStateException(
-                "Thiếu OPENWEATHER_API_KEY trong local.properties"
+                context.getString(com.GiaThinh.canlua.R.string.weather_error_missing_api_key)
             ))
         }
         val locFromProvider = locationProvider.getCurrentLocation(forceFresh = forceFreshLocation)
@@ -157,7 +163,7 @@ class WeatherRepository @Inject constructor(
         return@withContext try {
             val url = "https://api.openweathermap.org/data/2.5/weather" +
                 "?lat=${location.lat}&lon=${location.lon}" +
-                "&appid=${BuildConfig.OPENWEATHER_API_KEY}" +
+                "&appid=${ApiKeyObfuscator.decode(BuildConfig.OPENWEATHER_API_KEY)}" +
                 "&units=metric&lang=vi"
             // KHÔNG log full url — chứa appid. Chỉ log host + lat/lon.
             Log.d(TAG, "fetchFromNetwork: GET api.openweathermap.org lat=${location.lat} lon=${location.lon}")
@@ -176,9 +182,10 @@ class WeatherRepository @Inject constructor(
     private fun OpenWeatherResponse.toWeatherInfo(overrideName: String? = null): WeatherInfo {
         val condition = weather.firstOrNull()
         val rainChance = clouds.all
-        val descvi = condition?.description?.replaceFirstChar { it.uppercase() } ?: "Không rõ"
+        val descvi = condition?.description?.replaceFirstChar { it.uppercase() } 
+            ?: context.getString(com.GiaThinh.canlua.R.string.weather_unknown)
         val finalLocation = overrideName?.takeIf { it.isNotBlank() }
-            ?: name.ifEmpty { "Vị trí của bạn" }
+            ?: name.ifEmpty { context.getString(com.GiaThinh.canlua.R.string.weather_your_location) }
         return WeatherInfo(
             location = finalLocation,
             temperature = main.temp.roundToInt(),
@@ -195,10 +202,10 @@ class WeatherRepository @Inject constructor(
 
     private fun buildAdvisory(main: String?, rainChance: Int, temp: Int, humidity: Int): String? {
         return when {
-            main == "Thunderstorm" -> "Sấm sét — không phun thuốc, hạn chế ra đồng"
-            main == "Rain" || rainChance >= 70 -> "Mưa nhiều — hoãn phun thuốc 24h, gia cố bờ"
-            temp >= 35 && humidity < 60 -> "Nắng gắt — kiểm tra đủ nước ruộng, tưới chiều mát"
-            humidity >= 90 && temp in 25..32 -> "Ẩm cao — chú ý đạo ôn, rầy nâu"
+            main == "Thunderstorm" -> context.getString(com.GiaThinh.canlua.R.string.weather_advisory_thunderstorm)
+            main == "Rain" || rainChance >= 70 -> context.getString(com.GiaThinh.canlua.R.string.weather_advisory_rain)
+            temp >= 35 && humidity < 60 -> context.getString(com.GiaThinh.canlua.R.string.weather_advisory_hot_sun)
+            humidity >= 90 && temp in 25..32 -> context.getString(com.GiaThinh.canlua.R.string.weather_advisory_high_humidity)
             else -> null
         }
     }

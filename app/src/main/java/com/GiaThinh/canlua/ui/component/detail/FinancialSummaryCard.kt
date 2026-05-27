@@ -106,7 +106,8 @@ fun FinancialSummaryCard(
                 }
             )
             // Dòng đọc tiếng Việt cho "Thành tiền" — căn phải, ngay dưới số tiền
-            MoneyFormatter.toVietnameseWords(totalAmount).takeIf { it.isNotEmpty() }?.let { words ->
+            val context = androidx.compose.ui.platform.LocalContext.current
+            MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
                 Text(
                     text = words,
                     style = MaterialTheme.typography.bodyMedium,
@@ -183,7 +184,7 @@ fun FinancialSummaryCard(
                         color = AppColors.GoldDark
                     )
                 }
-                MoneyFormatter.toVietnameseWords(remainingAmount).takeIf { it.isNotEmpty() }?.let { words ->
+                MoneyFormatter.toWords(remainingAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
                     Text(
                         text = words,
                         style = MaterialTheme.typography.titleSmall,

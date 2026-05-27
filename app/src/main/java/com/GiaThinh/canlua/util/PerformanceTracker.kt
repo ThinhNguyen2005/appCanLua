@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua.util
 
+import com.GiaThinh.canlua.BuildConfig
 import android.util.Log
 import android.util.SparseIntArray
 import androidx.activity.ComponentActivity
@@ -25,10 +26,10 @@ object PerformanceTracker {
     private var activityRef = WeakReference<ComponentActivity>(null)
     
     // Lưu trữ các Trace đang chạy của màn hình (đo lường thời gian sử dụng, CPU, RAM)
-    private val activeScreenTraces = mutableMapOf<String, Trace>()
+    private val activeScreenTraces = java.util.concurrent.ConcurrentHashMap<String, Trace>()
     
     // Lưu trữ các Trace đo lường thời gian tải trang (Time to First Render)
-    private val activeLoadTraces = mutableMapOf<String, Trace>()
+    private val activeLoadTraces = java.util.concurrent.ConcurrentHashMap<String, Trace>()
     
     // Bộ thu thập chỉ số vẽ khung hình từ Android OS
     private var frameMetricsAggregator: FrameMetricsAggregator? = null
@@ -106,7 +107,7 @@ object PerformanceTracker {
                 startFrameTracking(activity)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting screen trace: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e(TAG, "Error starting screen trace: ${e.message}")
         }
     }
 
@@ -150,18 +151,18 @@ object PerformanceTracker {
                         
                         if (totalFrames > 0) {
                             val slowPercent = slowFrames.toFloat() / totalFrames * 100
-                            Log.i(TAG, "[$traceKey] Total: $totalFrames | Slow: $slowFrames (${String.format("%.1f", slowPercent)}%) | Frozen: $frozenFrames")
+                            Log.d(TAG, "[$traceKey] Total: $totalFrames | Slow: $slowFrames (${String.format(java.util.Locale.US, "%.1f", slowPercent)}%) | Frozen: $frozenFrames")
                         }
                     }
                     trace.stop()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error processing frame metrics in background: ${e.message}")
+                    if (BuildConfig.DEBUG) Log.e(TAG, "Error processing frame metrics in background: ${e.message}")
                     // Ensure trace is always stopped to prevent resource leak
                     try { trace.stop() } catch (_: Exception) {}
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping screen trace: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e(TAG, "Error stopping screen trace: ${e.message}")
         }
     }
 
@@ -176,7 +177,7 @@ object PerformanceTracker {
             trace.start()
             activeLoadTraces[routeName] = trace
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting load trace: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e(TAG, "Error starting load trace: ${e.message}")
         }
     }
 
@@ -192,7 +193,7 @@ object PerformanceTracker {
             Log.d(TAG, "Stopping load trace (First render success): $traceKey")
             trace.stop()
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping load trace for $sanitizedRoute: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e(TAG, "Error stopping load trace for $sanitizedRoute: ${e.message}")
         }
     }
 
@@ -207,7 +208,7 @@ object PerformanceTracker {
             frameMetricsAggregator?.add(activity)
             Log.d(TAG, "Frame tracking started on window")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start frame tracking: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e(TAG, "Failed to start frame tracking: ${e.message}")
         }
     }
 
@@ -225,7 +226,7 @@ object PerformanceTracker {
                 metrics[FrameMetricsAggregator.TOTAL_INDEX]
             } else null
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping frame metrics: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e(TAG, "Error stopping frame metrics: ${e.message}")
             null
         }
     }

@@ -8,7 +8,14 @@ import java.util.Date
 @Immutable
 @Entity(
     tableName = "cards",
-    indices = [androidx.room.Index(value = ["ownerUid"])]
+    indices = [
+        // Index cơ bản cho ownerUid (tất cả query theo user)
+        androidx.room.Index(value = ["ownerUid"]),
+        // H-02: Composite index để tăng tốc getAllCards (ORDER BY date DESC per user)
+        androidx.room.Index(value = ["ownerUid", "date"]),
+        // H-02: Index cho getCardsByRiceVariety + getSuggestedRiceVarieties
+        androidx.room.Index(value = ["ownerUid", "riceVariety"])
+    ]
 )
 data class Card(
     @PrimaryKey(autoGenerate = true)

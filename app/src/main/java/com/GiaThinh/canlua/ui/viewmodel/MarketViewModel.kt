@@ -34,6 +34,8 @@ class MarketViewModel @Inject constructor(
     private val _timeRangeDays = MutableStateFlow(7)
     private val _isLoading = MutableStateFlow(true)
     private val _filter = MutableStateFlow(MarketFilter())
+    private val _refreshError = MutableStateFlow<String?>(null)
+    val refreshError: StateFlow<String?> = _refreshError.asStateFlow()
 
     /** Tất cả prices từ Room (đã merge mock + Firestore) */
     private val allPrices: StateFlow<List<RicePrice>> = marketRepository.getAllPrices()
@@ -61,16 +63,18 @@ class MarketViewModel @Inject constructor(
     val timeRangeDays: StateFlow<Int> = _timeRangeDays.asStateFlow()
     val filter: StateFlow<MarketFilter> = _filter.asStateFlow()
 
-    val history: StateFlow<List<PricePoint>> = _selectedVariety
-        .flatMapLatest { variety ->
-            if (variety == null) flowOf(emptyList())
-            else marketRepository.getHistory(variety, _timeRangeDays.value)
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    // H-05: combine để history tự động cập nhật khi đổi cả variety lẵn timeRange
+    // thay vì hack `_selectedVariety.value = _selectedVariety.value` trong setTimeRange.
+    val history: StateFlow<List<PricePoint>> = combine(_selectedVariety, _timeRangeDays) { variety, days ->
+        variety to days
+    }.flatMapLatest { (variety, days) ->
+        if (variety == null) flowOf(emptyList())
+        else marketRepository.getHistory(variety, days)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     private var seedJob: kotlinx.coroutines.Job? = null
 
@@ -93,12 +97,19 @@ class MarketViewModel @Inject constructor(
     fun refreshFromFirestore() {
         viewModelScope.launch {
             _isLoading.value = true
+            _refreshError.value = null
             try {
                 marketRepository.refreshFromFirestore()
+            } catch (e: Exception) {
+                _refreshError.value = "Không thể tải giá mới. Đang hiển thị dữ liệu cũ."
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun clearRefreshError() {
+        _refreshError.value = null
     }
 
     fun selectVariety(variety: String?) {
@@ -107,7 +118,7 @@ class MarketViewModel @Inject constructor(
 
     fun setTimeRange(days: Int) {
         _timeRangeDays.value = days
-        _selectedVariety.value = _selectedVariety.value
+        // combine(_selectedVariety, _timeRangeDays) tự động phát lại history — không cần hack nữa.
     }
 
     fun setTrendFilter(trend: String?) {

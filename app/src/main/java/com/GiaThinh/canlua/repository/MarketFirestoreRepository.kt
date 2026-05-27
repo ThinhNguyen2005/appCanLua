@@ -105,14 +105,19 @@ class MarketFirestoreRepository @Inject constructor(
         }
         val registration: ListenerRegistration = pricesCollection
             .whereEqualTo("traderId", uid)
-            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.INCLUDE) { snapshot, error ->
                 if (error != null) {
                     android.util.Log.w("MarketRepo", "observeMyBids error", error)
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
+                val isFromCache = snapshot?.metadata?.isFromCache ?: false
                 val bids = snapshot?.documents
-                    ?.mapNotNull { it.toObject(FirestoreRicePrice::class.java) }
+                    ?.mapNotNull { doc ->
+                        doc.toObject(FirestoreRicePrice::class.java)?.apply {
+                            this.isFromCache = isFromCache
+                        }
+                    }
                     ?.sortedByDescending { it.updatedAt }
                     .orEmpty()
                 trySend(bids)

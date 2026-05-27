@@ -37,7 +37,9 @@ class AuthManager @Inject constructor(
     suspend fun signInAnonymously(): Result<FirebaseUser> {
         return try {
             val result = auth.signInAnonymously().await()
-            Result.success(result.user!!)
+            val user = result.user
+                ?: return Result.failure(IllegalStateException("Firebase signInAnonymously returned null user"))
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -46,7 +48,9 @@ class AuthManager @Inject constructor(
     suspend fun signInWithEmailAndPassword(email: String, password: String): Result<FirebaseUser> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
-            Result.success(result.user!!)
+            val user = result.user
+                ?: return Result.failure(IllegalStateException("Firebase signInWithEmailAndPassword returned null user"))
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -55,7 +59,9 @@ class AuthManager @Inject constructor(
     suspend fun createUserWithEmailAndPassword(email: String, password: String): Result<FirebaseUser> {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
-            Result.success(result.user!!)
+            val user = result.user
+                ?: return Result.failure(IllegalStateException("Firebase createUserWithEmailAndPassword returned null user"))
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }

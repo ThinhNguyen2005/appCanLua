@@ -1,4 +1,6 @@
 import java.util.Properties
+import java.util.Base64
+import java.lang.ProcessBuilder
 
 plugins {
     alias(libs.plugins.android.application)
@@ -20,6 +22,16 @@ val openWeatherKey: String = localProps.getProperty("OPENWEATHER_API_KEY", "")
 val openRouterKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
 val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY", "")
 
+fun encodeBase64(value: String): String {
+    return Base64.getEncoder().encodeToString(value.toByteArray())
+}
+
+val gitCommitCount = runCatching {
+    val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").start()
+    val countStr = process.inputStream.bufferedReader().readText().trim()
+    if (countStr.isNotEmpty()) countStr.toInt() else 1
+}.getOrDefault(1)
+
 android {
     namespace = "com.GiaThinh.canlua"
     compileSdk = 36
@@ -28,14 +40,14 @@ android {
         applicationId = "com.GiaThinh.canlua"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = gitCommitCount
+        versionName = "1.0.$gitCommitCount"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "OPENWEATHER_API_KEY", "\"$openWeatherKey\"")
-        buildConfigField("String", "OPENROUTER_API_KEY", "\"$openRouterKey\"")
-        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        buildConfigField("String", "OPENWEATHER_API_KEY", "\"${encodeBase64(openWeatherKey)}\"")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterKey)}\"")
+        buildConfigField("String", "MAPS_API_KEY", "\"${encodeBase64(mapsApiKey)}\"")
 
         // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
@@ -88,7 +100,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.benchmark.traceprocessor)
+    androidTestImplementation(libs.androidx.benchmark.traceprocessor)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.core.splashscreen)
     ksp(libs.androidx.room.compiler)
@@ -172,6 +184,7 @@ dependencies {
     // Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện
     // natively là Stable (không cần @Immutable annotation) → WeightTableCard Skippable hoàn toàn
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

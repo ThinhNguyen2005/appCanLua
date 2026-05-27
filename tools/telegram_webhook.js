@@ -15,13 +15,16 @@
  */
 
 // === CẤU HÌNH HỆ THỐNG ===
-const TELEGRAM_BOT_TOKEN = "8719184708:AAEHY0mfzeTyA7Zqu2S7W-Tu4ecYRZqbkjA";
-const ADMIN_CHAT_ID = "5236653379";
+// KHÔNG hardcode các thông tin nhạy cảm trên Git.
+// Hãy thiết lập các biến này trong Script Properties của Google Apps Script (Project Settings -> Script Properties).
+const scriptProperties = PropertiesService.getScriptProperties();
+const TELEGRAM_BOT_TOKEN = scriptProperties.getProperty("TELEGRAM_BOT_TOKEN");
+const ADMIN_CHAT_ID = scriptProperties.getProperty("ADMIN_CHAT_ID");
 
-// Thay thế thông tin Service Account từ Firebase của bạn vào đây:
-const FIREBASE_PROJECT_ID = "canlua-3995f"; // Project ID của Firebase
-const FIREBASE_CLIENT_EMAIL = "firebase-adminsdk-xxxxx@canluavn.iam.gserviceaccount.com"; // Điền email của service account
-const FIREBASE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"; // Điền private key (bao gồm cả các ký tự \n)
+// Thông tin Service Account từ Firebase được lấy cấu hình từ Script Properties:
+const FIREBASE_PROJECT_ID = scriptProperties.getProperty("FIREBASE_PROJECT_ID"); 
+const FIREBASE_CLIENT_EMAIL = scriptProperties.getProperty("FIREBASE_CLIENT_EMAIL"); 
+const FIREBASE_PRIVATE_KEY = scriptProperties.getProperty("FIREBASE_PRIVATE_KEY");
 
 /**
  * Hàm nhận request POST từ Telegram Webhook khi Admin thực hiện gửi tin nhắn hoặc trả lời (Reply).
