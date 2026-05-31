@@ -8,6 +8,8 @@
 
 ---
 
+Đường dẫn: D:\appCanLua\docs\superpowers\specs\2026-05-24-redesign-briefs
+
 ## Tổng quan project
 
 Cân Lúa là app Android Jetpack Compose số hoá quy trình cân lúa giữa **nông dân (FARMER)** và **thương lái (TRADER)** ở đồng bằng sông Cửu Long. Hiện có 27 màn hình, 4 tab (5 cho TRADER), offline-first với Room + Firestore sync. Mục tiêu redesign: rút gọn information architecture, thống nhất 1 design system, fix 47 pain points (đặc biệt 5 CRITICAL), và tạo brand identity "Editorial nông nghiệp" rõ ràng.
