@@ -1,7 +1,10 @@
 package com.GiaThinh.canlua.util
 
 import android.content.Context
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,18 +16,60 @@ class TextToSpeechManager @Inject constructor(
     private var tts: TextToSpeech? = null
     private var isEnabled = false
     private var isInitialized = false
+    private var isInitializing = false
     
     fun initialize(onInit: (Boolean) -> Unit = {}) {
+        if (isInitialized) {
+            onInit(true)
+            return
+        }
+        if (isInitializing) {
+            return
+        }
+        isInitializing = true
         tts = TextToSpeech(context) { status ->
+            isInitializing = false
             if (status == TextToSpeech.SUCCESS) {
                 val result = tts?.setLanguage(Locale.forLanguageTag("vi-VN"))
                 isInitialized = result != TextToSpeech.LANG_MISSING_DATA && 
                                result != TextToSpeech.LANG_NOT_SUPPORTED
+                if (isInitialized) {
+                    setupUtteranceListener()
+                }
                 onInit(isInitialized)
             } else {
                 isInitialized = false
                 onInit(false)
             }
+        }
+    }
+
+    private fun setupUtteranceListener() {
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            
+            override fun onDone(utteranceId: String?) {
+                if (utteranceId != null && utteranceId.startsWith("col_complete_")) {
+                    triggerColumnCompleteFeedback()
+                }
+            }
+            
+            override fun onError(utteranceId: String?) {}
+            
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?, errorCode: Int) {
+                super.onError(utteranceId, errorCode)
+            }
+        })
+    }
+
+    fun triggerColumnCompleteFeedback() {
+        HapticUtil.success(context)
+        try {
+            val toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+            toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 150)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
     
@@ -34,9 +79,14 @@ class TextToSpeechManager @Inject constructor(
         }
     }
     
-    fun speakNumber(number: Double) {
+    fun speakNumber(number: Double, completesColumn: Boolean = false) {
         val text = formatNumberForSpeech(number)
-        speak(text)
+        val utteranceId = if (completesColumn) {
+            "col_complete_${System.currentTimeMillis()}"
+        } else {
+            "normal_${System.currentTimeMillis()}"
+        }
+        speak(text, utteranceId)
     }
     
     private fun formatNumberForSpeech(number: Double): String {
@@ -105,6 +155,9 @@ class TextToSpeechManager @Inject constructor(
     
     fun setEnabled(enabled: Boolean) {
         isEnabled = enabled
+        if (enabled && !isInitialized) {
+            initialize()
+        }
     }
     
     fun isEnabled(): Boolean = isEnabled

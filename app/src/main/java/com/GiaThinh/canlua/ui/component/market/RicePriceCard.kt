@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.data.model.RicePrice
 import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
@@ -168,8 +167,7 @@ private fun PriceColumn(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.TextHint,
-            fontSize = 11.sp
+            color = AppColors.TextHint
         )
         Spacer(Modifier.height(4.dp))
         Text(
@@ -181,8 +179,7 @@ private fun PriceColumn(
         Text(
             text = "đ/kg",
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.TextHint,
-            fontSize = 10.sp
+            color = AppColors.TextHint
         )
     }
 }
@@ -217,10 +214,9 @@ private fun TrendBadge(
     }
 }
 
-private fun formatPrice(price: Double): String {
-    val nf = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
-    return nf.format(price.toLong())
-}
+private val PRICE_FORMAT = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+
+private fun formatPrice(price: Double): String = PRICE_FORMAT.format(price.toLong())
 
 private fun formatRelativeTime(timestamp: Long): String {
     val diff = System.currentTimeMillis() - timestamp

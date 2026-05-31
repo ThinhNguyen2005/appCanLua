@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,18 +37,17 @@ class NewsViewModel @Inject constructor(
 
     /** List bài lọc theo selectedTopic, hot stream cache 5s sau khi không còn subscriber. */
     val articles: StateFlow<List<NewsArticle>> = _selectedTopic
-        .flatMapLatest { topic -> repository.observe(topic, limit = 30) }
+        .flatMapLatest { topic -> repository.observe(topic, limit = 60) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
 
-    init {
-        // Auto refresh khi mở app: empty cache hoặc cache > 1 giờ
-        viewModelScope.launch {
+    fun loadData() {
+        viewModelScope.launch(Dispatchers.IO) {
             if (repository.isEmpty() || repository.isStale()) {
-                refresh()
+                refresh(forceLocalScrape = false)
             }
         }
     }
@@ -56,11 +56,11 @@ class NewsViewModel @Inject constructor(
         _selectedTopic.value = topic
     }
 
-    fun refresh() {
+    fun refresh(forceLocalScrape: Boolean = false) {
         if (_ui.value.isRefreshing) return
         viewModelScope.launch {
             _ui.value = _ui.value.copy(isRefreshing = true, errorMessage = null)
-            val result = repository.refresh()
+            val result = repository.refresh(forceLocalScrape = forceLocalScrape)
             _ui.value = _ui.value.copy(
                 isRefreshing = false,
                 errorMessage = result.exceptionOrNull()?.message?.takeIf { result.isFailure },

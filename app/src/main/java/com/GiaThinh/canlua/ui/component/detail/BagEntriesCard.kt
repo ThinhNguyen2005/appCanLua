@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -96,7 +97,9 @@ fun BagEntriesCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isLocked) AppColors.LockedSurface else AppColors.CardBg
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -165,7 +168,7 @@ fun BagEntriesCard(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(tables.size) { index ->
+                    items(tables.size, key = { it }) { index ->
                         val isActive = index == activeTableIndex
                         val borderWidth by animateDpAsState(
                             targetValue = if (isActive) 1.5.dp else 0.dp,
@@ -190,7 +193,9 @@ fun BagEntriesCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
+                Spacer(modifier = Modifier.height(12.dp))
 
                 HorizontalPager(
                     state = pagerState,
@@ -279,6 +284,7 @@ private fun BagCell(
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(AppColors.GreenSurface)
+            .border(1.dp, AppColors.GreenPrimary.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
             .semantics(mergeDescendants = true) {
                 role = if (isLocked) Role.Image else Role.Button
                 contentDescription = cellContentDescription

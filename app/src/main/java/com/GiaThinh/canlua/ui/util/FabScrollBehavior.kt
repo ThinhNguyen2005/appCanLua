@@ -3,11 +3,12 @@ package com.GiaThinh.canlua.ui.util
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 
 /**
  * Helpers để FAB tự ẩn khi user scroll xuống, hiện lại khi scroll lên.
@@ -22,20 +23,22 @@ import androidx.compose.runtime.setValue
  */
 @Composable
 fun LazyListState.isScrollingUp(): Boolean {
-    var previousIndex by remember(this) { mutableIntStateOf(firstVisibleItemIndex) }
-    var previousOffset by remember(this) { mutableIntStateOf(firstVisibleItemScrollOffset) }
-    return remember(this) {
-        derivedStateOf {
-            val scrollingUp = if (previousIndex != firstVisibleItemIndex) {
-                previousIndex > firstVisibleItemIndex
-            } else {
-                previousOffset >= firstVisibleItemScrollOffset
+    var isScrollingUp by remember(this) { mutableStateOf(true) }
+    LaunchedEffect(this) {
+        var previousIndex = firstVisibleItemIndex
+        var previousOffset = firstVisibleItemScrollOffset
+        snapshotFlow { firstVisibleItemIndex to firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                isScrollingUp = if (index != previousIndex) {
+                    index < previousIndex
+                } else {
+                    offset <= previousOffset
+                }
+                previousIndex = index
+                previousOffset = offset
             }
-            previousIndex = firstVisibleItemIndex
-            previousOffset = firstVisibleItemScrollOffset
-            scrollingUp
-        }
-    }.value
+    }
+    return isScrollingUp
 }
 
 /**
@@ -43,12 +46,14 @@ fun LazyListState.isScrollingUp(): Boolean {
  */
 @Composable
 fun ScrollState.isScrollingUp(): Boolean {
-    var previousValue by remember(this) { mutableIntStateOf(value) }
-    return remember(this) {
-        derivedStateOf {
-            val scrollingUp = previousValue >= value
-            previousValue = value
-            scrollingUp
-        }
-    }.value
+    var isScrollingUp by remember(this) { mutableStateOf(true) }
+    LaunchedEffect(this) {
+        var previousValue = value
+        snapshotFlow { value }
+            .collect { current ->
+                isScrollingUp = current <= previousValue
+                previousValue = current
+            }
+    }
+    return isScrollingUp
 }

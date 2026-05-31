@@ -15,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HourglassBottom
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -29,7 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,8 +55,8 @@ fun RoleRequestScreen(
     viewModel: RoleRequestViewModel = hiltViewModel()
 ) {
     TrackScreenRender("role_request")
-    val ui by viewModel.ui.collectAsState()
-    val existing by viewModel.myRequest.collectAsState()
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val existing by viewModel.myRequest.collectAsStateWithLifecycle()
 
     var businessName by remember { mutableStateOf("") }
     var taxId by remember { mutableStateOf("") }
@@ -173,7 +173,7 @@ fun RoleRequestScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(27.dp)
             ) {
-                Icon(Icons.Default.Send, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                 Spacer(Modifier.height(0.dp))
                 Text(
                     "  Gửi yêu cầu",

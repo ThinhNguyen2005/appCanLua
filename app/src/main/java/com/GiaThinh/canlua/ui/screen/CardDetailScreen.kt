@@ -3,6 +3,9 @@ package com.GiaThinh.canlua.ui.screen
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -47,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -69,7 +71,7 @@ import com.GiaThinh.canlua.ui.component.rememberHeaderHeights
 import com.GiaThinh.canlua.ui.feedback.LocalAppToast
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.isScrollingUp
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardDetailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -78,12 +80,16 @@ import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
+// Singleton — dùng chung cho mọi instance CardDetailScreen.
+private val DETAIL_DATE_FMT: SimpleDateFormat =
+    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
     cardId: Long,
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: CardDetailViewModel = hiltViewModel()
 ) {
     com.GiaThinh.canlua.util.TrackScreenRender("card_detail")
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
@@ -97,20 +103,28 @@ fun CardDetailScreen(
     val scrollState = rememberLazyListState()
     val density = LocalDensity.current
 
+    // Tính 1 lần mỗi khi weightEntries đổi — dùng cho cả header lẫn nội dung bên trong.
+    val lastEntryTimeForHeader = remember(currentCard, weightEntries) {
+        if (currentCard == null) null else weightEntries.maxOfOrNull { it.timestamp }
+    }
 
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val appToast = LocalAppToast.current
     val scope = rememberCoroutineScope()
 
+    val viewModelLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     // Pull-to-refresh state
     var isRefreshing by remember { mutableStateOf(false) }
     val pullState = rememberPullToRefreshState()
+    LaunchedEffect(viewModelLoading) {
+        if (!viewModelLoading) {
+            isRefreshing = false
+        }
+    }
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
-            delay(550) // perceptible feedback even on cache hit
             viewModel.loadCardById(cardId)
-            isRefreshing = false
         }
     }
 
@@ -153,7 +167,10 @@ fun CardDetailScreen(
         floatingActionButton = {
             // Drive-style Extended FAB — chỉ hiện khi card đã load và user đang ở đầu trang
             currentCard?.let { c ->
-                val fabVisible = scrollState.isScrollingUp() && entryActionTarget == null
+                val isScrollingUp = scrollState.isScrollingUp()
+                val fabVisible = remember(isScrollingUp, entryActionTarget) {
+                    isScrollingUp && entryActionTarget == null
+                }
                 AnimatedVisibility(
                     visible = fabVisible,
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
@@ -161,10 +178,10 @@ fun CardDetailScreen(
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             if (c.isLocked) {
                                 appToast.warning(context.getString(R.string.card_detail_unlock_card_first))
                             } else {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 navController.navigate("weight_input/${cardId}")
                             }
                         },
@@ -178,13 +195,14 @@ fun CardDetailScreen(
                         text = {
                             Text(
                                 stringResource(R.string.card_detail_weigh_action),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             )
                         },
                         expanded = true,
                         containerColor = if (c.isLocked) AppColors.GreenPrimary.copy(alpha = 0.45f) else AppColors.GreenPrimary,
-                        contentColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         shape = RoundedCornerShape(16.dp),
                         elevation = FloatingActionButtonDefaults.elevation(
                             defaultElevation = 6.dp,
@@ -209,7 +227,20 @@ fun CardDetailScreen(
             )
         }
         val displayCard = currentCard ?: placeholderCard
-        val isLoading = currentCard == null
+        var isTransitionFinished by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            delay(150L) // Đợi transition 300ms của NavHost kết thúc một nửa để dựng layout trước
+            isTransitionFinished = true
+        }
+        val isLoading = currentCard == null || !isTransitionFinished
+
+        // C-06: tables và pagerState khai báo NGOÀI Crossfade → không bị reset về page 0
+        // mỗi khi skeleton → content transition. User giữ được vị trí trang hiện tại.
+        val tables = remember(weightEntries) { weightEntries.chunked(25) }
+        val pagerState = rememberPagerState(
+            initialPage = 0,
+            pageCount = { tables.size.coerceAtLeast(1) }
+        )
 
         Box(
             modifier = Modifier
@@ -217,21 +248,30 @@ fun CardDetailScreen(
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // === Content layer ===
-            if (isLoading) {
-                Column {
-                    Spacer(Modifier.height(heights.expanded + 16.dp))
-                    DetailSkeleton()
+            Crossfade(
+                targetState = isLoading,
+                animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing),
+                label = "detail_content_fade"
+            ) { loading ->
+            if (loading) {
+                PullToRefreshBox(
+                    isRefreshing = false,
+                    onRefresh = {},
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    LazyColumn(
+                        state = scrollState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.height(heights.expanded + 16.dp)) }
+                        item { DetailSkeleton() }
+                    }
                 }
             } else {
-                val card = currentCard!!
-                val tables = remember(weightEntries) { weightEntries.chunked(25) }
-                val pagerState = rememberPagerState(
-                    initialPage = 0,
-                    pageCount = { tables.size.coerceAtLeast(1) }
-                )
+                val card = displayCard
                 val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
-
-                val lastEntryTime = weightEntries.maxOfOrNull { it.timestamp }
 
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
@@ -266,7 +306,7 @@ fun CardDetailScreen(
                         item {
                             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                                 val createdLabel = remember(card.date) {
-                                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(card.date)
+                                    DETAIL_DATE_FMT.format(card.date)
                                 }
                                 CardInfoCard(
                                     traderName = card.traderName,
@@ -308,7 +348,9 @@ fun CardDetailScreen(
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         viewModel.refreshFieldLocation(cardId)
                                         appToast.info(context.getString(R.string.card_detail_updating_location))
-                                    }
+                                    },
+                                    isLocked = card.isLocked,
+                                    cccd = card.cccd
                                 )
                             }
                         }
@@ -321,8 +363,10 @@ fun CardDetailScreen(
                                     bagCount = card.bagCount,
                                     bagWeight = card.bagWeight,
                                     impurityWeight = card.impurityWeight,
+                                    moisturePercent = card.moisturePercent,
                                     netWeight = card.netWeight,
-                                    numberFormat = numberFormat
+                                    numberFormat = numberFormat,
+                                    isLocked = card.isLocked
                                 )
                             }
                         }
@@ -336,6 +380,9 @@ fun CardDetailScreen(
                                     depositAmount = card.depositAmount,
                                     paidAmount = card.paidAmount,
                                     remainingAmount = card.remainingAmount,
+                                    isPaid = card.isPaid,
+                                    onPaidChange = { viewModel.updateCard(card.copy(isPaid = it)) },
+                                    isLocked = card.isLocked,
                                     numberFormat = numberFormat
                                 )
                             }
@@ -388,6 +435,7 @@ fun CardDetailScreen(
                         text = { Text(stringResource(R.string.card_detail_delete_message)) },
                         confirmButton = {
                             TextButton(onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 showDeleteConfirm = false
                                 scope.launch {
                                     viewModel.deleteCard(card)
@@ -431,6 +479,7 @@ fun CardDetailScreen(
                     )
                 }
             }
+            } // end Crossfade
 
             // === HEADER LAYER (luôn render từ frame 0) ===
             // Đặt OUT of if/else → header tồn tại NGAY khi composable mount,
@@ -439,7 +488,7 @@ fun CardDetailScreen(
             CustomHeader(
                 card = displayCard,
                 collapseFraction = collapseFraction,
-                lastEntryTime = if (isLoading) null else weightEntries.maxOfOrNull { it.timestamp },
+                lastEntryTime = lastEntryTimeForHeader,
                 modifier = Modifier.height(headerHeight),
                 onBack = { navController.popBackStack() },
                 onAdd = {
@@ -465,6 +514,8 @@ fun CardDetailScreen(
                     if (isLoading) return@CustomHeader
                     if (displayCard.isLocked) {
                         appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
+                    } else if (!displayCard.isPaid) {
+                        appToast.warning(context.getString(R.string.card_detail_delete_blocked_unpaid))
                     } else {
                         showDeleteConfirm = true
                     }

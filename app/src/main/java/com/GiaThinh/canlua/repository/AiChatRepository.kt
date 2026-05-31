@@ -5,11 +5,17 @@ import com.GiaThinh.canlua.data.model.Profile
 import com.GiaThinh.canlua.data.model.RicePrice
 import com.GiaThinh.canlua.data.model.WeatherInfo
 import com.GiaThinh.canlua.data.remote.HttpClient
+import com.GiaThinh.canlua.data.remote.HttpException
 import com.GiaThinh.canlua.data.remote.ai.ChatMessage
 import com.GiaThinh.canlua.data.remote.ai.OpenRouterRequest
 import com.GiaThinh.canlua.data.remote.ai.OpenRouterResponse
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.GiaThinh.canlua.util.ApiKeyObfuscator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
+import java.io.IOException
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -31,7 +37,12 @@ import javax.inject.Singleton
 class AiChatRepository @Inject constructor(
     private val httpClient: HttpClient
 ) {
+    // Session cache: tránh gọi API lại cho cùng một vụ trong cùng phiên làm việc.
+    // Key = hash của seasonSummary (nội dung đầy đủ); value = markdown kết quả.
+    private val seasonCache = HashMap<Int, String>()
     companion object {
+        // Chỉ dùng 1 free model duy nhất — bỏ fallback cho đơn giản và predictable cost.
+        // Đổi constant này nếu muốn thử model khác (nhớ giữ suffix `:free`).
         private const val MODEL = "openrouter/free"
         private const val URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -46,6 +57,15 @@ QUY TẮC TUYỆT ĐỐI:
 - Tận dụng "THỜI TIẾT HIỆN TẠI" để khuyến nghị (vd: trời mưa → hoãn phun thuốc).
 - Cá nhân hoá xưng hô theo "HỒ SƠ NGƯỜI DÙNG" (vd: gọi tên + vai trò Nông dân/Thương lái).
 - Nếu không chắc, khuyên hỏi cán bộ khuyến nông địa phương.
+
+NGÔN NGỮ — RẤT QUAN TRỌNG (đối tượng đọc là bà con nông dân, nhiều người lớn tuổi):
+- Thông tin phải CHÍNH XÁC nhưng diễn đạt phải GẦN GŨI, dễ hiểu như đang nói chuyện ngoài đồng.
+- TUYỆT ĐỐI tránh thuật ngữ khoa học khô khan: "hoạt chất", "phổ tác động", "kháng sinh thực vật", "vi sinh đối kháng", "pH", "EC", "NPK tỷ lệ"... Nếu bắt buộc dùng, phải giải thích ngay trong ngoặc bằng từ dân dã (vd: "đạm (urê — phân màu trắng hạt nhỏ)", "lân (super lân)", "kali (kali clorua — phân hạt đỏ)").
+- Tên thuốc/phân: gọi tên thương mại quen thuộc tại ĐBSCL trước, tên hoạt chất ghi sau trong ngoặc nếu cần.
+- Đo lường: ưu tiên đơn vị bà con hay dùng — "công" (1.000 m²), "giạ", "bao 50kg", "bình 16 lít", "thùng phuy", thay vì hecta/lít/kg trừ khi cần chính xác.
+- Câu văn ngắn (≤ 20 chữ/câu). Tránh câu phức nhiều mệnh đề.
+- Xưng "bà con" / "anh/chú/cô" tự nhiên, không dùng "quý khách", "người dùng", "bạn".
+- Giải thích bệnh/sâu bằng dấu hiệu mắt thường thấy được (vd: "lá vàng từ chóp xuống", "thân có đốm nâu") trước khi nêu tên bệnh.
 """
 
         private const val TRADER_PROMPT_BASE = """
@@ -60,6 +80,13 @@ QUY TẮC TUYỆT ĐỐI:
 - Cá nhân hoá xưng hô theo "HỒ SƠ NGƯỜI DÙNG" (vai trò Thương lái).
 - Khuyến nghị biên lợi nhuận hợp lý theo thực tế 50-150 đ/kg, không vẽ lợi nhuận phí lý.
 - Nếu không chắc, khuyên tham khảo thêm nhà máy xay xuất khẩu hoặc HTX.
+
+NGÔN NGỮ — RẤT QUAN TRỌNG:
+- Thông tin phải CHÍNH XÁC, số liệu rõ ràng, nhưng cách diễn đạt vẫn phải GẦN GŨI như đang trao đổi ngoài bến ghe.
+- Tránh thuật ngữ tài chính khó: "biên gộp", "ROI", "hedging", "futures"... Nếu cần dùng phải giải thích ngay (vd: "biên lợi nhuận (lời thực sau khi trừ chi phí vận chuyển, hao hụt)").
+- Dùng đơn vị thực tế: "đ/kg", "ghe", "bao 50kg", "tấn", "công". Khi nói khối lượng lớn, ưu tiên "tấn" cho gọn.
+- Câu ngắn, dứt khoát, có con số. Tránh câu mơ hồ kiểu "có thể, tùy thuộc, dao động".
+- Xưng "anh/chú" thay vì "quý khách", "bạn".
 """
     }
 
@@ -80,36 +107,14 @@ QUY TẮC TUYỆT ĐỐI:
         knowledgeHits: List<KnowledgeBaseRepository.KnowledgeEntry> = emptyList(),
         audience: KnowledgeBaseRepository.Audience = KnowledgeBaseRepository.Audience.FARMER
     ): Result<String> = withContext(Dispatchers.IO) {
-        if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
+        if (ApiKeyObfuscator.decode(BuildConfig.OPENROUTER_API_KEY).isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
-                "Thiếu OPENROUTER_API_KEY trong local.properties"
+                "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
         }
-        try {
-            val systemPrompt = buildSystemPrompt(profile, weather, ricePrices, knowledgeHits, audience)
-            val req = OpenRouterRequest(
-                model = MODEL,
-                messages = listOf(ChatMessage("system", systemPrompt)) + history
-            )
-            val resp: OpenRouterResponse = httpClient.postJson(
-                url = URL,
-                body = req,
-                headers = mapOf(
-                    "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
-                    "HTTP-Referer" to "https://canlua.app",
-                    "X-Title" to "CanLua"
-                )
-            )
-            resp.error?.message?.let { return@withContext Result.failure(RuntimeException(it)) }
-            val answer = resp.choices.firstOrNull()?.message?.content?.trim().orEmpty()
-            if (answer.isEmpty()) {
-                Result.failure(RuntimeException("AI không trả về nội dung"))
-            } else {
-                Result.success(answer)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val systemPrompt = buildSystemPrompt(profile, weather, ricePrices, knowledgeHits, audience)
+        val messages = listOf(ChatMessage("system", systemPrompt)) + history
+        callOnce(messages, context = "chat")
     }
 
     /**
@@ -129,34 +134,95 @@ QUY TẮC TUYỆT ĐỐI:
         profile: Profile? = null,
         weather: WeatherInfo? = null
     ): Result<String> = withContext(Dispatchers.IO) {
-        if (BuildConfig.OPENROUTER_API_KEY.isEmpty()) {
+        if (ApiKeyObfuscator.decode(BuildConfig.OPENROUTER_API_KEY).isEmpty()) {
             return@withContext Result.failure(IllegalStateException(
-                "Thiếu OPENROUTER_API_KEY trong local.properties"
+                "Trợ lý AI chưa được cấu hình. Vui lòng liên hệ nhà phát triển."
             ))
         }
-        try {
-            val systemPrompt = buildSeasonAnalysisPrompt(profile, weather)
-            val userMsg = ChatMessage(role = "user", content = seasonSummary)
+        // Trả về kết quả đã cache nếu cùng summary trong phiên này — tránh gọi API lặp.
+        val cacheKey = seasonSummary.hashCode()
+        seasonCache[cacheKey]?.let { return@withContext Result.success(it) }
 
-            val req = OpenRouterRequest(
-                model = MODEL,
-                messages = listOf(ChatMessage("system", systemPrompt), userMsg)
-            )
-            val resp: OpenRouterResponse = httpClient.postJson(
-                url = URL,
-                body = req,
-                headers = mapOf(
-                    "Authorization" to "Bearer ${BuildConfig.OPENROUTER_API_KEY}",
-                    "HTTP-Referer" to "https://canlua.app",
-                    "X-Title" to "CanLua"
+        val systemPrompt = buildSeasonAnalysisPrompt(profile, weather)
+        val messages = listOf(
+            ChatMessage("system", systemPrompt),
+            ChatMessage("user", seasonSummary)
+        )
+        val result = callOnce(messages, context = "analyzeSeason")
+        result.onSuccess { markdown -> seasonCache[cacheKey] = markdown }
+        result
+    }
+
+    /**
+     * Gọi OpenRouter 1 lần, KHÔNG retry/fallback. Mọi lỗi map sang câu tiếng Việt
+     * gần gũi cho bà con để UI hiển thị trực tiếp.
+     */
+    private suspend fun callOnce(messages: List<ChatMessage>, context: String): Result<String> {
+        val crashlytics = runCatching { FirebaseCrashlytics.getInstance() }.getOrNull()
+
+        return try {
+            val req = OpenRouterRequest(model = MODEL, messages = messages)
+            val resp: OpenRouterResponse = withTimeout(30_000L) {
+                httpClient.postJson(
+                    url = URL,
+                    body = req,
+                    headers = mapOf(
+                        "Authorization" to "Bearer ${ApiKeyObfuscator.decode(BuildConfig.OPENROUTER_API_KEY)}",
+                        "HTTP-Referer" to "https://canlua.app",
+                        "X-Title" to "CanLua"
+                    )
                 )
+            }
+            resp.error?.message?.let { errMsg ->
+                crashlytics?.log("AI[$context] model=$MODEL api_error=$errMsg")
+                return Result.failure(RuntimeException(
+                    "AI tạm không trả lời được. Bà con thử lại sau ít phút."
+                ))
+            }
+            val choice = resp.choices.firstOrNull()
+            val rawContent = choice?.message?.content?.trim().orEmpty()
+            val finishReason = choice?.finish_reason ?: "unknown"
+            crashlytics?.log(
+                "AI[$context] model=$MODEL finish_reason=$finishReason len=${rawContent.length}"
             )
-            resp.error?.message?.let { return@withContext Result.failure(RuntimeException(it)) }
-            val answer = resp.choices.firstOrNull()?.message?.content?.trim().orEmpty()
-            if (answer.isEmpty()) Result.failure(RuntimeException("AI không trả về nội dung"))
-            else Result.success(answer)
+
+            if (rawContent.isEmpty()) {
+                return Result.failure(RuntimeException(
+                    "AI chưa trả lời được câu này. Bà con thử hỏi cách khác xem."
+                ))
+            }
+            val finalAnswer = if (finishReason == "length") {
+                "$rawContent…\n\n_(Trả lời bị cắt do độ dài. Bà con thử hỏi gọn hơn.)_"
+            } else {
+                rawContent
+            }
+            Result.success(finalAnswer)
+        } catch (e: TimeoutCancellationException) {
+            crashlytics?.log("AI[$context] timeout: ${e.message}")
+            Result.failure(RuntimeException(
+                "Không kết nối được AI (quá thời gian phản hồi). Bà con thử lại sau."
+            ))
+        } catch (e: HttpException) {
+            crashlytics?.log("AI[$context] http_${e.code}: ${e.errorBody.take(200)}")
+            val userMsg = when (e.code) {
+                401, 403 -> "Khoá AI không hợp lệ. Báo nhà phát triển kiểm tra giúp."
+                402 -> "Hết lượt hỏi AI miễn phí hôm nay. Bà con thử lại vào ngày mai."
+                429 -> "AI đang quá tải. Bà con chờ chút rồi gửi lại."
+                in 500..599 -> "AI gặp sự cố tạm thời. Bà con thử lại sau ít phút."
+                else -> "AI tạm không trả lời được (mã ${e.code}). Bà con thử lại sau."
+            }
+            Result.failure(RuntimeException(userMsg))
+        } catch (e: IOException) {
+            crashlytics?.log("AI[$context] io_error: ${e.javaClass.simpleName}: ${e.message}")
+            Result.failure(RuntimeException(
+                "Không kết nối được AI. Bà con kiểm tra mạng rồi gửi lại."
+            ))
         } catch (e: Exception) {
-            Result.failure(e)
+            crashlytics?.log("AI[$context] exception: ${e.javaClass.simpleName}: ${e.message}")
+            crashlytics?.recordException(RuntimeException("AI[$context] unexpected: ${e.message}", e))
+            Result.failure(RuntimeException(
+                "AI tạm không trả lời được. Bà con thử lại sau."
+            ))
         }
     }
 
@@ -182,10 +248,16 @@ Nhiệm vụ: phân tích bảng số liệu mùa vụ mà người dùng cung c
 
 QUY TẮC:
 - Trả lời 100% Tiếng Việt.
-- KHÔNG bịa số liệu — chỉ dùng số có trong input.
+- KHÔNG bịa số liệu — chỉ dùng số có trong input. Số liệu phải CHÍNH XÁC tuyệt đối.
 - Khi delta là +/-, gọi đúng "tăng" / "giảm".
 - Nếu input thiếu data (vd: tổng số phiếu = 0), nói rõ "chưa đủ dữ liệu để phân tích".
-- Tránh thuật ngữ kỹ thuật phức tạp.
+
+NGÔN NGỮ — đối tượng đọc là bà con nông dân ĐBSCL:
+- Diễn đạt GẦN GŨI, dễ hiểu như nói chuyện ngoài đồng. Tránh giọng văn báo cáo.
+- KHÔNG dùng thuật ngữ khô khan: "hiệu suất canh tác", "biên lợi nhuận", "ROI", "tỷ suất", "delta", "biến động"... Thay bằng: "lúa được mùa hơn", "lời nhiều/ít hơn", "chênh lệch so với vụ trước".
+- Đơn vị dùng quen thuộc: "công" (1.000 m²), "bao", "giạ", "tấn" thay vì "ha", "tạ" nếu được.
+- Câu ngắn, không quá 20 chữ. Tránh câu phức nhiều mệnh đề lồng nhau.
+- Xưng "bà con" / "anh/chú" tự nhiên.
 """.trim()
         )
         profile?.let { parts += buildProfileBlock(it) }

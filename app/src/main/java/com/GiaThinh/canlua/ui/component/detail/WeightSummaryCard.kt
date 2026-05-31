@@ -1,12 +1,14 @@
 package com.GiaThinh.canlua.ui.component.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,14 +34,18 @@ fun WeightSummaryCard(
     bagCount: Int,
     bagWeight: Double,
     impurityWeight: Double,
+    moisturePercent: Double,
     netWeight: Double,
     numberFormat: NumberFormat,
+    isLocked: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isLocked) AppColors.LockedSurface else AppColors.CardBg
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -66,6 +72,7 @@ fun WeightSummaryCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(AppColors.WeightSurface)
+                    .border(1.dp, AppColors.DividerStrong, RoundedCornerShape(12.dp))
                     .padding(vertical = 14.dp, horizontal = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -132,8 +139,22 @@ fun WeightSummaryCard(
                     )
                 }
             )
+            FluentStatRow(
+                icon = Icons.Outlined.WaterDrop,
+                label = stringResource(R.string.weight_metrics_moisture_label),
+                trailing = {
+                    AnimatedNumber(
+                        value = moisturePercent,
+                        formatter = { "${"%.1f".format(it)} %" },
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Info
+                    )
+                },
+                iconTint = AppColors.Info
+            )
 
-            HorizontalDivider(color = AppColors.Divider, thickness = 0.6.dp)
+            HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
 
             // KL thực (highlight tonal layer 2)
             Box(
@@ -141,6 +162,7 @@ fun WeightSummaryCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(AppColors.GreenSurface)
+                    .border(1.dp, AppColors.GreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     .padding(vertical = 12.dp, horizontal = 16.dp)
             ) {
                 Row(

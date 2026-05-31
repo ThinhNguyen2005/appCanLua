@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
@@ -62,9 +61,9 @@ fun GradientProfileHeader(
             Text(
                 text = name.ifBlank { defaultName },
                 color = AppColors.TextPrimary,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.ExtraBold
+                ),
                 modifier = Modifier.weight(1f, fill = false),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -88,8 +87,9 @@ fun GradientProfileHeader(
                 Text(
                     text = roleLabel,
                     color = AppColors.GreenPrimary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
             }
         }
@@ -99,8 +99,9 @@ fun GradientProfileHeader(
             Text(
                 text = email,
                 color = AppColors.TextHint,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium
+                )
             )
         }
     }

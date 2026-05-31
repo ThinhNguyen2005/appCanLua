@@ -3,10 +3,12 @@ package com.GiaThinh.canlua.ui.screen.market
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Row
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,33 +17,42 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.outlined.PriceChange
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,16 +81,23 @@ import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
 import com.GiaThinh.canlua.util.PremiumState
 import com.GiaThinh.canlua.util.TrackScreenRender
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.launch
 
 /**
  * Module 2 — Bảng Tin Giá Lúa & Thị Trường
  *
- * Phase 2.1: read-only với mock data + Vico chart.
- * UX update: bỏ header trùng (TopBar đã có "Thị Trường"), thay icon Refresh
- * bằng cử chỉ Pull-to-Refresh, và Shimmer skeleton khi load lần đầu.
+ * Layout: TabRow + HorizontalPager 2 trang.
+ *  - Page 0 "Tin tức": Weather widget + NativeAd + NewsSection (cuộn chung trong LazyColumn)
+ *  - Page 1 "Bảng giá lúa": Giá rao của bạn (nếu trader) + Bảng giá thu mua
+ *
+ * Weather card chỉ thuộc tab Tin tức — cuộn cùng news, không sticky, không hiện ở
+ * Prices tab hay tab khác. Tab và pager đồng bộ 2 chiều.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MarketScreen(
     viewModel: MarketViewModel = hiltViewModel(),
@@ -89,17 +107,18 @@ fun MarketScreen(
     bidsViewModel: TraderBidsViewModel = hiltViewModel()
 ) {
     TrackScreenRender("market")
-    val prices by viewModel.prices.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val selectedVariety by viewModel.selectedVariety.collectAsState()
-    val timeRangeDays by viewModel.timeRangeDays.collectAsState()
-    val history by viewModel.history.collectAsState()
-    val filter by viewModel.filter.collectAsState()
-    val weatherState by weatherViewModel.state.collectAsState()
+    val prices by viewModel.prices.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val refreshError by viewModel.refreshError.collectAsStateWithLifecycle()
+    val selectedVariety by viewModel.selectedVariety.collectAsStateWithLifecycle()
+    val timeRangeDays by viewModel.timeRangeDays.collectAsStateWithLifecycle()
+    val history by viewModel.history.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val weatherState by weatherViewModel.state.collectAsStateWithLifecycle()
 
-    val newsArticles by newsViewModel.articles.collectAsState()
-    val newsTopic by newsViewModel.selectedTopic.collectAsState()
-    val newsUi by newsViewModel.ui.collectAsState()
+    val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
+    val newsTopic by newsViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val newsUi by newsViewModel.ui.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -107,30 +126,45 @@ fun MarketScreen(
         if (granted.values.any { it }) weatherViewModel.onPermissionGranted()
     }
 
-    val profile by profileViewModel.profile.collectAsState(initial = null)
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val isTrader = profile?.role == "TRADER"
-    val isPremium by PremiumState.isPremium.collectAsState()
-    val myBids by bidsViewModel.myBids.collectAsState()
-    val bidUiState by bidsViewModel.uiState.collectAsState()
+    val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
+    val myBids by bidsViewModel.myBids.collectAsStateWithLifecycle()
+    val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    val pullState = rememberPullToRefreshState()
-    val listState = rememberLazyListState()
-    val fabExpanded = listState.isScrollingUp() || myBids.isEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // State đóng/mở editor sheet — null = closed; FirestoreRicePrice() = create; existing = edit.
-    var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
-    var showEditor by remember { mutableStateOf(false) }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    val newsListState = rememberLazyListState()
+    val pricesListState = rememberLazyListState()
 
-    // Hiển thị snackbar khi có message từ bidsViewModel.
+    // FAB chỉ hiện ở tab "Bảng giá lúa" — nơi thương lái thực sự đăng giá.
+    val fabExpanded = pricesListState.isScrollingUp() || myBids.isEmpty()
+
+    var showEditor by remember { mutableStateOf(false) }
+    var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
+
+    val onSubmitBid = remember(bidsViewModel) {
+        { variety: String, pMin: Double, pMax: Double, region: String, trend: String, note: String, existingId: String? ->
+            bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
+        }
+    }
+    val onDismissEditor = remember {
+        {
+            showEditor = false
+            editingBid = null
+        }
+    }
+
     LaunchedEffect(bidUiState.successMessage, bidUiState.errorMessage) {
         bidUiState.successMessage?.let {
             snackbarHostState.showSnackbar(it)
             bidsViewModel.clearMessage()
             showEditor = false
+            editingBid = null
         }
         bidUiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -138,10 +172,27 @@ fun MarketScreen(
         }
     }
 
+    // Tải dữ liệu trì hoãn sau khi slide transition (300ms) kết thúc để tránh lag chuyển trang
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(400)
+        viewModel.seedIfNeededDeferred()
+        weatherViewModel.startObserving()
+        newsViewModel.loadData()
+        bidsViewModel.syncBids()
+    }
+
+    // H-08: Hiển thị Snackbar khi Market refresh thất bại (lỗi mạng / Firestore)
+    LaunchedEffect(refreshError) {
+        refreshError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearRefreshError()
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (isTrader) {
+            if (isTrader && pagerState.currentPage == 1) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         editingBid = null
@@ -154,123 +205,94 @@ fun MarketScreen(
                     text = { Text("Đăng giá mới", fontWeight = FontWeight.SemiBold) },
                     containerColor = AppColors.GreenPrimary,
                     contentColor = AppColors.CardBg,
-                    modifier = Modifier.padding(bottom = 88.dp)
+                    modifier = Modifier.padding(bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
                 )
             }
         },
-        // Inner Scaffold — MainScreen đã xử lý status bar / nav bar insets thông qua
-        // TopAppBar + BottomBar overlay. Phải tắt window insets ở đây để không cộng
-        // dồn → tránh dải trắng giữa topbar và Weather widget.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { padding ->
-        PullToRefreshBox(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            state = pullState,
-            isRefreshing = isLoading && prices.isNotEmpty(),
-            onRefresh = {
-                viewModel.refresh()
-                weatherViewModel.load(forceRefresh = true)
-                newsViewModel.refresh()
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    WeatherWidget(
-                        weather = weatherState.weather,
-                        isLoading = weatherState.isLoading,
-                        errorMessage = weatherState.errorMessage,
-                        isStale = weatherState.isStale,
-                        onRefresh = {
-                            permissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                            weatherViewModel.load(forceRefresh = true)
-                        }
+            // Weather không cố định trên đỉnh — đã chiếm gần nửa màn hình nếu sticky.
+            // Đưa vào item đầu của LazyColumn NewsPage → cuộn 1 chút là tự ẩn, chỉ TabRow ở lại.
+            // TabRow fixed phía trên pager để user luôn nhảy được tab kể cả đang ở cuối list.
+            MarketTabRow(
+                selectedTab = pagerState.currentPage,
+                onSelect = { tab ->
+                    scope.launch { pagerState.animateScrollToPage(tab) }
+                }
+            )
+
+            // Remember stable callbacks to prevent child recomposition on parent state change
+            val onWeatherRefresh = remember {
+                {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
                     )
+                    weatherViewModel.load(forceRefresh = true)
                 }
-
-                // Native ad — chỉ hiển thị cho user Free, fade out reactive khi upgrade Premium.
-                // Đặt ngay sau Weather (vị trí #2) để hiện trong viewport đầu tiên không cần scroll.
-                // Sau Weather thay vì sau News vì NewsSection render 8 bài dọc → ad sẽ rơi xuống dưới fold.
-                item(key = "native_ad") {
-                    AnimatedVisibility(
-                        visible = !isPremium,
-                        enter = fadeIn(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        NativeAdPlaceholder(onClick = { /* TODO: deep link landing page */ })
-                    }
+            }
+            val onNewsRefresh = remember { { newsViewModel.refresh(forceLocalScrape = true) } }
+            val onRefreshNewsPage = remember {
+                {
+                    newsViewModel.refresh(forceLocalScrape = true)
+                    weatherViewModel.load(forceRefresh = true)
                 }
+            }
 
-                item {
-                    NewsSection(
+            val onSelectTopic = remember { newsViewModel::selectTopic }
+            val onDismissError = remember { newsViewModel::clearError }
+            val onRefreshPrices = remember { { viewModel.refreshFromFirestore() } }
+            val onSelectTrend = remember { viewModel::setTrendFilter }
+            val onSelectVariety = remember { viewModel::selectVariety }
+            val onEditBid = remember {
+                { bid: FirestoreRicePrice ->
+                    editingBid = bid
+                    showEditor = true
+                }
+            }
+            val onDeleteBid = remember { { id: String -> bidsViewModel.deleteBid(id) } }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 0
+            ) { page ->
+                when (page) {
+                    0 -> NewsPage(
+                        listState = newsListState,
                         articles = newsArticles,
                         selectedTopic = newsTopic,
                         isRefreshing = newsUi.isRefreshing,
                         errorMessage = newsUi.errorMessage,
-                        onSelectTopic = newsViewModel::selectTopic,
-                        onRefresh = newsViewModel::refresh,
-                        onDismissError = newsViewModel::clearError
+                        isPremium = isPremium,
+                        weatherState = weatherState,
+                        onWeatherRefresh = onWeatherRefresh,
+                        onSelectTopic = onSelectTopic,
+                        onRefresh = onRefreshNewsPage,
+                        onNewsRefresh = onNewsRefresh,
+                        onDismissError = onDismissError
                     )
-                }
-
-                // Section "Giá rao của bạn" — chỉ hiện cho TRADER đã có bids.
-                if (isTrader && myBids.isNotEmpty()) {
-                    item {
-                        SectionTitle(
-                            title = "Giá rao của bạn",
-                            subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
-                        )
-                    }
-                    items(myBids, key = { "mine_${it.id}" }) { bid ->
-                        MyBidCard(
-                            bid = bid,
-                            onEdit = {
-                                editingBid = bid
-                                showEditor = true
-                            },
-                            onDelete = { bidsViewModel.deleteBid(bid.id) }
-                        )
-                    }
-                }
-
-                item {
-                    SectionTitle(
-                        title = "Bảng giá thu mua",
-                        subtitle = "Cập nhật từ thương lái uy tín · ${prices.size} kết quả"
+                    else -> PricesPage(
+                        listState = pricesListState,
+                        prices = prices,
+                        isLoading = isLoading,
+                        filter = filter,
+                        isTrader = isTrader,
+                        myBids = myBids,
+                        onRefresh = onRefreshPrices,
+                        onSelectTrend = onSelectTrend,
+                        onSelectVariety = onSelectVariety,
+                        onEditBid = onEditBid,
+                        onDeleteBid = onDeleteBid
                     )
-                }
-
-                item {
-                    FilterChipsRow(
-                        selectedTrend = filter.trend,
-                        onSelectTrend = { viewModel.setTrendFilter(it) }
-                    )
-                }
-
-                if (isLoading && prices.isEmpty()) {
-                    item { MarketSkeletonList(items = 4) }
-                } else {
-                    items(prices, key = { it.id }) { price ->
-                        RicePriceCard(
-                            price = price,
-                            onClick = { viewModel.selectVariety(price.variety) }
-                        )
-                    }
-                }
-
-                item {
-                    FooterNote()
-                    Spacer(Modifier.height(80.dp))
                 }
             }
         }
@@ -305,21 +327,250 @@ fun MarketScreen(
         }
     }
 
-    // Bid editor sheet — chỉ hiện cho trader.
     if (showEditor && isTrader) {
         ModalBottomSheet(
-            onDismissRequest = { showEditor = false },
+            onDismissRequest = onDismissEditor,
             sheetState = editorSheetState,
             containerColor = AppColors.Surface
         ) {
             BidEditorSheet(
                 existing = editingBid,
                 isSaving = bidUiState.isSaving,
-                onSubmit = { variety, pMin, pMax, region, trend, note, existingId ->
-                    bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
-                },
-                onDismiss = { showEditor = false }
+                onSubmit = onSubmitBid,
+                onDismiss = onDismissEditor
             )
+        }
+    }
+}
+
+/**
+ * Page 0 — Tin tức nông nghiệp (+ Weather card + Native Ad nếu user Free).
+ * PullToRefreshBox riêng → kéo xuống refresh news + weather, không động đến market.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewsPage(
+    listState: LazyListState,
+    articles: List<com.GiaThinh.canlua.data.model.NewsArticle>,
+    selectedTopic: com.GiaThinh.canlua.data.model.NewsTopic?,
+    isRefreshing: Boolean,
+    errorMessage: String?,
+    isPremium: Boolean,
+    weatherState: com.GiaThinh.canlua.ui.viewmodel.WeatherUiState,
+    onWeatherRefresh: () -> Unit,
+    onSelectTopic: (com.GiaThinh.canlua.data.model.NewsTopic?) -> Unit,
+    onRefresh: () -> Unit,
+    onNewsRefresh: () -> Unit,
+    onDismissError: () -> Unit
+) {
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        modifier = Modifier.fillMaxSize(),
+        state = pullState,
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 12.dp,
+                bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(key = "weather") {
+                AnimatedVisibility(
+                    visible = weatherState.hasPermission && !weatherState.isRateLimited && weatherState.weather != null,
+                    enter = fadeIn(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    WeatherWidget(
+                        weather = weatherState.weather,
+                        isLoading = weatherState.isLoading,
+                        errorMessage = weatherState.errorMessage,
+                        isStale = weatherState.isStale,
+                        onRefresh = onWeatherRefresh
+                    )
+                }
+            }
+
+            item(key = "native_ad") {
+                AnimatedVisibility(
+                    visible = !isPremium,
+                    enter = fadeIn(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    NativeAdPlaceholder(onClick = {})
+                }
+            }
+
+            item {
+                NewsSection(
+                    articles = articles,
+                    selectedTopic = selectedTopic,
+                    isRefreshing = isRefreshing,
+                    errorMessage = errorMessage,
+                    onSelectTopic = onSelectTopic,
+                    onRefresh = onNewsRefresh,
+                    onDismissError = onDismissError
+                )
+            }
+
+            item { Spacer(Modifier.height(40.dp)) }
+        }
+    }
+}
+
+/**
+ * Page 1 — Bảng giá lúa: bids của trader (nếu có) + bảng giá thu mua chung.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PricesPage(
+    listState: LazyListState,
+    prices: List<com.GiaThinh.canlua.data.model.RicePrice>,
+    isLoading: Boolean,
+    filter: com.GiaThinh.canlua.ui.viewmodel.MarketFilter,
+    isTrader: Boolean,
+    myBids: List<FirestoreRicePrice>,
+    onRefresh: () -> Unit,
+    onSelectTrend: (String?) -> Unit,
+    onSelectVariety: (String?) -> Unit,
+    onEditBid: (FirestoreRicePrice) -> Unit,
+    onDeleteBid: (String) -> Unit
+) {
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        modifier = Modifier.fillMaxSize(),
+        state = pullState,
+        isRefreshing = isLoading && prices.isNotEmpty(),
+        onRefresh = onRefresh
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 12.dp,
+                bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (isTrader && myBids.isNotEmpty()) {
+                val isOffline = myBids.any { it.isFromCache }
+                item {
+                    SectionTitle(
+                        title = if (isOffline) "Giá rao của bạn (đang xem ngoại tuyến)" else "Giá rao của bạn",
+                        subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
+                    )
+                }
+                items(myBids, key = { "mine_${it.id}" }) { bid ->
+                    MyBidCard(
+                        bid = bid,
+                        onEdit = { onEditBid(bid) },
+                        onDelete = { onDeleteBid(bid.id) }
+                    )
+                }
+            }
+
+            item {
+                SectionTitle(
+                    title = "Bảng giá thu mua",
+                    subtitle = "Cập nhật từ thương lái uy tín · ${prices.size} kết quả"
+                )
+            }
+
+            item {
+                FilterChipsRow(
+                    selectedTrend = filter.trend,
+                    onSelectTrend = onSelectTrend
+                )
+            }
+
+            if (isLoading && prices.isEmpty()) {
+                item { MarketSkeletonList(items = 4) }
+            } else {
+                items(prices, key = { it.id }) { price ->
+                    RicePriceCard(
+                        price = price,
+                        onClick = { onSelectVariety(price.variety) }
+                    )
+                }
+            }
+
+            item {
+                FooterNote()
+                Spacer(Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Tab row "Tin tức | Bảng giá lúa" — đồng bộ 2 chiều với HorizontalPager.
+ * Tap tab → animateScrollToPage; vuốt ngang trên pager → indicator tự follow.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MarketTabRow(
+    selectedTab: Int,
+    onSelect: (Int) -> Unit
+) {
+    PrimaryTabRow(
+        selectedTabIndex = selectedTab,
+        containerColor = AppColors.Surface,
+        contentColor = AppColors.GreenPrimary,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Tab(
+            selected = selectedTab == 0,
+            onClick = { onSelect(0) },
+            selectedContentColor = AppColors.GreenPrimary,
+            unselectedContentColor = AppColors.TextSecondary
+        ) {
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(vertical = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Article,
+                    contentDescription = "Tin tức",
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "Tin tức",
+                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+        }
+        Tab(
+            selected = selectedTab == 1,
+            onClick = { onSelect(1) },
+            selectedContentColor = AppColors.GreenPrimary,
+            unselectedContentColor = AppColors.TextSecondary
+        ) {
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(vertical = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.PriceChange,
+                    contentDescription = "Bảng giá lúa",
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "Bảng giá lúa",
+                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
         }
     }
 }
@@ -368,6 +619,7 @@ private fun FilterChipsRow(
     selectedTrend: String?,
     onSelectTrend: (String?) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val options = listOf(
         Triple<String?, String, Color>(null, "Tất cả", AppColors.GreenPrimary),
         Triple<String?, String, Color>("UP", "Đang tăng", AppColors.Success),
@@ -381,10 +633,17 @@ private fun FilterChipsRow(
         items(options) { (key, label, color) ->
             val selected = selectedTrend == key
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
+                    // H-10: Đảm bảo touch target tối thiểu 48dp theo Material guidelines
+                    .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(if (selected) color.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
-                    .clickable { onSelectTrend(key) }
+                    .clickable {
+                        // H-10: Haptic feedback khi chọn filter
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onSelectTrend(key)
+                    }
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
@@ -408,7 +667,7 @@ private fun MyBidCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val numberFormat = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
+    val numberFormat = remember { java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")) }
     val trendColor = when (bid.trend) {
         "UP" -> AppColors.Success
         "DOWN" -> AppColors.Error
@@ -419,12 +678,16 @@ private fun MyBidCard(
         "DOWN" -> "Đang giảm"
         else -> "Ổn định"
     }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(AppColors.GreenSurface)
-            .clickable(onClick = onEdit)
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onEdit()
+            }
             .padding(16.dp)
     ) {
         Column {

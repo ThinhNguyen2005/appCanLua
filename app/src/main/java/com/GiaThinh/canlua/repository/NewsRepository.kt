@@ -5,90 +5,145 @@ import com.GiaThinh.canlua.data.model.NewsArticle
 import com.GiaThinh.canlua.data.model.NewsTopic
 import com.GiaThinh.canlua.data.remote.news.NewsSource
 import com.GiaThinh.canlua.data.remote.news.RssFetcher
-import com.GiaThinh.canlua.data.remote.news.RssItem
-import com.GiaThinh.canlua.util.sha256
 import com.GiaThinh.canlua.util.stripHtml
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Aggregator + cache cho NewsFeed.
+ * Repository bài báo nông nghiệp — offline-first dùng Room làm cache.
  *
- * Strategy:
- *  - `observe(topic)` → Flow từ Room (offline-first)
- *  - `refresh()` parallel fetch tất cả [NewsSource], dedupe theo URL hash, upsert
- *  - `isStale(maxAgeMs)` → cho UI quyết định auto-refresh
- *
- * Fail-soft: 1 source lỗi không phá toàn bộ refresh — chỉ source đó trả empty.
+ * Kiến trúc mới (GAS-powered với Local RSS Fallback):
+ *   - Ưu tiên kéo dữ liệu sạch được crawl từ GAS lưu trên Firestore.
+ *   - Nếu Firestore trống hoặc gặp lỗi mạng, app tự động fallback dùng RssFetcher
+ *     để cào trực tiếp từ 11 nguồn báo VN.
+ *   - Cả GAS và App đều băm link bằng MD5 để làm ID bài viết, tránh trùng lặp dữ liệu trong Room.
  */
 @Singleton
 class NewsRepository @Inject constructor(
     private val dao: NewsArticleDao,
+    private val firestore: FirebaseFirestore,
     private val rssFetcher: RssFetcher
 ) {
+    private val newsCollection get() = firestore.collection("news_articles")
 
-    /** Stream bài theo topic; null = tất cả. */
+    /** Stream bài theo topic từ Room (offline-first); null = tất cả. */
     fun observe(topic: NewsTopic? = null, limit: Int = 30): Flow<List<NewsArticle>> =
         dao.observeByTopic(topic?.name, limit)
 
+    private fun String.md5(): String {
+        val md = MessageDigest.getInstance("MD5")
+        val digest = md.digest(this.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
     /**
-     * Fetch song song mọi nguồn, dedupe theo hash(link), upsert Room, dọn bài > 14 ngày.
-     * @return số bài unique đã cache
+     * Fetch bài mới nhất từ Firestore về Room.
+     * Nếu không có dữ liệu trên Firestore hoặc lỗi mạng, tự động cào tin từ RSS cục bộ.
+     *
+     * @return số bài unique đã upsert vào Room
      */
-    suspend fun refresh(): Result<Int> = runCatching {
-        val now = System.currentTimeMillis()
-        coroutineScope {
-            val perSource = NewsSource.values().map { src ->
-                async {
-                    runCatching { rssFetcher.fetch(src.rssUrl) }
-                        .getOrDefault(emptyList())
-                        .mapNotNull { item -> item.toArticle(src, now) }
+    suspend fun refresh(forceLocalScrape: Boolean = false): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            val now = System.currentTimeMillis()
+            val cutoffMs = now - TimeUnit.DAYS.toMillis(14)
+            var fetchedCount = 0
+
+            // 1. Thử kéo dữ liệu từ Firestore trước
+            val firestoreResult = runCatching {
+                val snapshot = newsCollection
+                    .whereGreaterThan("publishedAt", cutoffMs)
+                    .orderBy("publishedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(60)
+                    .get()
+                    .await()
+
+                snapshot.documents.mapNotNull { doc ->
+                    runCatching {
+                        NewsArticle(
+                            id          = doc.getString("id") ?: doc.id,
+                            title       = doc.getString("title") ?: return@mapNotNull null,
+                            description = doc.getString("description") ?: "",
+                            link        = doc.getString("link") ?: return@mapNotNull null,
+                            source      = doc.getString("source") ?: "",
+                            thumbnail   = doc.getString("thumbnail"),
+                            publishedAt = doc.getLong("publishedAt") ?: now,
+                            topic       = doc.getString("topic") ?: NewsTopic.MARKET.name,
+                            cachedAt    = doc.getLong("cachedAt") ?: now
+                        )
+                    }.getOrNull()
                 }
-            }.awaitAll().flatten()
-
-            val unique = perSource
-                .distinctBy { it.id }
-                // bỏ bài quá cũ (> 30 ngày) ngay từ tầng repo
-                .filter { now - it.publishedAt < TimeUnit.DAYS.toMillis(30) }
-
-            if (unique.isNotEmpty()) {
-                dao.upsertAll(unique)
-                dao.deleteOlderThan(now - TimeUnit.DAYS.toMillis(14))
             }
-            unique.size
+
+            val cloudArticles = firestoreResult.getOrNull().orEmpty()
+            val shouldScrapeLocal = forceLocalScrape || cloudArticles.isEmpty()
+
+            val allArticles = mutableListOf<NewsArticle>()
+            allArticles.addAll(cloudArticles)
+
+            if (shouldScrapeLocal) {
+                // 2. Fallback hoặc chủ động cào tin từ RSS các trang báo
+                val localArticles = mutableListOf<NewsArticle>()
+                val jobs = NewsSource.entries.map { src ->
+                    async {
+                        runCatching {
+                            val items = rssFetcher.fetch(src.rssUrl)
+                            items.map { item ->
+                                val cleanDesc = stripHtml(item.description, 240)
+                                val finalTopic = NewsSource.classify(item.title + " " + cleanDesc, src.defaultTopic)
+                                NewsArticle(
+                                    id          = item.link.md5(),
+                                    title       = item.title,
+                                    description = cleanDesc,
+                                    link        = item.link,
+                                    source      = src.displayName,
+                                    thumbnail   = item.thumbnail,
+                                    publishedAt = item.pubDateMs,
+                                    topic       = finalTopic.name,
+                                    cachedAt    = now
+                                )
+                            }
+                        }.getOrNull().orEmpty()
+                    }
+                }
+
+                jobs.forEach { job ->
+                    localArticles.addAll(job.await())
+                }
+
+                val filteredLocal = localArticles
+                    .filter { it.publishedAt >= cutoffMs }
+                    .sortedByDescending { it.publishedAt }
+                    .take(60)
+
+                allArticles.addAll(filteredLocal)
+            }
+
+            if (allArticles.isNotEmpty()) {
+                dao.upsertAll(allArticles)
+                dao.deleteOlderThan(cutoffMs)
+                fetchedCount = allArticles.distinctBy { it.id }.size
+            }
+
+            fetchedCount
         }
     }
 
     /** Cache cũ hơn [maxAgeMs] hoặc rỗng → cần refresh. */
-    suspend fun isStale(maxAgeMs: Long = TimeUnit.HOURS.toMillis(1)): Boolean {
-        val newest = dao.getNewestCachedAt() ?: return true
-        return System.currentTimeMillis() - newest > maxAgeMs
-    }
+    suspend fun isStale(maxAgeMs: Long = TimeUnit.HOURS.toMillis(1)): Boolean =
+        withContext(Dispatchers.IO) {
+            val newest = dao.getNewestCachedAt() ?: return@withContext true
+            System.currentTimeMillis() - newest > maxAgeMs
+        }
 
-    suspend fun isEmpty(): Boolean = dao.count() == 0
-
-    private fun RssItem.toArticle(src: NewsSource, now: Long): NewsArticle? {
-        val link = link.takeIf { it.isNotBlank() } ?: return null
-        val cleanDesc = stripHtml(description, maxChars = 240)
-        val topic = NewsSource.classify(
-            text = "$title $cleanDesc",
-            fallback = src.defaultTopic
-        )
-        return NewsArticle(
-            id = sha256(link),
-            title = title.ifBlank { return null },
-            description = cleanDesc,
-            link = link,
-            source = src.displayName,
-            thumbnail = thumbnail,
-            publishedAt = pubDateMs,
-            topic = topic.name,
-            cachedAt = now
-        )
+    suspend fun isEmpty(): Boolean = withContext(Dispatchers.IO) {
+        dao.count() == 0
     }
 }

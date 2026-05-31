@@ -27,10 +27,12 @@ import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.data.model.PricePoint
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 
 /**
  * Biểu đồ đường (Line Chart) cho lịch sử giá lúa.
@@ -49,7 +51,7 @@ fun PriceTrendChart(
         if (points.isNotEmpty()) {
             modelProducer.runTransaction {
                 lineSeries {
-                    series(points.map { it.priceAvg })
+                    series(points.map { it.priceAvg.toFloat() })
                 }
             }
         }
@@ -98,7 +100,9 @@ fun PriceTrendChart(
             } else {
                 CartesianChartHost(
                     chart = rememberCartesianChart(
-                        rememberLineCartesianLayer()
+                        rememberLineCartesianLayer(),
+                        startAxis = VerticalAxis.rememberStart(),
+                        bottomAxis = HorizontalAxis.rememberBottom()
                     ),
                     modelProducer = modelProducer,
                     modifier = Modifier

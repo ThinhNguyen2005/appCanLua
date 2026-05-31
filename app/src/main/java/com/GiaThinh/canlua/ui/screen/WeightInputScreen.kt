@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,7 +38,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -53,51 +54,130 @@ import com.GiaThinh.canlua.util.RiceCalculator
 import com.GiaThinh.canlua.ui.component.weight.WeightMetricsCard
 import com.GiaThinh.canlua.ui.component.pressableScale
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.WeightInputViewModel
 import com.GiaThinh.canlua.util.HapticUtil
 import com.GiaThinh.canlua.util.TrackScreenRender
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.toPersistentList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeightInputScreen(
     cardId: Long,
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel(),
+    viewModel: WeightInputViewModel = hiltViewModel(),
     onEditCard: () -> Unit = {},
     onDeleteCard: () -> Unit = {},
     onCreateQr: () -> Unit = {},
     onScanQr: () -> Unit = {}
 ) {
     TrackScreenRender("weight_input")
+
+    // Trang nhập cân chủ yếu là gõ số vào ô → 120Hz không mang lại lợi ích thị giác.
+    // Request 60Hz để tiết kiệm pin vì user dành phần lớn thời gian ở đây.
+    com.GiaThinh.canlua.ui.util.RequestLowRefreshRate()
     
     // Sử dụng collectAsStateWithLifecycle để tự động giải phóng tài nguyên khi chạy nền
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(cardId) { viewModel.loadCardById(cardId) }
+    val onBagWeightChange = remember(cardId) { { weight: Double -> viewModel.updateCardBagWeight(cardId, weight) } }
+    val onImpurityWeightChange = remember(cardId) { { weight: Double -> viewModel.updateCardImpurityWeight(cardId, weight) } }
+    val onMoistureChange = remember(cardId) { { moisture: Double -> viewModel.updateCardMoisture(cardId, moisture) } }
+    val onPriceChange = remember(cardId) { { price: Double -> viewModel.updateCardPricePerKg(cardId, price) } }
+
+    LaunchedEffect(cardId) {
+        viewModel.loadCardById(cardId)
+    }
 
     // === KHAI BÁO STATE (MANDATORY: Đặt trước check null để bảo toàn Composition Tree) ===
 
-    var manualTableCount by remember { mutableIntStateOf(0) }
     var showLockConfirmDialog by remember { mutableStateOf(false) }
 
-    val tables = remember(weightEntries, manualTableCount) {
-        organizeIntoTables(weightEntries, manualTableCount)
+    val tables by viewModel.tables.collectAsStateWithLifecycle()
+
+    // === STABLE STATE REFS (rememberUpdatedState) ===
+    // Cho phép lambda onCellWeightEntered được tạo một lần duy nhất (remember {})
+    // nhưng vẫn đọc được giá trị mới nhất mà không recreate → 24 ô còn lại không bị
+    // invalidate khi người dùng gõ vào ô số 1.
+    val currentWeightEntries by rememberUpdatedState(weightEntries)
+    val currentCardState by rememberUpdatedState(currentCard)
+
+    // Chuyển dữ liệu bảng sang PersistentList — kiểu này được Compose Compiler
+    // nhận diện NATIVELY là Stable (không cần @Immutable) → WeightTableCard
+    // và ColumnTotalsRow trở thành Skippable hoàn toàn theo báo cáo Compiler
+    val stableTables = remember(tables) {
+        tables.map { outer ->
+            ImmutableTableData(
+                outer.map { inner -> inner.toPersistentList() }.toPersistentList()
+            )
+        }.toPersistentList()
     }
+
+    // Stable callback duy nhất cho toàn màn hình — tham chiếu KHÔNG đổi qua mọi recompose.
+    // Nhờ rememberUpdatedState, lambda này luôn đọc weightEntries và card mới nhất mà
+    // không cần recreate → các GridCell giữ nguyên tham chiếu callback → Skippable hoàn toàn.
+    val onCellWeightEntered: (Int, Double) -> Unit = remember {
+        { entryIdx, weight ->
+            val entries = currentWeightEntries
+            val activeCard = currentCardState
+            val existingEntry = if (entryIdx < entries.size) entries[entryIdx] else null
+            if (existingEntry != null && activeCard != null) {
+                val netWeight = RiceCalculator.calcNetWeight(
+                    rawWeight = weight,
+                    bagWeight = activeCard.bagWeight,
+                    impurityWeight = 0.0,
+                    moisturePercent = activeCard.moisturePercent
+                )
+                viewModel.updateWeightEntry(
+                    existingEntry.copy(
+                        weight = weight,
+                        bagWeight = activeCard.bagWeight,
+                        impurityWeight = 0.0,
+                        netWeight = netWeight
+                    )
+                )
+            } else {
+                viewModel.addWeightEntryDirectly(cardId, weight)
+                HapticUtil.tick(context)
+            }
+        }
+    }
+
 
     val liveTotalWeight = remember(weightEntries) { weightEntries.sumOf { it.weight } }
     val liveBagCount = weightEntries.size
-    val liveNetWeight = remember(liveTotalWeight, currentCard?.bagWeight, currentCard?.moisturePercent) {
-        RiceCalculator.calcNetWeight(
-            rawWeight = liveTotalWeight,
+    val calcParams = remember(liveTotalWeight, liveBagCount, currentCard) {
+        CalcParams(
+            totalRaw = liveTotalWeight,
+            bagCount = liveBagCount,
             bagWeight = currentCard?.bagWeight ?: 0.0,
-            impurityWeight = 0.0,
+            bagMethodIsSampling = currentCard?.bagMethodIsSampling ?: false,
+            bagSampleCount = currentCard?.bagSampleCount ?: 0,
+            bagSampleTotalWeight = currentCard?.bagSampleTotalWeight ?: 0.0,
+            impurityValue = currentCard?.impurityWeight ?: 0.0,
+            impurityIsPercent = currentCard?.impurityIsPercent ?: false,
             moisturePercent = currentCard?.moisturePercent ?: 0.0
         )
     }
-    val liveTotalAmount = liveNetWeight * (currentCard?.pricePerKg ?: 0.0)
+    val liveNetWeight = remember(calcParams) {
+        RiceCalculator.calcNetWeightWithModes(
+            totalRaw = calcParams.totalRaw,
+            bagCount = calcParams.bagCount,
+            bagWeight = calcParams.bagWeight,
+            bagMethodIsSampling = calcParams.bagMethodIsSampling,
+            bagSampleCount = calcParams.bagSampleCount,
+            bagSampleTotalWeight = calcParams.bagSampleTotalWeight,
+            impurityValue = calcParams.impurityValue,
+            impurityIsPercent = calcParams.impurityIsPercent,
+            moisturePercent = calcParams.moisturePercent
+        )
+    }
+    val liveTotalAmount = remember(liveNetWeight, currentCard?.pricePerKg) {
+        liveNetWeight * (currentCard?.pricePerKg ?: 0.0)
+    }
 
     val lazyListState = rememberLazyListState()
 
@@ -117,18 +197,24 @@ fun WeightInputScreen(
     }
 
     // === LAZY INIT (Performance Optimization) ===
-    // Trì hoãn render hệ thống grid 25 ô × N bảng + FocusRequesters cho đến khi
-    // page transition (250ms) đã hoàn tất + 150ms buffer.
+    // Trì hoãn render hệ thống grid 25 ô × N bảng + FocusRequesters + khởi tạo TTS
+    // đến khi enter animation (NAV_DURATION_MS = 300ms) hoàn tất + 50ms buffer.
     // Tại sao? Mở màn trùng với enter animation → main thread bị nghẽn:
-    //   - organizeIntoTables() chạy đồng bộ
     //   - HorizontalPager measure tất cả pages
     //   - 25 FocusRequester per table được tạo (5×5 grid)
-    // Trì hoãn 150ms cho phép enter animation chạy mượt 60fps trước khi
-    // composition heavy work bắt đầu.
+    //   - TTS engine init bounce qua system binder dù chạy trên Dispatchers.IO
+    // 350ms đảm bảo enter animation chạy mượt 60fps trước khi composition heavy
+    // work bắt đầu. Gate 150ms cũ chỉ che ~½ animation → vẫn drop frame.
     var isAnimationFinished by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(150L)
+        delay(350L)
         isAnimationFinished = true
+    }
+
+    // TTS init đợi đến sau animation — binder transaction tới TextToSpeech service
+    // có thể block main thread vài chục ms dù launch trên IO dispatcher.
+    LaunchedEffect(isAnimationFinished) {
+        if (isAnimationFinished) viewModel.startTts()
     }
 
     // === CHECK NULL DỮ LIỆU (Đặt SAU khi các state remember đã được đăng ký) ===
@@ -179,8 +265,7 @@ fun WeightInputScreen(
                         val displayName = card.traderName.ifBlank { card.name }
                         Text(
                             text = displayName,
-                            style = TextStyle(
-                                fontSize = 18.sp,
+                            style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             ),
                             color = MaterialTheme.colorScheme.onSurface,
@@ -192,13 +277,14 @@ fun WeightInputScreen(
                         )
 
                         // 2. Chỉ số cân thu gọn (Khi cuộn lên)
-                        val totalWeightStr = "%.1f".format(liveTotalWeight).replace(".", ",")
+                        val totalWeightStr = remember(liveTotalWeight) {
+                            "%.1f".format(java.util.Locale.US, liveTotalWeight).replace(".", ",")
+                        }
                         Text(
                             text = stringResource(R.string.weight_input_collapsed_title, totalWeightStr, liveBagCount),
-                            style = TextStyle(
-                                fontSize = 17.sp,
+                            style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.ExtraBold,
-                                color = AppColors.RemainingHighlight // Auto-adapt dark/light
+                                color = AppColors.RemainingHighlight
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -262,10 +348,11 @@ fun WeightInputScreen(
                         totalAmount = liveTotalAmount,
                         bagCount = liveBagCount,
                         isLocked = card.isLocked,
-                        onBagWeightChange = { viewModel.updateCardBagWeight(cardId, it) },
-                        onImpurityWeightChange = { viewModel.updateCardImpurityWeight(cardId, it) },
-                        onMoistureChange = { viewModel.updateCardMoisture(cardId, it) },
-                        onPriceChange = { viewModel.updateCardPricePerKg(cardId, it) }
+                        onBagWeightChange = onBagWeightChange,
+                        onImpurityWeightChange = onImpurityWeightChange,
+                        onMoistureChange = onMoistureChange,
+                        onPriceChange = onPriceChange,
+                        impurityIsPercent = card.impurityIsPercent
                     )
                 }
             }
@@ -282,14 +369,14 @@ fun WeightInputScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.weight_input_select_table),
-                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = AppColors.TextPrimary
                         )
 
                         if (!card.isLocked) {
                             FilledTonalButton(
                                 onClick = {
-                                    manualTableCount++
+                                    viewModel.incrementManualTableCount()
                                     HapticUtil.confirm(context)
                                 },
                                 colors = ButtonDefaults.filledTonalButtonColors(
@@ -297,11 +384,12 @@ fun WeightInputScreen(
                                     contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                                modifier = Modifier.heightIn(min = 48.dp)
                             ) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text(stringResource(R.string.weight_input_add_table), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                                Text(stringResource(R.string.weight_input_add_table), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold))
                             }
                         }
                     }
@@ -309,38 +397,22 @@ fun WeightInputScreen(
             }
 
             if (isAnimationFinished) {
-                tables.forEachIndexed { pageIndex, table ->
+                stableTables.forEachIndexed { pageIndex, stableTable ->
                     item(key = "weight_table_$pageIndex") {
+                        val onNeedNextTable = remember { { viewModel.incrementManualTableCount() } }
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             WeightTableCard(
                                 tableIndex = pageIndex + 1,
-                                tableData = table,
-                                weightEntries = weightEntries,
+                                stableTableData = stableTable,
                                 tableIndexInList = pageIndex,
-                                onNeedNextTable = { manualTableCount++ },
-                                onWeightEntered = { weight ->
-                                    viewModel.addWeightEntryDirectly(cardId, weight)
-                                    HapticUtil.tick(context)
-                                },
-                                onWeightUpdated = { entry, newWeight ->
-                                    val netWeight = RiceCalculator.calcNetWeight(
-                                        rawWeight = newWeight,
-                                        bagWeight = card.bagWeight,
-                                        impurityWeight = 0.0,
-                                        moisturePercent = card.moisturePercent
-                                    )
-                                    viewModel.updateWeightEntry(
-                                        entry.copy(
-                                            weight = newWeight,
-                                            bagWeight = card.bagWeight,
-                                            impurityWeight = 0.0,
-                                            netWeight = netWeight
-                                        )
-                                    )
-                                },
-                                isLocked = card.isLocked
+                                onNeedNextTable = onNeedNextTable,
+                                onWeightEntered = onCellWeightEntered,
+                                isLocked = card.isLocked,
+                                weightInputMode = card.weightInputMode
                             )
-                            ColumnTotalsRow(calculateColumnTotals(table))
+                            // Truyền trực tiếp wrapper — ColumnTotalsRow tự remember tính tổng
+                            // → Skippable hoàn toàn khi bảng khác thay đổi
+                            ColumnTotalsRow(stableTableData = stableTable)
                         }
                     }
                 }
@@ -421,15 +493,16 @@ fun WeightInputScreen(
 @Composable
 private fun WeightTableCard(
     tableIndex: Int,
-    tableData: List<List<Double?>>,
-    weightEntries: List<WeightEntry>,
+    stableTableData: ImmutableTableData,
     tableIndexInList: Int,
     onNeedNextTable: () -> Unit,
-    onWeightEntered: (Double) -> Unit,
-    onWeightUpdated: (WeightEntry, Double) -> Unit,
-    isLocked: Boolean
+    onWeightEntered: (Int, Double) -> Unit,
+    isLocked: Boolean,
+    weightInputMode: String = "SMALL"
 ) {
-    val tableTotal = tableData.flatten().filterNotNull().sum()
+    val tableData = stableTableData.data
+    // remember(stableTableData) → tableTotal chỉ tính lại khi nội dung bảng này thay đổi
+    val tableTotal = remember(stableTableData) { tableData.flatten().filterNotNull().sum() }
     val focusRequesters = remember { List(5) { List(5) { FocusRequester() } } }
 
     Card(
@@ -448,8 +521,8 @@ private fun WeightTableCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.weight_input_table_title, tableIndex), style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
-                Text("${"%.1f".format(tableTotal)} kg", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
+                Text(stringResource(R.string.weight_input_table_title, tableIndex), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
+                Text("${"%.1f".format(tableTotal)} kg", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
             }
 
             Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -472,15 +545,14 @@ private fun WeightTableCard(
                         displayCols.forEachIndexed { colIdx, weightVal ->
                             // Công thức tính index theo Cột (Column-Major)
                             val entryIdx = (tableIndexInList * 25) + (colIdx * 5) + rowIdx
-                            val existingEntry = if (entryIdx < weightEntries.size) weightEntries[entryIdx] else null
 
-                            GridCell(
-                                value = weightVal,
-                                onValueEntered = { weight ->
-                                    if (weightVal != null && existingEntry != null) onWeightUpdated(existingEntry, weight)
-                                    else onWeightEntered(weight)
-                                },
-                                onNextFocus = {
+                            // onWeightEntered từ screen có tham chiếu ổn định →
+                            // remember chỉ cần key entryIdx, không đổi khi ô khác thay đổi
+                            val onCellWeightEntered = remember(entryIdx, onWeightEntered) {
+                                { weight: Double -> onWeightEntered(entryIdx, weight) }
+                            }
+                            val onCellNextFocus = remember(rowIdx, colIdx, onNeedNextTable) {
+                                {
                                     if (rowIdx < 4) {
                                         focusRequesters[rowIdx + 1][colIdx].requestFocus()
                                     } else if (colIdx < 4) {
@@ -488,9 +560,17 @@ private fun WeightTableCard(
                                     } else {
                                         onNeedNextTable()
                                     }
-                                },
+                                    Unit
+                                }
+                            }
+
+                            GridCell(
+                                value = weightVal,
+                                onValueEntered = onCellWeightEntered,
+                                onNextFocus = onCellNextFocus,
                                 focusRequester = focusRequesters[rowIdx][colIdx],
                                 isLocked = isLocked,
+                                weightInputMode = weightInputMode,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -507,6 +587,9 @@ private fun parseWeightInput(input: String): Double? {
     return digits.toDoubleOrNull()?.div(10)
 }
 
+private fun maxInputDigits(mode: String): Int = if (mode == "LARGE") 4 else 3
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun GridCell(
     value: Double?,
@@ -514,6 +597,7 @@ private fun GridCell(
     onNextFocus: () -> Unit,
     focusRequester: FocusRequester,
     isLocked: Boolean,
+    weightInputMode: String,
     modifier: Modifier
 ) {
     val displayValue = value?.let {
@@ -524,17 +608,32 @@ private fun GridCell(
     val context = LocalContext.current
     val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
 
+    // Auto-lift: khi cell focus, kéo cell lên trên bàn phím để không bị che.
+    // bringIntoViewRequester phối hợp với .imePadding() của LazyColumn — IME pad
+    // đảm bảo view rút lại, bringIntoView scroll thêm để cell nằm trong vùng visible.
+    val bringIntoView = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
+
+    // Viền sắc nét cho điều kiện ngoài trời nắng / màn hình giảm sáng:
+    //  - Empty: nền trắng (CardBg) + viền xám đậm DividerStrong → cell rõ ranh giới
+    //  - Filled: nền GreenSurface + viền GreenPrimary 1.5dp
+    //  - Focused: viền GreenPrimary 2dp (dày hơn để nhận biết ô đang gõ)
+    val borderColor = when {
+        isFocused -> AppColors.GreenPrimary
+        value != null -> AppColors.GreenPrimary
+        else -> AppColors.DividerStrong
+    }
+    val borderWidth = if (isFocused) 2.dp else 1.5.dp
+    val cellBg = if (value != null) AppColors.GreenSurface else AppColors.CardBg
+
     Box(
         modifier = modifier
-            .heightIn(min = 60.dp) // Sử dụng chiều cao linh hoạt để hỗ trợ co giãn chữ hệ thống tốt hơn (Font Scale)
+            .heightIn(min = 60.dp)
             .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(if (value != null) AppColors.GreenSurface else MaterialTheme.colorScheme.surfaceVariant)
-            .border(
-                1.dp,
-                if (isFocused) AppColors.GreenPrimary else AppColors.Divider,
-                RoundedCornerShape(8.dp)
-            )
+            .background(cellBg)
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp))
+            .bringIntoViewRequester(bringIntoView)
             .then(
                 if (isLocked) {
                     Modifier.clickable(
@@ -551,10 +650,11 @@ private fun GridCell(
             BasicTextField(
                 value = if (isFocused) text else displayValue,
                 onValueChange = { input ->
-                    if (input.all { it.isDigit() } && input.length <= 3) {
+                    val maxLen = maxInputDigits(weightInputMode)
+                    if (input.all { it.isDigit() } && input.length <= maxLen) {
                         if (input.length > text.length) HapticUtil.textHandleMove(context)
                         text = input
-                        if (input.length == 3) {
+                        if (input.length == maxLen) {
                             parseWeightInput(input)?.let {
                                 if (it > 0) {
                                     text = ""
@@ -574,6 +674,11 @@ private fun GridCell(
                         isFocused = state.isFocused
                         if (state.isFocused && !wasFocused) {
                             text = ""
+                            // Đẩy cell vào tầm nhìn — chờ IME mở (~250ms) rồi mới scroll.
+                            scope.launch {
+                                delay(280L)
+                                runCatching { bringIntoView.bringIntoView() }
+                            }
                         }
                         if (!state.isFocused && wasFocused && text.isNotEmpty()) {
                             val entered = text
@@ -581,9 +686,10 @@ private fun GridCell(
                             parseWeightInput(entered)?.let { if (it > 0) onValueEntered(it) }
                         }
                     },
-                textStyle = TextStyle(
-                    textAlign = TextAlign.Center, fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold, color = AppColors.TextPrimary
+                textStyle = MaterialTheme.typography.headlineSmall.copy(
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = {
@@ -601,30 +707,35 @@ private fun GridCell(
 }
 
 @Composable
-private fun ColumnTotalsRow(totals: List<Double>) {
+private fun ColumnTotalsRow(stableTableData: ImmutableTableData) {
+    // remember(stableTableData): phép tính tổng cột chỉ chạy lại khi bảng này thay đổi
+    // → ColumnTotalsRow trở thành Skippable hoàn toàn khi bảng khác được cập nhật
+    val totals = remember(stableTableData) { calculateColumnTotals(stableTableData.data) }
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.GoldLight),
         elevation = CardDefaults.cardElevation(1.dp),
+        border = BorderStroke(1.5.dp, AppColors.GoldDark.copy(alpha = 0.6f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(12.dp)) {
-            Text(stringResource(R.string.weight_input_column_totals), style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AppColors.GoldDark))
+            Text(stringResource(R.string.weight_input_column_totals), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = AppColors.GoldDark))
             Spacer(Modifier.height(6.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 totals.forEach { total ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp) // Tăng chiều cao để người dùng trung niên dễ nhìn ngoài đồng ruộng
+                            .heightIn(min = 48.dp)
                             .padding(vertical = 2.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(AppColors.SurfaceContainer.copy(alpha = 0.7f)),
+                            .background(AppColors.SurfaceContainer.copy(alpha = 0.7f))
+                            .border(1.dp, AppColors.GoldDark.copy(alpha = 0.5f), RoundedCornerShape(6.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "%.1f".format(total),
-                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = AppColors.TextPrimary)
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, color = AppColors.TextPrimary)
                         )
                     }
                 }
@@ -637,29 +748,6 @@ private fun ColumnTotalsRow(totals: List<Double>) {
 // Logic helpers (Column-Major implementation)
 // =============================================================================
 
-private fun organizeIntoTables(entries: List<WeightEntry>, manualCount: Int): List<List<List<Double?>>> {
-    val totalEntries = entries.size
-    val calculatedNumTables = (totalEntries / 25) + 1
-    val numTables = (calculatedNumTables + manualCount).coerceAtLeast(1)
-    
-    val tables = mutableListOf<List<List<Double?>>>()
-    
-    for (t in 0 until numTables) {
-        val tableGrid = MutableList(5) { MutableList<Double?>(5) { null } }
-        for (c in 0 until 5) {
-            for (r in 0 until 5) {
-                // Công thức ánh xạ dữ liệu phẳng sang Column-Major (cột trước, hàng sau)
-                val entryIdx = (t * 25) + (c * 5) + r
-                if (entryIdx < totalEntries) {
-                    tableGrid[r][c] = entries[entryIdx].weight
-                }
-            }
-        }
-        tables.add(tableGrid.map { it.toList() })
-    }
-    return tables
-}
-
 private fun calculateColumnTotals(tableData: List<List<Double?>>): List<Double> {
     val totals = MutableList(5) { 0.0 }
     tableData.forEach { row ->
@@ -671,3 +759,21 @@ private fun calculateColumnTotals(tableData: List<List<Double?>>): List<Double> 
     }
     return totals
 }
+
+private data class CalcParams(
+    val totalRaw: Double,
+    val bagCount: Int,
+    val bagWeight: Double,
+    val bagMethodIsSampling: Boolean,
+    val bagSampleCount: Int,
+    val bagSampleTotalWeight: Double,
+    val impurityValue: Double,
+    val impurityIsPercent: Boolean,
+    val moisturePercent: Double
+)
+
+// ImmutableTableData dùng PersistentList<PersistentList<Double?>> — kiểu dữ liệu này
+// được Compose Compiler nhận diện NATIVELY là Stable mà không cần @Immutable.
+// Kết quả: WeightTableCard và ColumnTotalsRow được máy biên dịch xác nhận là
+// "restartable AND skippable" trong báo cáo Compose Compiler Stability Reports.
+data class ImmutableTableData(val data: PersistentList<PersistentList<Double?>>)

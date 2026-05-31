@@ -2,6 +2,7 @@ package com.GiaThinh.canlua.ui.component.weight
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import com.GiaThinh.canlua.R
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.component.ExplainingPopover
 import com.GiaThinh.canlua.ui.theme.AppColors
-import java.text.NumberFormat
-import java.util.Locale
+import com.GiaThinh.canlua.ui.theme.lockedAwareTextFieldColors
+import com.GiaThinh.canlua.util.MoneyFormatter
 
 /**
  * Card 2/3: Chỉ số cân — tổng KG, bì, tạp chất, đơn giá, real-time calc.
@@ -44,9 +46,9 @@ fun WeightMetricsCard(
     onBagWeightChange: (Double) -> Unit,
     onImpurityWeightChange: (Double) -> Unit,
     onMoistureChange: (Double) -> Unit,
-    onPriceChange: (Double) -> Unit
+    onPriceChange: (Double) -> Unit,
+    impurityIsPercent: Boolean = false
 ) {
-    val fmt = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     var bagText by remember(bagWeight) {
         mutableStateOf(if (bagWeight > 0) bagWeight.toString() else "")
     }
@@ -63,16 +65,14 @@ fun WeightMetricsCard(
     var showBagInfo by remember { mutableStateOf(false) }
     var showImpurityInfo by remember { mutableStateOf(false) }
     var showMoistureInfo by remember { mutableStateOf(false) }
+    var showFormulaInfo by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isLocked) AppColors.LockedBg else AppColors.CardBg
+            containerColor = if (isLocked) AppColors.LockedSurface else AppColors.CardBg
         ),
-        // Locked state: bỏ elevation để tránh shadow chồng chéo gây ảo giác "shadow quá đà".
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isLocked) 0.dp else 2.dp
-        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth().animateContentSize()
     ) {
         Column(
@@ -85,6 +85,19 @@ fun WeightMetricsCard(
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.weight_metrics_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
+                // Chấm than: tap → popover hiển thị công thức tính KL thực & Thành tiền
+                IconButton(
+                    onClick = { showFormulaInfo = true },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Outlined.Info,
+                        contentDescription = stringResource(R.string.weight_metrics_formula_info_content),
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
                 Surface(
                     color = AppColors.GreenSurface,
                     shape = RoundedCornerShape(8.dp)
@@ -105,6 +118,7 @@ fun WeightMetricsCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(AppColors.WeightSurface)
+                    .border(1.dp, AppColors.DividerStrong, RoundedCornerShape(12.dp))
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -160,7 +174,8 @@ fun WeightMetricsCard(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    colors = lockedAwareTextFieldColors()
                 )
                 OutlinedTextField(
                     value = impText,
@@ -170,7 +185,7 @@ fun WeightMetricsCard(
                             onImpurityWeightChange(it.toDoubleOrNull() ?: 0.0)
                         }
                     },
-                    label = { Text(stringResource(R.string.weight_metrics_impurity_label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    label = { Text(stringResource(if (impurityIsPercent) R.string.weight_metrics_impurity_label_percent else R.string.weight_metrics_impurity_label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     trailingIcon = {
                         IconButton(
                             onClick = { showImpurityInfo = true },
@@ -188,7 +203,8 @@ fun WeightMetricsCard(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    colors = lockedAwareTextFieldColors()
                 )
             }
 
@@ -228,7 +244,8 @@ fun WeightMetricsCard(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = lockedAwareTextFieldColors()
             )
 
             // KL thực (after deductions) - High Contrast
@@ -237,6 +254,7 @@ fun WeightMetricsCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(AppColors.GreenSurface)
+                    .border(1.dp, AppColors.GreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -258,7 +276,7 @@ fun WeightMetricsCard(
             }
 
             // Thành tiền - High Contrast
-            HorizontalDivider(color = AppColors.Divider)
+            HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -267,10 +285,22 @@ fun WeightMetricsCard(
                 Text(stringResource(R.string.weight_metrics_total_amount), style = MaterialTheme.typography.titleMedium, color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
                 AnimatedNumber(
                     value = totalAmount,
-                    formatter = { "${fmt.format(it)} đ" },
+                    formatter = { MoneyFormatter.formatVndShort(it) },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                     color = AppColors.GreenPrimary // Auto-adapt theo dark/light mode
+                )
+            }
+            // Dòng đọc tiếng Việt — căn phải, ngay dưới số tiền để bà con đọc theo
+            val context = androidx.compose.ui.platform.LocalContext.current
+            MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
+                Text(
+                    text = words,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.TextSecondary,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -296,6 +326,14 @@ fun WeightMetricsCard(
         title = stringResource(R.string.weight_metrics_moisture_info_title),
         description = stringResource(R.string.weight_metrics_moisture_info_description),
         onDismiss = { showMoistureInfo = false }
+    )
+
+    // Popover công thức tổng: KL thực & Thành tiền — để bà con biết tiền của mình tính từ đâu
+    ExplainingPopover(
+        visible = showFormulaInfo,
+        title = stringResource(R.string.weight_metrics_formula_info_title),
+        description = stringResource(R.string.weight_metrics_formula_info_description),
+        onDismiss = { showFormulaInfo = false }
     )
 }
 

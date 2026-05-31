@@ -59,15 +59,16 @@ object PremiumState {
 
     /**
      * Timestamp cutoff cho Early Adopter — cài app TRƯỚC ngày này = nhận Premium free.
-     * Mặc định: 2026-06-30 00:00:00 ICT (Indochina Time = UTC+7).
-     * Giá trị này có thể bị override bởi Firebase Remote Config key
+     * Mặc định: 2026-07-01 00:00:00 ICT (Indochina Time = UTC+7).
+     *
+     * Giá trị này bị override bởi Firebase Remote Config key
      * `early_adopter_cutoff_ms` khi feature enabled.
      *
      * ĐỔI NGÀY NÀY khi muốn đóng early adopter:
-     *  - Set ngày release chính thức → user cài sau ngày đó không nhận được.
-     *  - VD: muốn đóng ngày 2026-07-01 → set = 1751328000000L
+     *  - Set ngày release chính thức → user cài sau ngày đó không nhận.
+     *  - VD: muốn đóng ngày 2026-08-01 ICT → 1785526800000L
      */
-    const val EARLY_ADOPTER_CUTOFF_MS = 1751241600000L // 2026-06-30 00:00:00 ICT
+    const val EARLY_ADOPTER_CUTOFF_MS = 1782838800000L // 2026-07-01 00:00:00 ICT
 
     /** Plan name cho Early Adopter — hiển thị trên badge/profile. */
     const val EARLY_ADOPTER_PLAN = "Early Adopter"
@@ -99,14 +100,37 @@ object PremiumState {
      * @param earlyAdopterEnabled feature có đang bật không (từ Firebase Remote Config)
      * @param remoteCutoffMs timestamp cutoff từ Remote Config (null = dùng default)
      */
+    private fun getEncryptedPrefs(context: Context): android.content.SharedPreferences {
+        return try {
+            val masterKeyAlias = androidx.security.crypto.MasterKeys.getOrCreate(androidx.security.crypto.MasterKeys.AES256_GCM_SPEC)
+            androidx.security.crypto.EncryptedSharedPreferences.create(
+                PREFS,
+                masterKeyAlias,
+                context.applicationContext,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            // Fallback an toàn nếu Keystore bị hỏng
+            context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        }
+    }
+
+    /**
+     * Kiểm tra và apply Early Adopter Premium nếu thỏa điều kiện.
+     * Gọi 1 lần trong Application.onCreate() SAU khi PremiumState.init() đã chạy.
+     *
+     * @param firstInstallTimeMs thời điểm cài app (lấy từ PackageManager)
+     * @param earlyAdopterEnabled feature có đang bật không (từ Firebase Remote Config)
+     * @param remoteCutoffMs timestamp cutoff từ Remote Config (null = dùng default)
+     */
     fun applyEarlyAdopterIfEligible(
         context: Context,
         firstInstallTimeMs: Long,
         earlyAdopterEnabled: Boolean = true,
         remoteCutoffMs: Long? = null
     ) {
-        val prefs = context.applicationContext
-            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = getEncryptedPrefs(context)
 
         // Đã từng apply rồi → bỏ qua (idempotent)
         if (prefs.getBoolean(KEY_EARLY_ADOPTER_APPLIED, false)) return
@@ -141,8 +165,7 @@ object PremiumState {
     }
 
     fun init(context: Context) {
-        val prefs = context.applicationContext
-            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = getEncryptedPrefs(context)
         val stored = prefs.getBoolean(KEY_IS_PREMIUM, false)
         val lastVerified = prefs.getLong(KEY_LAST_VERIFIED, 0L)
         val since = prefs.getLong(KEY_PREMIUM_SINCE, 0L)
@@ -169,8 +192,7 @@ object PremiumState {
      * Logic rollover được delegate sang [PremiumQuotaLogic] để testable.
      */
     private fun readAndRolloverDailyCount(context: Context): Int {
-        val prefs = context.applicationContext
-            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = getEncryptedPrefs(context)
         val today = PremiumQuotaLogic.todayKey()
         val savedDate = prefs.getString(KEY_DAILY_DATE, null)
         val savedCount = prefs.getInt(KEY_DAILY_COUNT, 0)
@@ -200,8 +222,7 @@ object PremiumState {
         // Rollover trước khi tăng — đảm bảo nếu đã qua 00:00 thì counter reset về 1.
         val current = readAndRolloverDailyCount(context)
         val next = current + 1
-        context.applicationContext
-            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        getEncryptedPrefs(context)
             .edit()
             .putInt(KEY_DAILY_COUNT, next)
             .apply()
@@ -210,8 +231,7 @@ object PremiumState {
     }
 
     fun setPremium(context: Context, value: Boolean, plan: String? = null) {
-        val prefs = context.applicationContext
-            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = getEncryptedPrefs(context)
         val now = System.currentTimeMillis()
         // Giữ nguyên `since` cũ nếu user đã từng Premium — chỉ ghi lần đầu kích hoạt.
         val existingSince = prefs.getLong(KEY_PREMIUM_SINCE, 0L)
@@ -220,12 +240,12 @@ object PremiumState {
             existingSince > 0L -> existingSince
             else -> now
         }
-        prefs.edit()
+        val editor = prefs.edit()
             .putBoolean(KEY_IS_PREMIUM, value)
             .putLong(KEY_LAST_VERIFIED, if (value) now else 0L)
             .putLong(KEY_PREMIUM_SINCE, newSince)
-            .apply { if (plan != null) putString(KEY_PLAN, plan) }
-            .apply()
+        if (plan != null) editor.putString(KEY_PLAN, plan)
+        editor.apply()
 
         _isPremium.value = value
         val finalPlan = if (value) plan ?: prefs.getString(KEY_PLAN, null) else null

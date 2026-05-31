@@ -6,11 +6,16 @@ import com.GiaThinh.canlua.data.firestore.FirestoreWeightEntry
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,6 +46,52 @@ class FirestoreRepository @Inject constructor(
     // Transactions collection
     private val transactionsCollection
         get() = firestore.collection("transactions")
+
+    fun generateCardId(): String = cardsCollection.document().id
+    fun generateWeightEntryId(): String = weightEntriesCollection.document().id
+    fun generateTransactionId(): String = transactionsCollection.document().id
+
+    suspend fun executeBatchSync(
+        cards: List<FirestoreCard>,
+        weightEntries: List<FirestoreWeightEntry>,
+        transactions: List<FirestoreTransaction>,
+        newCardsCount: Int
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val batch = firestore.batch()
+            val now = System.currentTimeMillis()
+            val currentUid = userId
+
+            // Add cards
+            cards.forEach { card ->
+                val docRef = cardsCollection.document(card.id)
+                batch.set(docRef, card.copy(userId = currentUid, syncTimestamp = now))
+            }
+
+            // Add weight entries
+            weightEntries.forEach { entry ->
+                val docRef = weightEntriesCollection.document(entry.id)
+                batch.set(docRef, entry.copy(userId = currentUid, syncTimestamp = now))
+            }
+
+            // Add transactions
+            transactions.forEach { tx ->
+                val docRef = transactionsCollection.document(tx.id)
+                batch.set(docRef, tx.copy(userId = currentUid, syncTimestamp = now))
+            }
+
+            // Increment profile cardCount if there are new cards
+            if (newCardsCount > 0 && currentUid != null) {
+                val profileRef = firestore.collection("profiles").document(currentUid)
+                batch.update(profileRef, "cardCount", com.google.firebase.firestore.FieldValue.increment(newCardsCount.toLong()))
+            }
+
+            batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     // ========== Card Operations ==========
 
@@ -186,6 +237,20 @@ class FirestoreRepository @Inject constructor(
         }
     }
 
+    suspend fun getAllWeightEntries(): Result<List<FirestoreWeightEntry>> {
+        return try {
+            val query = userId?.let {
+                weightEntriesCollection.whereEqualTo("userId", it)
+            } ?: weightEntriesCollection
+
+            val snapshot = query.get().await()
+            val entries = snapshot.documents.mapNotNull { it.toObject(FirestoreWeightEntry::class.java) }
+            Result.success(entries)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ========== Transaction Operations ==========
 
     suspend fun syncTransaction(transaction: FirestoreTransaction): Result<String> {
@@ -232,6 +297,20 @@ class FirestoreRepository @Inject constructor(
         }
     }
 
+    suspend fun getAllTransactions(): Result<List<FirestoreTransaction>> {
+        return try {
+            val query = userId?.let {
+                transactionsCollection.whereEqualTo("userId", it)
+            } ?: transactionsCollection
+
+            val snapshot = query.get().await()
+            val transactions = snapshot.documents.mapNotNull { it.toObject(FirestoreTransaction::class.java) }
+            Result.success(transactions)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ========== Trader Operations (Phase 2.4) ==========
 
     /**
@@ -250,7 +329,7 @@ class FirestoreRepository @Inject constructor(
         // Sort client-side vì 1 trader chỉ có vài chục/trăm card đã verify.
         val registration: ListenerRegistration = cardsCollection
             .whereEqualTo("lockedByTraderId", uid)
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                 if (error != null) {
                     // Không crash app — trả emptyList, để UI tự hiển thị empty state.
                     trySend(emptyList())
@@ -263,7 +342,7 @@ class FirestoreRepository @Inject constructor(
                 trySend(cards)
             }
         awaitClose { registration.remove() }
-    }
+    }.distinctUntilChanged()
 
     /**
      * Realtime stream transactions thuộc về list cardId của trader.
@@ -283,7 +362,7 @@ class FirestoreRepository @Inject constructor(
         chunks.forEachIndexed { index, chunk ->
             val registration = transactionsCollection
                 .whereIn("cardId", chunk)
-                .addSnapshotListener { snapshot, error ->
+                .addSnapshotListener(Dispatchers.IO.asExecutor(), MetadataChanges.EXCLUDE) { snapshot, error ->
                     latestByChunk[index] = if (error != null) {
                         emptyList()
                     } else {
@@ -297,6 +376,33 @@ class FirestoreRepository @Inject constructor(
         }
 
         awaitClose { registrations.forEach { it.remove() } }
+    }.distinctUntilChanged()
+
+    // ========== Analytics Counter Operations ==========
+
+    suspend fun incrementAiQueryCount(): Result<Unit> {
+        return try {
+            val uid = userId ?: return Result.failure(IllegalStateException("User not logged in"))
+            firestore.collection("profiles").document(uid)
+                .update("aiQueryCount", com.google.firebase.firestore.FieldValue.increment(1))
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun incrementCardCount(): Result<Unit> {
+        return try {
+            val uid = userId ?: return Result.failure(IllegalStateException("User not logged in"))
+            firestore.collection("profiles").document(uid)
+                .update("cardCount", com.google.firebase.firestore.FieldValue.increment(1))
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
+
 

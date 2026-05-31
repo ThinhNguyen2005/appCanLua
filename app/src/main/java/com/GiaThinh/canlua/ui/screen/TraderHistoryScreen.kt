@@ -1,12 +1,17 @@
 package com.GiaThinh.canlua.ui.screen
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,25 +26,31 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Card as M3Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -69,7 +80,7 @@ fun TraderHistoryScreen(
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     TrackScreenRender("trader_history")
-    val history by profileViewModel.traderHistory.collectAsState()
+    val history by profileViewModel.traderHistory.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -94,7 +105,8 @@ fun TraderHistoryScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = AppColors.Surface,
                     titleContentColor = AppColors.TextPrimary
-                )
+                ),
+                windowInsets = WindowInsets(0.dp)
             )
         },
         containerColor = AppColors.Surface
@@ -172,8 +184,60 @@ private fun SummaryHeader(count: Int) {
 
 @Composable
 private fun TraderHistoryRowFull(item: TraderHistoryItem) {
+    val context = LocalContext.current
     val moneyFmt = remember { NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")) }
     val dateFmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
+
+    var showContactOptions by remember { mutableStateOf(false) }
+
+    if (showContactOptions) {
+        AlertDialog(
+            onDismissRequest = { showContactOptions = false },
+            title = {
+                Text(
+                    text = "Liên hệ thương lái",
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "Chọn phương thức liên hệ với ${item.traderName} (${item.traderPhone})",
+                    color = AppColors.TextSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showContactOptions = false
+                        try {
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${item.traderPhone}"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Không thể thực hiện cuộc gọi", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Text("Gọi điện", color = AppColors.GreenPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showContactOptions = false
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://zalo.me/${item.traderPhone}"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Không thể mở Zalo", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Text("Nhắn Zalo", color = AppColors.GreenPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
 
     M3Card(
         modifier = Modifier.fillMaxWidth(),
@@ -209,15 +273,41 @@ private fun TraderHistoryRowFull(item: TraderHistoryItem) {
                     color = AppColors.TextPrimary
                 )
                 if (item.traderPhone.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable { showContactOptions = true }
+                            .padding(vertical = 2.dp)
+                    ) {
                         Icon(
                             Icons.Filled.Phone, null,
+                            tint = AppColors.GreenPrimary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            item.traderPhone,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = AppColors.GreenPrimary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                    }
+                }
+                if (!item.traderCccd.isNullOrBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Person, null,
                             tint = AppColors.TextHint,
                             modifier = Modifier.size(12.dp)
                         )
-                        Spacer(Modifier.size(4.dp))
+                        Spacer(Modifier.size(6.dp))
                         Text(
-                            item.traderPhone,
+                            "CCCD: ${item.traderCccd}",
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextHint
                         )

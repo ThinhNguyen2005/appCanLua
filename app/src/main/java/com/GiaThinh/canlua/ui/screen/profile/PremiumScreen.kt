@@ -32,7 +32,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.util.HapticUtil
@@ -282,8 +281,7 @@ fun PremiumScreen(
                                 pack.originalPrice?.let {
                                     Text(
                                         text = it,
-                                        style = TextStyle(
-                                            fontSize = 12.sp,
+                                        style = MaterialTheme.typography.bodySmall.copy(
                                             fontWeight = FontWeight.Normal,
                                             color = AppColors.TextHint,
                                             textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
@@ -322,8 +320,7 @@ fun PremiumScreen(
                     } else {
                         Text(
                             text = "Đăng ký ngay với ${selectedPackage.price}",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 16.sp
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
                 }

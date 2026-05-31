@@ -3,6 +3,7 @@ package com.GiaThinh.canlua.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -30,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.AppLanguage
+import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.BackupStatus
 import com.GiaThinh.canlua.repository.SyncStatus
@@ -60,24 +63,26 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    syncViewModel: SyncViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     TrackScreenRender("settings")
     val isTtsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
     val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
-    val syncViewModel: SyncViewModel = hiltViewModel()
+    val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
     val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
     val backupStatus by syncViewModel.backupStatus.collectAsStateWithLifecycle()
     val lastBackupTime by syncViewModel.lastBackupTime.collectAsStateWithLifecycle()
-    val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
-    val profileViewModel: ProfileViewModel = hiltViewModel()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val premiumInfo by PremiumState.info.collectAsStateWithLifecycle()
     var pendingRole by remember { mutableStateOf<String?>(null) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -155,17 +160,22 @@ fun SettingsScreen(
                                 }
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
                                     Text(
                                         text = stringResource(R.string.settings_premium_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = AppColors.TextPrimary
+                                        color = AppColors.TextPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     if (premiumInfo.isActive) {
-                                        Spacer(Modifier.width(8.dp))
                                         Box(
                                             modifier = Modifier
+                                                .align(Alignment.CenterVertically)
                                                 .clip(RoundedCornerShape(6.dp))
                                                 .background(
                                                     if (premiumInfo.isEarlyAdopter) AppColors.GoldAccent
@@ -181,11 +191,13 @@ fun SettingsScreen(
                                                 },
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = Color.White,
-                                                fontWeight = FontWeight.ExtraBold
+                                                fontWeight = FontWeight.ExtraBold,
+                                                maxLines = 1
                                             )
                                         }
                                     }
                                 }
+                                val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
                                 val activatedLabel = stringResource(R.string.settings_premium_activated)
                                 val earlyAdopterLabel = stringResource(R.string.settings_premium_early_adopter)
                                 val subtitle = if (premiumInfo.isActive) {
@@ -193,7 +205,6 @@ fun SettingsScreen(
                                         ?: if (premiumInfo.isEarlyAdopter) earlyAdopterLabel
                                         else activatedLabel
                                     val sinceLabel = if (premiumInfo.sinceMs > 0L) {
-                                        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                                         stringResource(
                                             R.string.settings_premium_since,
                                             sdf.format(Date(premiumInfo.sinceMs))
@@ -375,8 +386,9 @@ fun SettingsScreen(
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = AppColors.GreenPrimary
                                 ),
-                                border = ButtonDefaults.outlinedButtonBorder.copy(
-                                    brush = androidx.compose.ui.graphics.SolidColor(AppColors.GreenPrimary)
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    AppColors.GreenPrimary
                                 )
                             ) {
                                 if (backupStatus is BackupStatus.BackingUp) {
@@ -493,6 +505,53 @@ fun SettingsScreen(
                     }
                 }
 
+                // ── Theme Mode Card ──
+                SettingsCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            IconTile(
+                                bg = AppColors.GreenSurface,
+                                tint = AppColors.GreenPrimary,
+                                icon = { tint, mod ->
+                                    Icon(
+                                        Icons.Default.DarkMode,
+                                        contentDescription = null,
+                                        tint = tint,
+                                        modifier = mod
+                                    )
+                                }
+                            )
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.settings_theme_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.TextPrimary
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_theme_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextHint,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+
+                        ThemeModeOptions(
+                            selected = appThemeMode,
+                            onSelect = { viewModel.setThemeMode(it) }
+                        )
+                    }
+                }
+
                 // ── Font scale Card ──
                 SettingsCard {
                     Column(
@@ -600,7 +659,7 @@ fun SettingsScreen(
                         )
 
                         Button(
-                            onClick = { authViewModel.signOut() },
+                            onClick = { showLogoutConfirm = true },
                             enabled = authState.isSignedIn,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -619,6 +678,33 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    // H-09: Logout confirmation dialog — tránh đăng xuất vô ý do nhấn nhầm
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirm = false },
+            title = { Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold) },
+            text = { Text("Bạn có chắc chắn muốn đăng xuất không? Dữ liệu chưa đồng bộ có thể bị mất.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.signOut()
+                        showLogoutConfirm = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
+                ) {
+                    Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
+        )
     }
 
     // Confirm dialog đổi role — đối xứng với flow cũ ở Profile.
@@ -722,6 +808,47 @@ private fun LanguageOptions(
                     RadioButton(
                         selected = isSelected,
                         onClick = { onSelect(language) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = AppColors.GreenPrimary,
+                            unselectedColor = AppColors.TextHint
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeModeOptions(
+    selected: AppThemeMode,
+    onSelect: (AppThemeMode) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AppThemeMode.entries.forEach { mode ->
+            val isSelected = mode == selected
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                onClick = { onSelect(mode) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(mode.labelRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                    )
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { onSelect(mode) },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = AppColors.GreenPrimary,
                             unselectedColor = AppColors.TextHint

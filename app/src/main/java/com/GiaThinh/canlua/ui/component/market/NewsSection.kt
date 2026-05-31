@@ -20,35 +20,39 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.GiaThinh.canlua.ui.component.shimmer
+import com.GiaThinh.canlua.util.CustomTabsLauncher
 import com.GiaThinh.canlua.data.model.NewsArticle
 import com.GiaThinh.canlua.data.model.NewsTopic
-import com.GiaThinh.canlua.ui.component.shimmer
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.util.CustomTabsLauncher
 import java.util.concurrent.TimeUnit
+
 
 /**
  * Section "Tin tức nông nghiệp" hiển thị trên tab Thị Trường.
@@ -71,6 +75,7 @@ fun NewsSection(
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -93,7 +98,7 @@ fun NewsSection(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Article,
+                    imageVector = Icons.AutoMirrored.Filled.Article,
                     contentDescription = null,
                     tint = AppColors.GreenPrimary,
                     modifier = Modifier.size(20.dp)
@@ -108,7 +113,7 @@ fun NewsSection(
                     color = AppColors.TextPrimary
                 )
                 Text(
-                    text = "Cập nhật từ Google News & các báo VN",
+                    text = "Cập nhật tự động mỗi 4 giờ qua GAS",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextHint
                 )
@@ -140,14 +145,35 @@ fun NewsSection(
                 EmptyState()
             }
             else -> {
+                val displayCount = if (isExpanded) 20 else 5
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    articles.take(8).forEach { article ->
+                    articles.take(displayCount).forEach { article ->
                         NewsCard(article = article)
+                    }
+
+                    if (articles.size > 5) {
+                        Spacer(Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(AppColors.SurfaceContainer)
+                                .clickable { isExpanded = !isExpanded }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isExpanded) "Thu gọn" else "Xem thêm bài viết (${articles.size - 5} bài khác)",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = AppColors.GreenPrimary
+                            )
+                        }
                     }
                 }
             }
@@ -187,7 +213,7 @@ private fun TopicFilterRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items) { (topic, label) ->
+        items(items, key = { it.first?.name ?: "_all" }) { (topic, label) ->
             val isSelected = selected == topic
             Box(
                 modifier = Modifier
@@ -210,10 +236,25 @@ private fun TopicFilterRow(
     }
 }
 
+private fun getSourceLogoUrl(source: String): String? {
+    val clean = source.lowercase().trim()
+    return when {
+        clean.contains("vnexpress") -> "https://upload.wikimedia.org/wikipedia/commons/e/e3/Logo_VnExpress.png"
+        clean.contains("tuổi trẻ") || clean.contains("tuoi tre") -> "https://upload.wikimedia.org/wikipedia/commons/e/ea/Logo_B%C3%A1o_Tu%E1%BB%95i_Tr%E1%BA%BB.png"
+        clean.contains("thanh niên") || clean.contains("thanh nien") -> "https://upload.wikimedia.org/wikipedia/commons/7/77/Logo-bao-thanh-nien.png"
+        clean.contains("cafef") -> "https://cafefcdn.com/web_images/logo.png"
+        clean.contains("vov") -> "https://vov.vn/sites/default/files/logo_vov_red.png"
+        clean.contains("dân việt") || clean.contains("dan viet") -> "https://image.vietnamfinance.vn/2018/11/24/dan-viet.png"
+        else -> null
+    }
+}
+
 @Composable
 private fun NewsCard(article: NewsArticle) {
     val context = LocalContext.current
     val toolbarColor = AppColors.GreenPrimary
+    var isImageError by remember { mutableStateOf(false) }
+    val imageUrl = article.thumbnail.takeIf { !it.isNullOrBlank() } ?: getSourceLogoUrl(article.source)
 
     Row(
         modifier = Modifier
@@ -230,31 +271,31 @@ private fun NewsCard(article: NewsArticle) {
             .padding(10.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Thumbnail
+        // Thumbnail — hiển thị ảnh bài báo hoặc logo của trang báo, nếu cả hai lỗi thì hiện icon mặc định
         Box(
             modifier = Modifier
-                .size(86.dp)
+                .size(56.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(AppColors.Divider)
+                .background(AppColors.GreenSurface),
+            contentAlignment = Alignment.Center
         ) {
-            if (!article.thumbnail.isNullOrBlank()) {
+            if (imageUrl != null && !isImageError) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(article.thumbnail)
+                        .data(imageUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(86.dp)
+                    modifier = Modifier.size(56.dp),
+                    onError = { isImageError = true }
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Default.Article,
+                    imageVector = Icons.AutoMirrored.Filled.Article,
                     contentDescription = null,
-                    tint = AppColors.TextHint,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .padding(2.dp)
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
@@ -329,7 +370,7 @@ private fun EmptyState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.Article,
+            imageVector = Icons.AutoMirrored.Filled.Article,
             contentDescription = null,
             tint = AppColors.TextHint,
             modifier = Modifier.size(40.dp)
@@ -377,7 +418,7 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
         )
         IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
             Icon(
-                imageVector = Icons.Default.OpenInNew,
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = "Đóng",
                 tint = AppColors.OfflineText.copy(alpha = 0.6f),
                 modifier = Modifier.size(14.dp)

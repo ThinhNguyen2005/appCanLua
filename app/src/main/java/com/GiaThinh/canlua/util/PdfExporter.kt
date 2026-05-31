@@ -155,41 +155,32 @@ object PdfExporter {
         y += 12f
 
         if (entries.isNotEmpty()) {
-            ensureSpace(72f)
+            val showTareImpurity = entries.any { it.bagWeight > 0.0 || it.impurityWeight > 0.0 }
+            ensureSpace(78f)
             canvas.drawText(labels.bagDetailsCount(entries.size), MARGIN, y, sectionPaint)
-            y += 13f
-            y = drawWeightTableHeader(canvas, y, labelPaint, borderPaint, fillPaint, labels)
+            // +18f thay vì +13f — section font 12.5f, baseline→border chỉ 13f
+            // làm chữ "Chi tiết theo bao" dính sát header bảng. 18f cho thoáng visual.
+            y += 18f
+            y = drawWeightTableHeader(canvas, y, labelPaint, borderPaint, fillPaint, labels, showTareImpurity)
 
             entries.forEachIndexed { idx, entry ->
                 ensureSpace(18f)
-                y = drawWeightTableRow(canvas, y, idx + 1, entry, bodyPaint, borderPaint)
+                y = drawWeightTableRow(canvas, y, idx + 1, entry, bodyPaint, borderPaint, showTareImpurity)
             }
+
+            ensureSpace(22f)
+            y = drawWeightTableTotal(canvas, y, entries, boldPaint, borderPaint, fillPaint, labels, showTareImpurity)
         } else {
             ensureSpace(48f)
             canvas.drawText(labels.bagDetails, MARGIN, y, sectionPaint)
-            y += 16f
+            // +20f thay vì +16f — chữ "Chi tiết theo bao" cách body "Không có" thoáng hơn.
+            y += 20f
             canvas.drawText(labels.noBags, MARGIN, y, bodyPaint)
             y += 18f
         }
 
-        ensureSpace(170f)
-        y += 10f
-        y = drawVerificationSection(
-            canvas = canvas,
-            shortHash = shortHash,
-            fullHash = verificationHash,
-            y = y,
-            sectionPaint = sectionPaint,
-            labelPaint = labelPaint,
-            bodyPaint = bodyPaint,
-            boldPaint = boldPaint,
-            borderPaint = borderPaint,
-            fillPaint = lightFillPaint,
-            labels = labels
-        )
-        y += 12f
-
         ensureSpace(100f)
+        y += 14f
         drawSignatureSection(canvas, y, sectionPaint, labelPaint, borderPaint, labels)
 
         drawFooter(canvas, pageNum, verificationHash, mutedPaint, labels)
@@ -254,7 +245,9 @@ object PdfExporter {
     ): Float {
         var cursor = y
         canvas.drawText(title, MARGIN, cursor, sectionPaint)
-        cursor += 9f
+        // +14f thay vì +9f — sectionPaint baseline → box top chỉ 9f làm chữ tiêu đề
+        // sát border bảng. Tăng lên 14f cho thoáng (font 12.5f cần ≥ font_size).
+        cursor += 14f
 
         val boxTop = cursor
         val rowHeight = 24f
@@ -298,7 +291,9 @@ object PdfExporter {
 
         canvas.drawText(labels.weightMetrics, leftX, cursor, sectionPaint)
         canvas.drawText(labels.payment, rightX, cursor, sectionPaint)
-        cursor += 9f
+        // +14f thay vì +9f — chữ "Chỉ số cân"/"Thanh toán" cách 2 box bên dưới thoáng hơn,
+        // không còn dính sát border.
+        cursor += 14f
 
         val boxTop = cursor
         val boxBottom = boxTop + rowHeight * 7f + 10f
@@ -310,18 +305,34 @@ object PdfExporter {
         val metrics = listOf(
             labels.totalWeight to "${formatKg(card.totalWeight)} kg",
             labels.bagCount to "${card.bagCount} bao",
-            labels.tare to "${formatKg(card.bagWeight)} kg/bao",
-            labels.impurity to "${formatKg(card.impurityWeight)} kg",
+            labels.tare to if (card.bagMethodIsSampling && card.bagSampleCount > 0)
+                "${formatKg(card.bagSampleTotalWeight)} kg / ${card.bagSampleCount} bao"
+                else "${formatKg(card.bagWeight)} kg/bao",
+            labels.impurity to if (card.impurityIsPercent)
+                "%.1f%%".format(card.impurityWeight)
+                else "${formatKg(card.impurityWeight)} kg",
             labels.moisture to "%.1f%%".format(card.moisturePercent),
             labels.netWeight to "${formatKg(card.netWeight)} kg"
         )
+
+        // Payment logic: gross paid (cọc + đã trả) so với thành tiền
+        val grossPaid = card.depositAmount + card.paidAmount
+        val diff = grossPaid - card.totalAmount  // dương = trả thừa, âm = còn nợ
+        val (closingLabel, closingValue, isSettled) = when {
+            card.totalAmount <= 0.0 -> Triple(labels.remaining, "0 đ", false)
+            diff > 0.0 -> Triple(labels.excessRefund, "${formatMoney(diff)} đ", true)
+            diff < 0.0 -> Triple(labels.amountDue, "${formatMoney(-diff)} đ", false)
+            else -> Triple(labels.remaining, "0 đ", true)
+        }
+        val statusText = if (isSettled) labels.paidFull else labels.debtRemaining
+
         val money = listOf(
             labels.price to "${formatMoney(card.pricePerKg)} đ/kg",
             labels.totalAmount to "${formatMoney(card.totalAmount)} đ",
             labels.deposit to "${formatMoney(card.depositAmount)} đ",
             labels.paid to "${formatMoney(card.paidAmount)} đ",
-            labels.remaining to "${formatMoney(card.remainingAmount)} đ",
-            labels.status to if (card.remainingAmount <= 0.0 && card.totalAmount > 0.0) labels.paidFull else labels.debtRemaining
+            closingLabel to closingValue,
+            labels.status to statusText
         )
 
         metrics.forEachIndexed { index, item ->
@@ -329,7 +340,7 @@ object PdfExporter {
             drawKvInline(canvas, item.first, item.second, leftX + 12f, boxTop + 18f + index * rowHeight, 86f, labelPaint, paint, 130f)
         }
         money.forEachIndexed { index, item ->
-            val paint = if (item.first == labels.totalAmount || item.first == labels.remaining) boldPaint else bodyPaint
+            val paint = if (item.first == labels.totalAmount || item.first == closingLabel) boldPaint else bodyPaint
             drawKvInline(canvas, item.first, item.second, rightX + 12f, boxTop + 18f + index * rowHeight, 78f, labelPaint, paint, 130f)
         }
 
@@ -342,23 +353,28 @@ object PdfExporter {
         labelPaint: Paint,
         borderPaint: Paint,
         fillPaint: Paint,
-        pdfLabels: PdfLabels
+        pdfLabels: PdfLabels,
+        showTareImpurity: Boolean
     ): Float {
-        val cols = floatArrayOf(MARGIN, MARGIN + 45f, MARGIN + 150f, MARGIN + 245f, MARGIN + 340f, PAGE_WIDTH - MARGIN)
+        val cols = tableColumns(showTareImpurity)
         val rowBottom = y + 20f
         canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, rowBottom, fillPaint)
         canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, rowBottom, borderPaint)
         for (i in 1 until cols.lastIndex) {
             canvas.drawLine(cols[i], y, cols[i], rowBottom, borderPaint)
         }
-        val labels = listOf(
+        val headers = if (showTareImpurity) listOf(
             pdfLabels.columnIndex,
             pdfLabels.columnGrossWeight,
             pdfLabels.columnTare,
             pdfLabels.columnImpurity,
             pdfLabels.columnNetWeight
+        ) else listOf(
+            pdfLabels.columnIndex,
+            pdfLabels.columnGrossWeight,
+            pdfLabels.columnNetWeight
         )
-        labels.forEachIndexed { index, label ->
+        headers.forEachIndexed { index, label ->
             canvas.drawText(label, cols[index] + 6f, y + 14f, labelPaint)
         }
         return rowBottom
@@ -370,19 +386,24 @@ object PdfExporter {
         index: Int,
         entry: WeightEntry,
         bodyPaint: Paint,
-        borderPaint: Paint
+        borderPaint: Paint,
+        showTareImpurity: Boolean
     ): Float {
-        val cols = floatArrayOf(MARGIN, MARGIN + 45f, MARGIN + 150f, MARGIN + 245f, MARGIN + 340f, PAGE_WIDTH - MARGIN)
+        val cols = tableColumns(showTareImpurity)
         val rowBottom = y + 18f
         canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, rowBottom, borderPaint)
         for (i in 1 until cols.lastIndex) {
             canvas.drawLine(cols[i], y, cols[i], rowBottom, borderPaint)
         }
-        val values = listOf(
+        val values = if (showTareImpurity) listOf(
             index.toString(),
             formatKg(entry.weight),
             formatKg(entry.bagWeight),
             formatKg(entry.impurityWeight),
+            formatKg(entry.netWeight)
+        ) else listOf(
+            index.toString(),
+            formatKg(entry.weight),
             formatKg(entry.netWeight)
         )
         values.forEachIndexed { col, value ->
@@ -391,30 +412,48 @@ object PdfExporter {
         return rowBottom
     }
 
-    private fun drawVerificationSection(
+    private fun drawWeightTableTotal(
         canvas: android.graphics.Canvas,
-        shortHash: String,
-        fullHash: String,
         y: Float,
-        sectionPaint: Paint,
-        labelPaint: Paint,
-        bodyPaint: Paint,
+        entries: List<WeightEntry>,
         boldPaint: Paint,
         borderPaint: Paint,
         fillPaint: Paint,
-        labels: PdfLabels
+        pdfLabels: PdfLabels,
+        showTareImpurity: Boolean
     ): Float {
-        var cursor = y
-        canvas.drawText(labels.verificationSection, MARGIN, cursor, sectionPaint)
-        cursor += 10f
-        val boxTop = cursor
-        val boxBottom = boxTop + 72f
-        canvas.drawRect(MARGIN, boxTop, PAGE_WIDTH - MARGIN, boxBottom, fillPaint)
-        canvas.drawRect(MARGIN, boxTop, PAGE_WIDTH - MARGIN, boxBottom, borderPaint)
-        drawKvInline(canvas, labels.signatureStatus, labels.signatureUnsigned, MARGIN + 12f, boxTop + 18f, 92f, labelPaint, boldPaint, 370f)
-        drawKvInline(canvas, labels.verificationCode, shortHash, MARGIN + 12f, boxTop + 38f, 92f, labelPaint, boldPaint, 370f)
-        drawKvInline(canvas, "SHA-256", fullHash, MARGIN + 12f, boxTop + 58f, 92f, labelPaint, bodyPaint, 390f)
-        return boxBottom
+        val cols = tableColumns(showTareImpurity)
+        val rowBottom = y + 20f
+        canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, rowBottom, fillPaint)
+        canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, rowBottom, borderPaint)
+        for (i in 1 until cols.lastIndex) {
+            canvas.drawLine(cols[i], y, cols[i], rowBottom, borderPaint)
+        }
+        val sumGross = entries.sumOf { it.weight }
+        val sumNet = entries.sumOf { it.netWeight }
+        val values = if (showTareImpurity) listOf(
+            pdfLabels.tableTotal,
+            formatKg(sumGross),
+            formatKg(entries.sumOf { it.bagWeight }),
+            formatKg(entries.sumOf { it.impurityWeight }),
+            formatKg(sumNet)
+        ) else listOf(
+            pdfLabels.tableTotal,
+            formatKg(sumGross),
+            formatKg(sumNet)
+        )
+        values.forEachIndexed { col, value ->
+            canvas.drawText(value, cols[col] + 6f, y + 14f, boldPaint)
+        }
+        return rowBottom
+    }
+
+    private fun tableColumns(showTareImpurity: Boolean): FloatArray = if (showTareImpurity) {
+        floatArrayOf(MARGIN, MARGIN + 45f, MARGIN + 150f, MARGIN + 245f, MARGIN + 340f, PAGE_WIDTH - MARGIN)
+    } else {
+        // 3 columns: STT (45f), KL thô (rest/2), KL thực (rest/2)
+        val midWidth = (PAGE_WIDTH - MARGIN - (MARGIN + 45f)) / 2f
+        floatArrayOf(MARGIN, MARGIN + 45f, MARGIN + 45f + midWidth, PAGE_WIDTH - MARGIN)
     }
 
     private fun drawSignatureSection(
@@ -426,7 +465,8 @@ object PdfExporter {
         labels: PdfLabels
     ) {
         canvas.drawText(labels.confirmationSection, MARGIN, y, sectionPaint)
-        val top = y + 12f
+        // +16f thay vì +12f — tiêu đề "Xác nhận" cách 3 ô ký tên thoáng hơn.
+        val top = y + 16f
         val bottom = top + 78f
         val colWidth = (PAGE_WIDTH - MARGIN * 2) / 3f
         val titles = listOf(labels.sender, labels.receiver, labels.creator)
@@ -552,6 +592,8 @@ object PdfExporter {
         val deposit = context.getString(R.string.pdf_deposit)
         val paid = context.getString(R.string.pdf_paid)
         val remaining = context.getString(R.string.pdf_remaining)
+        val excessRefund = context.getString(R.string.pdf_excess_refund)
+        val amountDue = context.getString(R.string.pdf_amount_due)
         val status = context.getString(R.string.pdf_status)
         val paidFull = context.getString(R.string.pdf_paid_full)
         val debtRemaining = context.getString(R.string.pdf_debt_remaining)
@@ -562,10 +604,7 @@ object PdfExporter {
         val columnTare = context.getString(R.string.pdf_column_tare)
         val columnImpurity = context.getString(R.string.pdf_column_impurity)
         val columnNetWeight = context.getString(R.string.pdf_column_net_weight)
-        val verificationSection = context.getString(R.string.pdf_section_verification)
-        val signatureStatus = context.getString(R.string.pdf_signature_status)
-        val signatureUnsigned = context.getString(R.string.pdf_signature_unsigned)
-        val verificationCode = context.getString(R.string.pdf_verification_code)
+        val tableTotal = context.getString(R.string.pdf_table_total)
         val confirmationSection = context.getString(R.string.pdf_section_confirmation)
         val sender = context.getString(R.string.pdf_sender)
         val receiver = context.getString(R.string.pdf_receiver)

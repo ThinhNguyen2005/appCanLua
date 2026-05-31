@@ -51,6 +51,16 @@ data class FirestoreCard(
 
     // === PHASE 2.8: Contact + field address ===
     val traderPhone: String = "",
-    val fieldAddress: String = ""
+    val fieldAddress: String = "",
+    @get:PropertyName("paid")
+    @PropertyName("paid")
+    val isPaid: Boolean = false,
+
+    // === PHASE 6: Per-card weigh modes (mirror Card.kt v17 fields) ===
+    val impurityIsPercent: Boolean = false,
+    val bagMethodIsSampling: Boolean = false,
+    val bagSampleCount: Int = 0,
+    val bagSampleTotalWeight: Double = 0.0,
+    val weightInputMode: String = "SMALL"
 )
 

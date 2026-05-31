@@ -1,21 +1,28 @@
 package com.GiaThinh.canlua.ui.theme
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.GiaThinh.canlua.data.model.AppThemeMode
 
 /**
  * Design tokens chuẩn Fluent Design cho app Cân Lúa.
  * Bảng màu lấy cảm hứng từ lúa gạo Việt Nam.
+ * Dark mode được xác định qua [LocalAppThemeMode] — KHÔNG còn dùng
+ * [androidx.compose.foundation.isSystemInDarkTheme] trực tiếp nữa, tránh conflict
+ * khi user chọn theme mode không đồng bộ với system preference.
  */
+private val isDarkTheme: Boolean
+    @Composable get() = LocalAppThemeMode.current != AppThemeMode.LIGHT
+
 object AppColors {
     // Primary — xanh lá lúa
     val GreenPrimary: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.GreenPrimary else Color(0xFF2E7D32), label = "GreenPrimary").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.GreenPrimary else Color(0xFF2E7D32), label = "GreenPrimary").value
     val GreenLight = Color(0xFF4CAF50)
     val GreenSurface: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.GreenSurface else Color(0xFFE8F5E9), label = "GreenSurface").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.GreenSurface else Color(0xFFE8F5E9), label = "GreenSurface").value
     val GreenDark = Color(0xFF1B5E20)
 
     // Accent — vàng lúa chín
@@ -25,22 +32,26 @@ object AppColors {
 
     // Neutral (Dynamic with animation for Dark/Light mode)
     val Surface: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.Surface else Color(0xFFFAFAFA), label = "Surface").value
+        @Composable get() = animateColorAsState(MaterialTheme.colorScheme.background, label = "Surface").value
     
     val CardBg: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.CardBg else Color(0xFFFFFFFF), label = "CardBg").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.CardBg else Color(0xFFFFFFFF), label = "CardBg").value
         
     val TextPrimary: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.TextPrimary else Color(0xFF1A1A1A), label = "TextPrimary").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.TextPrimary else Color(0xFF1A1A1A), label = "TextPrimary").value
         
     val TextSecondary: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.TextSecondary else Color(0xFF424242), label = "TextSecondary").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.TextSecondary else Color(0xFF424242), label = "TextSecondary").value
         
     val TextHint: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.TextHint else Color(0xFF757575), label = "TextHint").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.TextHint else Color(0xFF757575), label = "TextHint").value
         
     val Divider: Color
-        @Composable get() = animateColorAsState(if (isSystemInDarkTheme()) Dark.Divider else Color(0xFFEEEEEE), label = "Divider").value
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.Divider else Color(0xFFD0D0D0), label = "Divider").value
+
+    /** Divider đậm hơn cho ngữ cảnh cần phân tách rõ (ngoài trời, độ sáng thấp). */
+    val DividerStrong: Color
+        @Composable get() = animateColorAsState(if (isDarkTheme) Dark.DividerStrong else Color(0xFFB8B8B8), label = "DividerStrong").value
 
     // Status
     val Success = Color(0xFF43A047)
@@ -60,6 +71,20 @@ object AppColors {
     val LockedBg = Color(0xFFFCE4EC)
     val LockedText = Color(0xFFC62828)
 
+    /** Tint nền card khi phiếu khoá — hồng rất nhạt, không nuốt nội dung. */
+    val LockedSurface: Color
+        @Composable get() = animateColorAsState(
+            if (isDarkTheme) Dark.LockedSurface else Color(0xFFFFF1F3),
+            label = "LockedSurface"
+        ).value
+
+    /** Tint nền card khi đã trả đủ tiền — xanh rất nhạt. */
+    val PaidSurface: Color
+        @Composable get() = animateColorAsState(
+            if (isDarkTheme) Dark.PaidSurface else Color(0xFFF1F8F2),
+            label = "PaidSurface"
+        ).value
+
     // Coming Soon
     val ComingSoonBg = Color(0xFFF3E5F5)
     val ComingSoonText = Color(0xFF6A1B9A)
@@ -68,28 +93,28 @@ object AppColors {
     /** Highlight cho dòng "Còn lại" — đỏ đậm light, đỏ mềm dark */
     val RemainingHighlight: Color
         @Composable get() = animateColorAsState(
-            if (isSystemInDarkTheme()) Dark.RemainingHighlight else Color(0xFFB71C1C),
+            if (isDarkTheme) Dark.RemainingHighlight else Color(0xFFB71C1C),
             label = "RemainingHighlight"
         ).value
 
     /** Surface cho card highlight tổng khối lượng */
     val WeightSurface: Color
         @Composable get() = animateColorAsState(
-            if (isSystemInDarkTheme()) Dark.WeightSurface else Color(0xFFFFF8E1),
+            if (isDarkTheme) Dark.WeightSurface else Color(0xFFFFF8E1),
             label = "WeightSurface"
         ).value
 
     /** Surface cho card tài chính */
     val MoneySurface: Color
         @Composable get() = animateColorAsState(
-            if (isSystemInDarkTheme()) Dark.MoneySurface else Color(0xFFE8F5E9),
+            if (isDarkTheme) Dark.MoneySurface else Color(0xFFE8F5E9),
             label = "MoneySurface"
         ).value
 
     /** Surface lighter (sub card depth layer 2) */
     val SurfaceContainer: Color
         @Composable get() = animateColorAsState(
-            if (isSystemInDarkTheme()) Dark.SurfaceContainer else Color(0xFFF5F5F5),
+            if (isDarkTheme) Dark.SurfaceContainer else Color(0xFFF5F5F5),
             label = "SurfaceContainer"
         ).value
 
@@ -109,7 +134,10 @@ object AppColors {
         val TextPrimary = Color(0xFFE0E0E0)
         val TextSecondary = Color(0xFFE0E0E0)
         val TextHint = Color(0xFFAAAAAA)
-        val Divider = Color(0xFF333333)
+        val Divider = Color(0xFF3D3D3D)
+        val DividerStrong = Color(0xFF555555)
+        val LockedSurface = Color(0xFF2A1F22)
+        val PaidSurface = Color(0xFF1A2820)
         val GreenPrimary = Color(0xFFA5D6A7) // Green80 (light soft green)
         val GreenSurface = Color(0xFF1E3A24) // Soft dark forest green
         val RemainingHighlight = Color(0xFFEF5350) // Đỏ mềm cho dark

@@ -1,5 +1,12 @@
 package com.GiaThinh.canlua.ui.screen.trader
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,8 +42,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,6 +65,7 @@ import com.GiaThinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
 import com.GiaThinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.GiaThinh.canlua.ui.component.dashboard.VarietyPieChart
 import com.GiaThinh.canlua.ui.component.profile.GradientProfileHeader
+import com.GiaThinh.canlua.ui.component.profile.TraderProfileSkeleton
 import com.GiaThinh.canlua.ui.component.profile.ProfileNavigationRow
 import com.GiaThinh.canlua.ui.component.profile.ProfileSectionTitle
 import com.GiaThinh.canlua.ui.component.profile.QuickStatsGlassGrid
@@ -69,6 +77,7 @@ import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.GiaThinh.canlua.ui.viewmodel.DashboardData
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.TraderTransactionsViewModel
@@ -96,17 +105,12 @@ fun TraderProfileScreen(
     traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()
 ) {
     TrackScreenRender("trader_profile")
-    val profile by profileViewModel.profile.collectAsState(initial = null)
-    val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsState()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Dashboard data
-    val seasons by dashboardViewModel.seasons.collectAsState()
-    val selectedSeason by dashboardViewModel.selectedSeason.collectAsState()
-    val currentStats by dashboardViewModel.currentStats.collectAsState()
-    val previousStats by dashboardViewModel.previousSeasonStats.collectAsState()
-    val varieties by dashboardViewModel.varieties.collectAsState()
-    val seasonsComparison by dashboardViewModel.seasonsComparison.collectAsState()
-    val aiAnalysis by dashboardViewModel.aiAnalysis.collectAsState()
+    // Combined flow — 1 recomposition thay vì 7 staggered emissions.
+    val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
+    val showSkeleton = profile == null || !dash.isAggregated
 
     val lifetimeStats = remember(traderTransactionsState) {
         TraderLifetimeStats(
@@ -136,11 +140,19 @@ fun TraderProfileScreen(
             .fillMaxSize()
             .background(AppColors.Surface)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Crossfade(
+            targetState = showSkeleton,
+            animationSpec = tween(durationMillis = 220),
+            label = "trader_profile_crossfade"
+        ) { skeleton ->
+            if (skeleton) {
+                TraderProfileSkeleton()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
             // ─── TIER 0: Gradient Hero Header ───
             item {
                 GradientProfileHeader(
@@ -171,23 +183,23 @@ fun TraderProfileScreen(
             }
 
             // ─── TIER 2: Season Selector Chips ───
-            if (seasons.isNotEmpty()) {
+            if (dash.seasons.isNotEmpty()) {
                 item {
                     SeasonSelectorChip(
-                        seasons = seasons,
-                        selectedSeason = selectedSeason,
+                        seasons = dash.seasons,
+                        selectedSeason = dash.selectedSeason,
                         onSelect = dashboardViewModel::selectSeason
                     )
                 }
             }
 
             // ─── TIER 3: Primary KPI Grid 2×2 (Trader-focused) ───
-            currentStats?.let { stats ->
+            dash.currentStats?.let { stats ->
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         TraderPrimaryKpiGrid(
                             stats = stats,
-                            previous = previousStats
+                            previous = dash.previousStats
                         )
                     }
                 }
@@ -206,12 +218,12 @@ fun TraderProfileScreen(
             }
 
             // ─── TIER 5: Season Comparison Bar Chart ───
-            if (seasonsComparison.isNotEmpty()) {
+            if (dash.seasonsComparison.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         SeasonComparisonBarChart(
-                            seasons = seasonsComparison,
-                            selectedSeason = selectedSeason,
+                            seasons = dash.seasonsComparison,
+                            selectedSeason = dash.selectedSeason,
                             metric = ChartMetric.WEIGHT
                         )
                     }
@@ -219,11 +231,11 @@ fun TraderProfileScreen(
             }
 
             // ─── TIER 6: AI Crop Insights ───
-            if (currentStats?.isEmpty == false) {
+            if (dash.currentStats?.isEmpty == false) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         AiInsightsCard(
-                            state = aiAnalysis,
+                            state = dash.aiAnalysis,
                             onAnalyze = dashboardViewModel::analyzeWithAi,
                             onReset = dashboardViewModel::resetAiAnalysis
                         )
@@ -232,10 +244,10 @@ fun TraderProfileScreen(
             }
 
             // ─── TIER 7: Variety Pie Chart (Trader-specific) + Sổ giao dịch ───
-            if (varieties.isNotEmpty()) {
+            if (dash.varieties.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        VarietyPieChart(items = varieties)
+                        VarietyPieChart(items = dash.varieties)
                     }
                 }
             }
@@ -292,7 +304,7 @@ fun TraderProfileScreen(
 
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsState()
+                    val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
                             plan = premiumInfo.plan,
@@ -310,6 +322,8 @@ fun TraderProfileScreen(
 
             // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
             // Profile giờ tập trung vào "tôi là ai + thống kê của tôi".
+                }
+            }
         }
     }
 

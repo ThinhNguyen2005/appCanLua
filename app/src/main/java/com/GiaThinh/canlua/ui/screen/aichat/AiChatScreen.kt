@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,7 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -101,8 +103,8 @@ fun AiChatScreen(
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 ) {
     TrackScreenRender("ai_chat")
-    val state by viewModel.state.collectAsState()
-    val voice by viewModel.voiceState.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val voice by viewModel.voiceState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val imeVisible = WindowInsets.isImeVisible
@@ -149,7 +151,7 @@ fun AiChatScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(PRESETS) { preset ->
+                    items(PRESETS, key = { it }) { preset ->
                         PresetChip(text = preset, onClick = { viewModel.usePresetPrompt(preset) })
                     }
                 }
@@ -183,8 +185,13 @@ fun AiChatScreen(
             // InputBar phải nâng 88dp để không bị che. IME mở → BottomBar ẩn ở
             // MainScreen, imePadding của Column đã đẩy InputBar dán sát bàn phím.
             val imeOpen = WindowInsets.isImeVisible
+            val bottomPadding = if (imeOpen) {
+                0.dp
+            } else {
+                80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            }
             Box(
-                modifier = Modifier.padding(bottom = if (imeOpen) 0.dp else 88.dp)
+                modifier = Modifier.padding(bottom = bottomPadding)
             ) {
                 InputBar(
                     value = state.input,

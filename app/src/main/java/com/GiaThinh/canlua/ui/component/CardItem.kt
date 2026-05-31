@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,8 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Grass
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,10 +32,10 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,26 +49,36 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+// Singleton formatter — chia sẻ giữa tất cả CardItem instances.
+// Trước đây mỗi CardItem có remember riêng → 200 cards = 400 formatter instances (~600KB).
+// SimpleDateFormat KHÔNG thread-safe nhưng CardItem chỉ format trên UI thread → an toàn.
+private val VI_LOCALE: Locale = Locale.forLanguageTag("vi-VN")
+private val NUMBER_FMT: NumberFormat = NumberFormat.getNumberInstance(VI_LOCALE)
+private val DATE_FMT: SimpleDateFormat = SimpleDateFormat("dd/MM/yyyy", VI_LOCALE)
+
 /**
  * Card item cho danh sách phiếu cân — hiển thị thông tin tóm tắt.
  * Hỗ trợ swipe-to-delete và click để xem chi tiết.
+ *
+ * Lambda nhận tham số (id / card) thay vì capture trực tiếp để parent có thể
+ * remember 1 instance dùng chung cho toàn bộ items{} — tránh tạo 200 closure mới
+ * mỗi khi danh sách recompose (sync/filter).
  */
 @Composable
 fun CardItem(
     card: CardModel,
-    onClick: () -> Unit,
-    onDelete: () -> Unit,
+    onClick: (Long) -> Unit,
+    onDelete: (CardModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN"))
     val context = LocalContext.current
 
+    @Suppress("DEPRECATION")
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked) {
+            if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked && card.isPaid) {
                 HapticUtil.error(context)
-                onDelete()
+                onDelete(card)
                 false
             } else {
                 false
@@ -80,13 +93,17 @@ fun CardItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                .clickable {
+                    HapticUtil.tick(context)
+                    onClick(card.id)
+                },
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = if (card.isLocked) 0.dp else 2.dp
+                defaultElevation = 2.dp
             ),
             colors = CardDefaults.cardColors(
                 containerColor = if (card.isLocked) AppColors.LockedBg
+                else if (card.isPaid) AppColors.GreenSurface
                 else AppColors.CardBg
             )
         ) {
@@ -120,32 +137,33 @@ fun CardItem(
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = dateFormat.format(card.date),
+                            text = DATE_FMT.format(card.date),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextSecondary
                         )
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = null,
+                            contentDescription = "Xem chi tiết",
                             tint = AppColors.TextHint,
                             modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                // Rice variety + moisture row
-                if (card.riceVariety.isNotBlank() || card.moisturePercent > 0) {
+                // Rice variety + moisture + bag + impurity row — wrap nếu nhiều chip
+                if (card.riceVariety.isNotBlank() || card.moisturePercent > 0 ||
+                    card.bagWeight > 0 || card.impurityWeight > 0) {
                     Spacer(Modifier.height(6.dp))
-                    Row(
+                    FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         if (card.riceVariety.isNotBlank()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Grass,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.detail_info_rice_variety),
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.GreenPrimary
                                 )
@@ -162,7 +180,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.WaterDrop,
-                                    contentDescription = null,
+                                    contentDescription = "Độ ẩm",
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.Info
                                 )
@@ -174,6 +192,44 @@ fun CardItem(
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.Info
+                                )
+                            }
+                        }
+                        if (card.bagWeight > 0) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Outlined.Inventory2,
+                                    contentDescription = "Trọng lượng bao bì",
+                                    modifier = Modifier.size(14.dp),
+                                    tint = AppColors.TextSecondary
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.card_item_bag_weight,
+                                        "%.1f".format(card.bagWeight)
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextSecondary
+                                )
+                            }
+                        }
+                        if (card.impurityWeight > 0) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Outlined.Scale,
+                                    contentDescription = "Tỷ lệ tạp chất",
+                                    modifier = Modifier.size(14.dp),
+                                    tint = AppColors.TextSecondary
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.card_item_impurity,
+                                        "%.1f".format(card.impurityWeight)
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextSecondary
                                 )
                             }
                         }
@@ -190,7 +246,7 @@ fun CardItem(
                 ) {
                     Column {
                         Text(
-                            text = stringResource(R.string.card_list_weight_kg, numberFormat.format(card.totalWeight)),
+                            text = stringResource(R.string.card_list_weight_kg, NUMBER_FMT.format(card.totalWeight)),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -204,7 +260,7 @@ fun CardItem(
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = stringResource(R.string.card_list_money_vnd, numberFormat.format(card.totalAmount)),
+                            text = stringResource(R.string.card_list_money_vnd, NUMBER_FMT.format(card.totalAmount.toLong())),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GreenPrimary
@@ -213,7 +269,7 @@ fun CardItem(
                             Text(
                                 text = stringResource(
                                     R.string.card_item_remaining_amount,
-                                    numberFormat.format(card.remainingAmount)
+                                    NUMBER_FMT.format(card.remainingAmount.toLong())
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.Warning
@@ -222,30 +278,52 @@ fun CardItem(
                     }
                 }
 
-                // QR verification status
-                if (card.qrToken != null && card.isLocked) {
+                // QR verification status & Paid-in-full tag
+                if (card.isPaid || (card.qrToken != null && card.isLocked)) {
                     Spacer(Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(AppColors.GreenSurface)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.card_item_qr_verified),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.Success,
-                            fontWeight = FontWeight.Medium
-                        )
+                        if (card.isPaid) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AppColors.GreenPrimary)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.card_item_paid_in_full),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        if (card.qrToken != null && card.isLocked) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AppColors.GreenSurface)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.card_item_qr_verified),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AppColors.Success,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Locked → render trực tiếp, không có swipe-to-delete (vì swipe đã disabled).
+    // Locked hoặc chưa thanh toán → render trực tiếp, không có swipe-to-delete.
     // Tránh backgroundContent đỏ hắt qua các cạnh khi user vô tình kéo nhẹ.
-    if (card.isLocked) {
+    if (card.isLocked || !card.isPaid) {
         Box(modifier = modifier) { cardContent() }
     } else {
         SwipeToDismissBox(

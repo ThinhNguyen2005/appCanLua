@@ -1,5 +1,7 @@
 package com.GiaThinh.canlua.data.firestore
 
+import com.google.firebase.firestore.Exclude
+
 /**
  * DTO cho Firestore collection `market_prices`.
  * TRADER tự nhập, FARMER đọc.
@@ -17,5 +19,7 @@ data class FirestoreRicePrice(
     val traderPhone: String = "",
     val trend: String = "STABLE",
     val active: Boolean = true,    // TRADER có thể tạm ẩn
-    val note: String = ""
+    val note: String = "",
+    @get:Exclude @set:Exclude var isFromCache: Boolean = false
 )
+

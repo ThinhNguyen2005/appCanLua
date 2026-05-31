@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.data.model.WeatherInfo
+import com.GiaThinh.canlua.ui.util.scaledSp
 
 /**
  * Phase 2.3 — Weather Widget premium.
@@ -144,14 +145,14 @@ private fun WeatherContent(weather: WeatherInfo, isRefreshing: Boolean, isStale:
                 Row(verticalAlignment = Alignment.Top) {
                     Text(
                         text = "${weather.temperature}",
-                        fontSize = 56.sp,
+                        fontSize = 56.scaledSp(),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        lineHeight = 60.sp
+                        lineHeight = 60.scaledSp()
                     )
                     Text(
                         text = "°C",
-                        fontSize = 22.sp,
+                        fontSize = 22.scaledSp(),
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White.copy(alpha = 0.85f),
                         modifier = Modifier.padding(top = 8.dp)

@@ -1,7 +1,6 @@
 package com.GiaThinh.canlua.ui.component.detail
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -21,8 +20,6 @@ import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,90 +67,89 @@ fun CardInfoCard(
     onCallTrader: () -> Unit,
     onOpenMap: () -> Unit,
     onRefreshLocation: () -> Unit,
+    isLocked: Boolean = false,
+    cccd: String? = null,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        border = BorderStroke(0.8.dp, AppColors.Divider),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .animateContentSize()
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // ── Header ─────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.Description,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.detail_info_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // ── Thương lái ─────────────────────────────────────────────
-            InfoRow(
-                icon = Icons.Outlined.Person,
-                label = stringResource(R.string.detail_info_trader),
-                value = traderName.ifBlank { stringResource(R.string.detail_info_empty_value) }
+        // ── Header ─────────────────────────────────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Outlined.Description,
+                contentDescription = null,
+                tint = AppColors.GreenPrimary,
+                modifier = Modifier.size(20.dp)
             )
-
-            // ── SĐT thương lái (tap-to-call) ──────────────────────────
-            ActionRow(
-                icon = Icons.Outlined.Phone,
-                label = stringResource(R.string.detail_info_phone),
-                value = traderPhone.ifBlank { stringResource(R.string.detail_info_missing_phone) },
-                actionEnabled = traderPhone.isNotBlank(),
-                actionTint = AppColors.GreenPrimary,
-                onClick = onCallTrader
-            )
-
-            HorizontalDivider(color = AppColors.Divider, thickness = 0.6.dp)
-
-            // ── Giống lúa ──────────────────────────────────────────────
-            InfoRow(
-                icon = Icons.Outlined.Grass,
-                label = stringResource(R.string.detail_info_rice_variety),
-                value = listOfNotNull(
-                    riceVariety.takeIf { it.isNotBlank() },
-                    seasonLabel.takeIf { it.isNotBlank() }
-                ).joinToString(" · ").ifBlank { stringResource(R.string.detail_info_empty_value) }
-            )
-
-            // ── Ngày tạo ───────────────────────────────────────────────
-            InfoRow(
-                icon = Icons.Outlined.CalendarMonth,
-                label = stringResource(R.string.detail_info_created_date),
-                value = createdDateLabel
-            )
-
-            HorizontalDivider(color = AppColors.Divider, thickness = 0.6.dp)
-
-            // ── Địa chỉ ruộng (tap-to-map + refresh) ──────────────────
-            FieldAddressRow(
-                address = fieldAddress,
-                hasCoordinates = hasCoordinates,
-                onOpenMap = onOpenMap,
-                onRefreshLocation = onRefreshLocation
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(R.string.detail_info_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.weight(1f)
             )
         }
+
+        // ── Thương lái ─────────────────────────────────────────────
+        InfoRow(
+            icon = Icons.Outlined.Person,
+            label = stringResource(R.string.detail_info_trader),
+            value = traderName.ifBlank { stringResource(R.string.detail_info_empty_value) }
+        )
+
+        // ── SĐT thương lái (tap-to-call) ──────────────────────────
+        ActionRow(
+            icon = Icons.Outlined.Phone,
+            label = stringResource(R.string.detail_info_phone),
+            value = traderPhone.ifBlank { stringResource(R.string.detail_info_missing_phone) },
+            actionEnabled = traderPhone.isNotBlank(),
+            actionTint = AppColors.GreenPrimary,
+            onClick = onCallTrader
+        )
+
+        // ── CCCD (nếu có) ──────────────────────────
+        if (!cccd.isNullOrBlank()) {
+            InfoRow(
+                icon = Icons.Outlined.Description,
+                label = stringResource(R.string.detail_info_cccd),
+                value = cccd
+            )
+        }
+
+        HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
+
+        // ── Giống lúa ──────────────────────────────────────────────
+        InfoRow(
+            icon = Icons.Outlined.Grass,
+            label = stringResource(R.string.detail_info_rice_variety),
+            value = listOfNotNull(
+                riceVariety.takeIf { it.isNotBlank() },
+                seasonLabel.takeIf { it.isNotBlank() }
+            ).joinToString(" · ").ifBlank { stringResource(R.string.detail_info_empty_value) }
+        )
+
+        // ── Ngày tạo ───────────────────────────────────────────────
+        InfoRow(
+            icon = Icons.Outlined.CalendarMonth,
+            label = stringResource(R.string.detail_info_created_date),
+            value = createdDateLabel
+        )
+
+        HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
+
+        // ── Địa chỉ ruộng (tap-to-map + refresh) ──────────────────
+        FieldAddressRow(
+            address = fieldAddress,
+            hasCoordinates = hasCoordinates,
+            onOpenMap = onOpenMap,
+            onRefreshLocation = onRefreshLocation
+        )
     }
 }
 

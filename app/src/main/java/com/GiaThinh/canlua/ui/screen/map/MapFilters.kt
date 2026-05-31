@@ -154,7 +154,7 @@ internal fun FilterChipsRow(
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
         )
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(PriceFilter.entries.size) { idx ->
+            items(PriceFilter.entries.size, key = { PriceFilter.entries[it].name }) { idx ->
                 val pf = PriceFilter.entries[idx]
                 FilterChip(
                     selected = priceFilter == pf,
@@ -177,7 +177,7 @@ internal fun FilterChipsRow(
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(varieties.size + 1) { i ->
+                items(varieties.size + 1, key = { if (it == 0) "_all" else varieties[it - 1] }) { i ->
                     if (i == 0) {
                         FilterChip(
                             selected = selectedVariety == null,

@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.data.model.WeatherInfo
@@ -17,8 +18,12 @@ data class WeatherUiState(
     val weather: WeatherInfo? = null,
     val isLoading: Boolean = false,
     val isStale: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isRateLimited: Boolean = false,
+    val hasPermission: Boolean = true
 )
+
+private const val TAG = "WeatherVM"
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
@@ -30,8 +35,10 @@ class WeatherViewModel @Inject constructor(
 
     private var observerJob: Job? = null
 
-    init {
-        observe(forceRefresh = false)
+    fun startObserving() {
+        if (observerJob == null || observerJob?.isActive == false) {
+            observe(forceRefresh = false)
+        }
     }
 
     private fun observe(forceRefresh: Boolean) {
@@ -47,12 +54,38 @@ class WeatherViewModel @Inject constructor(
                         weather = st.info,
                         isLoading = false,
                         isStale = st.isStale,
-                        errorMessage = null
+                        errorMessage = null,
+                        isRateLimited = false,
+                        hasPermission = true
                     )
-                    is WeatherState.Error -> _state.value.copy(
-                        isLoading = false,
-                        errorMessage = st.message
-                    )
+                    is WeatherState.Error -> {
+                        Log.e(TAG, "WeatherState.Error: ${st.message}")
+                        _state.value.copy(
+                            isLoading = false,
+                            errorMessage = st.message,
+                            hasPermission = true
+                        )
+                    }
+                    is WeatherState.RateLimited -> {
+                        Log.w(TAG, "WeatherState.RateLimited — OpenWeather quota exceeded (429)")
+                        _state.value.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            isRateLimited = true,
+                            hasPermission = true
+                        )
+                    }
+                    is WeatherState.NoPermission -> {
+                        Log.d(TAG, "WeatherState.NoPermission — GPS permission not granted")
+                        WeatherUiState(
+                            weather = null,
+                            isLoading = false,
+                            isStale = false,
+                            errorMessage = null,
+                            isRateLimited = false,
+                            hasPermission = false
+                        )
+                    }
                 }
             }
         }

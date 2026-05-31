@@ -26,7 +26,7 @@ import java.util.Locale
  */
 object MoneyVisualTransformation : VisualTransformation {
 
-    private val formatter: NumberFormat = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    private val formatter: NumberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
 
     override fun filter(text: AnnotatedString): TransformedText {
         val digits = text.text.filter { it.isDigit() }

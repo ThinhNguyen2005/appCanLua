@@ -231,6 +231,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun sendOtp(activity: Activity, phoneNumber: String) {
+        val activityRef = java.lang.ref.WeakReference(activity)
         val normalized = normalizePhone(phoneNumber)
         if (normalized == null) {
             _uiState.value = _uiState.value.copy(loading = false, error = "Số điện thoại chưa đúng định dạng +84...")
@@ -250,10 +251,16 @@ class AuthViewModel @Inject constructor(
             }
         }
 
+        val act = activityRef.get()
+        if (act == null || act.isFinishing || act.isDestroyed) {
+            _uiState.value = _uiState.value.copy(loading = false, error = "Không thể gửi OTP do màn hình đã bị đóng.")
+            return
+        }
+
         val options = PhoneAuthOptions.newBuilder(firebaseAuth)
             .setPhoneNumber(normalized)
             .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)
+            .setActivity(act)
             .setCallbacks(callbacks)
             .build()
 

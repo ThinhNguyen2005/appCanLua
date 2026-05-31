@@ -89,7 +89,7 @@
     <string name="create_card_counterparty_phone_label">លេខទូរស័ព្ទ %1$s</string>
     <string name="create_card_counterparty_phone_placeholder">ស្រេចចិត្ត — ឧទាហរណ៍៖ 0901 234 567</string>
     <string name="create_card_section_payment">តម្លៃ និងការទូទាត់</string>
-    <string name="create_card_weight_hint">💡 សម្បកការ៉ុង និងភាពមិនបរិសុទ្ធនឹងត្រូវបញ្ចូលក្នុងពេលថ្លឹងជាក់ស្តែង។ ពេលនេះត្រូវការតែសំណើមដែលបានវាស់ប៉ុណ្ណោះ។</string>
+    <string name="create_card_weight_hint">💡ព័ត៌មាននេះអាចត្រូវបានកែតម្រូវទាំងអស់បន្ទាប់ពីការថ្លឹងទម្ងន់ជាក់ស្តែង។</string>
     <string name="create_card_moisture_label">សំណើម (%)</string>
     <string name="create_card_moisture_placeholder">ឧទាហរណ៍៖ 18.5</string>
     <string name="create_card_price_label">តម្លៃឯកតា (រៀល/គីឡូក្រាម)</string>
@@ -100,9 +100,12 @@
     <string name="card_item_locked_content">បានចាក់សោ</string>
     <string name="card_item_delete_content">លុប</string>
     <string name="card_item_moisture">សំណើម %1$s%%</string>
+    <string name="card_item_bag_weight">ថង់ %1$s គីឡូ</string>
+    <string name="card_item_impurity">កាកសំណល់ %1$s គីឡូ</string>
     <string name="card_item_weigh_count">ថ្លឹង %1$d ដង</string>
     <string name="card_item_remaining_amount">នៅសល់៖ %1$s đ</string>
     <string name="card_item_qr_verified">✓ QR បានផ្ទៀងផ្ទាត់</string>
+    <string name="card_item_paid_in_full">បានទូទាត់ពេញលេញ</string>
     <string name="weight_label_weight">ទម្ងន់</string>
     <string name="weight_label_total_weight">ទម្ងន់សរុប</string>
     <string name="weight_label_before_tare">មិនទាន់ដកសម្បក</string>
@@ -128,6 +131,33 @@
     <string name="weight_metrics_impurity_info_description">ទម្ងន់នៃភាពមិនបរិសុទ្ធ (ចំបើង ដី ខ្សាច់ គ្រាប់ស្កក) ដែលមាននៅក្នុងស្រូវ ដោយភាគីទាំងពីរព្រមព្រៀងដកចេញជាគីឡូក្រាមថេរដើម្បីធានាភាពយុត្តិធម៌សម្រាប់អ្នកទិញ។</string>
     <string name="weight_metrics_moisture_info_title">💧 ការដកសំណើម</string>
     <string name="weight_metrics_moisture_info_description">កម្រិតសំណើមជាក់ស្តែងនៃស្រូវដែលវាស់នៅវាលស្រែ។ សំណើមស្ដង់ដារពាណិជ្ជកម្មគឺ 14%។ ប្រសិនបើសំណើមខ្ពស់ជាងនេះ ភាគរយនៃការបាត់បង់ការសម្ងួតនឹងត្រូវដកចេញពីទម្ងន់ជាក់ស្តែងតាមការព្រមព្រៀង។</string>
+    <string name="weight_metrics_formula_info_content">មើលរូបមន្តគណនា</string>
+    <string name="weight_metrics_formula_info_title">📐 រូបមន្តគណនាប្រាក់</string>
+    <string name="weight_metrics_formula_info_description">1) ទម្ងន់សុទ្ធ = (សរុបគីឡូ − ថង់ × ចំនួនថង់ − កាកសំណល់) × (100 − សំណើម) ÷ (100 − 14).\n\n2) ចំនួនទឹកប្រាក់សរុប = ទម្ងន់សុទ្ធ × តម្លៃក្នុងមួយគីឡូ។</string>
+    <string name="weight_metrics_impurity_label_percent">កាកសំណល់ (%)</string>
+
+    <!-- Weigh options sheet (per-card modes) -->
+    <string name="weigh_options_title">ជម្រើសថ្លឹង</string>
+    <string name="weigh_options_icon_content">ជម្រើសថ្លឹង</string>
+    <string name="weigh_options_done">រួចរាល់</string>
+    <string name="weigh_options_impurity_unit">ឯកតាកាកសំណល់</string>
+    <string name="weigh_options_impurity_kg">តាមគីឡូ</string>
+    <string name="weigh_options_impurity_percent">តាម %</string>
+    <string name="weigh_options_impurity_hint_kg">ដកគីឡូកាកសំណល់ដោយផ្ទាល់។</string>
+    <string name="weigh_options_impurity_hint_percent" formatted="false">កាកសំណល់គិតជា % លើស្រូវបន្ទាប់ពីដកថង់។</string>
+    <string name="weigh_options_bag_method">របៀបគណនាថង់</string>
+    <string name="weigh_options_bag_single">ទម្ងន់ថង់មួយ</string>
+    <string name="weigh_options_bag_sample">គំរូ n ថង់</string>
+    <string name="weigh_options_bag_hint_single">បញ្ចូលទម្ងន់ថង់ទទេ 1 × ចំនួនថង់។</string>
+    <string name="weigh_options_bag_hint_sample">ថ្លឹង n ថង់ទទេ = X គីឡូ → មធ្យម × សរុបថង់។</string>
+    <string name="weigh_options_bag_sample_count">ចំនួនថង់គំរូ (n)</string>
+    <string name="weigh_options_bag_sample_weight">ទម្ងន់ n ថង់ (គីឡូ)</string>
+    <string name="weigh_options_input_scale">មាត្រាបញ្ចូលគីឡូ</string>
+    <string name="weigh_options_input_small">តូច &lt; 100 គីឡូ</string>
+    <string name="weigh_options_input_large">ធំ ≥ 100 គីឡូ</string>
+    <string name="weigh_options_input_hint_small">វាយ 3 ខ្ទង់: ឧ. 503 → 50.3 គីឡូ។ បន្តដោយស្វ័យប្រវត្តិ។</string>
+    <string name="weigh_options_input_hint_large">វាយ 4 ខ្ទង់: ឧ. 1503 → 150.3 គីឡូ។ បន្តដោយស្វ័យប្រវត្តិ។</string>
+
     <string name="weight_input_back_content">ត្រឡប់ក្រោយ</string>
     <string name="weight_input_unlock_content">ដោះសោ</string>
     <string name="weight_input_lock_content">ចាក់សោ</string>
@@ -291,9 +321,11 @@
     <string name="pdf_deposit">ប្រាក់កក់</string>
     <string name="pdf_paid">បានទូទាត់</string>
     <string name="pdf_remaining">នៅសល់</string>
+    <string name="pdf_excess_refund">សងត្រឡប់ដល់ឈ្មួញ</string>
+    <string name="pdf_amount_due">នៅត្រូវសងបន្ថែម</string>
     <string name="pdf_status">ស្ថានភាព</string>
     <string name="pdf_paid_full">បានទូទាត់គ្រប់ចំនួន</string>
-    <string name="pdf_debt_remaining">នៅមានបំណុល</string>
+    <string name="pdf_debt_remaining">មិនទាន់ទូទាត់គ្រប់</string>
     <string name="pdf_section_bag_details_count">IV. លម្អិតនៃការ៉ុងថ្លឹង %1$d</string>
     <string name="pdf_section_bag_details">IV. ព័ត៌មានលម្អិតការ៉ុងថ្លឹង</string>
     <string name="pdf_no_bags">មិនមានទិន្នន័យការ៉ុងថ្លឹងដែលបានកត់ត្រាទុកទេ។</string>
@@ -302,11 +334,8 @@
     <string name="pdf_column_tare">ទម្ងន់សម្បក (kg)</string>
     <string name="pdf_column_impurity">ភាពមិនបរិសុទ្ធ (kg)</string>
     <string name="pdf_column_net_weight">ទម្ងន់ពិត (kg)</string>
-    <string name="pdf_section_verification">V. ព័ត៌មានផ្ទៀងផ្ទាត់ និងការចុះហត្ថលេខាឌីជីថល</string>
-    <string name="pdf_signature_status">ស្ថានភាពចុះហត្ថលេខា</string>
-    <string name="pdf_signature_unsigned">មិនទាន់ចុះហត្ថលេខា</string>
-    <string name="pdf_verification_code">លេខកូដផ្ទៀងផ្ទាត់</string>
-    <string name="pdf_section_confirmation">VI. ការបញ្ជាក់</string>
+    <string name="pdf_table_total">សរុប</string>
+    <string name="pdf_section_confirmation">V. ការបញ្ជាក់</string>
     <string name="pdf_sender">អ្នកប្រគល់ស្រូវ</string>
     <string name="pdf_receiver">អ្នកទទួលស្រូវ</string>
     <string name="pdf_creator">អ្នកបង្កើតវិក្កយបត្រ</string>
@@ -319,6 +348,23 @@
     <string name="pdf_qr_instruction">ស្កែន QR ដើម្បីផ្ទៀងផ្ទាត់</string>
     <string name="pdf_card_date">វិក្កយបត្រ #%1$d · %2$s</string>
     <string name="pdf_footer">ទំព័រ %1$d · បង្កើតដោយ Cân Lúa Mobile · Hash %2$s · %3$s</string>
+
+    <!-- Help Bottom Sheet -->
+    <string name="help_sheet_open_content">បើកជំនួយ &amp; ការណែនាំ</string>
+    <string name="help_sheet_title">ជំនួយ &amp; ការណែនាំ</string>
+    <string name="help_sheet_subtitle">ល្បឿនការប្រើនៅពេលថ្លឹងស្រូវ</string>
+    <string name="help_tip_input_title">បញ្ចូលទម្ងន់រហ័ស</string>
+    <string name="help_tip_input_desc">របៀបតូច៖ វាយ \"503\" → ផ្លាស់ប្ដូរស្វ័យប្រវត្តិ 50.3 kg។ របៀបធំ៖ \"1503\" → 150.3 kg។ ប្ដូររបៀបនៅទំព័រដើម → រូបតំណាង Tune។</string>
+    <string name="help_tip_lock_title">ចាក់សោវិក្កយបត្រនៅពេលរួច</string>
+    <string name="help_tip_lock_desc">ចុចសញ្ញាសោនៅរបារខាងលើ ដើម្បីបិទទិន្នន័យ ការពារកុំឲ្យកែដោយចៃដន្យ។</string>
+    <string name="help_tip_options_title">ប្ដូរវិធីថ្លឹង</string>
+    <string name="help_tip_options_desc">កំណត់លំនាំដើមសម្រាប់ភាពមិនបរិសុទ្ធ (kg/%) និងវិធីការ៉ុង (ការ៉ុងតែ ១/ការ៉ុងគំរូ N) នៅទំព័រដើម → រូបតំណាង Tune។</string>
+    <string name="help_tip_swipe_title">អូសដើម្បីកែ/លុប</string>
+    <string name="help_tip_swipe_desc">ក្នុងតារាង៖ ចុចយូរដើម្បីកែប្រអប់ អូសឆ្វេងដើម្បីលុបការ៉ុង។ វិក្កយបត្រដែលបានចាក់សោបិទសកម្មភាពទាំងនេះ។</string>
+    <string name="help_tip_offline_title">ដំណើរការនៅពេលគ្មានសញ្ញា</string>
+    <string name="help_tip_offline_desc">ទិន្នន័យត្រូវបានរក្សាទុកក្នុងឧបករណ៍ ហើយធ្វើសមកាលកម្មដោយស្វ័យប្រវត្តិទៅពពកនៅពេលមានបណ្ដាញ — សុវត្ថិភាពនៅក្នុងវាល។</string>
+    <string name="help_btn_tutorial">មើលវីដេអូណែនាំ</string>
+    <string name="help_btn_web">ទស្សនាគេហទំព័រ</string>
     <string name="personal_information">ព័ត៌មានផ្ទាល់ខ្លួន</string>
     <string name="save">រក្សាទុក</string>
     <string name="edit">កែសម្រួល</string>
@@ -430,4 +476,52 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">ភាសាចិន</string>
     <string name="language_chinese_native">中文</string>
-</resources>
+
+    <string name="create_card_cccd_label">លេខអត្តសញ្ញាណប័ណ្ណ (ស្រេចចិត្ត)</string>
+    <string name="create_card_cccd_placeholder">ឧទាហរណ៍៖ ១២ ខ្ទង់</string>
+    <string name="create_card_impurity_weight_label">ដកភាពមិនបរិសុទ្ធ (គីឡូក្រាម)</string>
+    <string name="create_card_impurity_weight_placeholder">ឧទាហរណ៍៖ ៥.០</string>
+    <string name="create_card_bag_weight_label">ដកការវេចខ្ចប់ (គីឡូក្រាម/បាវ)</string>
+    <string name="create_card_bag_weight_placeholder">ឧទាហរណ៍៖ ១.០</string>
+    <string name="create_card_cccd_help_title">លេខអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ</string>
+    <string name="create_card_cccd_help_description">បញ្ចូលលេខអត្តសញ្ញាណប័ណ្ណ ១២ខ្ទង់ របស់ដៃគូ ដើម្បីធ្វើជាភស្តុតាងស្របច្បាប់សម្រាប់ការផ្ទៀងផ្ទាត់ និងការចុះហត្ថលេខាលើកិច្ចសន្យាអេឡិចត្រូនិកនាពេលអនាគត។ វាលនេះគឺស្រេចចិត្ត។</string>
+    <string name="create_card_impurity_help_title">ដកភាពមិនបរិសុទ្ធ</string>
+    <string name="create_card_impurity_help_description">ទម្ងន់ (គីឡូក្រាម) នៃភាពមិនបរិសុទ្ធ (ចំបើង ដី...) នឹងត្រូវដកចេញដោយស្វ័យប្រវត្តិកាត់ចេញពីទម្ងន់ស្រូវសរុបនៃសន្លឹកបៀនេះ នៅពេលគណនាទម្ងន់ជាក់ស្តែង។</string>
+    <string name="create_card_bag_help_title">ដកការវេចខ្ចប់</string>
+    <string name="create_card_moisture_help_title">សំណើមស្រូវ</string>
+    <string name="create_card_moisture_help_description">ភាគរយនៃសំណើមស្រូវនៅពេលថ្លឹង (%)។ សំណើមនេះត្រូវបានប្រើសម្រាប់ជាឯកសារយោងក្នុងអំឡុងពេលសម្ងួតស្រូវ ឬការចរចាអត្រាកាត់បន្ថយទម្ងន់សម្រាប់ស្រូវស្ងួត។</string>
+    <string name="create_card_bag_help_description">ទម្ងន់លំនាំដើមនៃសំបកបាវស្រូវ (គីឡូក្រាម/បាវ)។ នៅពេលបញ្ចូលការថ្លឹង ប្រព័ន្ធនឹងគុណដោយស្វ័យប្រវត្តិនឹងចំនួនបាវ ដើម្បីដកទម្ងន់វេចខ្ចប់សរុប។</string>
+    <string name="create_card_contacts_permission_denied">សិទ្ធិចូលប្រើទំនាក់ទំនងត្រូវបានបដិសេធ។ សូមបញ្ចូលលេខទូរស័ព្ទដោយដៃ។</string>
+    <string name="create_card_contacts_select">ជ្រើសរើសពីទំនាក់ទំនង</string>
+    <string name="detail_info_cccd">លេខអត្តសញ្ញាណប័ណ្ណ</string>
+    <string name="card_detail_delete_blocked_unpaid">សន្លឹកបៀមិនទាន់បង់ប្រាក់ — មិនអាចលុបបានទេ</string>
+    <string name="help_btn_feedback">ផ្ញើមតិកែលម្អ</string>
+    <string name="feedback_screen_title">ផ្ញើមតិកែលម្អ</string>
+    <string name="feedback_placeholder">បញ្ចូលមតិកែលម្អរបស់អ្នកនៅទីនេះ...</string>
+    <string name="feedback_btn_send">ផ្ញើ</string>
+    <string name="feedback_toast_success">សូមអរគុណសម្រាប់មតិកែលម្អរបស់អ្នក! យើងនឹងពិនិត្យមើលវាឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។</string>
+    <string name="feedback_toast_empty">សូមបញ្ចូលខ្លឹមសារមតិកែលម្អរបស់អ្នក។</string>
+    <string name="feedback_empty_messages">មិនទាន់មានមតិកែលម្អនៅឡើយទេ។ សូមផ្ញើមតិរបស់អ្នកមកយើងខ្ញុំដើម្បីឱ្យយើងអាចគាំទ្រអ្នកបាន!</string>
+    <string name="feedback_admin_name">អ្នកអភិវឌ្ឍន៍</string>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">រកមិនឃើញលទ្ធផលទេ</string>
+    <string name="card_list_empty_filter_subtitle">គ្មានវិក្កយបត្រថ្លឹងត្រូវគ្នានឹងតម្រងទេ។ ព្យាយាមសម្អាតតម្រងដើម្បីបង្ហាញទាំងអស់។</string>
+    <string name="weather_error_missing_api_key">បាត់ OPENWEATHER_API_KEY នៅក្នុង local.properties</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">ពាន់លាន</string>
+    <string name="money_unit_million">លាន</string>
+    <string name="money_unit_hundred_thousand">សែន</string>
+    <string name="money_unit_thousand">ពាន់</string>
+    <string name="money_unit_dong">ដុង</string>
+    <string name="money_unit_hundred">រយ</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">មិនច្បាស់</string>
+    <string name="weather_your_location">ទីតាំងរបស់អ្នក</string>
+    <string name="weather_advisory_thunderstorm">រន្ទះ — កុំបាញ់ថ្នាំ ជៀសវាងទៅស្រែ</string>
+    <string name="weather_advisory_rain">ភ្លៀងធ្លាក់ខ្លាំង — ពន្យារពេលបាញ់ថ្នាំ ២៤ម៉ោង ពង្រឹងច្រាំង</string>
+    <string name="weather_advisory_hot_sun">ថ្ងៃក្តៅខ្លាំង — ពិនិត្យទឹកស្រែ ស្រោចទឹកពេលល្ងាចត្រជាក់</string>
+    <string name="weather_advisory_high_humidity">សំណើមខ្ពស់ — ប្រយ័ត្នជំងឺស្រពោន និងមមាចត្នោត</string>
+</resources>

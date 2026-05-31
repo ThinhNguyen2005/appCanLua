@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -52,9 +53,10 @@ fun TopTradersCard(
         ) {
             Text(
                 text = stringResource(R.string.profile_top_traders_title),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.TextPrimary
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.TextPrimary
+                )
             )
 
             Spacer(Modifier.height(14.dp))
@@ -68,7 +70,7 @@ fun TopTradersCard(
                 ) {
                     Text(
                         text = stringResource(R.string.profile_no_deals_this_season),
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextHint
                     )
                 }
@@ -100,9 +102,10 @@ private fun TraderRow(rank: Int, trader: TraderStat, relativeWidth: Float) {
         ) {
             Text(
                 text = "$rank",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = rankColor(rank)
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = rankColor(rank)
+                )
             )
         }
 
@@ -117,16 +120,18 @@ private fun TraderRow(rank: Int, trader: TraderStat, relativeWidth: Float) {
             ) {
                 Text(
                     text = trader.traderName,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    ),
                     modifier = Modifier.weight(1f)
                 )
                 Text(
                     text = DashboardFormatter.money(trader.revenue),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.GreenPrimary
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.GreenPrimary
+                    )
                 )
             }
 
@@ -152,9 +157,10 @@ private fun TraderRow(rank: Int, trader: TraderStat, relativeWidth: Float) {
                 Spacer(Modifier.size(8.dp))
                 Text(
                     text = stringResource(R.string.profile_slip_count, trader.deals),
-                    fontSize = 11.sp,
-                    color = AppColors.TextSecondary,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = AppColors.TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
                 )
             }
         }

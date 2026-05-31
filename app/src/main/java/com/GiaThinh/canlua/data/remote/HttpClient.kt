@@ -16,18 +16,11 @@ import javax.inject.Singleton
  * Tránh thêm Retrofit để bundle không phình.
  */
 @Singleton
-class HttpClient @Inject constructor() {
+class HttpClient @Inject constructor(
+    @PublishedApi internal val client: OkHttpClient
+) {
     @PublishedApi
     internal val gson = Gson()
-
-    @PublishedApi
-    internal val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        })
-        .build()
 
     /** GET request → parse JSON về [T]. Throws nếu HTTP non-2xx hoặc parse fail. */
     inline fun <reified T> get(url: String, headers: Map<String, String> = emptyMap()): T {

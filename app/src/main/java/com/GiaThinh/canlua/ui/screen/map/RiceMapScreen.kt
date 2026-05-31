@@ -8,10 +8,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
@@ -23,12 +27,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +46,7 @@ import com.GiaThinh.canlua.BuildConfig
 import com.GiaThinh.canlua.data.location.LocationProvider
 import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.CardListViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -75,17 +80,18 @@ import kotlinx.coroutines.launch
 @Composable
 fun RiceMapScreen(
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: CardListViewModel = hiltViewModel()
 ) {
     TrackScreenRender("trader_map")
-    if (BuildConfig.MAPS_API_KEY.isBlank() ||
-        BuildConfig.MAPS_API_KEY == "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+    val decodedMapsKey = remember { com.GiaThinh.canlua.util.ApiKeyObfuscator.decode(BuildConfig.MAPS_API_KEY) }
+    if (decodedMapsKey.isBlank() ||
+        decodedMapsKey == "YOUR_GOOGLE_MAPS_API_KEY_HERE"
     ) {
         MapComingSoonPlaceholder()
         return
     }
 
-    val cards by viewModel.cards.collectAsState()
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // Hilt entry-point để inject LocationProvider trong @Composable mà không
     // cần thay đổi viewmodel signature.
@@ -118,7 +124,7 @@ fun RiceMapScreen(
     // Khi có permission → lấy GPS thật, animate camera tới vị trí user.
     LaunchedEffect(permissionState.allPermissionsGranted) {
         if (permissionState.allPermissionsGranted && userLatLng == null) {
-            locationProvider.getCurrentLocation()?.let { gp ->
+            locationProvider.getCurrentLocation(forceFresh = true)?.let { gp ->
                 val ll = LatLng(gp.lat, gp.lon)
                 userLatLng = ll
                 cameraPositionState.animate(
@@ -169,6 +175,15 @@ fun RiceMapScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
+    // Trì hoãn khởi tạo Google Maps SDK đến sau khi transition 300ms hoàn tất.
+    // MapView + clustering rất nặng (class loading + GL context) — nếu init đồng thời
+    // transition animation sẽ drop frame do tranh chấp GPU.
+    var isTransitionDone by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(280L)
+        isTransitionDone = true
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -183,7 +198,7 @@ fun RiceMapScreen(
                 },
                 containerColor = AppColors.GreenPrimary,
                 contentColor = Color.White,
-                modifier = Modifier.padding(bottom = 88.dp)
+                modifier = Modifier.padding(bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
             ) {
                 Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí của tôi")
             }
@@ -232,25 +247,41 @@ fun RiceMapScreen(
                     .padding(horizontal = 12.dp, vertical = 4.dp)
                     .clip(RoundedCornerShape(20.dp))
             ) {
-                MapContent(
-                    cards = filtered,
-                    cameraPositionState = cameraPositionState,
-                    hasLocationPermission = permissionState.allPermissionsGranted,
-                    onCardSelected = { selectedCard = it },
-                    onClusterTap = { items ->
-                        if (items.size == 1) {
-                            selectedCard = items.first().card
-                        } else {
-                            scope.launch {
-                                val current = cameraPositionState.position.zoom
-                                cameraPositionState.animate(
-                                    CameraUpdateFactory.zoomTo((current + 2f).coerceAtMost(18f)),
-                                    durationMs = 350
-                                )
+                if (isTransitionDone) {
+                    MapContent(
+                        cards = filtered,
+                        cameraPositionState = cameraPositionState,
+                        hasLocationPermission = permissionState.allPermissionsGranted,
+                        onCardSelected = { selectedCard = it },
+                        onClusterTap = { items ->
+                            if (items.size == 1) {
+                                selectedCard = items.first().card
+                            } else {
+                                scope.launch {
+                                    val current = cameraPositionState.position.zoom
+                                    cameraPositionState.animate(
+                                        CameraUpdateFactory.zoomTo((current + 2f).coerceAtMost(18f)),
+                                        durationMs = 350
+                                    )
+                                }
                             }
                         }
+                    )
+                } else {
+                    // Placeholder nhẹ trong khi transition đang chạy (280ms)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFE8E3D8)),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            color = com.GiaThinh.canlua.ui.theme.AppColors.GreenPrimary,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(32.dp)
+                        )
                     }
-                )
+                }
 
                 if (filtered.isEmpty()) {
                     EmptyMapHint(

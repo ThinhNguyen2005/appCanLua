@@ -6,6 +6,13 @@ import com.GiaThinh.canlua.data.model.Transaction
 import com.GiaThinh.canlua.data.model.WeightEntry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,28 +38,40 @@ class SyncableCardRepository @Inject constructor(
     private val authManager: AuthManager,
     private val locationProvider: LocationProvider
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val syncJobs = ConcurrentHashMap<Long, Job>()
+
+    private fun scheduleDebouncedCardSync(cardId: Long) {
+        syncJobs[cardId]?.cancel()
+        syncJobs[cardId] = scope.launch {
+            delay(5000) // Trì hoãn 5 giây để gom cụm các sự kiện gõ liên tiếp
+            syncJobs.remove(cardId)
+            if (syncManager.canSync()) {
+                syncManager.syncCardAndDetails(cardId)
+            } else {
+                syncManager.scheduleImmediateSync()
+            }
+        }
+    }
+
     fun getAllCards(): Flow<List<Card>> = cardRepository.getAllCards()
 
     fun getDistinctRiceVarieties(): Flow<List<String>> = cardRepository.getDistinctRiceVarieties()
+
+    fun getSuggestedRiceVarieties(): Flow<List<String>> = cardRepository.getSuggestedRiceVarieties()
 
     fun getDistinctSeasons(): Flow<List<String>> = cardRepository.getDistinctSeasons()
 
     suspend fun getCardById(id: Long) = cardRepository.getCardById(id)
 
     suspend fun insertCard(card: Card): Long {
-        // Auto-capture GPS nếu card chưa có toạ độ và app có quyền
-        val cardWithGps = if (card.latitude == null || card.longitude == null) {
-            val geo = locationProvider.getCurrentLocation()
-            if (geo != null) card.copy(latitude = geo.lat, longitude = geo.lon) else card
-        } else card
-
-        val id = cardRepository.insertCard(cardWithGps)
-        if (syncManager.isOnline()) {
-            val cardWithId = cardWithGps.copy(id = id)
+        val id = cardRepository.insertCard(card)
+        if (syncManager.canSync()) {
+            val cardWithId = card.copy(id = id)
             syncManager.syncCard(cardWithId)
         } else {
-            // Offline → enqueue OneTimeWorkRequest, WorkManager sẽ tự chạy
-            // SyncWorker khi có mạng (không phải đợi periodic 12h).
+            // Offline/No Wifi → enqueue OneTimeWorkRequest, WorkManager sẽ tự chạy
+            // SyncWorker khi có mạng và kết nối Wi-Fi.
             syncManager.scheduleImmediateSync()
         }
         return id
@@ -60,11 +79,7 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun updateCard(card: Card) {
         cardRepository.updateCard(card)
-        if (syncManager.isOnline()) {
-            syncManager.syncCard(card)
-        } else {
-            syncManager.scheduleImmediateSync()
-        }
+        scheduleDebouncedCardSync(card.id)
     }
 
     /**
@@ -85,7 +100,7 @@ class SyncableCardRepository @Inject constructor(
         cardRepository.deleteCard(card)
 
         // 2. Đẩy delete lên cloud nếu online + có firestoreId.
-        if (fsCardId != null && syncManager.isOnline()) {
+        if (fsCardId != null && syncManager.canSync()) {
             val ok = runCatching {
                 firestoreRepository.getWeightEntriesByCardId(fsCardId).getOrNull().orEmpty()
                     .forEach { entry ->
@@ -114,13 +129,13 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun insertWeightEntry(weightEntry: WeightEntry): Long {
         val id = cardRepository.insertWeightEntry(weightEntry)
-        syncEntryIfPossible(weightEntry.copy(id = id))
+        scheduleDebouncedCardSync(weightEntry.cardId)
         return id
     }
 
     suspend fun updateWeightEntry(weightEntry: WeightEntry) {
         cardRepository.updateWeightEntry(weightEntry)
-        syncEntryIfPossible(weightEntry)
+        scheduleDebouncedCardSync(weightEntry.cardId)
     }
 
     /**
@@ -129,10 +144,11 @@ class SyncableCardRepository @Inject constructor(
      */
     suspend fun deleteWeightEntry(weightEntry: WeightEntry) {
         val fsId = weightEntry.firestoreId
-        if (fsId != null && syncManager.isOnline()) {
+        if (fsId != null && syncManager.canSync()) {
             firestoreRepository.deleteWeightEntry(fsId)
         }
         cardRepository.deleteWeightEntry(weightEntry)
+        scheduleDebouncedCardSync(weightEntry.cardId)
     }
 
     fun getTransactionsByCardId(cardId: Long): Flow<List<Transaction>> =
@@ -140,7 +156,7 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun insertTransaction(transaction: Transaction): Long {
         val id = cardRepository.insertTransaction(transaction)
-        syncTransactionIfPossible(transaction.copy(id = id))
+        scheduleDebouncedCardSync(transaction.cardId)
         return id
     }
 
@@ -149,32 +165,21 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun updateCardCalculations(cardId: Long) {
         cardRepository.updateCardCalculations(cardId)
-        cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isOnline()) {
-                syncManager.syncCard(updatedCard)
-            } else {
-                syncManager.scheduleImmediateSync()
-            }
-        }
+        scheduleDebouncedCardSync(cardId)
     }
 
     suspend fun findByQrToken(token: String): Card? = cardRepository.findByQrToken(token)
 
     suspend fun updateQrToken(cardId: Long, token: String) {
         cardRepository.updateQrToken(cardId, token)
-        cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isOnline()) {
-                syncManager.syncCard(updatedCard)
-            } else {
-                syncManager.scheduleImmediateSync()
-            }
-        }
+        scheduleDebouncedCardSync(cardId)
     }
 
     suspend fun lockCard(cardId: Long, traderId: String) {
         cardRepository.lockCard(cardId, traderId)
+        // Lock card là hành động one-off quan trọng cuối cùng, đồng bộ tức thì
         cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.isOnline()) {
+            if (syncManager.canSync()) {
                 syncManager.syncCard(updatedCard)
             } else {
                 syncManager.scheduleImmediateSync()
@@ -182,34 +187,5 @@ class SyncableCardRepository @Inject constructor(
         }
     }
 
-    /**
-     * Đồng bộ 1 weight entry lên Firestore. Yêu cầu card cha đã có firestoreId
-     * (entry tham chiếu cardId là Firestore doc id, không phải Room id).
-     * Nếu card cha chưa sync — push card trước rồi push entry.
-     * Offline → noop, để background sync xử lý.
-     */
-    private suspend fun syncEntryIfPossible(weightEntry: WeightEntry) {
-        if (!syncManager.isOnline()) {
-            // Offline → defer cho retry queue. SyncWorker sẽ pickup khi có mạng.
-            syncManager.scheduleImmediateSync()
-            return
-        }
-        val parent = cardRepository.getCardById(weightEntry.cardId) ?: return
-        val cardFsId = parent.firestoreId ?: run {
-            syncManager.syncCard(parent).getOrNull() ?: return
-        }
-        syncManager.syncWeightEntry(weightEntry, cardFsId)
-    }
-
-    private suspend fun syncTransactionIfPossible(transaction: Transaction) {
-        if (!syncManager.isOnline()) {
-            syncManager.scheduleImmediateSync()
-            return
-        }
-        val parent = cardRepository.getCardById(transaction.cardId) ?: return
-        val cardFsId = parent.firestoreId ?: run {
-            syncManager.syncCard(parent).getOrNull() ?: return
-        }
-        syncManager.syncTransaction(transaction, cardFsId)
-    }
 }
+

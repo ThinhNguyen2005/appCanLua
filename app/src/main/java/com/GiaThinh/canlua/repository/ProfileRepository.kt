@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.map
+import com.GiaThinh.canlua.util.CccdCrypto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,9 +38,10 @@ class ProfileRepository @Inject constructor(
         val uid = profile.uid.ifBlank { auth.currentUser?.uid.orEmpty() }
         if (uid.isBlank()) return false
         val savedProfile = profile.copy(uid = uid)
-        profileDao.insert(savedProfile)
+        val encryptedProfile = savedProfile.copy(cccd = CccdCrypto.encrypt(savedProfile.cccd).orEmpty())
+        profileDao.insert(encryptedProfile)
         runCatching {
-            firestore.collection("profiles").document(uid).set(savedProfile).await()
+            firestore.collection("profiles").document(uid).set(encryptedProfile).await()
         }
         return true
     }
@@ -48,7 +51,9 @@ class ProfileRepository @Inject constructor(
         if (uid.isBlank()) return null
 
         val local = profileDao.getProfileByUid(uid).first()
-        if (local != null) return local
+        if (local != null) {
+            return local.copy(cccd = CccdCrypto.decrypt(local.cccd).orEmpty())
+        }
 
         val snapshot = runCatching {
             firestore.collection("profiles").document(uid).get().await()
@@ -62,7 +67,7 @@ class ProfileRepository @Inject constructor(
                 region = data["region"] as? String ?: "",
                 note = data["note"] as? String ?: "",
                 role = data["role"] as? String ?: "FARMER",
-                cccd = data["cccd"] as? String ?: "",
+                cccd = CccdCrypto.decrypt(data["cccd"] as? String ?: "").orEmpty(),
                 username = data["username"] as? String ?: "",
                 email = data["email"] as? String ?: "",
                 roleGrantedBy = data["roleGrantedBy"] as? String ?: "self",
@@ -71,7 +76,8 @@ class ProfileRepository @Inject constructor(
         }
 
         if (remote != null) {
-            profileDao.insert(remote)
+            val encryptedRemote = remote.copy(cccd = CccdCrypto.encrypt(remote.cccd).orEmpty())
+            profileDao.insert(encryptedRemote)
         }
         return remote
     }
@@ -83,7 +89,9 @@ class ProfileRepository @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun latestProfile(): Flow<Profile?> = authUidFlow().flatMapLatest { uid ->
         if (uid.isNullOrBlank()) flowOf(null)
-        else profileDao.getProfileByUid(uid)
+        else profileDao.getProfileByUid(uid).map { profile ->
+            profile?.copy(cccd = CccdCrypto.decrypt(profile.cccd).orEmpty())
+        }
     }
 
     suspend fun deleteCurrent() {

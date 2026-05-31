@@ -103,7 +103,7 @@ fun CustomHeader(
     // Title: luôn hiển thị info trọng lượng — đã bỏ farmer name khỏi header
     // Khi card còn trống (mới tạo) → “Phiếu cân”, không để trống hổng.
     val titleText = if (card.totalWeight > 0.0 || card.bagCount > 0) {
-        val fmt = java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
+        val fmt = remember { java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")) }
         val totalWeightFormatted = if (card.totalWeight % 1.0 == 0.0) "%.0f".format(card.totalWeight) else "%.1f".format(card.totalWeight)
         val totalbagCount = fmt.format(card.bagCount)
         "$totalWeightFormatted KG · $totalbagCount bao"
@@ -141,9 +141,7 @@ fun CustomHeader(
                     }
                     Text(
                         text = titleText,
-                        style = TextStyle(
-                            fontSize = 17.sp,                       // 15 → 17 (người lớn tuổi)
-                            fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleLarge.copy(
                             color = Color.White
                         ),
                         maxLines = 1,
@@ -218,7 +216,7 @@ fun CustomHeader(
                                 .background(AppColors.SurfaceContainer, RoundedCornerShape(14.dp))
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_delete_card), fontSize = 15.sp, color = AppColors.Error) },
+                                text = { Text(stringResource(R.string.header_delete_card), style = MaterialTheme.typography.bodyLarge, color = AppColors.Error) },
                                 leadingIcon = {
                                     Icon(Icons.Default.Delete, null, tint = AppColors.Error)
                                 },
@@ -229,14 +227,14 @@ fun CustomHeader(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_create_qr), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_create_qr), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.QrCode2, null, tint = HeaderGreen)
                                 },
                                 onClick = { onOverflowChange(false); onCreateQr() }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_scan_qr_trader), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_scan_qr_trader), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.CameraAlt, null, tint = HeaderGreen)
                                 },
@@ -247,7 +245,7 @@ fun CustomHeader(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.header_export_pdf), fontSize = 15.sp, color = AppColors.TextPrimary) },
+                                text = { Text(stringResource(R.string.header_export_pdf), style = MaterialTheme.typography.bodyLarge, color = AppColors.TextPrimary) },
                                 leadingIcon = {
                                     Icon(Icons.Outlined.PictureAsPdf, null, tint = HeaderGreen)
                                 },
@@ -286,19 +284,18 @@ private fun MetaItem(
             modifier = Modifier.size(18.dp))                    // 15 → 18 (lớn hơn, dễ thấy)
         Text(
             text  = label,
-            fontSize  = 12.sp,           // 10 → 12 (người lớn tuổi đọc rõ)
+            style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.7f),
-            lineHeight = 14.sp,
             fontWeight = FontWeight.Medium
         )
         Text(
             text  = value,
-            fontSize  = 15.sp,           // 13 → 15 (chuẩn body lớn)
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            ),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 17.sp
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -328,16 +325,17 @@ private fun MetricChip(label: String, value: String, modifier: Modifier = Modifi
         ) { current ->
             Text(
                 text  = current,
-                fontSize  = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
         Text(
             text  = label,
-            fontSize  = 11.sp,
+            style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.7f)
         )
     }
@@ -347,16 +345,19 @@ private fun MetricChip(label: String, value: String, modifier: Modifier = Modifi
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-private fun formatDate(ts: Long): String =
-    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(ts))
+// Cache formatter ở top-level để tránh allocate mỗi lần helper được gọi.
+// Lưu ý: SimpleDateFormat KHÔNG thread-safe — chỉ gọi từ Main thread (composable).
+private val DATE_FORMAT = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+private val TIME_FORMAT_SHORT = SimpleDateFormat("HH:mm", Locale.getDefault())
+private val NUMBER_FORMAT_VI = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi"))
 
-private fun formatTimeShort(ts: Long): String =
-    SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
+private fun formatDate(ts: Long): String = DATE_FORMAT.format(Date(ts))
+
+private fun formatTimeShort(ts: Long): String = TIME_FORMAT_SHORT.format(Date(ts))
 
 private fun formatKg(kg: Double): String =
     if (kg == 0.0) "0 KG"
-    else "${NumberFormat.getNumberInstance(Locale.forLanguageTag("vi")).format(kg.toInt())} KG"
+    else "${NUMBER_FORMAT_VI.format(kg.toInt())} KG"
 
 private fun formatMoney(amount: Double): String =
-    NumberFormat.getNumberInstance(Locale.forLanguageTag("vi"))
-        .format(amount.toLong()).replace(',', '.')
+    NUMBER_FORMAT_VI.format(amount.toLong()).replace(',', '.')

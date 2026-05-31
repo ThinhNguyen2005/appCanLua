@@ -89,4 +89,18 @@ object HapticUtil {
             vibrator.vibrate(10)
         }
     }
+
+    /** Phản hồi hoàn thành cột lúa — rung 2 nhịp ngắn cách nhau 80ms */
+    fun success(context: Context) {
+        val vibrator = getVibrator(context)
+        val pattern = longArrayOf(0, 80, 80, 80)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(pattern, -1)
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
+    }
 }

@@ -89,7 +89,7 @@
     <string name="create_card_counterparty_phone_label">ເບີໂທ %1$s</string>
     <string name="create_card_counterparty_phone_placeholder">ທາງເລືອກ — ຕົວຢ່າງ: 020 1234 567</string>
     <string name="create_card_section_payment">ລາຄາ &amp; การຊຳລະເງິນ</string>
-    <string name="create_card_weight_hint">💡 ນ້ຳໜັກເປົ່າ ແລະ ສິ່ງເຈືອປົນຈະຖືກປ້ອນໃນເວລາຊັ່ງຕົວຈິງ. ຕອນນີ້ຕ້ອງການພຽງແຕ່ຄວາມຊຸ່ມທີ່ວັດແທກໄດ້.</string>
+    <string name="create_card_weight_hint">💡 ຂໍ້ມູນນີ້ສາມາດປັບໄດ້ຫຼັງຈາກການຊັ່ງນໍ້າໜັກຕົວຈິງ.</string>
     <string name="create_card_moisture_label">ຄວາມຊຸ່ມ (%)</string>
     <string name="create_card_moisture_placeholder">ຕົວຢ່າງ: 18.5</string>
     <string name="create_card_price_label">ລາຄາຕໍ່ໜ່ວຍ (ກີບ/kg)</string>
@@ -100,9 +100,12 @@
     <string name="card_item_locked_content">ລັອກແລ້ວ</string>
     <string name="card_item_delete_content">ລຶบ</string>
     <string name="card_item_moisture">ຄວາມຊຸ່ມ %1$s%%</string>
+    <string name="card_item_bag_weight">ຖົງ %1$s ກິໂລ</string>
+    <string name="card_item_impurity">ສິ່ງປະປົນ %1$s ກິໂລ</string>
     <string name="card_item_weigh_count">%1$d ຄັ້ງຊັ່ງ</string>
     <string name="card_item_remaining_amount">ເຫຼືອ: %1$s đ</string>
     <string name="card_item_qr_verified">✓ QR ຢືນຢັນແລ້ວ</string>
+    <string name="card_item_paid_in_full">ຈ່າຍເຕັມຈຳນວນ</string>
     <string name="weight_label_weight">ນ້ຳໜັກ</string>
     <string name="weight_label_total_weight">ນ້ຳໜັກລວມ</string>
     <string name="weight_label_before_tare">ຍັງບໍ່ທັນຫັກນ້ຳໜັກເປົ່າ</string>
@@ -128,6 +131,33 @@
     <string name="weight_metrics_impurity_info_description">ນ້ຳໜັກຂອງສິ່ງເຈືອປົນ (ເຟືອງ, ດິນ, ຊາຍ, ເມັດລີບ) ທີ່ຢູ່ໃນເຂົ້າ ໂດຍມີການຕົກລົງຫັກອອກເປັນກິໂລຄົງທີ່ເພື່ອຄວາມຍຸດຕິທຳແກ່ຜູ້ຊື້.</string>
     <string name="weight_metrics_moisture_info_title">💧 ການຫັກຄວາມຊຸ່ມ</string>
     <string name="weight_metrics_moisture_info_description">ຄວາມຊຸ່ມຕົວຈິງຂອງເຂົ້າທີ່ວັດແທກໄດ້ຢູ່ທົ່ງນາ. ຄວາມຊຸ່ມມາດຕະຖານການຄ້າແມ່ນ 14%. ຖ້າຄວາມຊຸ່ມສູງກວ່າ, ອັດຕາການຫົດຕົວຈະຖືກຫັກອອກຈາກນ້ຳໜັກຕົວຈິງຕາມການຕົກລົງ.</string>
+    <string name="weight_metrics_formula_info_content">ເບິ່ງສູດການຄຳນວນ</string>
+    <string name="weight_metrics_formula_info_title">📐 ສູດຄຳນວນເງິນ</string>
+    <string name="weight_metrics_formula_info_description">1) ນ້ຳໜັກສຸດທິ = (ນ້ຳໜັກລວມ − ຖົງ × ຈຳນວນຖົງ − ສິ່ງປະປົນ) × (100 − ຄວາມຊຸ່ມ) ÷ (100 − 14).\n\n2) ຍອດເງິນລວມ = ນ້ຳໜັກສຸດທິ × ລາຄາຕໍ່ກິໂລ.</string>
+    <string name="weight_metrics_impurity_label_percent">ສິ່ງປະປົນ (%)</string>
+
+    <!-- Weigh options sheet (per-card modes) -->
+    <string name="weigh_options_title">ຕົວເລືອກຊັ່ງ</string>
+    <string name="weigh_options_icon_content">ຕົວເລືອກຊັ່ງ</string>
+    <string name="weigh_options_done">ສຳເລັດ</string>
+    <string name="weigh_options_impurity_unit">ໜ່ວຍສິ່ງປະປົນ</string>
+    <string name="weigh_options_impurity_kg">ຕາມກິໂລ</string>
+    <string name="weigh_options_impurity_percent">ຕາມ %</string>
+    <string name="weigh_options_impurity_hint_kg">ຫັກກິໂລສິ່ງປະປົນໂດຍກົງ.</string>
+    <string name="weigh_options_impurity_hint_percent" formatted="false">ສິ່ງປະປົນຄິດເປັນ % ຂອງເຂົ້າຫຼັງຫັກຖົງ.</string>
+    <string name="weigh_options_bag_method">ວິທີຄິດຖົງ</string>
+    <string name="weigh_options_bag_single">ນ້ຳໜັກ 1 ຖົງ</string>
+    <string name="weigh_options_bag_sample">ຕົວຢ່າງ n ຖົງ</string>
+    <string name="weigh_options_bag_hint_single">ປ້ອນນ້ຳໜັກ 1 ຖົງເປົ່າ × ຈຳນວນຖົງ.</string>
+    <string name="weigh_options_bag_hint_sample">ຊັ່ງ n ຖົງເປົ່າ = X ກິໂລ → ສະເລ່ຍ × ຈຳນວນຖົງ.</string>
+    <string name="weigh_options_bag_sample_count">ຈຳນວນຖົງຕົວຢ່າງ (n)</string>
+    <string name="weigh_options_bag_sample_weight">ນ້ຳໜັກ n ຖົງ (ກິໂລ)</string>
+    <string name="weigh_options_input_scale">ມາດຕະຖານປ້ອນກິໂລ</string>
+    <string name="weigh_options_input_small">ນ້ອຍ &lt; 100 ກິໂລ</string>
+    <string name="weigh_options_input_large">ໃຫຍ່ ≥ 100 ກິໂລ</string>
+    <string name="weigh_options_input_hint_small">ພິມ 3 ຕົວເລກ: ຕົວຢ່າງ 503 → 50.3 ກິໂລ. ໄປຊ່ອງຕໍ່ໄປອັດຕະໂນມັດ.</string>
+    <string name="weigh_options_input_hint_large">ພິມ 4 ຕົວເລກ: ຕົວຢ່າງ 1503 → 150.3 ກິໂລ. ໄປຊ່ອງຕໍ່ໄປອັດຕະໂນມັດ.</string>
+
     <string name="weight_input_back_content">ກັບຄືນ</string>
     <string name="weight_input_unlock_content">ປົດລັອກ</string>
     <string name="weight_input_lock_content">ລັອກ</string>
@@ -291,9 +321,11 @@
     <string name="pdf_deposit">ເງິນມັດຈຳ</string>
     <string name="pdf_paid">ຊຳລະແລ້ວ</string>
     <string name="pdf_remaining">ຄົງເຫຼືອ</string>
+    <string name="pdf_excess_refund">ສົ່ງຄືນຜູ້ຊື້</string>
+    <string name="pdf_amount_due">ຍັງຄ້າງຊຳລະ</string>
     <string name="pdf_status">ສະຖານະ</string>
     <string name="pdf_paid_full">ຊຳລະຄົບຖ້ວນແລ້ວ</string>
-    <string name="pdf_debt_remaining">ຍັງມີໜີ້ຄົງຄ້າງ</string>
+    <string name="pdf_debt_remaining">ຍັງບໍ່ໄດ້ຊຳລະຄົບ</string>
     <string name="personal_information">ຂໍ້ມູນສ່ວນຕົວ</string>
     <string name="save">ບັນທຶກ</string>
     <string name="edit">ແກ້ໄຂ</string>
@@ -367,11 +399,8 @@
     <string name="pdf_column_tare">ນ້ຳໜັກเປົ່າ (kg)</string>
     <string name="pdf_column_impurity">ສິ່ງເຈືອປົນ (kg)</string>
     <string name="pdf_column_net_weight">ນ້ຳໜັກແທ້ (kg)</string>
-    <string name="pdf_section_verification">V. ຂໍ້ມູນຢືນຢັນ ແລະ ການເຊันດິຈິຕອນ</string>
-    <string name="pdf_signature_status">ສະຖານະການເຊັນ</string>
-    <string name="pdf_signature_unsigned">ຍັງບໍ່ທັນເຊັນ</string>
-    <string name="pdf_verification_code">ລະຫັດຢືນຢັນ</string>
-    <string name="pdf_section_confirmation">VI. ການຢືນຢັນ</string>
+    <string name="pdf_table_total">ລວມ</string>
+    <string name="pdf_section_confirmation">V. ການຢືນຢັນ</string>
     <string name="pdf_sender">ຜູ້ມອບເຂົ້າ</string>
     <string name="pdf_receiver">ຜູ້ຮັບເຂົ້າ</string>
     <string name="pdf_creator">ຜູ້ສ້າງໃບຊັ່ງ</string>
@@ -384,6 +413,23 @@
     <string name="pdf_qr_instruction">ສະແກນ QR ເພື່ອສົມທຽບ</string>
     <string name="pdf_card_date">ໃບຊັ່ງ #%1$d · %2$s</string>
     <string name="pdf_footer">ໜ້າ %1$d · ສ້າງໂດຍ Cân Lúa Mobile · Hash %2$s · %3$s</string>
+
+    <!-- Help Bottom Sheet -->
+    <string name="help_sheet_open_content">ເປີດຄຳແນະນຳ &amp; ການຊ່ວຍເຫຼືອ</string>
+    <string name="help_sheet_title">ຄຳແນະນຳ &amp; ການຊ່ວຍເຫຼືອ</string>
+    <string name="help_sheet_subtitle">ເຄັດລັບໄວເມື່ອຊັ່ງເຂົ້າ</string>
+    <string name="help_tip_input_title">ປ້ອນນ້ຳໜັກໄວ</string>
+    <string name="help_tip_input_desc">ໂໝດນ້ອຍ: ພິມ \"503\" → ກ້າວໄປຊ່ອງຕໍ່ໄປໂດຍອັດຕະໂນມັດ = 50.3 kg. ໂໝດໃຫຍ່: \"1503\" → 150.3 kg. ປ່ຽນໂໝດທີ່ໜ້າຫຼັກ → ໄອຄອນ Tune.</string>
+    <string name="help_tip_lock_title">ລັອກໃບສະຫຼຸບເມື່ອແລ້ວ</string>
+    <string name="help_tip_lock_desc">ກົດສັນຍາລັກກະແຈເທິງແຖບເພື່ອຢຸດການແກ້ໄຂ, ປ້ອງກັນແກ້ໄຂໂດຍບັງເອີນ.</string>
+    <string name="help_tip_options_title">ປັບແຕ່ງວິທີຊັ່ງ</string>
+    <string name="help_tip_options_desc">ຕັ້ງຄ່າເລີ່ມຕົ້ນສຳລັບສິ່ງເຈືອປົນ (kg/%) ແລະ ວິທີຖົງ (ຖົງດຽວ/ຊັ່ງຕົວຢ່າງ N ຖົງ) ທີ່ໜ້າຫຼັກ → ໄອຄອນ Tune.</string>
+    <string name="help_tip_swipe_title">ປັດເພື່ອແກ້ໄຂ/ລຶບ</string>
+    <string name="help_tip_swipe_desc">ໃນຕາຕະລາງ: ກົດຄ້າງເພື່ອແກ້ໄຂ, ປັດຊ້າຍເພື່ອລຶບຖົງ. ໃບສະຫຼຸບທີ່ລັອກຈະຫ້າມການກະທຳເຫຼົ່ານີ້.</string>
+    <string name="help_tip_offline_title">ໃຊ້ໄດ້ບໍ່ມີສັນຍານ</string>
+    <string name="help_tip_offline_desc">ຂໍ້ມູນຖືກບັນທຶກໃນເຄື່ອງ ແລະ ຊິງຄ໌ໂດຍອັດຕະໂນມັດເມື່ອມີເຄືອຂ່າຍ — ໃຊ້ໄດ້ປອດໄພໃນທົ່ງນາ.</string>
+    <string name="help_btn_tutorial">ເບິ່ງວິດີໂອແນະນຳ</string>
+    <string name="help_btn_web">ເຂົ້າເບິ່ງເວັບໄຊ</string>
     <string name="settings_premium_title">ແພັກເກດ Premium</string>
     <string name="settings_premium_early_adopter">ຜູ້ໃຊ້ລຸ້ນທຳອິດ</string>
     <string name="settings_premium_active">ກຳລັງໃຊ້ງານ</string>
@@ -428,4 +474,52 @@
     <string name="language_lao_native">ພາສາລາວ</string>
     <string name="language_chinese">ພາສາຈີນ</string>
     <string name="language_chinese_native">中文</string>
+
+    <string name="create_card_cccd_label">ເລກບັດປະຈຳຕົວ (ທາງເລືອກ)</string>
+    <string name="create_card_cccd_placeholder">ຕົວຢ່າງ: 12 ຕົວເລກ</string>
+    <string name="create_card_impurity_weight_label">ຫັກສິ່ງເຈືອປົນ (kg)</string>
+    <string name="create_card_impurity_weight_placeholder">ຕົວຢ່າງ: 5.0</string>
+    <string name="create_card_bag_weight_label">ຫັກການຫຸ້ມຫໍ່ (kg/ເປົ໋າ)</string>
+    <string name="create_card_bag_weight_placeholder">ຕົວຢ່າງ: 1.0</string>
+    <string name="create_card_cccd_help_title">ເລກບັດປະຈຳຕົວປະຊາຊົນ</string>
+    <string name="create_card_cccd_help_description">ປ້ອນເລກບັດປະຈຳຕົວ 12 ຕົວເລກຂອງຄູ່ຮ່ວມງານເພື່ອເປັນຫຼັກຖານທາງກົດໝາຍໃນການກວດສອບ ແລະ ເຊັນສັນຍາເອເລັກໂຕຣນິກໃນອະນາຄົດ. ຫ້ອງນີ້ແມ່ນບໍ່ບັງຄັບ.</string>
+    <string name="create_card_impurity_help_title">ຫັກສິ່ງເຈືອປົນ</string>
+    <string name="create_card_impurity_help_description">ນ້ຳໜັກ (kg) ຂອງສິ່ງເຈືອປົນ (ເຟືອງ, ດິນ...) ຈະຖືກຫັກໂດຍອັດຕະໂນມັດໂດຍກົງຈາກນ້ຳໜັກເຂົ້າທັງໝົດຂອງໃບນີ້ໃນເວລານຳມາຄິດໄລ່ນ້ຳໜັກຕົວຈິງ.</string>
+    <string name="create_card_bag_help_title">ຫັກການຫຸ້ມຫໍ່</string>
+    <string name="create_card_moisture_help_title">ຄວາມຊຸ່ມຂອງເຂົ້າ</string>
+    <string name="create_card_moisture_help_description">ເປີເຊັນຄວາມຊຸ່ມຂອງເຂົ້າເວລາຊັ່ງນໍ້າໜັກ (%). ຄວາມຊຸ່ມນີ້ແມ່ນໃຊ້ສໍາລັບການອ້າງອີງໃນລະຫວ່າງການຕາກເຂົ້າ ຫຼື ການເຈລະຈາອັດຕາການຫຼຸດຜ່ອນນໍ້າໜັກສໍາລັບເຂົ້າແຫ້ງ.</string>
+    <string name="create_card_bag_help_description">ນ້ຳໜັກມາດຕະຖານຂອງເປົ໋າເຂົ້າເປົ່າ (kg/ເປົ໋າ). ເມື່ອປ້ອນນ້ຳໜັກ, ລະບົບຈະຄູນດ້ວຍຈຳນວນເປົ໋າໂດຍອັດຕະໂນມັດເພື່ອຫັກນ້ຳໜັກຂອງເປົ໋າທັງໝົດ.</string>
+    <string name="create_card_contacts_permission_denied">ປະຕິເສດສິດເຂົ້າເຖິງລາຍຊື່ຜູ້ຕິດຕໍ່. ກະລຸນາປ້ອນເບີໂທລະສັບດ້ວຍຕົນເອງ.</string>
+    <string name="create_card_contacts_select">ເລືອກຈາກລາຍຊື່ຜູ້ຕິດຕໍ່</string>
+    <string name="detail_info_cccd">ເລກບັດປະຈຳຕົວ</string>
+    <string name="card_detail_delete_blocked_unpaid">ໃບທີ່ຍັງບໍ່ທັນຊຳລະເງິນ — ບໍ່ສາມາດລຶບໄດ້</string>
+    <string name="help_btn_feedback">ສົ່ງຄຳຄິດເຫັນ</string>
+    <string name="feedback_screen_title">ສົ່ງຄຳຄິດເຫັນ</string>
+    <string name="feedback_placeholder">ປ້ອນຄຳຄິດເຫັນຂອງທ່ານຢູ່ບ່ອນນີ້...</string>
+    <string name="feedback_btn_send">ສົ່ງ</string>
+    <string name="feedback_toast_success">ຂໍຂອບໃຈສຳລັບຄຳຄິດເຫັນຂອງທ່ານ! ພວກເຮົາຈະພິຈາລະນາໂດຍໄວທີ່ສຸດ.</string>
+    <string name="feedback_toast_empty">ກະລຸນາປ້ອນເນື້ອຫາຄຳຄິດເຫັນ.</string>
+    <string name="feedback_empty_messages">ຍັງບໍ່ທັນມີຄຳຄິດເຫັນເທື່ອ. ກະລຸນາສົ່ງຄຳຄິດເຫັນຂອງທ່ານເພື່ອໃຫ້ພວກເຮົາຊ່ວຍເຫຼືອເດີ້!</string>
+    <string name="feedback_admin_name">ຜູ້ພັດທະນາ</string>
+
+    <!-- Medium issues sprint localization keys -->
+    <string name="card_list_empty_filter_title">ບໍ່ພົບຜົນການຄົ້ນຫາ</string>
+    <string name="card_list_empty_filter_subtitle">ບໍ່ມີໃບຊັ່ງທີ່ກົງກັບຕົວຊອກຫາ. ລອງລຶບການກັ່ນຕອງເພື່ອສະແດງທັງໝົດ.</string>
+    <string name="weather_error_missing_api_key">ຂາດ OPENWEATHER_API_KEY ໃນ local.properties</string>
+
+    <!-- Money formatting words -->
+    <string name="money_unit_billion">ຕື້</string>
+    <string name="money_unit_million">ລ້ານ</string>
+    <string name="money_unit_hundred_thousand">ແສນ</string>
+    <string name="money_unit_thousand">ພັນ</string>
+    <string name="money_unit_dong">ດົງ</string>
+    <string name="money_unit_hundred">ຮ້ອຍ</string>
+
+    <!-- Weather advisory strings H-07 -->
+    <string name="weather_unknown">ບໍ່ຈະແຈ້ງ</string>
+    <string name="weather_your_location">ຕຳແໜ່ງຂອງທ່ານ</string>
+    <string name="weather_advisory_thunderstorm">ຟ້າຜ່າ — ຫ້າມສີດຢາ, ຫຼີກເວັ້ນການລົງທົ່ງນາ</string>
+    <string name="weather_advisory_rain">ຝົນຕົກໜັກ — ເລື່ອນການສີດຢາ 24 ຊົ່ວໂມງ, ເສີມຄັນນາ</string>
+    <string name="weather_advisory_hot_sun">ແດດຮ້ອນຈັດ — ກວດສອບນ້ຳໃນນາ, ຫົດນ້ຳຍາມແລງທີ່ເຢັນ</string>
+    <string name="weather_advisory_high_humidity">ຄວາມຊຸ່ມຊື່ນສູງ — ລະວັງໂລກໃບໄໝ້ ແລະ ເພ້ຍກະໂດດສີນ້ຳຕານ</string>
 </resources>

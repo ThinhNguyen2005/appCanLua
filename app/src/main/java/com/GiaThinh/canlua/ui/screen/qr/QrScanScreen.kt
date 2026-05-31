@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,7 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
-import com.GiaThinh.canlua.ui.viewmodel.CardViewModel
+import com.GiaThinh.canlua.ui.viewmodel.QrScanViewModel
 import com.GiaThinh.canlua.ui.viewmodel.QrVerificationState
 import com.GiaThinh.canlua.util.HapticUtil
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -54,14 +55,14 @@ import java.util.concurrent.Executors
 @Composable
 fun QrScanScreen(
     navController: NavController,
-    viewModel: CardViewModel = hiltViewModel()
+    viewModel: QrScanViewModel = hiltViewModel()
 ) {
     TrackScreenRender("qr_scan")
     val context = LocalContext.current
     val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
 
-    val qrVerificationState by viewModel.qrVerificationState.collectAsState()
+    val qrVerificationState by viewModel.qrVerificationState.collectAsStateWithLifecycle()
     var pendingResult by remember { mutableStateOf<ScanResult?>(null) }
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
@@ -143,7 +144,7 @@ fun QrScanScreen(
             }
         } else if (scanResult != null) {
             // Scan success
-            val result = scanResult!!
+            val result = scanResult ?: return
             Column(
                 Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

@@ -58,12 +58,30 @@ class SyncManager @Inject constructor(
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
+    fun isWifiConnected(): Boolean {
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
+    fun canSync(): Boolean {
+        return if (settingsRepository.isSyncOnlyWifi()) {
+            isWifiConnected()
+        } else {
+            isOnline()
+        }
+    }
+
     /**
-     * Enqueue 1 lần SyncWorker chạy ngay khi có mạng (không đợi periodic 12h).
+     * Enqueue 1 lần SyncWorker chạy ngay khi có mạng và Wi-Fi (không đợi periodic 24h).
      *
      * Trigger sau mỗi mutation Room offline (insert/update card hoặc weight entry
-     * khi `!isOnline()`). Tận dụng WorkManager để:
-     *  - Constraint `NETWORK_CONNECTED` tự defer cho đến khi có mạng.
+     * khi `!isWifiConnected()`). Tận dụng WorkManager để:
+     *  - Constraint `NETWORK_UNMETERED` tự defer cho đến khi có mạng Wi-Fi.
      *  - `BackoffPolicy.EXPONENTIAL` retry với delay tăng dần khi Firestore fail
      *    (timeout, 5xx, network blip) — tránh DDOS server.
      *  - `ExistingWorkPolicy.KEEP` — không enqueue trùng nếu đã có work pending,
@@ -75,7 +93,7 @@ class SyncManager @Inject constructor(
         if (!settingsRepository.isAutoSyncEnabled()) return
 
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiredNetworkType(NetworkType.UNMETERED)
             .build()
 
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
@@ -99,44 +117,147 @@ class SyncManager @Inject constructor(
             _syncStatus.value = SyncStatus.Error("Yêu cầu đăng nhập để đồng bộ")
             return@withContext Result.failure(Exception("No user signed in"))
         }
-        if (!isOnline()) {
-            _syncStatus.value = SyncStatus.Error("Không có kết nối internet")
-            return@withContext Result.failure(Exception("No internet connection"))
+        if (!canSync()) {
+            val errorMsg = if (settingsRepository.isSyncOnlyWifi()) "Yêu cầu kết nối Wi-Fi để đồng bộ" else "Yêu cầu kết nối mạng để đồng bộ"
+            _syncStatus.value = SyncStatus.Error(errorMsg)
+            return@withContext Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "Not connected to Wi-Fi" else "Not connected to network"))
         }
 
         return@withContext try {
             _syncStatus.value = SyncStatus.Syncing
             val startedAt = System.currentTimeMillis()
 
-            // Sync cards - get first value from Flow
+            // Lấy danh sách card trên cloud để so sánh delta lastModifiedMs
+            val cloudCardsResult = firestoreRepository.getAllCards()
+            val cloudCards = cloudCardsResult.getOrDefault(emptyList())
+            val cloudCardMap = cloudCards.associateBy({ it.id }, { it.lastModifiedMs })
+
+            // Lấy danh sách card local
             val localCards = cardRepository.getAllCards().first()
+            
+            // Lọc các card cần push (chưa sync hoặc local mới hơn cloud)
+            val dirtyCards = localCards.filter { card ->
+                card.firestoreId.isNullOrEmpty() ||
+                !cloudCardMap.containsKey(card.firestoreId) ||
+                card.lastModifiedMs > (cloudCardMap[card.firestoreId] ?: 0L)
+            }
+
             var syncedCount = 0
             var errorCount = 0
 
-            localCards.forEach { card ->
-                val cardResult = syncCard(card)
-                cardResult.onSuccess { firestoreId ->
-                    // Sync weight entries for this card
+            if (dirtyCards.isNotEmpty()) {
+                var currentOpCount = 0
+                val batchCards = mutableListOf<com.GiaThinh.canlua.data.firestore.FirestoreCard>()
+                val batchEntries = mutableListOf<com.GiaThinh.canlua.data.firestore.FirestoreWeightEntry>()
+                val batchTxs = mutableListOf<com.GiaThinh.canlua.data.firestore.FirestoreTransaction>()
+                var batchNewCardsCount = 0
+
+                val batchCardIdMappings = mutableListOf<Pair<Long, String>>()
+                val batchEntryIdMappings = mutableListOf<Pair<Long, String>>()
+                val batchTxIdMappings = mutableListOf<Pair<Long, String>>()
+
+                for (card in dirtyCards) {
+                    val fsCardId = if (card.firestoreId.isNullOrEmpty()) {
+                        firestoreRepository.generateCardId()
+                    } else {
+                        card.firestoreId
+                    }
+                    val isNewCard = card.firestoreId.isNullOrEmpty()
+
                     val weightEntries = cardRepository.getWeightEntriesByCardId(card.id).first()
-                    weightEntries.forEach { entry ->
-                        syncWeightEntry(entry, firestoreId)
-                    }
-
-                    // Sync transactions for this card
                     val transactions = cardRepository.getTransactionsByCardId(card.id).first()
-                    transactions.forEach { transaction ->
-                        syncTransaction(transaction, firestoreId)
+
+                    val cardOps = 1 + weightEntries.size + transactions.size
+
+                    // Commit batch trước đó nếu thêm card này sẽ vượt quá 400 ops
+                    if (currentOpCount > 0 && currentOpCount + cardOps > 400) {
+                        val batchResult = firestoreRepository.executeBatchSync(
+                            cards = batchCards,
+                            weightEntries = batchEntries,
+                            transactions = batchTxs,
+                            newCardsCount = batchNewCardsCount
+                        )
+                        if (batchResult.isSuccess) {
+                            batchCardIdMappings.forEach { (localId, fsId) ->
+                                cardDao.updateFirestoreId(localId, fsId)
+                            }
+                            batchEntryIdMappings.forEach { (localId, fsId) ->
+                                weightEntryDao.updateFirestoreId(localId, fsId)
+                            }
+                            batchTxIdMappings.forEach { (localId, fsId) ->
+                                transactionDao.updateFirestoreId(localId, fsId)
+                            }
+                            syncedCount += batchCards.size
+                        } else {
+                            errorCount += batchCards.size
+                            AnalyticsHelper.logNonFatal(batchResult.exceptionOrNull() ?: Exception("Batch failed"), tag = "sync_batch")
+                        }
+                        // Reset batch
+                        currentOpCount = 0
+                        batchCards.clear()
+                        batchEntries.clear()
+                        batchTxs.clear()
+                        batchNewCardsCount = 0
+                        batchCardIdMappings.clear()
+                        batchEntryIdMappings.clear()
+                        batchTxIdMappings.clear()
                     }
 
-                    syncedCount++
-                }.onFailure {
-                    errorCount++
-                    AnalyticsHelper.logNonFatal(it, tag = "sync_card")
+                    // Build models
+                    batchCards.add(card.toFirestoreCard().copy(id = fsCardId))
+                    batchCardIdMappings.add(card.id to fsCardId)
+                    if (isNewCard) batchNewCardsCount++
+
+                    weightEntries.forEach { entry ->
+                        val fsEntryId = if (entry.firestoreId.isNullOrEmpty()) {
+                            firestoreRepository.generateWeightEntryId()
+                        } else {
+                            entry.firestoreId
+                        }
+                        batchEntries.add(entry.toFirestoreWeightEntry(fsCardId).copy(id = fsEntryId))
+                        batchEntryIdMappings.add(entry.id to fsEntryId)
+                    }
+
+                    transactions.forEach { tx ->
+                        val fsTxId = if (tx.firestoreId.isNullOrEmpty()) {
+                            firestoreRepository.generateTransactionId()
+                        } else {
+                            tx.firestoreId
+                        }
+                        batchTxs.add(tx.toFirestoreTransaction(fsCardId).copy(id = fsTxId))
+                        batchTxIdMappings.add(tx.id to fsTxId)
+                    }
+
+                    currentOpCount += cardOps
+                }
+
+                // Commit remaining batch
+                if (currentOpCount > 0) {
+                    val batchResult = firestoreRepository.executeBatchSync(
+                        cards = batchCards,
+                        weightEntries = batchEntries,
+                        transactions = batchTxs,
+                        newCardsCount = batchNewCardsCount
+                    )
+                    if (batchResult.isSuccess) {
+                        batchCardIdMappings.forEach { (localId, fsId) ->
+                            cardDao.updateFirestoreId(localId, fsId)
+                        }
+                        batchEntryIdMappings.forEach { (localId, fsId) ->
+                            weightEntryDao.updateFirestoreId(localId, fsId)
+                        }
+                        batchTxIdMappings.forEach { (localId, fsId) ->
+                            transactionDao.updateFirestoreId(localId, fsId)
+                        }
+                        syncedCount += batchCards.size
+                    } else {
+                        errorCount += batchCards.size
+                        AnalyticsHelper.logNonFatal(batchResult.exceptionOrNull() ?: Exception("Batch failed"), tag = "sync_batch")
+                    }
                 }
             }
 
             // Sau khi push xong, pull các thay đổi từ máy khác về.
-            // Idempotent — pull dedup theo firestoreId nên không tạo duplicate.
             pullAllForCurrentUser()
 
             if (errorCount > 0 && syncedCount == 0) {
@@ -160,12 +281,79 @@ class SyncManager @Inject constructor(
         }
     }
 
+    suspend fun syncCardAndDetails(cardId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        if (auth.currentUser == null) {
+            return@withContext Result.failure(Exception("No user signed in"))
+        }
+        if (!canSync()) {
+            return@withContext Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
+        }
+
+        return@withContext try {
+            val uid = auth.currentUser?.uid ?: return@withContext Result.failure(Exception("No user signed in"))
+            val card = cardDao.getCardById(cardId, uid) ?: return@withContext Result.failure(Exception("Card not found"))
+            
+            val fsCardId = if (card.firestoreId.isNullOrEmpty()) {
+                firestoreRepository.generateCardId()
+            } else {
+                card.firestoreId
+            }
+            val isNewCard = card.firestoreId.isNullOrEmpty()
+
+            val weightEntries = weightEntryDao.getWeightEntriesByCardIdSync(card.id)
+            val transactions = transactionDao.getTransactionsByCardId(card.id).first()
+
+            val batchCards = listOf(card.toFirestoreCard().copy(id = fsCardId))
+            
+            val batchEntries = weightEntries.map { entry ->
+                val fsEntryId = if (entry.firestoreId.isNullOrEmpty()) {
+                    firestoreRepository.generateWeightEntryId()
+                } else {
+                    entry.firestoreId
+                }
+                entry.toFirestoreWeightEntry(fsCardId).copy(id = fsEntryId)
+            }
+
+            val batchTxs = transactions.map { tx ->
+                val fsTxId = if (tx.firestoreId.isNullOrEmpty()) {
+                    firestoreRepository.generateTransactionId()
+                } else {
+                    tx.firestoreId
+                }
+                tx.toFirestoreTransaction(fsCardId).copy(id = fsTxId)
+            }
+
+            val result = firestoreRepository.executeBatchSync(
+                cards = batchCards,
+                weightEntries = batchEntries,
+                transactions = batchTxs,
+                newCardsCount = if (isNewCard) 1 else 0
+            )
+
+            result.onSuccess {
+                cardDao.updateFirestoreId(card.id, fsCardId)
+                weightEntries.forEachIndexed { idx, entry ->
+                    val fsEntryId = batchEntries[idx].id
+                    weightEntryDao.updateFirestoreId(entry.id, fsEntryId)
+                }
+                transactions.forEachIndexed { idx, tx ->
+                    val fsTxId = batchTxs[idx].id
+                    transactionDao.updateFirestoreId(tx.id, fsTxId)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            AnalyticsHelper.logNonFatal(e, tag = "sync_card_details")
+            Result.failure(e)
+        }
+    }
+
     suspend fun syncCard(card: Card): Result<String> {
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))
         }
-        if (!isOnline()) {
-            return Result.failure(Exception("No internet connection"))
+        if (!canSync()) {
+            return Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return try {
@@ -175,6 +363,9 @@ class SyncManager @Inject constructor(
             result.onSuccess { firestoreId ->
                 // Stamp lại firestoreId vào Room để lần push sau update đúng doc,
                 // và để pull dedup được khi user login máy khác.
+                if (card.firestoreId.isNullOrEmpty()) {
+                    firestoreRepository.incrementCardCount()
+                }
                 if (card.firestoreId != firestoreId) {
                     cardDao.updateFirestoreId(card.id, firestoreId)
                 }
@@ -189,8 +380,8 @@ class SyncManager @Inject constructor(
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))
         }
-        if (!isOnline()) {
-            return Result.failure(Exception("No internet connection"))
+        if (!canSync()) {
+            return Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return try {
@@ -212,8 +403,8 @@ class SyncManager @Inject constructor(
         if (auth.currentUser == null) {
             return Result.failure(Exception("No user signed in"))
         }
-        if (!isOnline()) {
-            return Result.failure(Exception("No internet connection"))
+        if (!canSync()) {
+            return Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
         }
 
         return try {
@@ -249,7 +440,7 @@ class SyncManager @Inject constructor(
         val currentUid = auth.currentUser?.uid ?: return@withContext Result.failure(
             Exception("No user signed in")
         )
-        if (!isOnline()) return@withContext Result.failure(Exception("No internet connection"))
+        if (!canSync()) return@withContext Result.failure(Exception(if (settingsRepository.isSyncOnlyWifi()) "No Wi-Fi connection" else "No network connection"))
 
         return@withContext try {
             val cardsResult = firestoreRepository.getAllCards()
@@ -297,13 +488,20 @@ class SyncManager @Inject constructor(
                 }
             }
 
+            // Fetch all weight entries and transactions in bulk to avoid N+1 queries
+            val allWeightEntries = firestoreRepository.getAllWeightEntries().getOrDefault(emptyList())
+            val allTransactions = firestoreRepository.getAllTransactions().getOrDefault(emptyList())
+
+            val weightEntriesByCard = allWeightEntries.groupBy { it.cardId }
+            val transactionsByCard = allTransactions.groupBy { it.cardId }
+
             // Retry pending cloud deletes — tombstone từ delete khi offline.
             cardRepository.getPendingCloudDeletes(currentUid).forEach { tomb ->
                 val fsId = tomb.firestoreId ?: return@forEach
                 val ok = runCatching {
-                    firestoreRepository.getWeightEntriesByCardId(fsId).getOrNull().orEmpty()
+                    weightEntriesByCard[fsId].orEmpty()
                         .forEach { e -> if (e.id.isNotBlank()) firestoreRepository.deleteWeightEntry(e.id) }
-                    firestoreRepository.getTransactionsByCardId(fsId).getOrNull().orEmpty()
+                    transactionsByCard[fsId].orEmpty()
                         .forEach { t -> if (t.id.isNotBlank()) firestoreRepository.deleteTransaction(t.id) }
                     firestoreRepository.deleteCard(fsId).getOrNull()
                 }.isSuccess
@@ -311,10 +509,9 @@ class SyncManager @Inject constructor(
             }
 
             // Pull weight entries + transactions cho từng card đã pull.
-            // Lỗi 1 card không phá toàn bộ — log silent qua getOrNull.
             firestoreToLocalId.forEach { (fsCardId, localCardId) ->
-                val entries = firestoreRepository.getWeightEntriesByCardId(fsCardId)
-                    .getOrNull().orEmpty()
+                val entries = weightEntriesByCard[fsCardId].orEmpty()
+                    .sortedByDescending { it.timestamp }
                 entries.forEach { fsEntry ->
                     if (fsEntry.id.isBlank()) return@forEach
                     val existing = weightEntryDao.getByFirestoreId(fsEntry.id)
@@ -323,8 +520,8 @@ class SyncManager @Inject constructor(
                     }
                 }
 
-                val transactions = firestoreRepository.getTransactionsByCardId(fsCardId)
-                    .getOrNull().orEmpty()
+                val transactions = transactionsByCard[fsCardId].orEmpty()
+                    .sortedByDescending { it.date }
                 transactions.forEach { fsTx ->
                     if (fsTx.id.isBlank()) return@forEach
                     val existing = transactionDao.getByFirestoreId(fsTx.id)
@@ -364,6 +561,7 @@ class SyncManager @Inject constructor(
             remainingAmount = this.remainingAmount,
             bagCount = this.bagCount,
             isLocked = this.isLocked,
+            isPaid = this.isPaid,
             traderName = this.traderName,
             riceVariety = this.riceVariety,
             moisturePercent = this.moisturePercent,
@@ -375,7 +573,12 @@ class SyncManager @Inject constructor(
             traderPhone = this.traderPhone,
             fieldAddress = this.fieldAddress,
             lastModifiedMs = this.lastModifiedMs,
-            localId = this.id
+            localId = this.id,
+            impurityIsPercent = this.impurityIsPercent,
+            bagMethodIsSampling = this.bagMethodIsSampling,
+            bagSampleCount = this.bagSampleCount,
+            bagSampleTotalWeight = this.bagSampleTotalWeight,
+            weightInputMode = this.weightInputMode
         )
     }
 
@@ -425,6 +628,7 @@ class SyncManager @Inject constructor(
             remainingAmount = this.remainingAmount,
             bagCount = this.bagCount,
             isLocked = this.isLocked,
+            isPaid = this.isPaid,
             riceVariety = this.riceVariety,
             moisturePercent = this.moisturePercent,
             seasonLabel = this.seasonLabel,
@@ -433,7 +637,12 @@ class SyncManager @Inject constructor(
             latitude = this.latitude,
             longitude = this.longitude,
             traderPhone = this.traderPhone,
-            fieldAddress = this.fieldAddress
+            fieldAddress = this.fieldAddress,
+            impurityIsPercent = this.impurityIsPercent,
+            bagMethodIsSampling = this.bagMethodIsSampling,
+            bagSampleCount = this.bagSampleCount,
+            bagSampleTotalWeight = this.bagSampleTotalWeight,
+            weightInputMode = this.weightInputMode
         )
     }
 
