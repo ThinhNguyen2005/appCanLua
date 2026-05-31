@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Grass
 import androidx.compose.material.icons.outlined.LocationOn
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,6 +65,7 @@ fun CardInfoCard(
     riceVariety: String,
     seasonLabel: String,
     createdDateLabel: String,
+    lastUpdatedLabel: String,
     fieldAddress: String,
     hasCoordinates: Boolean,
     onCallTrader: () -> Unit,
@@ -71,87 +75,100 @@ fun CardInfoCard(
     cccd: String? = null,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .animateContentSize()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.fillMaxWidth()
     ) {
-        // ── Header ─────────────────────────────────────────────────
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Outlined.Description,
-                contentDescription = null,
-                tint = AppColors.GreenPrimary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                stringResource(R.string.detail_info_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // ── Header ─────────────────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Outlined.Description,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.detail_info_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-        // ── Thương lái ─────────────────────────────────────────────
-        InfoRow(
-            icon = Icons.Outlined.Person,
-            label = stringResource(R.string.detail_info_trader),
-            value = traderName.ifBlank { stringResource(R.string.detail_info_empty_value) }
-        )
-
-        // ── SĐT thương lái (tap-to-call) ──────────────────────────
-        ActionRow(
-            icon = Icons.Outlined.Phone,
-            label = stringResource(R.string.detail_info_phone),
-            value = traderPhone.ifBlank { stringResource(R.string.detail_info_missing_phone) },
-            actionEnabled = traderPhone.isNotBlank(),
-            actionTint = AppColors.GreenPrimary,
-            onClick = onCallTrader
-        )
-
-        // ── CCCD (nếu có) ──────────────────────────
-        if (!cccd.isNullOrBlank()) {
+            // ── Thương lái ─────────────────────────────────────────────
             InfoRow(
-                icon = Icons.Outlined.Description,
-                label = stringResource(R.string.detail_info_cccd),
-                value = cccd
+                icon = Icons.Outlined.Person,
+                label = stringResource(R.string.detail_info_trader),
+                value = traderName.ifBlank { stringResource(R.string.detail_info_empty_value) }
+            )
+
+            // ── SĐT thương lái (tap-to-call) ──────────────────────────
+            ActionRow(
+                icon = Icons.Outlined.Phone,
+                label = stringResource(R.string.detail_info_phone),
+                value = traderPhone.ifBlank { stringResource(R.string.detail_info_missing_phone) },
+                actionEnabled = traderPhone.isNotBlank(),
+                actionTint = AppColors.GreenPrimary,
+                onClick = onCallTrader
+            )
+
+            // ── CCCD (nếu có) ──────────────────────────
+            if (!cccd.isNullOrBlank()) {
+                InfoRow(
+                    icon = Icons.Outlined.Description,
+                    label = stringResource(R.string.detail_info_cccd),
+                    value = cccd
+                )
+            }
+
+            HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
+
+            // ── Giống lúa ──────────────────────────────────────────────
+            InfoRow(
+                icon = Icons.Outlined.Grass,
+                label = stringResource(R.string.detail_info_rice_variety),
+                value = listOfNotNull(
+                    riceVariety.takeIf { it.isNotBlank() },
+                    seasonLabel.takeIf { it.isNotBlank() }
+                ).joinToString(" · ").ifBlank { stringResource(R.string.detail_info_empty_value) }
+            )
+
+            InfoRow(
+                icon = Icons.Outlined.CalendarMonth,
+                label = stringResource(R.string.detail_info_created_date),
+                value = createdDateLabel
+            )
+
+            InfoRow(
+                icon = Icons.Outlined.EditCalendar,
+                label = stringResource(R.string.detail_info_last_updated),
+                value = lastUpdatedLabel
+            )
+
+            HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
+
+            // ── Địa chỉ ruộng (tap-to-map + refresh) ──────────────────
+            FieldAddressRow(
+                address = fieldAddress,
+                hasCoordinates = hasCoordinates,
+                onOpenMap = onOpenMap,
+                onRefreshLocation = onRefreshLocation
             )
         }
-
-        HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
-
-        // ── Giống lúa ──────────────────────────────────────────────
-        InfoRow(
-            icon = Icons.Outlined.Grass,
-            label = stringResource(R.string.detail_info_rice_variety),
-            value = listOfNotNull(
-                riceVariety.takeIf { it.isNotBlank() },
-                seasonLabel.takeIf { it.isNotBlank() }
-            ).joinToString(" · ").ifBlank { stringResource(R.string.detail_info_empty_value) }
-        )
-
-        // ── Ngày tạo ───────────────────────────────────────────────
-        InfoRow(
-            icon = Icons.Outlined.CalendarMonth,
-            label = stringResource(R.string.detail_info_created_date),
-            value = createdDateLabel
-        )
-
-        HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
-
-        // ── Địa chỉ ruộng (tap-to-map + refresh) ──────────────────
-        FieldAddressRow(
-            address = fieldAddress,
-            hasCoordinates = hasCoordinates,
-            onOpenMap = onOpenMap,
-            onRefreshLocation = onRefreshLocation
-        )
     }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────
 // Static info row (no action)

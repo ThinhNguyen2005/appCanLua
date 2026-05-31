@@ -1,42 +1,48 @@
 package com.GiaThinh.canlua.ui.screen
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.rememberScrollState
-
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Backup
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Agriculture
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.data.model.AppLanguage
 import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.data.model.FontScale
 import com.GiaThinh.canlua.repository.BackupStatus
 import com.GiaThinh.canlua.repository.SyncStatus
-import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
@@ -48,17 +54,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * SettingsScreen — đồng bộ màu sắc với toàn app qua AppColors design tokens.
- *
- * Mapping:
- *  - Background  → AppColors.Surface
- *  - Card BG     → AppColors.CardBg
- *  - Primary     → AppColors.GreenPrimary (button, switch, radio)
- *  - Text        → AppColors.TextPrimary / TextSecondary / TextHint
- *  - Icon tile   → tint-tinted background (GreenSurface, GoldLight, ...) tùy chức năng
- *  - Danger      → AppColors.Error (đăng xuất)
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -69,6 +64,7 @@ fun SettingsScreen(
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     TrackScreenRender("settings")
+
     val isTtsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
     val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
@@ -81,17 +77,23 @@ fun SettingsScreen(
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val premiumInfo by PremiumState.info.collectAsStateWithLifecycle()
+
     var pendingRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
+    var showRestartConfirm by remember { mutableStateOf(false) }
+    var languageExpanded by remember { mutableStateOf(false) }
+    var themeExpanded by remember { mutableStateOf(false) }
+    var fontSizeExpanded by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        stringResource(R.string.topbar_settings),
+                        text = stringResource(R.string.topbar_settings),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
@@ -110,577 +112,173 @@ fun SettingsScreen(
                     containerColor = AppColors.Surface,
                     titleContentColor = AppColors.TextPrimary
                 ),
-                // FIX LỖI 1: Tắt tự động thêm status bar padding cho TopAppBar này,
-                // vì Scaffold bên ngoài (MainScreen) đã thêm WindowInsets rồi.
                 windowInsets = WindowInsets(0.dp)
             )
         },
         containerColor = AppColors.Surface
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(AppColors.Surface)
                 .padding(paddingValues)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp)
+                .navigationBarsPadding()
+                .imePadding()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .imePadding()
-                    .navigationBarsPadding()
-                    .verticalScroll(scrollState)
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // ── Premium Card — luôn hiển thị; trạng thái ACTIVE hay UPGRADE
-                //    quyết định gradient + nội dung. Tap → mở PremiumScreen.
-                SettingsCard {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            IconTile(
-                                bg = AppColors.GoldLight,
-                                tint = AppColors.GoldDark,
-                                icon = { tint, mod ->
-                                    Icon(
-                                        Icons.Filled.Star,
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = mod
-                                    )
-                                }
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.settings_premium_title),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AppColors.TextPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (premiumInfo.isActive) {
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.CenterVertically)
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(
-                                                    if (premiumInfo.isEarlyAdopter) AppColors.GoldAccent
-                                                    else AppColors.GreenPrimary
-                                                )
-                                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = if (premiumInfo.isEarlyAdopter) {
-                                                    stringResource(R.string.settings_premium_early_adopter)
-                                                } else {
-                                                    stringResource(R.string.settings_premium_active)
-                                                },
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                maxLines = 1
-                                            )
-                                        }
-                                    }
-                                }
-                                val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-                                val activatedLabel = stringResource(R.string.settings_premium_activated)
-                                val earlyAdopterLabel = stringResource(R.string.settings_premium_early_adopter)
-                                val subtitle = if (premiumInfo.isActive) {
-                                    val plan = premiumInfo.plan?.takeIf { it.isNotBlank() }
-                                        ?: if (premiumInfo.isEarlyAdopter) earlyAdopterLabel
-                                        else activatedLabel
-                                    val sinceLabel = if (premiumInfo.sinceMs > 0L) {
-                                        stringResource(
-                                            R.string.settings_premium_since,
-                                            sdf.format(Date(premiumInfo.sinceMs))
-                                        )
-                                    } else ""
-                                    "$plan$sinceLabel"
-                                } else {
-                                    stringResource(R.string.settings_premium_subtitle)
-                                }
-                                Text(
-                                    text = subtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.TextHint,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                        }
-                        TextButton(
-                            onClick = { navController.navigate("premium") },
-                            colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
-                        ) {
-                            Text(
-                                text = if (premiumInfo.isActive) {
-                                    stringResource(R.string.settings_premium_manage)
-                                } else {
-                                    stringResource(R.string.settings_premium_upgrade)
-                                },
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // ── TTS Card ──
-                SettingsCard {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            IconTile(
-                                bg = AppColors.GreenSurface,
-                                tint = AppColors.GreenPrimary,
-                                icon = { tint, mod ->
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.VolumeUp,
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = mod
-                                    )
-                                }
-                            )
+            PremiumCard(
+                isActive = premiumInfo.isActive,
+                isEarlyAdopter = premiumInfo.isEarlyAdopter,
+                plan = premiumInfo.plan,
+                sinceMs = premiumInfo.sinceMs,
+                onClick = { navController.navigate("premium") }
+            )
 
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.settings_tts_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_tts_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.TextHint,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                        }
+            Spacer(modifier = Modifier.height(24.dp))
 
-                        Switch(
-                            checked = isTtsEnabled,
-                            onCheckedChange = { viewModel.setTtsEnabled(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = AppColors.GreenPrimary,
-                                uncheckedThumbColor = AppColors.TextHint,
-                                uncheckedTrackColor = AppColors.SurfaceContainer
-                            )
-                        )
-                    }
-                }
+            SectionHeader(
+                icon = Icons.Outlined.Person,
+                label = stringResource(R.string.settings_section_account),
+                iconBg = AppColors.BlueSurface,
+                iconTint = AppColors.Blue
+            )
 
-                // ── Sync & Backup Card ──
-                SettingsCard {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            IconTile(
-                                bg = AppColors.Info.copy(alpha = 0.12f),
-                                tint = AppColors.Info,
-                                icon = { tint, mod ->
-                                    Icon(
-                                        Icons.Default.CloudSync,
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = mod
-                                    )
-                                }
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.settings_sync_backup_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
-                                SyncStatusText(syncStatus)
-                            }
-                        }
+            RoleSwitcherContent(
+                profile = profile,
+                onRoleChange = { pendingRole = it }
+            )
 
-                        // Switch toggle for Auto-Sync
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Tự động đồng bộ ngầm",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
-                                Text(
-                                    text = "Tự động tải/đẩy dữ liệu Firebase ngầm khi mở app hoặc có thay đổi",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.TextHint,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                            Switch(
-                                checked = isAutoSyncEnabled,
-                                onCheckedChange = { viewModel.setAutoSyncEnabled(it) },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = AppColors.GreenPrimary,
-                                    uncheckedThumbColor = AppColors.TextHint,
-                                    uncheckedTrackColor = AppColors.SurfaceContainer
-                                )
-                            )
-                        }
+            Spacer(modifier = Modifier.height(12.dp))
 
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(),
-                            thickness = 1.dp,
-                            color = AppColors.SurfaceContainer
-                        )
+            ClickableSettingsRow(
+                icon = Icons.Outlined.Logout,
+                iconBg = AppColors.Error.copy(alpha = 0.12f),
+                iconTint = AppColors.Error,
+                title = stringResource(R.string.settings_sign_out),
+                subtitle = authState.userLabel ?: stringResource(R.string.settings_not_signed_in),
+                enabled = authState.isSignedIn,
+                onClick = { if (authState.isSignedIn) showLogoutConfirm = true }
+            )
 
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            StatusRow(stringResource(R.string.settings_last_sync), lastSyncTime)
-                            StatusRow(stringResource(R.string.settings_last_backup), lastBackupTime)
-                        }
+            Spacer(modifier = Modifier.height(24.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedButton(
-                                onClick = { syncViewModel.backupNow() },
-                                modifier = Modifier.wrapContentWidth(),
-                                enabled = backupStatus !is BackupStatus.BackingUp,
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = AppColors.GreenPrimary
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    AppColors.GreenPrimary
-                                )
-                            ) {
-                                if (backupStatus is BackupStatus.BackingUp) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = AppColors.GreenPrimary
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                } else {
-                                    Icon(
-                                        Icons.Default.Backup,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                }
-                                Text(stringResource(R.string.settings_backup_action), fontWeight = FontWeight.SemiBold)
-                            }
+            SectionHeader(
+                icon = Icons.Outlined.Palette,
+                label = stringResource(R.string.settings_section_display),
+                iconBg = AppColors.BlueSurface,
+                iconTint = AppColors.Blue
+            )
 
-                            Spacer(modifier = Modifier.width(12.dp))
+            TtsSettingsCard(
+                isEnabled = isTtsEnabled,
+                onToggle = { viewModel.setTtsEnabled(!isTtsEnabled) }
+            )
 
-                            Button(
-                                onClick = { syncViewModel.syncAll() },
-                                modifier = Modifier.wrapContentWidth(),
-                                enabled = syncStatus !is SyncStatus.Syncing,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = AppColors.GreenPrimary,
-                                    contentColor = Color.White,
-                                    disabledContainerColor = AppColors.GreenPrimary.copy(alpha = 0.4f),
-                                    disabledContentColor = Color.White
-                                )
-                            ) {
-                                if (syncStatus is SyncStatus.Syncing) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = Color.White
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                } else {
-                                    Icon(
-                                        Icons.Default.CloudSync,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                }
-                                Text(stringResource(R.string.settings_sync_action), fontWeight = FontWeight.SemiBold)
-                            }
-                        }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                        TextButton(
-                            onClick = { navController.navigate("sync_status") },
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = AppColors.GreenPrimary
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.CloudDone,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.settings_sync_detail))
-                        }
-                    }
-                }
+            ThemeExpandableRow(
+                isExpanded = themeExpanded,
+                onToggle = { themeExpanded = !themeExpanded },
+                selectedTheme = appThemeMode,
+                onSelect = { viewModel.setThemeMode(it); themeExpanded = false }
+            )
 
-                SettingsCard {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            IconTile(
-                                bg = AppColors.GreenSurface,
-                                tint = AppColors.GreenPrimary,
-                                icon = { tint, mod ->
-                                    Icon(
-                                        Icons.Default.Language,
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = mod
-                                    )
-                                }
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.settings_language_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_language_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.TextHint,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                        }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                        LanguageOptions(
-                            selected = language,
-                            onSelect = { viewModel.setLanguage(it) }
-                        )
-                    }
-                }
+            FontSizeExpandableRow(
+                isExpanded = fontSizeExpanded,
+                onToggle = { fontSizeExpanded = !fontSizeExpanded },
+                selectedFontScale = fontScale,
+                onSelect = { viewModel.setFontScale(it); fontSizeExpanded = false }
+            )
 
-                // ── Theme Mode Card ──
-                SettingsCard {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            IconTile(
-                                bg = AppColors.GreenSurface,
-                                tint = AppColors.GreenPrimary,
-                                icon = { tint, mod ->
-                                    Icon(
-                                        Icons.Default.DarkMode,
-                                        contentDescription = null,
-                                        tint = tint,
-                                        modifier = mod
-                                    )
-                                }
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.settings_theme_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_theme_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.TextHint,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                        }
+            Spacer(modifier = Modifier.height(24.dp))
 
-                        ThemeModeOptions(
-                            selected = appThemeMode,
-                            onSelect = { viewModel.setThemeMode(it) }
-                        )
-                    }
-                }
+            SectionHeader(
+                icon = Icons.Outlined.Language,
+                label = stringResource(R.string.settings_section_language),
+                iconBg = AppColors.GreenSurface,
+                iconTint = AppColors.GreenPrimary
+            )
 
-                // ── Font scale Card ──
-                SettingsCard {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_font_size_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_font_size_subtitle),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.TextHint
-                        )
+            LanguageExpandableRow(
+                isExpanded = languageExpanded,
+                onToggle = { languageExpanded = !languageExpanded },
+                selectedLanguage = language,
+                onSelect = { viewModel.setLanguage(it); languageExpanded = false }
+            )
 
-                        FontScaleOptions(
-                            selected = fontScale,
-                            onSelect = { viewModel.setFontScale(it) }
-                        )
-                    }
-                }
+            Spacer(modifier = Modifier.height(24.dp))
 
-                // ── Phiếu đã xoá (history + restore) ──
-                // Đổi vai trò (FARMER ↔ TRADER) là setting hành vi app, đặt ở Settings
-                // hợp lý hơn trong Profile. Bao bọc trong dialog confirm vì tác động
-                // mạnh: đổi nav graph + permission set.
-                SettingsCard {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { navController.navigate("deleted_cards") }
-                            .padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        IconTile(
-                            bg = AppColors.Error.copy(alpha = 0.12f),
-                            tint = AppColors.Error,
-                            icon = { tint, mod ->
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = tint,
-                                    modifier = mod
-                                )
-                            }
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.settings_deleted_cards_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = AppColors.TextPrimary
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_deleted_cards_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.TextHint,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
-                }
+            SectionHeader(
+                icon = Icons.Outlined.CloudSync,
+                label = stringResource(R.string.settings_section_sync),
+                iconBg = AppColors.Info.copy(alpha = 0.12f),
+                iconTint = AppColors.Info
+            )
 
-                // ── Role switcher Card ──
-                profile?.let { p ->
-                    SettingsCard {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            RoleSwitcher(
-                                currentRole = p.role,
-                                onRequestChange = { newRole -> pendingRole = newRole }
-                            )
-                        }
-                    }
-                }
-
-                // ── Account Card ──
-                SettingsCard {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_account_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.TextPrimary
-                        )
-                        Text(
-                            text = authState.userLabel ?: stringResource(R.string.settings_not_signed_in),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.TextHint
-                        )
-
-                        Button(
-                            onClick = { showLogoutConfirm = true },
-                            enabled = authState.isSignedIn,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Error.copy(alpha = 0.1f),
-                                contentColor = AppColors.Error,
-                                disabledContainerColor = AppColors.SurfaceContainer,
-                                disabledContentColor = AppColors.TextHint
-                            )
-                        ) {
-                            Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold)
-                        }
-                    }
+            SettingsCardBox {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ToggleRow(
+                        icon = Icons.Outlined.Sync,
+                        title = "Tự động đồng bộ",
+                        subtitle = "Tự động tải/đẩy dữ liệu Firebase khi mở app hoặc có thay đổi",
+                        checked = isAutoSyncEnabled,
+                        onCheckedChange = { viewModel.setAutoSyncEnabled(it) }
+                    )
+                    HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.4f), thickness = 0.5.dp)
+                    SyncStatusDisplay(
+                        lastSyncTime = lastSyncTime,
+                        lastBackupTime = lastBackupTime,
+                        syncStatus = syncStatus
+                    )
+                    HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.4f), thickness = 0.5.dp)
+                    SyncActionButtons(
+                        syncStatus = syncStatus,
+                        backupStatus = backupStatus,
+                        onBackup = { syncViewModel.backupNow() },
+                        onSync = { syncViewModel.syncAll() }
+                    )
+                    ClickableLink(
+                        text = stringResource(R.string.settings_sync_detail),
+                        onClick = { navController.navigate("sync_status") }
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            SectionHeader(
+                icon = Icons.Outlined.Folder,
+                label = stringResource(R.string.settings_section_data),
+                iconBg = AppColors.OrangeSurface,
+                iconTint = AppColors.Orange
+            )
+
+            ClickableSettingsRow(
+                icon = Icons.Outlined.Delete,
+                iconBg = AppColors.Error.copy(alpha = 0.12f),
+                iconTint = AppColors.Error,
+                title = stringResource(R.string.settings_deleted_cards_title),
+                subtitle = stringResource(R.string.settings_deleted_cards_subtitle),
+                onClick = { navController.navigate("deleted_cards") }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SettingsFooter()
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
-    // H-09: Logout confirmation dialog — tránh đăng xuất vô ý do nhấn nhầm
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
@@ -707,67 +305,827 @@ fun SettingsScreen(
         )
     }
 
-    // Confirm dialog đổi role — đối xứng với flow cũ ở Profile.
-    pendingRole?.let { newRole ->
-        AlertDialog(
-            onDismissRequest = { pendingRole = null },
-            title = { Text(stringResource(R.string.settings_change_role_title), fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    when (newRole) {
-                        "TRADER" -> stringResource(R.string.settings_change_role_to_trader)
-                        else -> stringResource(R.string.settings_change_role_to_farmer)
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    profile?.let { current ->
-                        profileViewModel.updateProfile(current = current, role = newRole)
-                    }
-                    pendingRole = null
-                }) { Text(stringResource(R.string.settings_change_role_confirm), fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingRole = null }) { Text(stringResource(R.string.action_cancel)) }
-            },
-            shape = RoundedCornerShape(20.dp)
+    if (pendingRole != null) {
+        RoleChangeDialog(
+            newRole = pendingRole!!,
+            onDismiss = { pendingRole = null },
+            onConfirm = { newRole ->
+                profile?.let { current -> profileViewModel.updateProfile(current = current, role = newRole) }
+                pendingRole = null
+                showRestartConfirm = true
+            }
+        )
+    }
+
+    if (showRestartConfirm) {
+        RestartConfirmDialog(
+            visible = true,
+            onDismiss = { showRestartConfirm = false },
+            onRestart = {
+                showRestartConfirm = false
+                restartActivity(context)
+            }
         )
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Reusable bits
-// ─────────────────────────────────────────────────────────────
+private fun restartActivity(context: android.content.Context) {
+    val activity = context as? android.app.Activity ?: return
+    val intent = activity.intent
+    activity.finish()
+    activity.startActivity(intent)
+    activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+}
 
-/** Card chuẩn cho settings — đồng nhất shape, color, elevation với app. */
 @Composable
-private fun SettingsCard(content: @Composable () -> Unit) {
+private fun SectionHeader(
+    icon: ImageVector,
+    label: String,
+    iconBg: Color,
+    iconTint: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        IconBadge(icon = icon, bg = iconBg, tint = iconTint)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.TextPrimary
+        )
+    }
+}
+
+@Composable
+private fun IconBadge(icon: ImageVector, bg: Color, tint: Color) {
+    Surface(shape = RoundedCornerShape(12.dp), color = bg, modifier = Modifier.size(40.dp)) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun SettingsCardBox(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         content()
     }
 }
 
-/** Avatar-style icon tile thay cho `Surface` cũ — giúp icon nổi mà không cần Material container colors. */
 @Composable
-private fun IconTile(
-    bg: Color,
-    tint: Color,
-    icon: @Composable (tint: Color, modifier: Modifier) -> Unit
+private fun ClickableSettingsRow(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    title: String,
+    subtitle: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = bg,
-        modifier = Modifier.size(48.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "rowScale"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = Color.Black.copy(alpha = 0.07f),
+                spotColor = Color.Black.copy(alpha = 0.07f)
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(AppColors.CardBg)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(bounded = true, color = AppColors.GreenPrimary.copy(alpha = 0.15f)),
+                enabled = enabled,
+                onClick = onClick
+            )
+            .padding(16.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            icon(tint, Modifier.size(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                IconBadge(icon = icon, bg = iconBg, tint = iconTint)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = if (enabled) AppColors.TextPrimary else AppColors.TextHint
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextHint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = AppColors.TextHint,
+                modifier = Modifier.size(20.dp)
+            )
         }
+    }
+}
+
+@Composable
+private fun ToggleRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            IconBadge(icon = icon, bg = AppColors.GreenSurface, tint = AppColors.GreenPrimary)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.TextPrimary
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextHint,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = AppColors.GreenPrimary,
+                uncheckedThumbColor = AppColors.TextHint,
+                uncheckedTrackColor = AppColors.SurfaceContainer
+            )
+        )
+    }
+}
+
+@Composable
+private fun ThemeExpandableRow(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    selectedTheme: AppThemeMode,
+    onSelect: (AppThemeMode) -> Unit
+) {
+    ExpandableCard(
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        icon = Icons.Outlined.DarkMode,
+        title = stringResource(R.string.settings_theme_title),
+        selectedValue = stringResource(selectedTheme.labelRes),
+        optionsContent = {
+            ThemeModeOptions(
+                selected = selectedTheme,
+                onSelect = onSelect
+            )
+        }
+    )
+}
+
+@Composable
+private fun FontSizeExpandableRow(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    selectedFontScale: FontScale,
+    onSelect: (FontScale) -> Unit
+) {
+    ExpandableCard(
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        icon = Icons.Outlined.TextFields,
+        title = stringResource(R.string.settings_font_size_title),
+        selectedValue = stringResource(selectedFontScale.labelRes),
+        optionsContent = {
+            FontScaleOptions(
+                selected = selectedFontScale,
+                onSelect = onSelect
+            )
+        }
+    )
+}
+
+@Composable
+private fun LanguageExpandableRow(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    selectedLanguage: AppLanguage,
+    onSelect: (AppLanguage) -> Unit
+) {
+    ExpandableCard(
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        icon = Icons.Outlined.Translate,
+        title = stringResource(R.string.settings_language_title),
+        selectedValue = stringResource(selectedLanguage.nativeLabelRes),
+        optionsContent = {
+            LanguageOptions(
+                selected = selectedLanguage,
+                onSelect = onSelect
+            )
+        }
+    )
+}
+
+@Composable
+private fun ExpandableCard(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    icon: ImageVector,
+    title: String,
+    selectedValue: String,
+    optionsContent: @Composable () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "expandRowScale"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.animateContentSize(
+                animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = ripple(bounded = true, color = AppColors.GreenPrimary.copy(alpha = 0.15f)),
+                        onClick = onToggle
+                    )
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    IconBadge(icon = icon, bg = AppColors.GreenSurface, tint = AppColors.GreenPrimary)
+                    Column {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = AppColors.TextPrimary
+                        )
+                        Text(
+                            text = selectedValue,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.GreenPrimary
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = if (isExpanded) "Thu gọn" else "Mở rộng",
+                    tint = AppColors.TextSecondary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
+                    color = AppColors.SurfaceContainer
+                ) {
+                    optionsContent()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TtsSettingsCard(
+    isEnabled: Boolean,
+    onToggle: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "ttsCardScale"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(bounded = true, color = AppColors.GreenPrimary.copy(alpha = 0.15f)),
+                    onClick = onToggle
+                )
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                IconBadge(
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    bg = if (isEnabled) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                    tint = if (isEnabled) AppColors.GreenPrimary else AppColors.TextSecondary
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_tts_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_tts_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextHint,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = { onToggle() },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = AppColors.GreenPrimary,
+                    uncheckedThumbColor = AppColors.TextHint,
+                    uncheckedTrackColor = AppColors.SurfaceContainer
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun PremiumCard(
+    isActive: Boolean,
+    isEarlyAdopter: Boolean,
+    plan: String?,
+    sinceMs: Long,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "premiumScale"
+    )
+
+    val backgroundBrush = if (isActive) {
+        Brush.linearGradient(
+            colors = listOf(
+                AppColors.GoldLight.copy(alpha = 0.25f),
+                AppColors.GoldAccent.copy(alpha = 0.1f)
+            )
+        )
+    } else {
+        Brush.linearGradient(colors = listOf(AppColors.CardBg, AppColors.CardBg))
+    }
+
+    val shadowElevation = if (isActive) 4.dp else 2.dp
+    val shadowColor = if (isActive) AppColors.GoldDark.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.06f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .shadow(
+                elevation = shadowElevation,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = shadowColor,
+                spotColor = shadowColor
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundBrush)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(bounded = true, color = AppColors.GoldDark.copy(alpha = 0.18f)),
+                onClick = onClick
+            )
+            .padding(16.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isActive) AppColors.GoldLight else AppColors.GoldLight.copy(alpha = 0.45f),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = AppColors.GoldDark,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_premium_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = if (isActive) stringResource(R.string.settings_premium_activated)
+                        else stringResource(R.string.settings_premium_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextHint,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = AppColors.GoldLight.copy(alpha = 0.45f)
+                ) {
+                    Text(
+                        text = if (isActive) stringResource(R.string.settings_premium_manage)
+                        else stringResource(R.string.settings_premium_upgrade),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GoldDark,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                    )
+                }
+            }
+
+            if (isActive) {
+                val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+                val statusText = if (isEarlyAdopter)
+                    stringResource(R.string.settings_premium_early_adopter)
+                else
+                    stringResource(R.string.settings_premium_active)
+                val planText = plan?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.settings_premium_activated)
+                val sinceText = if (sinceMs > 0L)
+                    stringResource(R.string.settings_premium_since, sdf.format(Date(sinceMs)))
+                else ""
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    PremiumStatusPill(
+                        text = statusText,
+                        isEarlyAdopter = isEarlyAdopter,
+                        modifier = Modifier.weight(weight = 0.42f, fill = false)
+                    )
+                    Text(
+                        text = "$planText$sinceText",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PremiumStatusPill(
+    text: String,
+    isEarlyAdopter: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val container = if (isEarlyAdopter) AppColors.GoldLight.copy(alpha = 0.75f) else AppColors.GreenSurface
+    val content = if (isEarlyAdopter) AppColors.GoldDark else AppColors.GreenDark
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(999.dp),
+        color = container
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(content)
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = content,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleSwitcherContent(
+    profile: com.GiaThinh.canlua.data.model.Profile?,
+    onRoleChange: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 1.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = Color.Black.copy(alpha = 0.06f),
+                spotColor = Color.Black.copy(alpha = 0.06f)
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(AppColors.CardBg)
+            .padding(16.dp)
+    ) {
+        Column {
+            Text(
+                text = stringResource(R.string.profile_user_role),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+            Text(
+                text = stringResource(R.string.profile_user_role_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.TextHint
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AppColors.SurfaceContainer)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                val currentRole = profile?.role ?: "FARMER"
+                RoleChipButton(
+                    icon = Icons.Filled.Agriculture,
+                    label = stringResource(R.string.farmer),
+                    selected = currentRole != "TRADER",
+                    onClick = { if (currentRole != "FARMER") onRoleChange("FARMER") },
+                    modifier = Modifier.weight(1f)
+                )
+                RoleChipButton(
+                    icon = Icons.Filled.Storefront,
+                    label = stringResource(R.string.trader),
+                    selected = currentRole == "TRADER",
+                    onClick = { if (currentRole != "TRADER") onRoleChange("TRADER") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleChipButton(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(11.dp))
+            .background(if (selected) AppColors.GreenPrimary else Color.Transparent)
+            .clickable(enabled = !selected, onClick = onClick)
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (selected) Color.White else AppColors.TextSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.size(6.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (selected) Color.White else AppColors.TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SyncStatusDisplay(
+    lastSyncTime: Long?,
+    lastBackupTime: Long?,
+    syncStatus: SyncStatus
+) {
+    val formatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SyncStatusRow(
+            icon = Icons.Outlined.Sync,
+            label = stringResource(R.string.settings_last_sync),
+            time = lastSyncTime?.let { formatter.format(Date(it)) }
+                ?: stringResource(R.string.settings_empty_time),
+            statusText = when (syncStatus) {
+                is SyncStatus.Syncing -> stringResource(R.string.settings_sync_status_syncing)
+                is SyncStatus.Success -> stringResource(R.string.settings_sync_status_success)
+                is SyncStatus.Error -> stringResource(R.string.settings_sync_status_error, syncStatus.message)
+                else -> null
+            },
+            statusColor = when (syncStatus) {
+                is SyncStatus.Syncing -> AppColors.Info
+                is SyncStatus.Success -> AppColors.GreenPrimary
+                is SyncStatus.Error -> AppColors.Error
+                else -> null
+            }
+        )
+        SyncStatusRow(
+            icon = Icons.Outlined.Backup,
+            label = stringResource(R.string.settings_last_backup),
+            time = lastBackupTime?.let { formatter.format(Date(it)) }
+                ?: stringResource(R.string.settings_empty_time),
+            statusText = null,
+            statusColor = null
+        )
+    }
+}
+
+@Composable
+private fun SyncStatusRow(
+    icon: ImageVector,
+    label: String,
+    time: String,
+    statusText: String?,
+    statusColor: Color?
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(icon, contentDescription = null, tint = AppColors.TextSecondary, modifier = Modifier.size(16.dp))
+            Text(label, style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(time, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppColors.TextPrimary)
+            statusText?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = statusColor ?: AppColors.TextHint) }
+        }
+    }
+}
+
+@Composable
+private fun SyncActionButtons(
+    syncStatus: SyncStatus,
+    backupStatus: BackupStatus,
+    onBackup: () -> Unit,
+    onSync: () -> Unit
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedButton(
+            onClick = onBackup,
+            modifier = Modifier.weight(1f),
+            enabled = backupStatus !is BackupStatus.BackingUp,
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary),
+            border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.GreenPrimary)
+        ) {
+            if (backupStatus is BackupStatus.BackingUp) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = AppColors.GreenPrimary)
+            } else {
+                Icon(Icons.Outlined.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(stringResource(R.string.settings_backup_action), fontWeight = FontWeight.SemiBold)
+        }
+        Button(
+            onClick = onSync,
+            modifier = Modifier.weight(1f),
+            enabled = syncStatus !is SyncStatus.Syncing,
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary, contentColor = Color.White)
+        ) {
+            if (syncStatus is SyncStatus.Syncing) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+            } else {
+                Icon(Icons.Outlined.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(stringResource(R.string.settings_sync_action), fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun ClickableLink(text: String, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(bounded = true, color = AppColors.GreenPrimary.copy(alpha = 0.15f)),
+                onClick = onClick
+            )
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Outlined.Info, contentDescription = null, tint = AppColors.GreenPrimary, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = AppColors.GreenPrimary)
     }
 }
 
@@ -776,38 +1134,38 @@ private fun LanguageOptions(
     selected: AppLanguage,
     onSelect: (AppLanguage) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppLanguage.entries.forEach { language ->
-            val isSelected = language == selected
+    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        AppLanguage.entries.forEach { lang ->
+            val isSelected = lang == selected
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
-                onClick = { onSelect(language) }
+                shape = RoundedCornerShape(10.dp),
+                color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
+                onClick = { onSelect(lang) }
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
                         Text(
-                            text = stringResource(language.labelRes),
-                            style = MaterialTheme.typography.bodyLarge,
+                            text = stringResource(lang.labelRes),
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
                         )
                         Text(
-                            text = stringResource(language.nativeLabelRes),
+                            text = stringResource(lang.nativeLabelRes),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextHint
                         )
                     }
                     RadioButton(
                         selected = isSelected,
-                        onClick = { onSelect(language) },
+                        onClick = { onSelect(lang) },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = AppColors.GreenPrimary,
                             unselectedColor = AppColors.TextHint
@@ -824,28 +1182,41 @@ private fun ThemeModeOptions(
     selected: AppThemeMode,
     onSelect: (AppThemeMode) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         AppThemeMode.entries.forEach { mode ->
             val isSelected = mode == selected
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                shape = RoundedCornerShape(10.dp),
+                color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
                 onClick = { onSelect(mode) }
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(mode.labelRes),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                        color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(
+                            imageVector = when (mode) {
+                                AppThemeMode.LIGHT -> Icons.Outlined.LightMode
+                                AppThemeMode.HIGH_CONTRAST -> Icons.Outlined.Contrast
+                                AppThemeMode.OLED -> Icons.Outlined.DarkMode
+                                AppThemeMode.AUTO -> Icons.Outlined.BrightnessAuto
+                            },
+                            contentDescription = null,
+                            tint = if (isSelected) AppColors.GreenPrimary else AppColors.TextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = stringResource(mode.labelRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                        )
+                    }
                     RadioButton(
                         selected = isSelected,
                         onClick = { onSelect(mode) },
@@ -866,27 +1237,28 @@ private fun FontScaleOptions(
     onSelect: (FontScale) -> Unit
 ) {
     val options = listOf(FontScale.SMALL, FontScale.NORMAL, FontScale.LARGE, FontScale.XLARGE)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         options.forEach { scale ->
             val isSelected = scale == selected
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isSelected) AppColors.GreenSurface else AppColors.SurfaceContainer,
+                shape = RoundedCornerShape(10.dp),
+                color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
                 onClick = { onSelect(scale) }
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = stringResource(scale.labelRes),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                        color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                        color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary,
+                        modifier = Modifier.padding(start = 30.dp)
                     )
                     RadioButton(
                         selected = isSelected,
@@ -903,41 +1275,74 @@ private fun FontScaleOptions(
 }
 
 @Composable
-private fun StatusRow(label: String, time: Long?) {
-    val formatter = remember {
-        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-    }
-    val value = time?.let { formatter.format(Date(it)) } ?: stringResource(R.string.settings_empty_time)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextHint
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = AppColors.TextSecondary
-        )
+private fun SettingsFooter() {
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = "CanLua v1.0.0", style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+        Text(text = "GiaThinh \u00a9 2024", style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint.copy(alpha = 0.7f))
     }
 }
 
 @Composable
-private fun SyncStatusText(status: SyncStatus) {
-    val text = when (status) {
-        is SyncStatus.Syncing -> stringResource(R.string.settings_sync_status_syncing)
-        is SyncStatus.Success -> stringResource(R.string.settings_sync_status_success)
-        is SyncStatus.Error -> stringResource(R.string.settings_sync_status_error, status.message)
-        SyncStatus.Idle -> stringResource(R.string.settings_sync_status_idle)
-    }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = AppColors.TextHint
+private fun RoleChangeDialog(
+    newRole: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_change_role_title), fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    when (newRole) {
+                        "TRADER" -> stringResource(R.string.settings_change_role_to_trader)
+                        else -> stringResource(R.string.settings_change_role_to_farmer)
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Vai trò sẽ thay đổi sau khi khởi động lại ứng dụng.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextHint
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(newRole) }) {
+                Text(stringResource(R.string.settings_change_role_confirm), fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+@Composable
+private fun RestartConfirmDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onRestart: () -> Unit
+) {
+    if (!visible) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Khởi động lại ứng dụng", fontWeight = FontWeight.Bold) },
+        text = { Text("Vui lòng khởi động lại ứng dụng để cập nhật vai trò và giao diện mới.") },
+        confirmButton = {
+            TextButton(onClick = onRestart) {
+                Text("Khởi động lại ngay", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Để sau", color = AppColors.TextSecondary)
+            }
+        },
+        shape = RoundedCornerShape(20.dp),
+        containerColor = AppColors.Surface
     )
 }

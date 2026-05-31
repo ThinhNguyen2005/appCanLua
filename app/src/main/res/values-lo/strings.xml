@@ -212,6 +212,7 @@
     <string name="detail_info_missing_phone">ຍັງບໍ່ມີ</string>
     <string name="detail_info_rice_variety">ແນວພັນເຂົ້າ</string>
     <string name="detail_info_created_date">ວັນທີສ້າງ</string>
+    <string name="detail_info_last_updated">ອັບເດດຫຼ້າສຸດ</string>
     <string name="detail_info_field_address">ທີ່ຢູ່ທົ່ງນາ</string>
     <string name="detail_info_unknown_location">ຍັງບໍ່ໄດ້ກຳນົດຕຳແໜ່ງ</string>
     <string name="detail_info_refresh_location">ອັບເດດຕຳແໜ່ງ</string>
@@ -522,4 +523,10 @@
     <string name="weather_advisory_rain">ຝົນຕົກໜັກ — ເລື່ອນການສີດຢາ 24 ຊົ່ວໂມງ, ເສີມຄັນນາ</string>
     <string name="weather_advisory_hot_sun">ແດດຮ້ອນຈັດ — ກວດສອບນ້ຳໃນນາ, ຫົດນ້ຳຍາມແລງທີ່ເຢັນ</string>
     <string name="weather_advisory_high_humidity">ຄວາມຊຸ່ມຊື່ນສູງ — ລະວັງໂລກໃບໄໝ້ ແລະ ເພ້ຍກະໂດດສີນ້ຳຕານ</string>
+    <string name="settings_section_premium">Premium</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_section_display">Display</string>
+    <string name="settings_section_language">Language</string>
+    <string name="settings_section_sync">Sync</string>
+    <string name="settings_section_data">Data</string>
 </resources>

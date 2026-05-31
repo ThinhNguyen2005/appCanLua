@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Scale
-import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,7 +55,6 @@ fun WeighOptionsSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var impurityPercent by remember { mutableStateOf(impurityIsPercent) }
     var bagSampling by remember { mutableStateOf(bagMethodIsSampling) }
     var sampleCountText by remember {
         mutableStateOf(if (bagSampleCount > 0) bagSampleCount.toString() else "")
@@ -85,33 +83,7 @@ fun WeighOptionsSheet(
                 color = AppColors.TextPrimary
             )
 
-            // === 1. Impurity unit ===
-            SectionHeader(
-                icon = { Icon(Icons.Outlined.Spa, null, tint = AppColors.GreenPrimary, modifier = Modifier.size(18.dp)) },
-                title = stringResource(R.string.weigh_options_impurity_unit)
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                FilterChip(
-                    selected = !impurityPercent,
-                    onClick = { impurityPercent = false },
-                    label = { Text(stringResource(R.string.weigh_options_impurity_kg)) },
-                    colors = greenChipColors()
-                )
-                FilterChip(
-                    selected = impurityPercent,
-                    onClick = { impurityPercent = true },
-                    label = { Text(stringResource(R.string.weigh_options_impurity_percent)) },
-                    colors = greenChipColors()
-                )
-            }
-            Text(
-                text = stringResource(
-                    if (impurityPercent) R.string.weigh_options_impurity_hint_percent
-                    else R.string.weigh_options_impurity_hint_kg
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.TextSecondary
-            )
+            // Tạp chất luôn nhập theo kg. Tham số đầu giữ false để tương thích caller cũ.
 
             // === 2. Bag method ===
             SectionHeader(
@@ -200,7 +172,7 @@ fun WeighOptionsSheet(
                 onClick = {
                     val n = sampleCountText.toIntOrNull() ?: 0
                     val w = sampleWeightText.toDoubleOrNull() ?: 0.0
-                    onSave(impurityPercent, bagSampling, n, w, inputMode)
+                    onSave(false, bagSampling, n, w, inputMode)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)

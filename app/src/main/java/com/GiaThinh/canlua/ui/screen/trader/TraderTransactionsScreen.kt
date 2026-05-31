@@ -67,12 +67,34 @@ import java.util.Locale
  *   → flatMapLatest sang `transactions` (cardId in [...])
  *   → combine + compute stats trong ViewModel.
  */
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.DefaultSkeleton
+
 @Composable
 fun TraderTransactionsScreen(
-    navController: androidx.navigation.NavController,
-    viewModel: TraderTransactionsViewModel = hiltViewModel()
+    navController: androidx.navigation.NavController
 ) {
     TrackScreenRender("trader_transactions")
+    val viewModel: TraderTransactionsViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isDataReady = !state.isLoading
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { DefaultSkeleton() }
+    ) {
+        TraderTransactionsScreenContent(
+            navController = navController,
+            viewModel = viewModel
+        )
+    }
+}
+
+@Composable
+fun TraderTransactionsScreenContent(
+    navController: androidx.navigation.NavController,
+    viewModel: TraderTransactionsViewModel
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val filter by viewModel.filter.collectAsStateWithLifecycle()
 

@@ -58,6 +58,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -97,16 +98,49 @@ import kotlinx.coroutines.launch
  * Weather card chỉ thuộc tab Tin tức — cuộn cùng news, không sticky, không hiện ở
  * Prices tab hay tab khác. Tab và pager đồng bộ 2 chiều.
  */
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.MarketSkeleton
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MarketScreen(
-    viewModel: MarketViewModel = hiltViewModel(),
-    weatherViewModel: WeatherViewModel = hiltViewModel(),
-    newsViewModel: NewsViewModel = hiltViewModel(),
-    profileViewModel: ProfileViewModel = hiltViewModel(),
-    bidsViewModel: TraderBidsViewModel = hiltViewModel()
-) {
+fun MarketScreen() {
     TrackScreenRender("market")
+    val viewModel: MarketViewModel = hiltViewModel()
+    val weatherViewModel: WeatherViewModel = hiltViewModel()
+    val newsViewModel: NewsViewModel = hiltViewModel()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val bidsViewModel: TraderBidsViewModel = hiltViewModel()
+
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val prices by viewModel.prices.collectAsStateWithLifecycle()
+    val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
+    val isDataReady = !isLoading || prices.isNotEmpty() || newsArticles.isNotEmpty()
+
+
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { MarketSkeleton() }
+    ) {
+        MarketScreenContent(
+            viewModel = viewModel,
+            weatherViewModel = weatherViewModel,
+            newsViewModel = newsViewModel,
+            profileViewModel = profileViewModel,
+            bidsViewModel = bidsViewModel
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun MarketScreenContent(
+    viewModel: MarketViewModel,
+    weatherViewModel: WeatherViewModel,
+    newsViewModel: NewsViewModel,
+    profileViewModel: ProfileViewModel,
+    bidsViewModel: TraderBidsViewModel
+) {
     val prices by viewModel.prices.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val refreshError by viewModel.refreshError.collectAsStateWithLifecycle()
@@ -114,30 +148,70 @@ fun MarketScreen(
     val timeRangeDays by viewModel.timeRangeDays.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val filter by viewModel.filter.collectAsStateWithLifecycle()
-    val weatherState by weatherViewModel.state.collectAsStateWithLifecycle()
+    
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    val activePage by remember { derivedStateOf { pagerState.currentPage } }
+    val isNewsActive = activePage == 0
+    val isPricesActive = activePage == 1
 
-    val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
-    val newsTopic by newsViewModel.selectedTopic.collectAsStateWithLifecycle()
-    val newsUi by newsViewModel.ui.collectAsStateWithLifecycle()
+    LaunchedEffect(isNewsActive) {
+        if (isNewsActive) {
+            newsViewModel.loadData()
+            weatherViewModel.startObserving()
+        }
+    }
+
+    val weatherState = if (isNewsActive) {
+        weatherViewModel.state.collectAsStateWithLifecycle().value
+    } else {
+        com.GiaThinh.canlua.ui.viewmodel.WeatherUiState()
+    }
+
+    val newsArticles = if (isNewsActive) {
+        newsViewModel.articles.collectAsStateWithLifecycle().value
+    } else {
+        emptyList()
+    }
+    val newsTopic = if (isNewsActive) {
+        newsViewModel.selectedTopic.collectAsStateWithLifecycle().value
+    } else {
+        null
+    }
+    val newsUi = if (isNewsActive) {
+        newsViewModel.ui.collectAsStateWithLifecycle().value
+    } else {
+        com.GiaThinh.canlua.ui.viewmodel.NewsUiState()
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
-        if (granted.values.any { it }) weatherViewModel.onPermissionGranted()
+        if (granted.values.any { it }) {
+            weatherViewModel.onPermissionGranted()
+        } else {
+            weatherViewModel.onPermissionDenied()
+        }
     }
 
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val isTrader = profile?.role == "TRADER"
     val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
-    val myBids by bidsViewModel.myBids.collectAsStateWithLifecycle()
-    val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
+    val myBids = if (isPricesActive) {
+        bidsViewModel.myBids.collectAsStateWithLifecycle().value
+    } else {
+        emptyList()
+    }
+    val bidUiState = if (isPricesActive) {
+        bidsViewModel.uiState.collectAsStateWithLifecycle().value
+    } else {
+        com.GiaThinh.canlua.ui.viewmodel.TraderBidUiState()
+    }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val newsListState = rememberLazyListState()
     val pricesListState = rememberLazyListState()
 
@@ -170,15 +244,6 @@ fun MarketScreen(
             snackbarHostState.showSnackbar(it)
             bidsViewModel.clearMessage()
         }
-    }
-
-    // Tải dữ liệu trì hoãn sau khi slide transition (300ms) kết thúc để tránh lag chuyển trang
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(400)
-        viewModel.seedIfNeededDeferred()
-        weatherViewModel.startObserving()
-        newsViewModel.loadData()
-        bidsViewModel.syncBids()
     }
 
     // H-08: Hiển thị Snackbar khi Market refresh thất bại (lỗi mạng / Firestore)
@@ -383,7 +448,7 @@ private fun NewsPage(
         ) {
             item(key = "weather") {
                 AnimatedVisibility(
-                    visible = weatherState.hasPermission && !weatherState.isRateLimited && weatherState.weather != null,
+                    visible = !weatherState.isPermissionDeniedByUser && !weatherState.isRateLimited,
                     enter = fadeIn(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
@@ -391,6 +456,7 @@ private fun NewsPage(
                         weather = weatherState.weather,
                         isLoading = weatherState.isLoading,
                         errorMessage = weatherState.errorMessage,
+                        hasPermission = weatherState.hasPermission,
                         isStale = weatherState.isStale,
                         onRefresh = onWeatherRefresh
                     )

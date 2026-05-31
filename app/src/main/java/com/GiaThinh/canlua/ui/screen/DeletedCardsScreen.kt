@@ -67,13 +67,33 @@ import java.util.Locale
  *    → push lên cloud thành doc mới + remove tombstone. Navigate đến card_detail.
  *  - **Xoá vĩnh viễn**: purge tombstone (cloud đã xoá ở delete sync gốc).
  */
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.DefaultSkeleton
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeletedCardsScreen(
-    navController: NavController,
-    viewModel: DeletedCardsViewModel = hiltViewModel()
+    navController: NavController
 ) {
     TrackScreenRender("deleted_cards")
+    val viewModel: DeletedCardsViewModel = hiltViewModel()
+    TransitionSafeWrapper(
+        isDataReady = true, // Màn hình local DB cực nhẹ, render tức thời mang lại cảm giác mượt mà
+        skeletonContent = { DefaultSkeleton() }
+    ) {
+        DeletedCardsScreenContent(
+            navController = navController,
+            viewModel = viewModel
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DeletedCardsScreenContent(
+    navController: NavController,
+    viewModel: DeletedCardsViewModel
+) {
     val items by viewModel.items.collectAsStateWithLifecycle()
     val restored by viewModel.restored.collectAsStateWithLifecycle()
     var pendingPurge by remember { mutableStateOf<DeletedCard?>(null) }

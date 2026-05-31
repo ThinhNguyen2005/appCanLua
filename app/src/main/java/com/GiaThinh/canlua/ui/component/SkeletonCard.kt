@@ -126,18 +126,41 @@ fun SkeletonCard(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
+            .clip(RoundedCornerShape(18.dp)),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            ShimmerBlock(widthFraction = 0.6f, height = 20.dp, colors = colors)
-            Spacer(Modifier.height(12.dp))
-            ShimmerBlock(widthFraction = 0.9f, height = 14.dp, colors = colors)
-            Spacer(Modifier.height(8.dp))
-            ShimmerBlock(widthFraction = 0.75f, height = 14.dp, colors = colors)
-            Spacer(Modifier.height(12.dp))
-            ShimmerBlock(widthFraction = 0.4f, height = 32.dp, corner = 8.dp, colors = colors)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .shimmerEffect(colors)
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ShimmerBlock(widthFraction = 0.72f, height = 16.dp, corner = 8.dp, colors = colors)
+                ShimmerBlock(widthFraction = 0.46f, height = 12.dp, corner = 6.dp, colors = colors)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShimmerBlock(widthFraction = 0.32f, height = 26.dp, corner = 10.dp, colors = colors)
+                    ShimmerBlock(widthFraction = 0.28f, height = 26.dp, corner = 10.dp, colors = colors)
+                }
+            }
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ShimmerBlock(widthFraction = 0.18f, height = 16.dp, corner = 8.dp, colors = colors)
+                ShimmerBlock(widthFraction = 0.22f, height = 28.dp, corner = 12.dp, colors = colors)
+            }
         }
     }
 }
@@ -177,29 +200,42 @@ fun SummaryCardSkeleton(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
+            .clip(RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(modifier = Modifier.fillMaxWidth(0.5f)) {
-                ShimmerBlock(widthFraction = 0.8f, height = 14.dp, colors = colors)
-                Spacer(Modifier.height(10.dp))
-                ShimmerBlock(widthFraction = 0.7f, height = 28.dp, corner = 6.dp, colors = colors)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    ShimmerBlock(widthFraction = 0.34f, height = 12.dp, corner = 6.dp, colors = colors)
+                    Spacer(Modifier.height(8.dp))
+                    ShimmerBlock(widthFraction = 0.52f, height = 18.dp, corner = 8.dp, colors = colors)
+                }
+                ShimmerBlock(widthFraction = 0.18f, height = 24.dp, corner = 12.dp, colors = colors)
             }
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.End,
-            ) {
-                ShimmerBlock(widthFraction = 0.7f, height = 14.dp, colors = colors)
-                Spacer(Modifier.height(10.dp))
-                ShimmerBlock(widthFraction = 0.9f, height = 28.dp, corner = 6.dp, colors = colors)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(3) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(colors.shimmerBase.copy(alpha = 0.38f))
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .shimmerEffect(colors)
+                        )
+                        ShimmerBlock(widthFraction = 0.82f, height = 10.dp, corner = 5.dp, colors = colors)
+                        ShimmerBlock(widthFraction = 0.7f, height = 16.dp, corner = 8.dp, colors = colors)
+                    }
+                }
             }
         }
     }

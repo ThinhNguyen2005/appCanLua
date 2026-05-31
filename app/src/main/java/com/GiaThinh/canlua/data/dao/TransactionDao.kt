@@ -34,5 +34,8 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET firestoreId = :fsId WHERE id = :localId")
     suspend fun updateFirestoreId(localId: Long, fsId: String)
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE firestoreId IS NULL")
+    suspend fun countUnsyncedTransactions(): Int
 }
 

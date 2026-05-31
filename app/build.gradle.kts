@@ -27,7 +27,7 @@ fun encodeBase64(value: String): String {
 }
 
 val gitCommitCount = runCatching {
-    val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").start()
+     val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").start()
     val countStr = process.inputStream.bufferedReader().readText().trim()
     if (countStr.isNotEmpty()) countStr.toInt() else 1
 }.getOrDefault(1)

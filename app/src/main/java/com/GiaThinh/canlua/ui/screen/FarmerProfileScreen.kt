@@ -110,13 +110,39 @@ import java.util.Locale
  * DashboardViewModel.combine() gom TẤT CẢ data thành 1 atomic emission,
  * chống Flow Avalanche — chỉ 1 recomposition thay vì 5-7.
  */
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.profile.FarmerProfileSkeleton
+
 @Composable
 fun FarmerProfileScreen(
-    navController: NavController,
-    profileViewModel: ProfileViewModel = hiltViewModel(),
-    dashboardViewModel: DashboardViewModel = hiltViewModel()
+    navController: NavController
 ) {
     TrackScreenRender("farmer_profile")
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val dashboardViewModel: DashboardViewModel = hiltViewModel()
+
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
+    val isDataReady = profile != null && dash.isAggregated
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { FarmerProfileSkeleton() }
+    ) {
+        FarmerProfileScreenContent(
+            navController = navController,
+            profileViewModel = profileViewModel,
+            dashboardViewModel = dashboardViewModel
+        )
+    }
+}
+
+@Composable
+fun FarmerProfileScreenContent(
+    navController: NavController,
+    profileViewModel: ProfileViewModel,
+    dashboardViewModel: DashboardViewModel
+) {
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle()
 
@@ -125,13 +151,11 @@ fun FarmerProfileScreen(
     val showSkeleton = profile == null || !dash.isAggregated
 
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
-    val lifetimeStats = remember(dash.seasonsComparison) {
-        if (dash.seasonsComparison.isEmpty()) null else LifetimeStats(
-            seasonCount = dash.seasonsComparison.size,
-            totalNetWeight = dash.seasonsComparison.sumOf { it.totalNetWeight },
-            totalRevenue = dash.seasonsComparison.sumOf { it.totalRevenue }
-        )
-    }
+    // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
+    val lifetimeStats = dash.overallStats
+    val lifetimeSeasonCount = dash.seasons.size
+    val lifetimeTotalNetWeight = lifetimeStats?.totalNetWeight ?: 0.0
+    val lifetimeTotalRevenue = lifetimeStats?.totalRevenue ?: 0.0
 
     var editing by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
@@ -153,19 +177,11 @@ fun FarmerProfileScreen(
             .fillMaxSize()
             .background(AppColors.Surface)
     ) {
-        Crossfade(
-            targetState = showSkeleton,
-            animationSpec = tween(durationMillis = 220),
-            label = "farmer_profile_crossfade"
-        ) { skeleton ->
-            if (skeleton) {
-                FarmerProfileSkeleton()
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             // ─── TIER 0: Gradient Hero Header ───
             item {
                 GradientProfileHeader(
@@ -176,15 +192,14 @@ fun FarmerProfileScreen(
             }
 
             // ─── TIER 1: Quick Stats Glass Grid ───
-            if (lifetimeStats != null) {
-                item {
-                    QuickStatsGlassGrid(
-                        seasonCount = lifetimeStats.seasonCount,
-                        totalNetWeight = lifetimeStats.totalNetWeight,
-                        totalRevenue = lifetimeStats.totalRevenue,
-                        revenueLabel = stringResource(R.string.profile_stats_revenue)
-                    )
-                }
+            // Luôn hiển thị (kể cả khi user mới, seasonsComparison rỗng → hiển thị 0)
+            item {
+                QuickStatsGlassGrid(
+                    seasonCount = lifetimeSeasonCount,
+                    totalNetWeight = lifetimeTotalNetWeight,
+                    totalRevenue = lifetimeTotalRevenue,
+                    revenueLabel = stringResource(R.string.profile_stats_revenue)
+                )
             }
 
             // Section title cho phần thống kê mùa vụ
@@ -230,6 +245,19 @@ fun FarmerProfileScreen(
                         )
                     }
                 }
+
+                // ─── TIER 6: AI Crop Insights ───
+                if (!stats.isEmpty) {
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            AiInsightsCard(
+                                state = dash.aiAnalysis,
+                                onAnalyze = dashboardViewModel::analyzeWithAi,
+                                onReset = dashboardViewModel::resetAiAnalysis
+                            )
+                        }
+                    }
+                }
             }
 
             // ─── TIER 5: Season Comparison Bar Chart ───
@@ -240,19 +268,6 @@ fun FarmerProfileScreen(
                             seasons = dash.seasonsComparison,
                             selectedSeason = dash.selectedSeason,
                             metric = ChartMetric.WEIGHT
-                        )
-                    }
-                }
-            }
-
-            // ─── TIER 6: AI Crop Insights ───
-            if (dash.currentStats?.isEmpty == false) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        AiInsightsCard(
-                            state = dash.aiAnalysis,
-                            onAnalyze = dashboardViewModel::analyzeWithAi,
-                            onReset = dashboardViewModel::resetAiAnalysis
                         )
                     }
                 }
@@ -334,8 +349,6 @@ fun FarmerProfileScreen(
             // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
             // Profile giờ tập trung vào "tôi là ai + thống kê của tôi", không còn
             // mix thao tác hành vi app (đổi role, signout) — gọn và đỡ duplicate.
-                }
-            }
         }
     }
 
@@ -343,14 +356,6 @@ fun FarmerProfileScreen(
 }
 
 // ─────────────────────────────────────────────────────────────
-// Lifetime aggregate (across all seasons)
-// ─────────────────────────────────────────────────────────────
-
-private data class LifetimeStats(
-    val seasonCount: Int,
-    val totalNetWeight: Double,
-    val totalRevenue: Double
-)
 
 // ─────────────────────────────────────────────────────────────
 // Primary KPI Grid (Farmer): Sản lượng / Doanh thu / KG-bao / Số bao

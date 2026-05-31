@@ -78,11 +78,17 @@ class MarketViewModel @Inject constructor(
 
     private var seedJob: kotlinx.coroutines.Job? = null
 
+    init {
+        seedIfNeededDeferred()
+    }
+
     fun seedIfNeededDeferred() {
         if (seedJob == null || seedJob?.isActive == false) {
             seedJob = viewModelScope.launch {
                 try {
                     marketRepository.seedMockDataIfEmpty()
+                    // TỰ ĐỘNG TẢI DỮ LIỆU THẬT NGAY LÚC KHỞI ĐỘNG
+                    refreshFromFirestore()
                 } finally {
                     _isLoading.value = false
                 }
@@ -92,19 +98,23 @@ class MarketViewModel @Inject constructor(
 
     /**
      * One-shot refresh từ Firestore — gọi khi user mở tab Market hoặc pull-to-refresh.
-     * Không giữ listener thường trực; data cũ trong Room vẫn dùng được nếu mạng lỗi.
      */
     fun refreshFromFirestore() {
         viewModelScope.launch {
             _isLoading.value = true
             _refreshError.value = null
-            try {
-                marketRepository.refreshFromFirestore()
-            } catch (e: Exception) {
-                _refreshError.value = "Không thể tải giá mới. Đang hiển thị dữ liệu cũ."
-            } finally {
-                _isLoading.value = false
-            }
+            
+            val result = marketRepository.refreshFromFirestore(forceRefresh = true)
+            result.fold(
+                onSuccess = {
+                    android.util.Log.d("MarketVM", "Tải dữ liệu từ Firestore thành công!")
+                },
+                onFailure = { error ->
+                    android.util.Log.e("MarketVM", "Lỗi tải Firestore: ${error.message}", error)
+                    _refreshError.value = "Không thể tải giá mới: ${error.message ?: "Lỗi kết nối Firebase"}"
+                }
+            )
+            _isLoading.value = false
         }
     }
 

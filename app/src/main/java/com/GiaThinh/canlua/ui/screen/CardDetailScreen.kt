@@ -2,6 +2,9 @@ package com.GiaThinh.canlua.ui.screen
 
 import android.content.Intent
 import android.net.Uri
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -79,25 +82,59 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.CardDetailSkeleton
 
-// Singleton — dùng chung cho mọi instance CardDetailScreen.
 private val DETAIL_DATE_FMT: SimpleDateFormat =
     SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val DETAIL_DATE_TIME_FMT: SimpleDateFormat =
+    SimpleDateFormat("HH:mm · dd/MM/yyyy", Locale.getDefault())
+
 @Composable
 fun CardDetailScreen(
     cardId: Long,
-    navController: NavController,
-    viewModel: CardDetailViewModel = hiltViewModel()
+    navController: NavController
 ) {
     com.GiaThinh.canlua.util.TrackScreenRender("card_detail")
+    val viewModel: CardDetailViewModel = hiltViewModel()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isDataReady = !isLoading
+
+    // Kích hoạt load dữ liệu ban đầu ngay lập tức ở ngoài wrapper để tránh deadlock.
+    LaunchedEffect(cardId) {
+        viewModel.loadCardById(cardId)
+    }
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { CardDetailSkeleton() }
+    ) {
+        CardDetailScreenContent(
+            cardId = cardId,
+            navController = navController,
+            viewModel = viewModel
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardDetailScreenContent(
+    cardId: Long,
+    navController: NavController,
+    viewModel: CardDetailViewModel
+) {
+    val recordLocation = remember { { viewModel.refreshFieldLocation(cardId) } }
+    val toggleLock = remember { { viewModel.toggleCardLock(cardId) } }
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
 
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
-
-    LaunchedEffect(cardId) { viewModel.loadCardById(cardId) }
+    val numberFormat = remember {
+        NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).apply {
+            maximumFractionDigits = 1
+        }
+    }
 
     val heights = rememberHeaderHeights()
     val scrollState = rememberLazyListState()
@@ -112,6 +149,17 @@ fun CardDetailScreen(
     val context = LocalContext.current
     val appToast = LocalAppToast.current
     val scope = rememberCoroutineScope()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { granted ->
+        if (granted.values.any { it }) {
+            viewModel.refreshFieldLocation(cardId)
+            appToast.info(context.getString(R.string.card_detail_updating_location))
+        } else {
+            appToast.error("Cần quyền vị trí để định vị ruộng")
+        }
+    }
 
     val viewModelLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     // Pull-to-refresh state
@@ -226,13 +274,8 @@ fun CardDetailScreen(
                 traderName = ""
             )
         }
-        val displayCard = currentCard ?: placeholderCard
-        var isTransitionFinished by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) {
-            delay(150L) // Đợi transition 300ms của NavHost kết thúc một nửa để dựng layout trước
-            isTransitionFinished = true
-        }
-        val isLoading = currentCard == null || !isTransitionFinished
+        val card = currentCard ?: placeholderCard
+        val isLoading = viewModelLoading
 
         // C-06: tables và pagerState khai báo NGOÀI Crossfade → không bị reset về page 0
         // mỗi khi skeleton → content transition. User giữ được vị trí trang hiện tại.
@@ -248,58 +291,35 @@ fun CardDetailScreen(
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // === Content layer ===
-            Crossfade(
-                targetState = isLoading,
-                animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing),
-                label = "detail_content_fade"
-            ) { loading ->
-            if (loading) {
-                PullToRefreshBox(
-                    isRefreshing = false,
-                    onRefresh = {},
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        state = scrollState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        item { Spacer(modifier = Modifier.height(heights.expanded + 16.dp)) }
-                        item { DetailSkeleton() }
-                    }
-                }
-            } else {
-                val card = displayCard
-                val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
+            val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
 
-                PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        isRefreshing = true
-                    },
-                    state = pullState,
-                    modifier = Modifier.fillMaxSize(),
-                    indicator = {
-                        PullToRefreshDefaults.Indicator(
-                            state = pullState,
-                            isRefreshing = isRefreshing,
-                            color = AppColors.GreenPrimary,
-                            containerColor = AppColors.GreenSurface,
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = heights.collapsed + 8.dp)
-                        )
-                    }
-                ) {
-                    LazyColumn(
-                        state = scrollState,
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    isRefreshing = true
+                },
+                state = pullState,
+                modifier = Modifier.fillMaxSize(),
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullState,
+                        isRefreshing = isRefreshing,
+                        color = AppColors.GreenPrimary,
+                        containerColor = AppColors.GreenSurface,
                         modifier = Modifier
-                            .fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
+                            .align(Alignment.TopCenter)
+                            .padding(top = heights.collapsed + 8.dp)
+                    )
+                }
+            ) {
+                LazyColumn(
+                    state = scrollState,
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                         item { Spacer(modifier = Modifier.height(heights.expanded + 16.dp)) }
 
                         // Card 0: Thông tin phiếu (thương lái · SDT · giống lúa · ngày · địa chỉ ruộng)
@@ -308,12 +328,17 @@ fun CardDetailScreen(
                                 val createdLabel = remember(card.date) {
                                     DETAIL_DATE_FMT.format(card.date)
                                 }
+                                val updatedLabel = remember(card.lastModifiedMs, card.date) {
+                                    val timestamp = card.lastModifiedMs.takeIf { it > 0L } ?: card.date.time
+                                    DETAIL_DATE_TIME_FMT.format(Date(timestamp))
+                                }
                                 CardInfoCard(
                                     traderName = card.traderName,
                                     traderPhone = card.traderPhone,
                                     riceVariety = card.riceVariety,
                                     seasonLabel = card.seasonLabel,
                                     createdDateLabel = createdLabel,
+                                    lastUpdatedLabel = updatedLabel,
                                     fieldAddress = card.fieldAddress,
                                     hasCoordinates = card.latitude != null && card.longitude != null,
                                     onCallTrader = {
@@ -346,8 +371,17 @@ fun CardDetailScreen(
                                     },
                                     onRefreshLocation = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        viewModel.refreshFieldLocation(cardId)
-                                        appToast.info(context.getString(R.string.card_detail_updating_location))
+                                        if (hasLocationPermission(context)) {
+                                            viewModel.refreshFieldLocation(cardId)
+                                            appToast.info(context.getString(R.string.card_detail_updating_location))
+                                        } else {
+                                            permissionLauncher.launch(
+                                                arrayOf(
+                                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                                )
+                                            )
+                                        }
                                     },
                                     isLocked = card.isLocked,
                                     cccd = card.cccd
@@ -366,7 +400,11 @@ fun CardDetailScreen(
                                     moisturePercent = card.moisturePercent,
                                     netWeight = card.netWeight,
                                     numberFormat = numberFormat,
-                                    isLocked = card.isLocked
+                                    isLocked = card.isLocked,
+                                    impurityIsPercent = card.impurityIsPercent,
+                                    bagMethodIsSampling = card.bagMethodIsSampling,
+                                    bagSampleCount = card.bagSampleCount,
+                                    bagSampleTotalWeight = card.bagSampleTotalWeight
                                 )
                             }
                         }
@@ -478,22 +516,19 @@ fun CardDetailScreen(
                         }
                     )
                 }
-            }
-            } // end Crossfade
-
             // === HEADER LAYER (luôn render từ frame 0) ===
             // Đặt OUT of if/else → header tồn tại NGAY khi composable mount,
             // không có cảm giác "appear sau content". Khi data từ null → loaded,
             // chỉ Text bên trong recompose (rẻ), view tree không tear down/rebuild.
             CustomHeader(
-                card = displayCard,
+                card = card,
                 collapseFraction = collapseFraction,
                 lastEntryTime = lastEntryTimeForHeader,
                 modifier = Modifier.height(headerHeight),
                 onBack = { navController.popBackStack() },
                 onAdd = {
                     if (isLoading) return@CustomHeader
-                    if (displayCard.isLocked) {
+                    if (card.isLocked) {
                         appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
                     } else {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -504,7 +539,7 @@ fun CardDetailScreen(
                 onOverflowChange = { if (!isLoading) showOverflow = it },
                 onEditCard = {
                     if (isLoading) return@CustomHeader
-                    if (displayCard.isLocked) {
+                    if (card.isLocked) {
                         appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
                     } else {
                         showEditDialog = true
@@ -512,15 +547,15 @@ fun CardDetailScreen(
                 },
                 onDeleteCard = {
                     if (isLoading) return@CustomHeader
-                    if (displayCard.isLocked) {
+                    if (card.isLocked) {
                         appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
-                    } else if (!displayCard.isPaid) {
+                    } else if (!card.isPaid) {
                         appToast.warning(context.getString(R.string.card_detail_delete_blocked_unpaid))
                     } else {
                         showDeleteConfirm = true
                     }
                 },
-                onCreateQr = { if (!isLoading) navController.navigate("qr_generate/${displayCard.id}") },
+                onCreateQr = { if (!isLoading) navController.navigate("qr_generate/${card.id}") },
                 onScanQr = { if (!isLoading) navController.navigate("qr_scan") },
                 onExportPdf = {
                     if (isLoading) return@CustomHeader
@@ -533,14 +568,14 @@ fun CardDetailScreen(
                         runCatching {
                             val file = com.GiaThinh.canlua.util.PdfExporter.export(
                                 context = context,
-                                card = displayCard,
+                                card = card,
                                 entries = weightEntries
                             )
                             val uri = com.GiaThinh.canlua.util.PdfExporter.shareUri(context, file)
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "application/pdf"
                                 putExtra(Intent.EXTRA_STREAM, uri)
-                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.card_detail_pdf_subject, displayCard.id))
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.card_detail_pdf_subject, card.id))
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
                             context.startActivity(
@@ -559,12 +594,12 @@ fun CardDetailScreen(
                 },
                 onToggleLock = {
                     if (isLoading) return@CustomHeader
-                    if (displayCard.isLocked) {
+                    if (card.isLocked) {
                         // Mở khóa phiếu đã chốt → cần xác nhận để tránh nhấn nhầm.
                         showUnlockConfirm = true
                     } else {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.toggleCardLock(displayCard.id)
+                        viewModel.toggleCardLock(card.id)
                         appToast.success(context.getString(R.string.card_detail_locked_success))
                     }
                 }
@@ -600,7 +635,7 @@ fun CardDetailScreen(
                         TextButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.toggleCardLock(displayCard.id)
+                                viewModel.toggleCardLock(card.id)
                                 appToast.success(context.getString(R.string.card_detail_unlocked_success))
                                 showUnlockConfirm = false
                             },
@@ -830,4 +865,15 @@ fun EditCardDialog(
             }
         }
     }
+}
+
+private fun hasLocationPermission(context: android.content.Context): Boolean {
+    return androidx.core.content.ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+    androidx.core.content.ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 }

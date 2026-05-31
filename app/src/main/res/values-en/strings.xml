@@ -211,6 +211,7 @@
     <string name="detail_info_missing_phone">None</string>
     <string name="detail_info_rice_variety">Rice Variety</string>
     <string name="detail_info_created_date">Date Created</string>
+    <string name="detail_info_last_updated">Last updated</string>
     <string name="detail_info_field_address">Field Address</string>
     <string name="detail_info_unknown_location">Unknown location</string>
     <string name="detail_info_refresh_location">Update Location</string>
@@ -468,6 +469,15 @@
     <string name="settings_sync_status_idle">Not synced</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_subtitle">Select the display language of the app</string>
+
+    <!-- Settings Section Headers -->
+    <string name="settings_section_premium">Premium</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_section_display">Display</string>
+    <string name="settings_section_language">Language</string>
+    <string name="settings_section_sync">Sync &amp; Backup</string>
+    <string name="settings_section_data">Data Management</string>
+
     <string name="language_vietnamese">Vietnamese</string>
     <string name="language_vietnamese_native">Tiếng Việt</string>
     <string name="language_english">English</string>

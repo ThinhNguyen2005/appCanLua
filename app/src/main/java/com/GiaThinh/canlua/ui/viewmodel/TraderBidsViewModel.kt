@@ -54,6 +54,10 @@ class TraderBidsViewModel @Inject constructor(
 
     private var syncJob: kotlinx.coroutines.Job? = null
 
+    init {
+        syncBids()
+    }
+
     fun syncBids() {
         if (syncJob == null || syncJob?.isActive == false) {
             syncJob = viewModelScope.launch {

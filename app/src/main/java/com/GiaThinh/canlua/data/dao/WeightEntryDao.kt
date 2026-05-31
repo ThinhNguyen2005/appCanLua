@@ -45,5 +45,8 @@ interface WeightEntryDao {
 
     @Query("UPDATE weight_entries SET firestoreId = :fsId WHERE id = :localId")
     suspend fun updateFirestoreId(localId: Long, fsId: String)
+
+    @Query("SELECT COUNT(*) FROM weight_entries WHERE firestoreId IS NULL")
+    suspend fun countUnsyncedWeightEntries(): Int
 }
 

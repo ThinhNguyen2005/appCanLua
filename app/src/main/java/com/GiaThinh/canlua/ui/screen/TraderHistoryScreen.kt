@@ -73,13 +73,33 @@ import java.util.Locale
  * Reuse `ProfileViewModel.traderHistory` (đã aggregate sẵn từ CardDao) nên
  * không cần thêm query mới.
  */
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.DefaultSkeleton
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TraderHistoryScreen(
-    navController: NavController,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    navController: NavController
 ) {
     TrackScreenRender("trader_history")
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    TransitionSafeWrapper(
+        isDataReady = true, // Màn hình local DB cực nhẹ, render tức thời mang lại cảm giác mượt mà
+        skeletonContent = { DefaultSkeleton() }
+    ) {
+        TraderHistoryScreenContent(
+            navController = navController,
+            profileViewModel = profileViewModel
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TraderHistoryScreenContent(
+    navController: NavController,
+    profileViewModel: ProfileViewModel
+) {
     val history by profileViewModel.traderHistory.collectAsStateWithLifecycle()
 
     Scaffold(

@@ -130,37 +130,38 @@ object PremiumState {
         earlyAdopterEnabled: Boolean = true,
         remoteCutoffMs: Long? = null
     ) {
-        val prefs = getEncryptedPrefs(context)
-
-        // Đã từng apply rồi → bỏ qua (idempotent)
-        if (prefs.getBoolean(KEY_EARLY_ADOPTER_APPLIED, false)) return
-
         // Feature bị tắt từ Remote Config → bỏ qua
         if (!earlyAdopterEnabled) return
 
+        val prefs = getEncryptedPrefs(context)
         val cutoff = remoteCutoffMs ?: EARLY_ADOPTER_CUTOFF_MS
         val alreadyPremium = prefs.getBoolean(KEY_IS_PREMIUM, false)
+        val isApplied = prefs.getBoolean(KEY_EARLY_ADOPTER_APPLIED, false)
 
-        if (firstInstallTimeMs <= cutoff && !alreadyPremium) {
-            val now = System.currentTimeMillis()
-            prefs.edit()
-                .putBoolean(KEY_EARLY_ADOPTER_APPLIED, true)
-                .putBoolean(KEY_IS_PREMIUM, true)
-                .putLong(KEY_LAST_VERIFIED, now)
-                .putLong(KEY_PREMIUM_SINCE, now)
-                .putString(KEY_PLAN, EARLY_ADOPTER_PLAN)
-                .apply()
+        // Nếu thiết bị cài trước ngày cutoff
+        if (firstInstallTimeMs <= cutoff) {
+            // Nếu chưa Premium hoặc chưa lưu cờ đã apply → thực hiện apply/gia hạn
+            if (!alreadyPremium || !isApplied) {
+                val now = System.currentTimeMillis()
+                prefs.edit()
+                    .putBoolean(KEY_EARLY_ADOPTER_APPLIED, true)
+                    .putBoolean(KEY_IS_PREMIUM, true)
+                    .putLong(KEY_LAST_VERIFIED, now)
+                    .putLong(KEY_PREMIUM_SINCE, now)
+                    .putString(KEY_PLAN, EARLY_ADOPTER_PLAN)
+                    .apply()
 
-            _isPremium.value = true
-            _info.value = Info(
-                isActive = true,
-                plan = EARLY_ADOPTER_PLAN,
-                sinceMs = now,
-                lastVerifiedMs = now,
-                isEarlyAdopter = true
-            )
+                _isPremium.value = true
+                _info.value = Info(
+                    isActive = true,
+                    plan = EARLY_ADOPTER_PLAN,
+                    sinceMs = now,
+                    lastVerifiedMs = now,
+                    isEarlyAdopter = true
+                )
 
-            AnalyticsHelper.setPremium(true, EARLY_ADOPTER_PLAN)
+                AnalyticsHelper.setPremium(true, EARLY_ADOPTER_PLAN)
+            }
         }
     }
 

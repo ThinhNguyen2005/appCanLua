@@ -70,28 +70,29 @@ fun WeatherWidget(
     isLoading: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
+    hasPermission: Boolean = true,
     isStale: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val gradient = pickGradient(weather)
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(Brush.linearGradient(gradient))
                 .clickable(onClick = onRefresh)
         ) {
-            // Decorative blob trên góc phải để add depth
             DecorativeGlow()
 
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
                 when {
+                    !hasPermission -> NoPermissionRow(onRefresh)
                     isLoading && weather == null -> LoadingRow()
                     errorMessage != null && weather == null -> ErrorRow(errorMessage)
                     weather != null -> WeatherContent(weather, isLoading, isStale)
@@ -103,11 +104,57 @@ fun WeatherWidget(
 }
 
 @Composable
+private fun NoPermissionRow(onRefresh: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.LocationOn,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(32.dp)
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Thời tiết theo định vị",
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Cấp quyền vị trí để cập nhật thời tiết nơi bạn đang ở",
+                color = Color.White.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.22f))
+                .clickable(onClick = onRefresh)
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "Cấp quyền",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+    }
+}
+
+@Composable
 private fun DecorativeGlow() {
     Box(
         modifier = Modifier
-            .padding(start = 220.dp)
-            .size(180.dp)
+            .padding(start = 240.dp)
+            .size(120.dp)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.08f))
     )
@@ -115,74 +162,65 @@ private fun DecorativeGlow() {
 
 @Composable
 private fun WeatherContent(weather: WeatherInfo, isRefreshing: Boolean, isStale: Boolean) {
-    Column {
-        // === Top row: location + freshness ===
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.LocationOn,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.size(4.dp))
-            Text(
-                text = weather.location,
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f)
-            )
-            FreshnessBadge(weather.updatedAt, isRefreshing, isStale)
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // === Hero row: animated icon + temperature + condition ===
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AnimatedWeatherIcon(weather.iconKey)
-            Spacer(Modifier.size(14.dp))
+            Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.Top) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.LocationOn,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = weather.location,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "${weather.temperature}",
-                        fontSize = 56.scaledSp(),
+                        fontSize = 38.scaledSp(),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        lineHeight = 60.scaledSp()
+                        lineHeight = 40.scaledSp()
                     )
                     Text(
                         text = "°C",
-                        fontSize = 22.scaledSp(),
+                        fontSize = 16.scaledSp(),
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.padding(top = 8.dp)
+                        color = Color.White.copy(alpha = 0.86f),
+                        modifier = Modifier.padding(bottom = 5.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = weather.condition,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        modifier = Modifier.padding(bottom = 7.dp)
                     )
                 }
-                Text(
-                    text = weather.condition,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Cảm giác ${weather.feelsLike}°",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
             }
+            FreshnessBadge(weather.updatedAt, isRefreshing, isStale)
         }
 
-        Spacer(Modifier.height(16.dp))
-
-        // === Stat chips row ===
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             StatChip(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.WaterDrop,
-                label = "Độ ẩm",
+                label = "Ẩm",
                 value = "${weather.humidity}%"
             )
             StatChip(
@@ -194,42 +232,38 @@ private fun WeatherContent(weather: WeatherInfo, isRefreshing: Boolean, isStale:
             StatChip(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.Umbrella,
-                label = "Mây phủ",
+                label = "Mây",
                 value = "${weather.rainChance}%"
             )
         }
 
-        // === Advisory banner ===
         AnimatedVisibility(
             visible = weather.advisory != null,
             enter = expandVertically(),
             exit = shrinkVertically()
         ) {
-            Column {
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color.White.copy(alpha = 0.22f))
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Thermostat,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = weather.advisory.orEmpty(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.2f))
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Thermostat,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = weather.advisory.orEmpty(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -242,60 +276,61 @@ private fun StatChip(
     label: String,
     value: String
 ) {
-    Column(
+    Row(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.18f))
-            .padding(horizontal = 10.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.Start
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White.copy(alpha = 0.17f))
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(6.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(Modifier.width(5.dp))
+        Column {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.85f)
+                color = Color.White.copy(alpha = 0.82f),
+                lineHeight = 10.scaledSp()
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1
             )
         }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
     }
 }
 
 @Composable
 private fun FreshnessBadge(updatedAt: Long, isRefreshing: Boolean, isStale: Boolean) {
-    val text = if (isRefreshing) "Đang cập nhật..."
-        else if (isStale) formatAge(updatedAt) else "Vừa xong"
+    val text = if (isRefreshing) "Đang cập nhật"
+        else if (isStale) formatAge(updatedAt) else "Mới"
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.White.copy(alpha = 0.18f))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.17f))
+            .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isRefreshing) {
             CircularProgressIndicator(
                 color = Color.White,
                 strokeWidth = 1.5.dp,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(10.dp)
             )
         } else {
             Icon(
                 imageVector = Icons.Filled.Refresh,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(11.dp)
             )
         }
         Spacer(Modifier.width(4.dp))
@@ -303,7 +338,8 @@ private fun FreshnessBadge(updatedAt: Long, isRefreshing: Boolean, isStale: Bool
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = Color.White,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
     }
 }
@@ -336,7 +372,7 @@ private fun AnimatedWeatherIcon(iconKey: String) {
 
     Box(
         modifier = Modifier
-            .size(76.dp)
+            .size(48.dp)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.22f * pulse)),
         contentAlignment = Alignment.Center
@@ -346,7 +382,7 @@ private fun AnimatedWeatherIcon(iconKey: String) {
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier
-                .size(46.dp)
+                .size(30.dp)
                 .rotate(rotation)
         )
     }
@@ -417,28 +453,23 @@ private fun iconFor(iconKey: String): ImageVector {
 private fun pickGradient(weather: WeatherInfo?): List<Color> {
     val main = weather?.iconKey.orEmpty()
     return when {
-        // Nắng — cam-vàng-xanh dịu
         main.startsWith("01") -> listOf(
-            Color(0xFFFF8E53), Color(0xFFFE6B8B), Color(0xFF1976D2)
+            Color(0xFFFF8A3D), Color(0xFFE76F00), Color(0xFF2E7D32)
         )
-        // Mây — xanh xám sang trọng
         main.startsWith("02") || main.startsWith("03") || main.startsWith("04") -> listOf(
-            Color(0xFF455A64), Color(0xFF607D8B), Color(0xFF90A4AE)
+            Color(0xFF37474F), Color(0xFF546E7A), Color(0xFF78909C)
         )
-        // Mưa — xanh lam đậm
         main.startsWith("09") || main.startsWith("10") -> listOf(
-            Color(0xFF1A237E), Color(0xFF3949AB), Color(0xFF5C6BC0)
+            Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF00838F)
         )
-        // Sấm sét — tím-xám
         main.startsWith("11") -> listOf(
-            Color(0xFF263238), Color(0xFF512DA8), Color(0xFF7E57C2)
+            Color(0xFF1B2428), Color(0xFF2F4F5A), Color(0xFFB8860B)
         )
-        // Đêm — tím navy
         main.endsWith("n") -> listOf(
             Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)
         )
         else -> listOf(
-            Color(0xFF1E88E5), Color(0xFF42A5F5), Color(0xFFFFB74D)
+            Color(0xFF1565C0), Color(0xFF2E7D32), Color(0xFFF9A825)
         )
     }
 }

@@ -35,7 +35,7 @@ import com.GiaThinh.canlua.data.converter.DateConverter
         NewsArticle::class,
         com.GiaThinh.canlua.data.model.DeletedCard::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -75,7 +75,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_13_14,
                     MIGRATION_14_15,
                     MIGRATION_15_16,
-                    MIGRATION_16_17
+                    MIGRATION_16_17,
+                    MIGRATION_17_18
                 ).setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 INSTANCE = instance
@@ -377,6 +378,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE cards ADD COLUMN bagSampleCount INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE cards ADD COLUMN bagSampleTotalWeight REAL NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE cards ADD COLUMN weightInputMode TEXT NOT NULL DEFAULT 'SMALL'")
+            }
+        }
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE rice_prices ADD COLUMN riceType TEXT NOT NULL DEFAULT 'lúa Khô'")
             }
         }
     }

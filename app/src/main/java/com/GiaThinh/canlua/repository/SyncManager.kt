@@ -49,6 +49,9 @@ class SyncManager @Inject constructor(
     private val _lastSyncTime = MutableStateFlow<Long?>(null)
     val lastSyncTime: StateFlow<Long?> = _lastSyncTime.asStateFlow()
 
+    private val _hasPendingSyncData = MutableStateFlow(false)
+    val hasPendingSyncData: StateFlow<Boolean> = _hasPendingSyncData.asStateFlow()
+
     fun isOnline(): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -74,6 +77,18 @@ class SyncManager @Inject constructor(
         } else {
             isOnline()
         }
+    }
+
+    suspend fun refreshPendingSyncState(): Boolean = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid
+        val hasPending = uid != null && (
+            cardDao.countUnsyncedCards(uid) > 0 ||
+            weightEntryDao.countUnsyncedWeightEntries() > 0 ||
+            transactionDao.countUnsyncedTransactions() > 0 ||
+            cardRepository.getPendingCloudDeletes(uid).isNotEmpty()
+        )
+        _hasPendingSyncData.value = hasPending
+        hasPending
     }
 
     /**
@@ -267,6 +282,7 @@ class SyncManager @Inject constructor(
             } else {
                 _syncStatus.value = SyncStatus.Success
                 _lastSyncTime.value = System.currentTimeMillis()
+                refreshPendingSyncState()
                 AnalyticsHelper.syncSuccess(
                     durationMs = System.currentTimeMillis() - startedAt,
                     cardCount = syncedCount

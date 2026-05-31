@@ -19,12 +19,23 @@ class SyncViewModel @Inject constructor(
 
     val syncStatus: StateFlow<SyncStatus> = syncManager.syncStatus
     val lastSyncTime: StateFlow<Long?> = syncManager.lastSyncTime
+    val hasPendingSyncData: StateFlow<Boolean> = syncManager.hasPendingSyncData
     val backupStatus: StateFlow<BackupStatus> = backupManager.backupStatus
     val lastBackupTime: StateFlow<Long?> = backupManager.lastBackupTime
+
+    init {
+        refreshPendingSyncState()
+    }
 
     fun syncAll() {
         viewModelScope.launch {
             syncManager.syncAll()
+        }
+    }
+
+    fun refreshPendingSyncState() {
+        viewModelScope.launch {
+            syncManager.refreshPendingSyncState()
         }
     }
 

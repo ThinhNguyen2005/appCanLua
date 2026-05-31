@@ -48,6 +48,7 @@ import com.GiaThinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
+import com.GiaThinh.canlua.util.RiceCalculator
 
 // Singleton formatter — chia sẻ giữa tất cả CardItem instances.
 // Trước đây mỗi CardItem có remember riêng → 200 cards = 400 formatter instances (~600KB).
@@ -72,6 +73,7 @@ fun CardItem(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val displayBagWeight = totalDisplayBagWeight(card)
 
     @Suppress("DEPRECATION")
     val dismissState = rememberSwipeToDismissBoxState(
@@ -153,7 +155,7 @@ fun CardItem(
 
                 // Rice variety + moisture + bag + impurity row — wrap nếu nhiều chip
                 if (card.riceVariety.isNotBlank() || card.moisturePercent > 0 ||
-                    card.bagWeight > 0 || card.impurityWeight > 0) {
+                    displayBagWeight > 0 || card.impurityWeight > 0) {
                     Spacer(Modifier.height(6.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -195,7 +197,7 @@ fun CardItem(
                                 )
                             }
                         }
-                        if (card.bagWeight > 0) {
+                        if (displayBagWeight > 0) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Inventory2,
@@ -207,7 +209,7 @@ fun CardItem(
                                 Text(
                                     text = stringResource(
                                         R.string.card_item_bag_weight,
-                                        "%.1f".format(card.bagWeight)
+                                        "%.1f".format(displayBagWeight)
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.TextSecondary
@@ -354,3 +356,22 @@ fun CardItem(
         }
     }
 }
+
+private fun totalDisplayBagWeight(card: CardModel): Double {
+    if (card.bagCount <= 0) {
+        return if (card.bagMethodIsSampling && card.bagSampleCount > 0) {
+            card.bagSampleTotalWeight
+        } else {
+            card.bagWeight
+        }
+    }
+
+    return RiceCalculator.calcTotalBagWeight(
+        bagCount = card.bagCount,
+        bagWeight = card.bagWeight,
+        methodIsSampling = card.bagMethodIsSampling,
+        sampleCount = card.bagSampleCount,
+        sampleTotalWeight = card.bagSampleTotalWeight
+    )
+}
+

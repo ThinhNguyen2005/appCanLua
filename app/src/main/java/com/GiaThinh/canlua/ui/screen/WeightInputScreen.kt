@@ -61,19 +61,56 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.toPersistentList
 
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.WeightInputSkeleton
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeightInputScreen(
     cardId: Long,
     navController: NavController,
-    viewModel: WeightInputViewModel = hiltViewModel(),
     onEditCard: () -> Unit = {},
     onDeleteCard: () -> Unit = {},
     onCreateQr: () -> Unit = {},
     onScanQr: () -> Unit = {}
 ) {
     TrackScreenRender("weight_input")
+    val viewModel: WeightInputViewModel = hiltViewModel()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isDataReady = !isLoading
 
+    // Kích hoạt load dữ liệu ban đầu ngay lập tức ở ngoài wrapper để tránh deadlock.
+    LaunchedEffect(cardId) {
+        viewModel.loadCardById(cardId)
+    }
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { WeightInputSkeleton() }
+    ) {
+        WeightInputScreenContent(
+            cardId = cardId,
+            navController = navController,
+            viewModel = viewModel,
+            onEditCard = onEditCard,
+            onDeleteCard = onDeleteCard,
+            onCreateQr = onCreateQr,
+            onScanQr = onScanQr
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WeightInputScreenContent(
+    cardId: Long,
+    navController: NavController,
+    viewModel: WeightInputViewModel,
+    onEditCard: () -> Unit = {},
+    onDeleteCard: () -> Unit = {},
+    onCreateQr: () -> Unit = {},
+    onScanQr: () -> Unit = {}
+) {
     // Trang nhập cân chủ yếu là gõ số vào ô → 120Hz không mang lại lợi ích thị giác.
     // Request 60Hz để tiết kiệm pin vì user dành phần lớn thời gian ở đây.
     com.GiaThinh.canlua.ui.util.RequestLowRefreshRate()
@@ -84,13 +121,14 @@ fun WeightInputScreen(
     val context = LocalContext.current
 
     val onBagWeightChange = remember(cardId) { { weight: Double -> viewModel.updateCardBagWeight(cardId, weight) } }
+    val onBagMethodChange = remember(cardId) {
+        { isSampling: Boolean, count: Int, weight: Double ->
+            viewModel.updateCardBagMethod(cardId, isSampling, count, weight)
+        }
+    }
     val onImpurityWeightChange = remember(cardId) { { weight: Double -> viewModel.updateCardImpurityWeight(cardId, weight) } }
     val onMoistureChange = remember(cardId) { { moisture: Double -> viewModel.updateCardMoisture(cardId, moisture) } }
     val onPriceChange = remember(cardId) { { price: Double -> viewModel.updateCardPricePerKg(cardId, price) } }
-
-    LaunchedEffect(cardId) {
-        viewModel.loadCardById(cardId)
-    }
 
     // === KHAI BÁO STATE (MANDATORY: Đặt trước check null để bảo toàn Composition Tree) ===
 
@@ -158,7 +196,6 @@ fun WeightInputScreen(
             bagSampleCount = currentCard?.bagSampleCount ?: 0,
             bagSampleTotalWeight = currentCard?.bagSampleTotalWeight ?: 0.0,
             impurityValue = currentCard?.impurityWeight ?: 0.0,
-            impurityIsPercent = currentCard?.impurityIsPercent ?: false,
             moisturePercent = currentCard?.moisturePercent ?: 0.0
         )
     }
@@ -171,7 +208,7 @@ fun WeightInputScreen(
             bagSampleCount = calcParams.bagSampleCount,
             bagSampleTotalWeight = calcParams.bagSampleTotalWeight,
             impurityValue = calcParams.impurityValue,
-            impurityIsPercent = calcParams.impurityIsPercent,
+            impurityIsPercent = false,
             moisturePercent = calcParams.moisturePercent
         )
     }
@@ -319,42 +356,34 @@ fun WeightInputScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding()
-                .padding(horizontal = 12.dp),
+                .imePadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
+            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp)
         ) {
             // === CARD 1: Chỉ số cân ===
-            // Refactor (2026-05): bỏ `Modifier.layout` co height — đó là root cause
-            // bug scroll mất kiểm soát (feedback loop khi metricsOriginalHeight cập nhật
-            // ngay trong layout pass + derivedStateOf đọc lại nó).
-            // Giờ card cuộn tự nhiên với LazyColumn, alpha fade trong graphicsLayer
-            // (Draw phase only — không trigger Layout recomputation).
+            // shadow() được đặt TRƯỚC clip() trong WeightMetricsCard modifier chain
+            // → vẽ ở parent layer, không bị offscreen bitmap của graphicsLayer clip.
             item(key = "metrics") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            alpha = (1f - scrollFraction * 0.6f).coerceIn(0f, 1f)
-                        }
-                ) {
-                    WeightMetricsCard(
-                        totalWeight = liveTotalWeight,
-                        bagWeight = card.bagWeight,
-                        impurityWeight = card.impurityWeight,
-                        moisturePercent = card.moisturePercent,
-                        netWeight = liveNetWeight,
-                        pricePerKg = card.pricePerKg,
-                        totalAmount = liveTotalAmount,
-                        bagCount = liveBagCount,
-                        isLocked = card.isLocked,
-                        onBagWeightChange = onBagWeightChange,
-                        onImpurityWeightChange = onImpurityWeightChange,
-                        onMoistureChange = onMoistureChange,
-                        onPriceChange = onPriceChange,
-                        impurityIsPercent = card.impurityIsPercent
-                    )
-                }
+                WeightMetricsCard(
+                    totalWeight = liveTotalWeight,
+                    bagWeight = card.bagWeight,
+                    impurityWeight = card.impurityWeight,
+                    moisturePercent = card.moisturePercent,
+                    netWeight = liveNetWeight,
+                    pricePerKg = card.pricePerKg,
+                    totalAmount = liveTotalAmount,
+                    bagCount = liveBagCount,
+                    isLocked = card.isLocked,
+                    onBagWeightChange = onBagWeightChange,
+                    onImpurityWeightChange = onImpurityWeightChange,
+                    onMoistureChange = onMoistureChange,
+                    onPriceChange = onPriceChange,
+                    impurityIsPercent = false,
+                    bagMethodIsSampling = card.bagMethodIsSampling,
+                    bagSampleCount = card.bagSampleCount,
+                    bagSampleTotalWeight = card.bagSampleTotalWeight,
+                    onBagMethodChange = onBagMethodChange
+                )
             }
 
             // === Thanh chọn Bảng dữ liệu và Thêm Bảng Thủ Công [Chọn bảng nhập          + Thêm] ===
@@ -768,7 +797,6 @@ private data class CalcParams(
     val bagSampleCount: Int,
     val bagSampleTotalWeight: Double,
     val impurityValue: Double,
-    val impurityIsPercent: Boolean,
     val moisturePercent: Double
 )
 

@@ -6,9 +6,11 @@ import com.GiaThinh.canlua.data.model.Card
 import com.GiaThinh.canlua.repository.SyncableCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
@@ -30,6 +32,9 @@ class CardListViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _deleteEvents = MutableSharedFlow<DeleteCardEvent>()
+    val deleteEvents = _deleteEvents.asSharedFlow()
 
     private val _selectedVarietyFilter = MutableStateFlow<String?>(null)
     val selectedVarietyFilter: StateFlow<String?> = _selectedVarietyFilter.asStateFlow()
@@ -141,7 +146,18 @@ class CardListViewModel @Inject constructor(
 
     fun deleteCard(card: Card) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.deleteCard(card)
+            val event = runCatching {
+                repository.deleteCard(card)
+            }.fold(
+                onSuccess = { DeleteCardEvent.Success(card.name) },
+                onFailure = { DeleteCardEvent.Error }
+            )
+            _deleteEvents.emit(event)
         }
     }
+}
+
+sealed interface DeleteCardEvent {
+    data class Success(val cardName: String) : DeleteCardEvent
+    data object Error : DeleteCardEvent
 }

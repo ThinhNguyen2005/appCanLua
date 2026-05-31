@@ -19,7 +19,8 @@ data class RicePrice(
     val updatedAt: Long,            // epoch ms
     val traderId: String? = null,   // null nếu là mock data
     val traderName: String? = null,
-    val trend: String = "STABLE"    // UP, DOWN, STABLE
+    val trend: String = "STABLE",    // UP, DOWN, STABLE
+    val riceType: String = "lúa Khô" // lúa Khô, lúa ướt, gạo tẻ, nếp...
 )
 
 /**

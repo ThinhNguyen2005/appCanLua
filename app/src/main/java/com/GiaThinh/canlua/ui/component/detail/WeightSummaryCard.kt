@@ -22,7 +22,9 @@ import com.GiaThinh.canlua.R
 import androidx.compose.ui.unit.dp
 import com.GiaThinh.canlua.ui.component.AnimatedNumber
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.util.RiceCalculator
 import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Card 1/3 (DetailScreen): Khối lượng.
@@ -38,8 +40,30 @@ fun WeightSummaryCard(
     netWeight: Double,
     numberFormat: NumberFormat,
     isLocked: Boolean = false,
+    impurityIsPercent: Boolean = false,
+    bagMethodIsSampling: Boolean = false,
+    bagSampleCount: Int = 0,
+    bagSampleTotalWeight: Double = 0.0,
     modifier: Modifier = Modifier
 ) {
+    val totalBagWeight = RiceCalculator.calcTotalBagWeight(
+        bagCount = bagCount,
+        bagWeight = bagWeight,
+        methodIsSampling = bagMethodIsSampling,
+        sampleCount = bagSampleCount,
+        sampleTotalWeight = bagSampleTotalWeight
+    )
+    val impurityKg = impurityWeight.coerceAtLeast(0.0)
+    val bagRatioText = if (bagMethodIsSampling) {
+        val count = bagSampleCount.takeIf { it > 0 } ?: 8
+        val kg = formatCompactKg(bagSampleTotalWeight.takeIf { it > 0.0 } ?: 1.0)
+        "$bagCount bao · $count bao = $kg kg"
+    } else {
+        val count = bagSampleCount.takeIf { it > 0 } ?: bagWeight.takeIf { it > 0.0 }?.let { (1.0 / it).toInt() } ?: 8
+        "$bagCount bao · $count bao = 1 kg"
+    }
+    val impurityNote = "Nhập trực tiếp kg tạp chất"
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -116,9 +140,10 @@ fun WeightSummaryCard(
             FluentStatRow(
                 icon = Icons.Outlined.Inventory2,
                 label = stringResource(R.string.weight_label_tare),
+                supportingText = bagRatioText,
                 trailing = {
                     AnimatedNumber(
-                        value = bagWeight,
+                        value = totalBagWeight,
                         formatter = { "${numberFormat.format(it)} KG" },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
@@ -129,9 +154,10 @@ fun WeightSummaryCard(
             FluentStatRow(
                 icon = Icons.Outlined.Scale,
                 label = stringResource(R.string.weight_label_impurity),
+                supportingText = impurityNote,
                 trailing = {
                     AnimatedNumber(
-                        value = impurityWeight,
+                        value = impurityKg,
                         formatter = { "${numberFormat.format(it)} KG" },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
@@ -203,22 +229,41 @@ internal fun FluentStatRow(
     icon: ImageVector,
     label: String,
     trailing: @Composable () -> Unit,
-    iconTint: Color = AppColors.TextSecondary
+    iconTint: Color = AppColors.TextSecondary,
+    supportingText: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(10.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.TextSecondary
-            )
+            Column {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextSecondary
+                )
+                supportingText?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.TextHint
+                    )
+                }
+            }
         }
         trailing()
+    }
+}
+
+private fun formatCompactKg(value: Double): String {
+    val rounded = Math.round(value * 10.0) / 10.0
+    return if (rounded % 1.0 == 0.0) {
+        rounded.toInt().toString()
+    } else {
+        String.format(Locale.US, "%.1f", rounded).replace('.', ',')
     }
 }

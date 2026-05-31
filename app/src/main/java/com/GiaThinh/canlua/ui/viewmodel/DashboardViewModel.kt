@@ -63,6 +63,7 @@ data class DashboardData(
     val seasons: List<String>,
     val selectedSeason: String?,
     val currentStats: SeasonStats?,
+    val overallStats: SeasonStats?,
     val previousStats: SeasonStats?,
     val topTraders: List<TraderStat>,
     val seasonsComparison: List<SeasonStats>,
@@ -75,6 +76,7 @@ data class DashboardData(
             seasons = emptyList(),
             selectedSeason = null,
             currentStats = null,
+            overallStats = null,
             previousStats = null,
             topTraders = emptyList(),
             seasonsComparison = emptyList(),
@@ -143,6 +145,10 @@ class DashboardViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /** Stats tổng toàn bộ phiếu, không phụ thuộc seasonLabel. Dùng cho profile overview. */
+    val overallStats: StateFlow<SeasonStats?> = repository.getOverallStats()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     /** Phân bổ giống lúa của vụ đang chọn. */
     val varieties: StateFlow<List<VarietyStat>> = _selectedSeason
         .flatMapLatest { season ->
@@ -199,6 +205,7 @@ class DashboardViewModel @Inject constructor(
         seasons,
         _selectedSeason,
         currentStats,
+        overallStats,
         previousSeasonStats,
         topTraders,
         seasonsComparison,
@@ -210,20 +217,22 @@ class DashboardViewModel @Inject constructor(
         val seasonsVal = arr[0] as List<String>
         val selectedSeasonVal = arr[1] as? String
         val currentStatsVal = arr[2] as? SeasonStats
-        val previousStatsVal = arr[3] as? SeasonStats
+        val overallStatsVal = arr[3] as? SeasonStats
+        val previousStatsVal = arr[4] as? SeasonStats
         @Suppress("UNCHECKED_CAST")
-        val topTradersVal = arr[4] as List<TraderStat>
+        val topTradersVal = arr[5] as List<TraderStat>
         @Suppress("UNCHECKED_CAST")
-        val seasonsComparisonVal = arr[5] as List<SeasonStats>
+        val seasonsComparisonVal = arr[6] as List<SeasonStats>
         @Suppress("UNCHECKED_CAST")
-        val varietiesVal = arr[6] as List<VarietyStat>
-        val aiAnalysisVal = arr[7] as AiAnalysisState
-        val isAggregatedVal = arr[8] as Boolean
+        val varietiesVal = arr[7] as List<VarietyStat>
+        val aiAnalysisVal = arr[8] as AiAnalysisState
+        val isAggregatedVal = arr[9] as Boolean
 
         DashboardData(
             seasons = seasonsVal,
             selectedSeason = selectedSeasonVal,
             currentStats = currentStatsVal,
+            overallStats = overallStatsVal,
             previousStats = previousStatsVal,
             topTraders = topTradersVal,
             seasonsComparison = seasonsComparisonVal,

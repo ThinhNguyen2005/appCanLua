@@ -97,14 +97,43 @@ import com.GiaThinh.canlua.util.TrackScreenRender
  *  7. Variety Pie Chart (cơ cấu giống lúa thu mua) + Sổ giao dịch
  *  8. Account Operations
  */
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.component.profile.TraderProfileSkeleton
+
 @Composable
 fun TraderProfileScreen(
-    navController: NavController,
-    profileViewModel: ProfileViewModel = hiltViewModel(),
-    dashboardViewModel: DashboardViewModel = hiltViewModel(),
-    traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()
+    navController: NavController
 ) {
     TrackScreenRender("trader_profile")
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val dashboardViewModel: DashboardViewModel = hiltViewModel()
+    val traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()
+
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
+    val txState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
+    val isDataReady = profile != null && dash.isAggregated && !txState.isLoading
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { TraderProfileSkeleton() }
+    ) {
+        TraderProfileScreenContent(
+            navController = navController,
+            profileViewModel = profileViewModel,
+            dashboardViewModel = dashboardViewModel,
+            traderTransactionsViewModel = traderTransactionsViewModel
+        )
+    }
+}
+
+@Composable
+fun TraderProfileScreenContent(
+    navController: NavController,
+    profileViewModel: ProfileViewModel,
+    dashboardViewModel: DashboardViewModel,
+    traderTransactionsViewModel: TraderTransactionsViewModel
+) {
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -140,19 +169,11 @@ fun TraderProfileScreen(
             .fillMaxSize()
             .background(AppColors.Surface)
     ) {
-        Crossfade(
-            targetState = showSkeleton,
-            animationSpec = tween(durationMillis = 220),
-            label = "trader_profile_crossfade"
-        ) { skeleton ->
-            if (skeleton) {
-                TraderProfileSkeleton()
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             // ─── TIER 0: Gradient Hero Header ───
             item {
                 GradientProfileHeader(
@@ -215,6 +236,19 @@ fun TraderProfileScreen(
                         )
                     }
                 }
+
+                // ─── TIER 6: AI Crop Insights ───
+                if (!stats.isEmpty) {
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            AiInsightsCard(
+                                state = dash.aiAnalysis,
+                                onAnalyze = dashboardViewModel::analyzeWithAi,
+                                onReset = dashboardViewModel::resetAiAnalysis
+                            )
+                        }
+                    }
+                }
             }
 
             // ─── TIER 5: Season Comparison Bar Chart ───
@@ -225,19 +259,6 @@ fun TraderProfileScreen(
                             seasons = dash.seasonsComparison,
                             selectedSeason = dash.selectedSeason,
                             metric = ChartMetric.WEIGHT
-                        )
-                    }
-                }
-            }
-
-            // ─── TIER 6: AI Crop Insights ───
-            if (dash.currentStats?.isEmpty == false) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        AiInsightsCard(
-                            state = dash.aiAnalysis,
-                            onAnalyze = dashboardViewModel::analyzeWithAi,
-                            onReset = dashboardViewModel::resetAiAnalysis
                         )
                     }
                 }
@@ -322,8 +343,6 @@ fun TraderProfileScreen(
 
             // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
             // Profile giờ tập trung vào "tôi là ai + thống kê của tôi".
-                }
-            }
         }
     }
 
