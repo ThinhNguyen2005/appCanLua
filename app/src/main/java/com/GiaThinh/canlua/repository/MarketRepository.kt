@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 import kotlin.random.Random
-
+import android.util.Log
 import kotlinx.coroutines.withContext
 
 /**
@@ -27,6 +27,9 @@ class MarketRepository @Inject constructor(
     private val ricePriceDao: RicePriceDao,
     private val firestore: MarketFirestoreRepository
 ) {
+    private var lastRefreshTimeMs = 0L
+    private val refreshTtlMs = 10 * 1000L // 10 giây (Đồng bộ tức thì)
+
     fun getAllPrices(): Flow<List<RicePrice>> = ricePriceDao.getAllPrices()
 
     fun getPriceByVariety(variety: String): Flow<RicePrice?> =
@@ -40,14 +43,24 @@ class MarketRepository @Inject constructor(
     /**
      * One-shot fetch từ Firestore → mirror vào Room. UI gọi khi vào tab Market.
      * Empty list không overwrite Room (giữ mock + dữ liệu cũ làm fallback).
+     *
+     * Hỗ trợ cache TTL 10 phút nếu [forceRefresh] = false.
      */
-    suspend fun refreshFromFirestore(): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun refreshFromFirestore(forceRefresh: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh && (now - lastRefreshTimeMs < refreshTtlMs) && ricePriceDao.countPrices() > 0) {
+            Log.d("MarketRepo", "refreshFromFirestore: Cache is fresh (<10m), skipping network fetch")
+            return@withContext Result.success(Unit)
+        }
+
         val result = firestore.fetchActiveBids()
         result.fold(
             onSuccess = { bids ->
                 if (bids.isNotEmpty()) {
+                    ricePriceDao.clear() // Xóa sạch dữ liệu giả lập (mock data) cũ
                     ricePriceDao.upsertAll(bids.map { it.toRicePrice() })
                 }
+                lastRefreshTimeMs = now
                 Result.success(Unit)
             },
             onFailure = { Result.failure(it) }
@@ -176,7 +189,8 @@ class MarketRepository @Inject constructor(
         region = region,
         updatedAt = updatedAt,
         traderId = traderId.takeIf { it.isNotEmpty() },
-        traderName = traderName.takeIf { it.isNotEmpty() },
-        trend = trend
+        traderName = if (source.isNotEmpty()) source else traderName.takeIf { it.orEmpty().isNotEmpty() },
+        trend = trend,
+        riceType = riceType
     )
 }

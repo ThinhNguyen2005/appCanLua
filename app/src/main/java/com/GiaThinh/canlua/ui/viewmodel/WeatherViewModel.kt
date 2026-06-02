@@ -20,7 +20,8 @@ data class WeatherUiState(
     val isStale: Boolean = false,
     val errorMessage: String? = null,
     val isRateLimited: Boolean = false,
-    val hasPermission: Boolean = true
+    val hasPermission: Boolean = true,
+    val isPermissionDeniedByUser: Boolean = false
 )
 
 private const val TAG = "WeatherVM"
@@ -56,7 +57,8 @@ class WeatherViewModel @Inject constructor(
                         isStale = st.isStale,
                         errorMessage = null,
                         isRateLimited = false,
-                        hasPermission = true
+                        hasPermission = true,
+                        isPermissionDeniedByUser = false
                     )
                     is WeatherState.Error -> {
                         Log.e(TAG, "WeatherState.Error: ${st.message}")
@@ -83,7 +85,8 @@ class WeatherViewModel @Inject constructor(
                             isStale = false,
                             errorMessage = null,
                             isRateLimited = false,
-                            hasPermission = false
+                            hasPermission = false,
+                            isPermissionDeniedByUser = _state.value.isPermissionDeniedByUser
                         )
                     }
                 }
@@ -96,6 +99,11 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun onPermissionGranted() {
+        _state.value = _state.value.copy(isPermissionDeniedByUser = false)
         load(forceRefresh = true)
+    }
+
+    fun onPermissionDenied() {
+        _state.value = _state.value.copy(isPermissionDeniedByUser = true)
     }
 }

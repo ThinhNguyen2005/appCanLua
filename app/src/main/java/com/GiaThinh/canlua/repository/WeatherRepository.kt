@@ -85,7 +85,9 @@ class WeatherRepository @Inject constructor(
 
     /** Tương thích ngược — delegate sang StateFlow để không sửa caller cũ. */
     fun observeWeather(forceRefresh: Boolean = false): StateFlow<WeatherState> {
-        if (forceRefresh) requestRefresh(forceRefresh = true)
+        if (forceRefresh || _state.value is WeatherState.Loading) {
+            requestRefresh(forceRefresh = forceRefresh)
+        }
         return state
     }
 

@@ -59,6 +59,17 @@ object AppColors {
     val Error = Color(0xFFE53935)
     val Info = Color(0xFF1976D2)
 
+    // Extended colors for settings sections
+    val Blue = Color(0xFF1976D2)
+    val BlueSurface: Color
+        @Composable get() = animateColorAsState(if (isDarkTheme) Color(0xFF0D47A1) else Color(0xFFE3F2FD), label = "BlueSurface").value
+    val Purple = Color(0xFF7B1FA2)
+    val PurpleSurface: Color
+        @Composable get() = animateColorAsState(if (isDarkTheme) Color(0xFF4A148C) else Color(0xFFF3E5F5), label = "PurpleSurface").value
+    val Orange = Color(0xFFFF7043)
+    val OrangeSurface: Color
+        @Composable get() = animateColorAsState(if (isDarkTheme) Color(0xFFE65100) else Color(0xFFFFF3E0), label = "OrangeSurface").value
+
     // Offline badge
     val OfflineBg = Color(0xFFFFF3E0)
     val OfflineText = Color(0xFFE65100)

@@ -36,7 +36,8 @@ object RiceCalculator {
     ): Double {
         val gross = rawWeight - bagWeight - impurityWeight
         if (gross <= 0.0) return 0.0
-        return calcStandardWeight(gross, moisturePercent)
+        val net = calcStandardWeight(gross, moisturePercent)
+        return (Math.round(net * 10.0) / 10.0).coerceAtLeast(0.0)
     }
 
     /**
@@ -66,23 +67,14 @@ object RiceCalculator {
     }
 
     /**
-     * Tính tổng kg tạp chất theo cách user đã chọn.
-     *
-     * - kg (default, `isPercent=false`): coi `impurityValue` là số kg tuyệt đối.
-     * - % (`isPercent=true`): coi `impurityValue` là tỉ lệ % trên `rawAfterBag`
-     *   (phần lúa thật sau khi đã trừ bao bì) → `impurityKg = rawAfterBag × value/100`.
+     * Tạp chất luôn là kg trực tiếp. `isPercent` chỉ còn là tham số legacy để
+     * giữ tương thích dữ liệu/caller cũ; UI mới không còn cho chọn theo %.
      */
     fun calcTotalImpurity(
         rawAfterBag: Double,
         impurityValue: Double,
         isPercent: Boolean
-    ): Double {
-        return if (isPercent) {
-            rawAfterBag * (impurityValue / 100.0)
-        } else {
-            impurityValue
-        }
-    }
+    ): Double = impurityValue.coerceAtLeast(0.0)
 
     /**
      * Tính KL thực có ý thức về mode — wrapper bao trùm cả 2 quyết định mode
@@ -107,9 +99,10 @@ object RiceCalculator {
             sampleTotalWeight = bagSampleTotalWeight
         )
         val rawAfterBag = (totalRaw - totalBag).coerceAtLeast(0.0)
-        val totalImpurity = calcTotalImpurity(rawAfterBag, impurityValue, impurityIsPercent)
+        val totalImpurity = calcTotalImpurity(rawAfterBag, impurityValue, false)
         val gross = (rawAfterBag - totalImpurity).coerceAtLeast(0.0)
-        return calcStandardWeight(gross, moisturePercent)
+        val net = calcStandardWeight(gross, moisturePercent)
+        return (Math.round(net * 10.0) / 10.0).coerceAtLeast(0.0)
     }
 
     /** Thành tiền = Khối lượng thực × Đơn giá */

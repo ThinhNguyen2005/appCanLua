@@ -17,9 +17,13 @@ data class FirestoreRicePrice(
     val traderId: String = "",
     val traderName: String = "",
     val traderPhone: String = "",
+    val source: String = "",       // Map đúng trường "source" từ Firestore
     val trend: String = "STABLE",
     val active: Boolean = true,    // TRADER có thể tạm ẩn
     val note: String = "",
+    val riceType: String = "lúa Khô", // Thêm loại sản phẩm
+    val syncSource: String = "",      // Metadata nguồn sync
+    val syncedAt: Long = 0L,          // Metadata thời gian sync
     @get:Exclude @set:Exclude var isFromCache: Boolean = false
 )
 

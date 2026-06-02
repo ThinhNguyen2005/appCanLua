@@ -212,6 +212,7 @@
     <string name="detail_info_missing_phone">暂无</string>
     <string name="detail_info_rice_variety">水稻品种</string>
     <string name="detail_info_created_date">创建日期</string>
+    <string name="detail_info_last_updated">最后更新</string>
     <string name="detail_info_field_address">稻田地址</string>
     <string name="detail_info_unknown_location">未定位</string>
     <string name="detail_info_refresh_location">更新位置</string>
@@ -464,6 +465,15 @@
     <string name="settings_sync_status_idle">未同步</string>
     <string name="settings_language_title">语言设置</string>
     <string name="settings_language_subtitle">选择应用显示的语言种类</string>
+
+    <!-- Settings Section Headers -->
+    <string name="settings_section_premium">Premium</string>
+    <string name="settings_section_account">账户</string>
+    <string name="settings_section_display">显示</string>
+    <string name="settings_section_language">语言</string>
+    <string name="settings_section_sync">同步</string>
+    <string name="settings_section_data">数据</string>
+
     <string name="language_vietnamese">Tiếng Việt</string>
     <string name="language_vietnamese_native">Tiếng Việt</string>
     <string name="language_english">英语</string>
@@ -522,4 +532,4 @@
     <string name="weather_advisory_rain">强降雨 — 推迟24小时喷药，加固田埂</string>
     <string name="weather_advisory_hot_sun">烈日 — 检查稻田水量，傍晚凉爽时浇水</string>
     <string name="weather_advisory_high_humidity">高湿 — 注意稻瘟病、褐飞虱</string>
-</resources>
+</resources>

@@ -216,7 +216,7 @@ class CardRepository @Inject constructor(
             val totalImpurity = RiceCalculator.calcTotalImpurity(
                 rawAfterBag = rawAfterBag,
                 impurityValue = card.impurityWeight,
-                isPercent = card.impurityIsPercent
+                isPercent = false
             )
             val singleImpurityWeight = totalImpurity / validBagCount
 
@@ -253,7 +253,7 @@ class CardRepository @Inject constructor(
             }
         }
 
-        // Tính KL thực có ý thức về mode bao bì (A/B) + tạp chất (kg/%).
+        // Tính KL thực theo mode bao bì; tạp chất luôn là kg trực tiếp.
         val finalNetWeight = RiceCalculator.calcNetWeightWithModes(
             totalRaw = totalRaw,
             bagCount = validBagCount,
@@ -262,7 +262,7 @@ class CardRepository @Inject constructor(
             bagSampleCount = card.bagSampleCount,
             bagSampleTotalWeight = card.bagSampleTotalWeight,
             impurityValue = card.impurityWeight,
-            impurityIsPercent = card.impurityIsPercent,
+            impurityIsPercent = false,
             moisturePercent = card.moisturePercent
         ).coerceAtLeast(0.0)
 
@@ -285,7 +285,9 @@ class CardRepository @Inject constructor(
             paidAmount = calculation.totalPaid,
             depositAmount = calculation.totalDeposit,
             totalAmount = totalAmount,
-            remainingAmount = remainingAmount
+            remainingAmount = remainingAmount,
+            impurityIsPercent = false,
+            lastModifiedMs = System.currentTimeMillis()
         )
 
         cardDao.updateCard(updatedCard)

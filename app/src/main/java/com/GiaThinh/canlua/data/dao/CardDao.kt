@@ -205,6 +205,9 @@ interface CardDao {
     @Query("SELECT * FROM cards WHERE ownerUid = :uid AND firestoreId IS NULL")
     suspend fun getUnsyncedCards(uid: String): List<Card>
 
+    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND firestoreId IS NULL")
+    suspend fun countUnsyncedCards(uid: String): Int
+
     companion object {
         const val QUERY_SEASON_STATS = """
             SELECT 

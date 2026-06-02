@@ -82,9 +82,9 @@ import com.GiaThinh.canlua.ui.component.cardlist.PremiumQuotaDialog
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.isScrollingUp
 import com.GiaThinh.canlua.ui.viewmodel.CardListViewModel
+import com.GiaThinh.canlua.ui.viewmodel.DeleteCardEvent
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SyncViewModel
-import com.GiaThinh.canlua.util.HapticUtil
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
@@ -95,15 +95,45 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
+import com.GiaThinh.canlua.ui.feedback.LocalAppToast
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardListScreen(
-    navController: NavController,
-    viewModel: CardListViewModel = hiltViewModel(),
-    profileViewModel: ProfileViewModel = hiltViewModel(),
-    syncViewModel: SyncViewModel = hiltViewModel()
+    navController: NavController
 ) {
     com.GiaThinh.canlua.util.TrackScreenRender("scale")
+    val viewModel: CardListViewModel = hiltViewModel()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val syncViewModel: SyncViewModel = hiltViewModel()
+
+    // Kích hoạt flow Room DB query ngay lập tức để isLoading chuyển sang false khi có data.
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isDataReady = !isLoading
+
+    TransitionSafeWrapper(
+        isDataReady = isDataReady,
+        skeletonContent = { CardListSkeleton() }
+    ) {
+        CardListScreenContent(
+            navController = navController,
+            viewModel = viewModel,
+            profileViewModel = profileViewModel,
+            syncViewModel = syncViewModel
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardListScreenContent(
+    navController: NavController,
+    viewModel: CardListViewModel,
+    profileViewModel: ProfileViewModel,
+    syncViewModel: SyncViewModel
+) {
     val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     // Skeleton hiện đến khi Room thực sự emit data (không min duration cứng).
@@ -118,9 +148,11 @@ fun CardListScreen(
     val availableSeasons by viewModel.availableSeasons.collectAsStateWithLifecycle()
     val profileState by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
+    val hasPendingSyncData by syncViewModel.hasPendingSyncData.collectAsStateWithLifecycle()
     val isPremium by com.GiaThinh.canlua.util.PremiumState.isPremium.collectAsStateWithLifecycle()
     val cardsToday by com.GiaThinh.canlua.util.PremiumState.dailyCreated.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val appToast = LocalAppToast.current
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPremiumGate by remember { mutableStateOf(false) }
@@ -148,6 +180,15 @@ fun CardListScreen(
         if (manualRefreshing && syncStatus !is SyncStatus.Syncing) {
             delay(150)
             manualRefreshing = false
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.deleteEvents.collect { event ->
+            when (event) {
+                is DeleteCardEvent.Success -> appToast.success("Đã xoá phiếu ${event.cardName}")
+                DeleteCardEvent.Error -> appToast.error("Không xoá được phiếu. Thử lại sau")
+            }
         }
     }
 
@@ -247,7 +288,8 @@ fun CardListScreen(
                                     cardCount = todayCards.size,
                                     totalKg = todayTotalKg,
                                     totalAmount = todayTotalAmount,
-                                    syncStatus = syncStatus
+                                    syncStatus = syncStatus,
+                                    showSyncStatus = hasPendingSyncData || syncStatus is SyncStatus.Syncing
                                 )
                             }
 
@@ -396,7 +438,6 @@ fun CardListScreen(
             card = targetCard,
             onConfirm = {
                 viewModel.deleteCard(targetCard)
-                HapticUtil.error(context)
                 showDeleteConfirmDialog = false
                 cardToDelete = null
             },

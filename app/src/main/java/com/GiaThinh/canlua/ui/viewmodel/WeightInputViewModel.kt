@@ -55,13 +55,35 @@ class WeightInputViewModel @Inject constructor(
     private val ttsEnabledState: StateFlow<Boolean> = settingsRepository.ttsEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.isTtsEnabled())
 
+    val weighDefaults = settingsRepository.weighDefaults
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.getWeighDefaults())
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsRepository.weighDefaults.collect { defaults ->
+                val card = _currentCard.value ?: return@collect
+                if (card.weightInputMode != defaults.weightInputMode) {
+                    val updated = card.copy(weightInputMode = defaults.weightInputMode)
+                    repository.updateCard(updated)
+                    _currentCard.value = repository.getCardById(card.id)
+                }
+            }
+        }
+    }
+
     fun loadCardById(cardId: Long) {
         weightEntriesJob?.cancel()
         weightEntriesJob = viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             _manualTableCount.value = 0
 
-            val card = repository.getCardById(cardId)
+            var card = repository.getCardById(cardId)
+            val defaults = settingsRepository.getWeighDefaults()
+            if (card != null && card.weightInputMode != defaults.weightInputMode) {
+                val updated = card.copy(weightInputMode = defaults.weightInputMode)
+                repository.updateCard(updated)
+                card = repository.getCardById(cardId)
+            }
             _currentCard.value = card
 
             if (card != null) {
@@ -235,7 +257,31 @@ class WeightInputViewModel @Inject constructor(
                 val updatedCard = it.copy(bagWeight = bagWeight)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
+                _currentCard.value = repository.getCardById(cardId)
+            }
+        }
+    }
+
+    fun updateCardBagMethod(cardId: Long, isSampling: Boolean, sampleCount: Int, sampleTotalWeight: Double) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val card = repository.getCardById(cardId)
+            card?.let {
+                val computedBagWeight = if (isSampling && sampleCount > 0) {
+                    sampleTotalWeight / sampleCount
+                } else if (sampleCount > 0) {
+                    1.0 / sampleCount
+                } else {
+                    1.0 / 8.0
+                }
+                val updatedCard = it.copy(
+                    bagMethodIsSampling = isSampling,
+                    bagSampleCount = sampleCount,
+                    bagSampleTotalWeight = sampleTotalWeight,
+                    bagWeight = computedBagWeight
+                )
+                repository.updateCard(updatedCard)
+                repository.updateCardCalculations(cardId)
+                _currentCard.value = repository.getCardById(cardId)
             }
         }
     }
@@ -247,7 +293,7 @@ class WeightInputViewModel @Inject constructor(
                 val updatedCard = it.copy(impurityWeight = impurityWeight)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
+                _currentCard.value = repository.getCardById(cardId)
             }
         }
     }
@@ -259,7 +305,7 @@ class WeightInputViewModel @Inject constructor(
                 val updatedCard = it.copy(pricePerKg = pricePerKg)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
+                _currentCard.value = repository.getCardById(cardId)
             }
         }
     }
@@ -271,7 +317,7 @@ class WeightInputViewModel @Inject constructor(
                 val updatedCard = it.copy(moisturePercent = moisturePercent)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
+                _currentCard.value = repository.getCardById(cardId)
             }
         }
     }
@@ -282,7 +328,7 @@ class WeightInputViewModel @Inject constructor(
             card?.let {
                 val updatedCard = it.copy(isLocked = !it.isLocked)
                 repository.updateCard(updatedCard)
-                loadCardById(cardId)
+                _currentCard.value = repository.getCardById(cardId)
             }
         }
     }

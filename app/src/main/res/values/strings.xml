@@ -241,6 +241,7 @@
     <string name="detail_info_missing_phone">Chưa có</string>
     <string name="detail_info_rice_variety">Giống lúa</string>
     <string name="detail_info_created_date">Ngày tạo</string>
+    <string name="detail_info_last_updated">Cập nhật lần cuối</string>
     <string name="detail_info_field_address">Địa chỉ ruộng</string>
     <string name="detail_info_unknown_location">Chưa xác định vị trí</string>
     <string name="detail_info_refresh_location">Cập nhật vị trí</string>
@@ -495,6 +496,11 @@
     <string name="settings_tts_title">Đọc số khi nhập</string>
     <string name="settings_tts_subtitle">Bật/tắt tính năng đọc số khi nhập cân</string>
     <string name="settings_sync_backup_title">Đồng bộ &amp; Backup</string>
+    <string name="settings_section_account">Tài khoản</string>
+    <string name="settings_section_display">Hiển thị</string>
+    <string name="settings_section_language">Ngôn ngữ</string>
+    <string name="settings_section_sync">Đồng bộ &amp; Backup</string>
+    <string name="settings_section_data">Quản lý dữ liệu</string>
     <string name="settings_last_sync">Lần đồng bộ cuối</string>
     <string name="settings_last_backup">Lần backup cuối</string>
     <string name="settings_backup_action">Backup</string>
@@ -554,9 +560,9 @@
     <!-- Weather advisory strings H-07 -->
     <string name="weather_unknown">Không rõ</string>
     <string name="weather_your_location">Vị trí của bạn</string>
-    <string name="weather_advisory_thunderstorm">Sấm sét — không phun thuốc, hạn chế ra đồng</string>
-    <string name="weather_advisory_rain">Mưa nhiều — hoãn phun thuốc 24h, gia cố bờ</string>
-    <string name="weather_advisory_hot_sun">Nắng gắt — kiểm tra đủ nước ruộng, tưới chiều mát</string>
-    <string name="weather_advisory_high_humidity">Ẩm cao — chú ý đạo ôn, rầy nâu</string>
+    <string name="weather_advisory_thunderstorm">Sấm sét — ngưng phun thuốc/bón phân, che lúa đã gặt</string>
+    <string name="weather_advisory_rain">Mưa nhiều — hoãn phơi và phun thuốc, phủ kín bao lúa</string>
+    <string name="weather_advisory_hot_sun">Nắng gắt — phơi sớm, tránh giữa trưa, kiểm ẩm thường xuyên</string>
+    <string name="weather_advisory_high_humidity">Ẩm cao — mở thoáng kho, tránh ủ bao lâu dễ mốc</string>
 </resources>
 

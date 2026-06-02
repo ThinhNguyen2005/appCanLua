@@ -212,6 +212,7 @@
     <string name="detail_info_missing_phone">មិនទាន់មាន</string>
     <string name="detail_info_rice_variety">ពូជស្រូវ</string>
     <string name="detail_info_created_date">ថ្ងៃបង្កើត</string>
+    <string name="detail_info_last_updated">បានធ្វើបច្ចុប្បន្នភាពចុងក្រោយ</string>
     <string name="detail_info_field_address">អាសយដ្ឋានស្រែ</string>
     <string name="detail_info_unknown_location">មិនទាន់កំណត់ទីតាំង</string>
     <string name="detail_info_refresh_location">ធ្វើបច្ចុប្បន្នភាពទីតាំង</string>
@@ -524,4 +525,10 @@
     <string name="weather_advisory_rain">ភ្លៀងធ្លាក់ខ្លាំង — ពន្យារពេលបាញ់ថ្នាំ ២៤ម៉ោង ពង្រឹងច្រាំង</string>
     <string name="weather_advisory_hot_sun">ថ្ងៃក្តៅខ្លាំង — ពិនិត្យទឹកស្រែ ស្រោចទឹកពេលល្ងាចត្រជាក់</string>
     <string name="weather_advisory_high_humidity">សំណើមខ្ពស់ — ប្រយ័ត្នជំងឺស្រពោន និងមមាចត្នោត</string>
+    <string name="settings_section_premium">Premium</string>
+    <string name="settings_section_account">Account</string>
+    <string name="settings_section_display">Display</string>
+    <string name="settings_section_language">Language</string>
+    <string name="settings_section_sync">Sync</string>
+    <string name="settings_section_data">Data</string>
 </resources>

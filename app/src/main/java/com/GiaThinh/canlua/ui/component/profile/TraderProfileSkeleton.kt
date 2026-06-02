@@ -115,18 +115,6 @@ fun TraderProfileSkeleton() {
             }
         }
 
-        // TIER 5: Bar chart card (shared with farmer profile)
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(220.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .shimmerEffect()
-            )
-        }
-
         // TIER 6: AI insights card
         item {
             Box(
@@ -134,6 +122,18 @@ fun TraderProfileSkeleton() {
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .height(120.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .shimmerEffect()
+            )
+        }
+
+        // TIER 5: Bar chart card (shared with farmer profile)
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(220.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .shimmerEffect()
             )

@@ -2,46 +2,36 @@ package com.GiaThinh.canlua.ui.component.weight
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.CloudSync
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Pinch
-import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Scale
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.automirrored.outlined.Chat
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.util.FirebaseRemoteConfigManager
@@ -55,6 +45,7 @@ fun HelpBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
     val tutorialUrl = FirebaseRemoteConfigManager.tutorialVideoUrl
     val websiteUrl = FirebaseRemoteConfigManager.websiteUrl
@@ -71,176 +62,377 @@ fun HelpBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = AppColors.Surface
+        containerColor = AppColors.Surface,
+        dragHandle = {
+            // Drag handle tùy chỉnh — mỏng và rõ hơn default
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.Divider)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .verticalScroll(scrollState)
+                .padding(bottom = 32.dp)
         ) {
-            // Header
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(AppColors.GreenSurface, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.MenuBook,
-                        contentDescription = null,
-                        tint = AppColors.GreenPrimary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(Modifier.size(12.dp))
-                Column {
-                    Text(
-                        stringResource(R.string.help_sheet_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.TextPrimary
-                    )
-                    Text(
-                        stringResource(R.string.help_sheet_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
-                    )
-                }
-            }
-
-            // Tips list
-            TipRow(
-                icon = Icons.Outlined.Scale,
-                title = stringResource(R.string.help_tip_input_title),
-                desc = stringResource(R.string.help_tip_input_desc)
-            )
-            TipRow(
-                icon = Icons.Outlined.Lock,
-                title = stringResource(R.string.help_tip_lock_title),
-                desc = stringResource(R.string.help_tip_lock_desc)
-            )
-            TipRow(
-                icon = Icons.Outlined.Tune,
-                title = stringResource(R.string.help_tip_options_title),
-                desc = stringResource(R.string.help_tip_options_desc)
-            )
-            TipRow(
-                icon = Icons.Outlined.Pinch,
-                title = stringResource(R.string.help_tip_swipe_title),
-                desc = stringResource(R.string.help_tip_swipe_desc)
-            )
-            TipRow(
-                icon = Icons.Outlined.CloudSync,
-                title = stringResource(R.string.help_tip_offline_title),
-                desc = stringResource(R.string.help_tip_offline_desc)
-            )
+            // ── Hero Header ─────────────────────────────────────────────
+            HelpHeader()
 
             Spacer(Modifier.height(4.dp))
 
-            // Feedback button
-            Button(
-                onClick = {
-                    onFeedbackClick()
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.GoldAccent,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.AutoMirrored.Outlined.Chat, null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.size(8.dp))
-                        Text(
-                            stringResource(R.string.help_btn_feedback),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    if (hasUnreadFeedback) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .size(10.dp)
-                                .background(AppColors.Error, CircleShape)
-                        )
-                    }
-                }
-            }
+            // ── Section: Mẹo sử dụng nhanh ────────────────────────────
+            SectionLabel(
+                label = "MẸO SỬ DỤNG NHANH",
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
 
-            // Tutorial button (Remote Config URL)
-            Button(
-                onClick = { openUrl(tutorialUrl) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.GreenPrimary,
-                    contentColor = AppColors.CardBg
-                ),
-                shape = RoundedCornerShape(12.dp)
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AppColors.CardBg),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                Icon(Icons.Outlined.PlayCircle, null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    stringResource(R.string.help_btn_tutorial),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                TipAccordionRow(
+                    icon = Icons.Outlined.Scale,
+                    iconBg = AppColors.GreenSurface,
+                    iconTint = AppColors.GreenPrimary,
+                    title = stringResource(R.string.help_tip_input_title),
+                    desc = stringResource(R.string.help_tip_input_desc),
+                    isLast = false
+                )
+                TipAccordionRow(
+                    icon = Icons.Outlined.Lock,
+                    iconBg = AppColors.Error.copy(alpha = 0.10f),
+                    iconTint = AppColors.Error,
+                    title = stringResource(R.string.help_tip_lock_title),
+                    desc = stringResource(R.string.help_tip_lock_desc),
+                    isLast = false
+                )
+                TipAccordionRow(
+                    icon = Icons.Outlined.Tune,
+                    iconBg = AppColors.Info.copy(alpha = 0.10f),
+                    iconTint = AppColors.Info,
+                    title = stringResource(R.string.help_tip_options_title),
+                    desc = stringResource(R.string.help_tip_options_desc),
+                    isLast = false
+                )
+                TipAccordionRow(
+                    icon = Icons.Outlined.Pinch,
+                    iconBg = AppColors.GoldLight,
+                    iconTint = AppColors.GoldDark,
+                    title = stringResource(R.string.help_tip_swipe_title),
+                    desc = stringResource(R.string.help_tip_swipe_desc),
+                    isLast = false
+                )
+                TipAccordionRow(
+                    icon = Icons.Outlined.CloudSync,
+                    iconBg = AppColors.Info.copy(alpha = 0.10f),
+                    iconTint = AppColors.Info,
+                    title = stringResource(R.string.help_tip_offline_title),
+                    desc = stringResource(R.string.help_tip_offline_desc),
+                    isLast = true
                 )
             }
 
-            // Web button
-            OutlinedButton(
-                onClick = { openUrl(websiteUrl) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = AppColors.GreenPrimary
-                )
+            Spacer(Modifier.height(20.dp))
+
+            // ── Section: Liên hệ & tài nguyên ─────────────────────────
+            SectionLabel(
+                label = "TÀI NGUYÊN",
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            )
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(Icons.Outlined.Public, null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    stringResource(R.string.help_btn_web),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                // Phản hồi — nổi bật nhất (màu vàng + badge)
+                ActionCard(
+                    icon = Icons.AutoMirrored.Outlined.Chat,
+                    iconBg = AppColors.GoldAccent.copy(alpha = 0.15f),
+                    iconTint = AppColors.GoldAccent,
+                    title = stringResource(R.string.help_btn_feedback),
+                    subtitle = "Báo lỗi hoặc đề xuất tính năng mới",
+                    badge = if (hasUnreadFeedback) "MỚI" else null,
+                    onClick = {
+                        onFeedbackClick()
+                        onDismiss()
+                    }
+                )
+
+                // Video hướng dẫn
+                ActionCard(
+                    icon = Icons.Outlined.PlayCircle,
+                    iconBg = AppColors.GreenSurface,
+                    iconTint = AppColors.GreenPrimary,
+                    title = stringResource(R.string.help_btn_tutorial),
+                    subtitle = "Video hướng dẫn từng bước sử dụng",
+                    onClick = { openUrl(tutorialUrl) }
+                )
+
+                // Trang web
+                ActionCard(
+                    icon = Icons.Outlined.Public,
+                    iconBg = AppColors.SurfaceContainer,
+                    iconTint = AppColors.TextSecondary,
+                    title = stringResource(R.string.help_btn_web),
+                    subtitle = "Tài liệu, cập nhật và tin tức mới nhất",
+                    onClick = { openUrl(websiteUrl) }
                 )
             }
         }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Hero Header
+// ─────────────────────────────────────────────────────────────────
+
 @Composable
-private fun TipRow(icon: ImageVector, title: String, desc: String) {
-    Row(verticalAlignment = Alignment.Top) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .background(AppColors.GoldLight, CircleShape),
-            contentAlignment = Alignment.Center
+private fun HelpHeader() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        AppColors.GreenSurface,
+                        AppColors.Surface
+                    )
+                )
+            )
+            .padding(horizontal = 20.dp, vertical = 20.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Icon(icon, null, tint = AppColors.GoldDark, modifier = Modifier.size(18.dp))
+            // Icon circle lớn
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AppColors.GreenPrimary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.MenuBook,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Column {
+                Text(
+                    text = stringResource(R.string.help_sheet_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AppColors.TextPrimary
+                )
+                Text(
+                    text = stringResource(R.string.help_sheet_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextSecondary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
-        Spacer(Modifier.size(12.dp))
-        Column(Modifier.fillMaxWidth()) {
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Section Label
+// ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SectionLabel(label: String, modifier: Modifier = Modifier) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = AppColors.TextHint,
+        letterSpacing = 1.2.sp,
+        modifier = modifier
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Tip Accordion — tap để expand/collapse mô tả
+// ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun TipAccordionRow(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    title: String,
+    desc: String,
+    isLast: Boolean
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val chevronAngle by animateFloatAsState(
+        targetValue = if (expanded) 90f else 0f,
+        animationSpec = tween(200),
+        label = "chevron"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }
+            .animateContentSize(tween(250))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Icon tile
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = iconTint, modifier = Modifier.size(20.dp))
+            }
+
+            // Title
             Text(
-                title,
+                text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = AppColors.TextPrimary
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
-            Text(
-                desc,
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.TextSecondary
+
+            // Chevron
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = AppColors.TextHint,
+                modifier = Modifier
+                    .size(18.dp)
+                    .rotate(chevronAngle)
             )
         }
+
+        // Expanded description
+        if (expanded) {
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextSecondary,
+                lineHeight = 20.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 68.dp, end = 16.dp, bottom = 14.dp)
+            )
+        }
+
+        // Divider — ẩn dòng cuối
+        if (!isLast) {
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 68.dp),
+                thickness = 0.5.dp,
+                color = AppColors.Divider
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Action Card — link / button dạng card ngang
+// ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ActionCard(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    title: String,
+    subtitle: String,
+    badge: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(AppColors.CardBg)
+            .border(0.5.dp, AppColors.Divider, RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Icon tile
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(iconBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
+        }
+
+        // Text column
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.TextPrimary
+                )
+                if (badge != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(AppColors.Error)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = badge,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+            }
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.TextHint,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+
+        // Arrow
+        Icon(
+            Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            tint = AppColors.TextHint,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }

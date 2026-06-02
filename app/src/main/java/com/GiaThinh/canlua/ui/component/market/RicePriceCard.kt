@@ -86,15 +86,69 @@ fun RicePriceCard(
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
 
-            Text(
-                text = formatRelativeTime(price.updatedAt),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.TextHint
-            )
+            // Row hiển thị loại sản phẩm + khu vực
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Badge Loại sản phẩm
+                val riceTypeBg = when {
+                    price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFFE3F2FD) // Xanh dương nhẹ (lúa ướt)
+                    price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFFF3E0) // Cam/vàng nhẹ (lúa Khô)
+                    price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFFCE4EC) // Hồng nhẹ (nếp)
+                    price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFFF3E5F5) // Tím nhẹ (gạo)
+                    price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFFE8F5E9) // Xanh lá nhẹ (lúa)
+                    else -> Color(0xFFE0F2F1) // Xanh teal nhẹ (các loại khác)
+                }
+                val riceTypeColor = when {
+                    price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFF1E88E5)
+                    price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFB8C00)
+                    price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFD81B60)
+                    price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFF8E24AA)
+                    price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFF43A047)
+                    else -> Color(0xFF00796B)
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(riceTypeBg)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = price.riceType,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = riceTypeColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            Spacer(Modifier.height(16.dp))
+                // Badge Khu vực
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(AppColors.SurfaceContainer)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = price.region.ifBlank { "ĐBSCL" },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text(
+                    text = formatRelativeTime(price.updatedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextHint
+                )
+            }
+
+            Spacer(Modifier.height(14.dp))
 
             // Price grid: 3 columns
             Row(

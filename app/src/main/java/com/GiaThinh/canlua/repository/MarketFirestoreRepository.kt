@@ -26,7 +26,7 @@ class MarketFirestoreRepository @Inject constructor(
     private val auth: FirebaseAuth
 ) {
     private val pricesCollection
-        get() = firestore.collection("market_prices")
+        get() = firestore.collection("ricePrices")
 
     val currentUserId: String?
         get() = auth.currentUser?.uid
@@ -62,7 +62,9 @@ class MarketFirestoreRepository @Inject constructor(
                 .get()
                 .await()
             val bids = snapshot.documents
-                .mapNotNull { it.toObject(FirestoreRicePrice::class.java) }
+                .mapNotNull { doc ->
+                    doc.toObject(FirestoreRicePrice::class.java)?.copy(id = doc.id)
+                }
                 .sortedByDescending { it.updatedAt }
             Result.success(bids)
         } catch (e: Exception) {
@@ -114,7 +116,7 @@ class MarketFirestoreRepository @Inject constructor(
                 val isFromCache = snapshot?.metadata?.isFromCache ?: false
                 val bids = snapshot?.documents
                     ?.mapNotNull { doc ->
-                        doc.toObject(FirestoreRicePrice::class.java)?.apply {
+                        doc.toObject(FirestoreRicePrice::class.java)?.copy(id = doc.id)?.apply {
                             this.isFromCache = isFromCache
                         }
                     }

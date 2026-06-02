@@ -1,6 +1,7 @@
 package com.GiaThinh.canlua.ui.component
 
 import android.content.pm.PackageManager
+import android.Manifest
 import android.provider.ContactsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -126,6 +127,17 @@ fun CreateCardDialog(
     var seasonLabel       by remember { mutableStateOf("") } // Vụ mùa để trống mặc định
     var cccd              by remember { mutableStateOf("") }
     var recordLocation    by remember { mutableStateOf(false) }
+
+    val gpsPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { granted ->
+        if (granted.values.any { it }) {
+            recordLocation = true
+        } else {
+            recordLocation = false
+            Toast.makeText(context, "Cần cấp quyền vị trí để định vị ruộng", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Lưu chuỗi số thô, hiển thị được format qua VisualTransformation
     var moistureRaw        by remember { mutableStateOf("") }   // "18.2" -> 18.2%
@@ -527,7 +539,22 @@ fun CreateCardDialog(
                     ) {
                         Checkbox(
                             checked = recordLocation,
-                            onCheckedChange = { recordLocation = it },
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    if (hasLocationPermission(context)) {
+                                        recordLocation = true
+                                    } else {
+                                        gpsPermissionLauncher.launch(
+                                            arrayOf(
+                                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    }
+                                } else {
+                                    recordLocation = false
+                                }
+                            },
                             colors = CheckboxDefaults.colors(
                                 checkedColor = AppColors.GreenPrimary,
                                 uncheckedColor = AppColors.TextSecondary
@@ -726,3 +753,14 @@ private fun dialogTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = AppColors.GreenPrimary,
     unfocusedBorderColor = AppColors.Divider
 )
+
+private fun hasLocationPermission(context: android.content.Context): Boolean {
+    return androidx.core.content.ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+    androidx.core.content.ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+}
