@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+  <script>
+    // =========================================================================
+    // CẤU HÌNH LIÊN KẾT & THÔNG TIN LIÊN HỆ CHÍNH (THAY ĐỔI NHANH TẠI ĐÂY)
+    // =========================================================================
+    var APP_CONFIG = {
+      // Đường dẫn tải file APK ứng dụng
+      APK_URL: "https://github.com/ThinhNguyen2005/appCanLua/releases/download/update/Can.lua.apk",
+
+      // Email hỗ trợ / liên hệ
+      CONTACT_EMAIL: "nguyenthinhk52005@gmail.com",
+
+      // Số điện thoại / Zalo liên hệ (hiển thị)
+      CONTACT_PHONE: "0945553902",
+
+      // Link kết nối Zalo
+      ZALO_LINK: "https://zalo.me/0945553902",
+
+      // Email hỗ trợ ở phần Footer
+      SUPPORT_EMAIL: "support@canluavn.web.app"
+    };
+  </script>
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2E7D32">
@@ -1016,9 +1038,8 @@
           <div style="font-family:var(--font-head); font-weight:800; font-size:18px; color:var(--green-dark); margin-bottom:6px;">Bản Beta</div>
           <div style="font-size:14px; color:var(--ink-3); margin-bottom:14px;">Đang cải thiện hằng ngày — phản hồi của bà con rất quý</div>
           <div style="font-size:15px; color:var(--ink-2);">
-            📧 <a href="mailto:nguyenthinhk52005@gmail.com" style="color:var(--green); font-weight:700; text-decoration:none;">nguyenthinhk52005@gmail.com</a>
-            📱 <a href="https://zalo.me/0945553902" style="color:var(--green); font-weight:700; text-decoration:none;">0945553902</a>
-
+            📧 <a href="#" class="contact-email" style="color:var(--green); font-weight:700; text-decoration:none;"></a>
+            📱 <a href="#" class="contact-zalo" style="color:var(--green); font-weight:700; text-decoration:none;"></a>
           </div>
         </div>
       </div>
@@ -1051,7 +1072,7 @@
           <div>
             <h5>Hỗ trợ</h5>
             <ul>
-              <li><a href="mailto:support@canluavn.web.app">Email hỗ trợ</a></li>
+              <li><a href="#" class="support-email">Email hỗ trợ</a></li>
               <li><a href="#">Điều khoản</a></li>
               <li><a href="#">Bảo mật</a></li>
             </ul>
@@ -1067,9 +1088,6 @@
   </footer>
 
   <script>
-    // Đường dẫn tải file APK duy nhất của ứng dụng
-    var APK_URL = "https://github.com/ThinhNguyen2005/appCanLua/releases/download/update/Can.lua.apk";
-
     // Hiển/ẩn nút tải APK mobile khi đã hiện trong nav-menu (desktop)
     (function () {
       var navMobile = document.getElementById('nav-mobile-apk');
@@ -1138,7 +1156,27 @@
       // Cập nhật đường dẫn tải APK
       var apkLinks = document.querySelectorAll('.apk-link');
       apkLinks.forEach(function (el) {
-        el.href = APK_URL;
+        el.href = APP_CONFIG.APK_URL;
+      });
+
+      // Cập nhật email liên hệ
+      var contactEmails = document.querySelectorAll('.contact-email');
+      contactEmails.forEach(function (el) {
+        el.href = "mailto:" + APP_CONFIG.CONTACT_EMAIL;
+        el.textContent = APP_CONFIG.CONTACT_EMAIL;
+      });
+
+      // Cập nhật Zalo/SĐT liên hệ
+      var contactZalos = document.querySelectorAll('.contact-zalo');
+      contactZalos.forEach(function (el) {
+        el.href = APP_CONFIG.ZALO_LINK;
+        el.textContent = APP_CONFIG.CONTACT_PHONE;
+      });
+
+      // Cập nhật email hỗ trợ ở Footer
+      var supportEmails = document.querySelectorAll('.support-email');
+      supportEmails.forEach(function (el) {
+        el.href = "mailto:" + APP_CONFIG.SUPPORT_EMAIL;
       });
 
       var els = document.querySelectorAll('.reveal');
