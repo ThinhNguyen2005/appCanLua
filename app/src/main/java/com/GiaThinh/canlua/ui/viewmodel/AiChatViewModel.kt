@@ -233,7 +233,7 @@ class AiChatViewModel @Inject constructor(
                     "Hỏi tôi về **giá thu mua**, kiểm định ẩm/tạp chất, logistics sà lan, biên lợi nhuận, " +
                     "hay cách đàm phán giao dịch với nông dân."
             KnowledgeBaseRepository.Audience.FARMER ->
-                "Xin chào! Tôi là Trợ Lý Khuyến Nông của bạn. " +
+                "Xin chào! Tôi là Trợ Lý Nông nghiệp của bạn. " +
                     "Tôi đã biết tên, vị trí và thời tiết hiện tại của bạn nên có thể tư vấn sát hơn. " +
                     "Hãy hỏi tôi về **giá lúa**, sâu bệnh, lịch bón phân, hoặc kỹ thuật canh tác."
         }

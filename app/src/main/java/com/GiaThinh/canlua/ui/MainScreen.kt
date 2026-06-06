@@ -392,14 +392,18 @@ private fun WeighOptionsSheetWrapper(
     viewModel: SettingsViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
 ) {
     val weighDefaults by viewModel.weighDefaults.collectAsStateWithLifecycle()
+    val ttsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
+    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     WeighOptionsSheet(
         impurityIsPercent = weighDefaults.impurityIsPercent,
         bagMethodIsSampling = weighDefaults.bagMethodIsSampling,
         bagSampleCount = weighDefaults.bagSampleCount,
         bagSampleTotalWeight = weighDefaults.bagSampleTotalWeight,
         weightInputMode = weighDefaults.weightInputMode,
+        ttsEnabled = ttsEnabled,
+        fontScale = fontScale,
         onDismiss = onDismiss,
-        onSave = { impurityPct, bagSampling, sampleCount, sampleWeight, inputMode ->
+        onSave = { impurityPct, bagSampling, sampleCount, sampleWeight, inputMode, tts, font ->
             viewModel.setWeighDefaults(
                 WeighDefaults(
                     impurityIsPercent = impurityPct,
@@ -409,6 +413,8 @@ private fun WeighOptionsSheetWrapper(
                     weightInputMode = inputMode
                 )
             )
+            viewModel.setTtsEnabled(tts)
+            viewModel.setFontScale(font)
             onDismiss()
         }
     )

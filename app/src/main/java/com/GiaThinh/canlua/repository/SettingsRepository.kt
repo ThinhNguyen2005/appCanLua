@@ -156,7 +156,7 @@ class SettingsRepository @Inject constructor(
     }
 
     private fun readThemeMode(): AppThemeMode {
-        val name = prefs.getString(KEY_THEME_MODE, AppThemeMode.AUTO.name)
+        val name = prefs.getString(KEY_THEME_MODE, AppThemeMode.LIGHT.name)
         return AppThemeMode.fromName(name)
     }
 }

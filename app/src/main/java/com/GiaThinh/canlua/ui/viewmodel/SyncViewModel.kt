@@ -22,6 +22,9 @@ class SyncViewModel @Inject constructor(
     val hasPendingSyncData: StateFlow<Boolean> = syncManager.hasPendingSyncData
     val backupStatus: StateFlow<BackupStatus> = backupManager.backupStatus
     val lastBackupTime: StateFlow<Long?> = backupManager.lastBackupTime
+    val isUserSignedIn: Boolean
+        get() = syncManager.isUserSignedIn
+
 
     init {
         refreshPendingSyncState()

@@ -149,6 +149,7 @@ fun CardListScreenContent(
     val profileState by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
     val hasPendingSyncData by syncViewModel.hasPendingSyncData.collectAsStateWithLifecycle()
+    val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
     val isPremium by com.GiaThinh.canlua.util.PremiumState.isPremium.collectAsStateWithLifecycle()
     val cardsToday by com.GiaThinh.canlua.util.PremiumState.dailyCreated.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -318,7 +319,11 @@ fun CardListScreenContent(
                                         )
                                     } else {
                                         CardListEmptyState(
-                                            onSyncClick = { syncViewModel.syncAll() },
+                                            onSyncClick = if (syncViewModel.isUserSignedIn && lastSyncTime == null) {
+                                                { syncViewModel.syncAll() }
+                                            } else {
+                                                null
+                                            },
                                             syncing = syncStatus is SyncStatus.Syncing
                                         )
                                     }

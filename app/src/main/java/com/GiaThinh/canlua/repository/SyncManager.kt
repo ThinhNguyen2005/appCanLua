@@ -52,6 +52,10 @@ class SyncManager @Inject constructor(
     private val _hasPendingSyncData = MutableStateFlow(false)
     val hasPendingSyncData: StateFlow<Boolean> = _hasPendingSyncData.asStateFlow()
 
+    val isUserSignedIn: Boolean
+        get() = auth.currentUser != null && auth.currentUser?.isAnonymous == false
+
+
     fun isOnline(): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

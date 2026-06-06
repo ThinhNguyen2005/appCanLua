@@ -501,9 +501,9 @@ fun WeightMetricsCard(
                 ) {
                     BagMethodOption(
                         selected = !isSamplingLocal,
-                        title = "8 bao = 1 kg",
-                        subtitle = "Tùy chỉnh số bao cho 1 kg bì",
-                        formula = "Tổng bì = Tổng bao / Số bao × 1 kg",
+                        title = "Bao đơn vị (X bao = 1 kg)",
+                        subtitle = "Mỗi X bao quy đổi 1 kg bì. VD: 8 bao lúa nặng 1 kg bì",
+                        formula = "Tổng bì = Tổng bao ÷ X",
                         onClick = { isSamplingLocal = false }
                     ) {
                         OutlinedTextField(
@@ -520,16 +520,16 @@ fun WeightMetricsCard(
 
                     BagMethodOption(
                         selected = isSamplingLocal,
-                        title = "Tùy chỉnh bao",
-                        subtitle = "Nhập X bao tương ứng Y kg bì",
-                        formula = "Tổng bì = Tổng bao / X × Y kg",
+                        title = "Cân mẫu (tùy chỉnh)",
+                        subtitle = "Cân X bao mẫu ra Y kg → suy ra kg/bao trung bình",
+                        formula = "Tổng bì = Tổng bao × (Y ÷ X)",
                         onClick = { isSamplingLocal = true }
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = sampleCountLocal,
                                 onValueChange = { value -> sampleCountLocal = value.filter { it.isDigit() } },
-                                label = { Text("Số bao") },
+                                label = { Text("Số bao đã cân") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
@@ -541,7 +541,7 @@ fun WeightMetricsCard(
                                     sampleWeightLocal = value.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }
                                         .replace(',', '.')
                                 },
-                                label = { Text("Số kg") },
+                                label = { Text("Tổng kg bao mẫu") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),

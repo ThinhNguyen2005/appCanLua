@@ -72,6 +72,14 @@
 - **Firebase Hosting Site canluavn**: Tên miền thương hiệu mới tuyệt đẹp hoạt động tại [canluavn.web.app](https://canluavn.web.app) sử dụng HTML5 & Vanilla CSS thiết kế cao cấp, có hiệu ứng Glassmorphism và quầng sáng (Radial Glow).
 - **Android App Links (Deep Linking)**: Tích hợp xác thực bảo mật an toàn thông qua file chứng thực Google đặt tại [canluavn.web.app/.well-known/assetlinks.json](https://canluavn.web.app/.well-known/assetlinks.json). Click vào link chia sẻ phiếu cân `https://canluavn.web.app/share/{cardId}` hệ thống sẽ tự động kích hoạt và mở thẳng ứng dụng Cân Lúa để hiển thị chi tiết phiếu cân real-time.
 
+### 12. Settings & Tùy chỉnh Overhaul (Phase 2.10)
+- **Tùy chỉnh (WeighOptionsSheet)**: Di chuyển "Đọc số khi nhập" (TTS) và "Cỡ chữ" (Font Size slider 4 nấc Google style) vào bottom sheet tùy chỉnh cân — truy cập nhanh hơn.
+- **Bag Dialog cải tiến**: Mô tả Option A ("Bao đơn vị — X bao = 1 kg") và Option B ("Cân mẫu — tùy chỉnh") rõ ràng, dễ hiểu, kèm công thức trực quan.
+- **Settings gọn hơn**: Bỏ TTS, Font Size, Language, Sync section khỏi Settings. Ngôn ngữ theo thiết bị. Sync tạm ẩn UI.
+- **PremiumCard viết lại**: Tương thích mọi cỡ chữ (SMALL→XLARGE), sáng/tối; không bị cắt nội dung. Inactive state có nút "Nâng cấp" full-width nổi bật.
+- **ExpandableCard thiết kế mới**: Chevron xoay animate, divider nhẹ thay SurfaceContainer.
+- **Default theme**: Mặc định nền sáng (LIGHT) thay vì AUTO.
+
 ---
 
 ## 🛠 Tech Stack
@@ -167,6 +175,7 @@ MAPS_API_KEY=your_google_maps_key
 | Phase 2.7 | NewsFeed RSS + Knowledge Base AI + AuthListener |
 | Phase 2.8 | Floating Pill Bottom Bar + Pull-to-Refresh + Shimmer + IME fix triệt để |
 | Phase 2.9 | Premium Landing Page + Domain canluavn.web.app + Android App Links Deep Linking |
+| Phase 2.10 | Settings & Tùy chỉnh Overhaul: TTS/FontSize → WeighOptions, PremiumCard redesign, default LIGHT |
 
 ### 🔜 Sprint 7 (kế hoạch)
 - **Custom marker icon** màu theo trạng thái thẻ (free / locked / paid).
