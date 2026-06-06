@@ -763,11 +763,11 @@
         <li><a href="#demo">Thử tính cân</a></li>
         <li><a href="#features">Tính năng</a></li>
         <li><a href="#benefits">Lợi ích</a></li>
-        <li><a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/complete-v1/CanLua.apk" class="btn-apk">Tải app</a></li>
+        <li><a href="#" class="btn-apk apk-link">Tải app</a></li>
       </ul>
 
       <!-- Nút Tải app trên mobile -->
-      <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/complete-v1/CanLua.apk" class="btn-apk" style="display:inline-flex;" id="nav-mobile-apk">Tải app</a>
+      <a href="#" class="btn-apk apk-link" style="display:inline-flex;" id="nav-mobile-apk">Tải app</a>
     </div>
   </header>
 
@@ -792,7 +792,7 @@
         </p>
 
         <div class="ctas">
-          <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/complete-v1/CanLua.apk" class="btn btn-primary pulse">
+          <a href="#" class="btn btn-primary pulse apk-link">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
             Tải app (file APK)
           </a>
@@ -1006,7 +1006,7 @@
             <div class="step"><span class="step-n">3</span><span>Mở app lên và bắt đầu ghi phiếu cân</span></div>
           </div>
 
-          <a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/complete-v1/CanLua.apk" class="btn btn-primary">
+          <a href="#" class="btn btn-primary apk-link">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
             Tải app ngay
           </a>
@@ -1045,7 +1045,7 @@
               <li><a href="#demo">Tính thử cân</a></li>
               <li><a href="#features">Tính năng</a></li>
               <li><a href="#benefits">Lợi ích</a></li>
-              <li><a href="https://github.com/ThinhNguyen2005/appCanLua/releases/download/complete-v1/CanLua.apk">Tải APK</a></li>
+              <li><a href="#" class="apk-link">Tải APK</a></li>
             </ul>
           </div>
           <div>
@@ -1067,6 +1067,9 @@
   </footer>
 
   <script>
+    // Đường dẫn tải file APK duy nhất của ứng dụng
+    var APK_URL = "https://github.com/ThinhNguyen2005/appCanLua/releases/download/update/Can.lua.apk";
+
     // Hiển/ẩn nút tải APK mobile khi đã hiện trong nav-menu (desktop)
     (function () {
       var navMobile = document.getElementById('nav-mobile-apk');
@@ -1132,6 +1135,12 @@
 
     // Hiệu ứng cuộn
     document.addEventListener('DOMContentLoaded', function () {
+      // Cập nhật đường dẫn tải APK
+      var apkLinks = document.querySelectorAll('.apk-link');
+      apkLinks.forEach(function (el) {
+        el.href = APK_URL;
+      });
+
       var els = document.querySelectorAll('.reveal');
       if ('IntersectionObserver' in window) {
         var io = new IntersectionObserver(function (entries) {
