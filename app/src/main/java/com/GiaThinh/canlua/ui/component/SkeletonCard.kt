@@ -1,6 +1,7 @@
 package com.GiaThinh.canlua.ui.component
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -28,54 +30,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 
 /**
- * Modifier shimmer 45° sweep — gradient sáng quét chéo qua bề mặt.
- * Tạo cảm giác "đang load" tinh tế, không nhịp full-block alpha.
- * MÀU tự động thích ứng light/dark mode qua [skeletonColors].
- *
- * Áp dụng trực tiếp lên element có background.
+ * Alias cho [shimmerEffect] — dùng khi element đã có background color,
+ * ví dụ: Box(Modifier.background(color).shimmer())
  */
-fun Modifier.shimmerEffect(skeletonColors: SkeletonColors? = null): Modifier = composed {
-    val colors = skeletonColors ?: skeletonColors()
-    var size by remember { mutableStateOf(IntSize.Zero) }
-    val transition = rememberInfiniteTransition(label = "shimmer_sweep")
-    val startOffsetX by transition.animateFloat(
-        initialValue = -2f * size.width.toFloat(),
-        targetValue = 2f * size.width.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-        ),
-        label = "shimmer_offset",
-    )
-
-    background(
-        brush = Brush.linearGradient(
-            colors = colors.shimmerGradient,
-            start = Offset(startOffsetX, 0f),
-            end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat()),
-        ),
-    ).onGloballyPositioned { size = it.size }
-}
+@Composable
+fun Modifier.shimmer(
+    highlightColor: Color = Color.White.copy(alpha = 0.55f),
+    durationMillis: Int = 1400
+): Modifier = shimmerEffect(skeletonColors = null, progress = null)
 
 /**
  * Bộ màu skeleton thích ứng light/dark mode.
  * @param surface Màu nền card skeleton.
- * @param shimmerBase Màu base của shimmer gradient (2 vế).
+ * @param shimmerBase Màu base của shimmer gradient (2 vế ngoài).
  * @param shimmerHighlight Màu highlight giữa của shimmer gradient.
  */
 data class SkeletonColors(
@@ -110,10 +87,46 @@ fun skeletonColors(): SkeletonColors {
 }
 
 private fun Color.luminance(): Float {
-    val r = red
-    val g = green
-    val b = blue
+    val r = red; val g = green; val b = blue
     return 0.299f * r + 0.587f * g + 0.114f * b
+}
+
+private const val SHIMMER_RANGE = 3f
+private const val SHIMMER_DURATION = 1400
+
+/**
+ * Modifier shimmer 45° sweep — gradient sáng quét chéo qua bề mặt.
+ * Dùng fixed-width brush (600f width units) KHÔNG cần onGloballyPositioned.
+ * Nếu được, truyền progress từ shared [rememberInfiniteTransition] cấp parent
+ * để tất cả shimmer blocks đồng bộ với nhau.
+ */
+@Composable
+fun Modifier.shimmerEffect(
+    skeletonColors: SkeletonColors? = null,
+    progress: Float? = null
+): Modifier {
+    val colors = skeletonColors ?: skeletonColors()
+    val shimmerProgress = if (progress != null) {
+        progress
+    } else {
+        val t = rememberInfiniteTransition(label = "skimmer")
+        t.animateFloat(
+            initialValue = -1f,
+            targetValue = SHIMMER_RANGE,
+            animationSpec = infiniteRepeatable(
+                animation = tween(SHIMMER_DURATION, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "skimmer"
+        ).value
+    }
+    return this.background(
+        brush = Brush.linearGradient(
+            colors = colors.shimmerGradient,
+            start = Offset(shimmerProgress * 600f - 300f, 0f),
+            end = Offset(shimmerProgress * 600f, 600f),
+        ),
+    )
 }
 
 /**
@@ -137,11 +150,10 @@ fun SkeletonCard(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .shimmerEffect(colors)
+            ShimmerBox(
+                modifier = Modifier.size(44.dp),
+                cornerRadius = 14.dp,
+                colors = colors
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -178,6 +190,19 @@ private fun ShimmerBlock(
             .height(height)
             .clip(RoundedCornerShape(corner))
             .shimmerEffect(colors),
+    )
+}
+
+@Composable
+private fun ShimmerBox(
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 16.dp,
+    colors: SkeletonColors = skeletonColors(),
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(cornerRadius))
+            .shimmerEffect(colors)
     )
 }
 
@@ -226,11 +251,10 @@ fun SummaryCardSkeleton(modifier: Modifier = Modifier) {
                             .padding(10.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .shimmerEffect(colors)
+                        ShimmerBox(
+                            modifier = Modifier.size(22.dp),
+                            cornerRadius = 8.dp,
+                            colors = colors
                         )
                         ShimmerBlock(widthFraction = 0.82f, height = 10.dp, corner = 5.dp, colors = colors)
                         ShimmerBlock(widthFraction = 0.7f, height = 16.dp, corner = 8.dp, colors = colors)

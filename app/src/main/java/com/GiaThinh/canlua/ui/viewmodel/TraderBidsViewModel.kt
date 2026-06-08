@@ -73,6 +73,7 @@ class TraderBidsViewModel @Inject constructor(
         region: String,
         trend: String,
         note: String,
+        riceType: String = "lúa Khô",
         existingId: String? = null
     ) {
         viewModelScope.launch {
@@ -87,6 +88,7 @@ class TraderBidsViewModel @Inject constructor(
                 traderName = p?.name.orEmpty(),
                 traderPhone = p?.phone.orEmpty(),
                 note = note.trim(),
+                riceType = riceType,
                 existingId = existingId
             )
             _uiState.value = if (result.isSuccess) {

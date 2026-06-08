@@ -80,6 +80,7 @@ fun CardListEmptyState(
             textAlign = TextAlign.Center
         )
         
+        /*
         if (onSyncClick != null) {
             Spacer(Modifier.height(32.dp))
             Row(
@@ -140,5 +141,6 @@ fun CardListEmptyState(
                 }
             }
         }
+        */
     }
 }

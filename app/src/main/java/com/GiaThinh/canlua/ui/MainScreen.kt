@@ -22,7 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Tune
@@ -240,7 +240,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                                 scope.launch { aiChatDrawerState.open() }
                             }) {
                                 Icon(
-                                    imageVector = Icons.Filled.Menu,
+                                    imageVector = Icons.Filled.History,
                                     contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_open_chat_sessions)
                                 )
                             }

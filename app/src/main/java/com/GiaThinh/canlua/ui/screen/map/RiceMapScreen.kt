@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -203,6 +204,7 @@ fun RiceMapScreen(
                 Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí của tôi")
             }
         },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = AppColors.Surface
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -295,6 +297,9 @@ fun RiceMapScreen(
                     )
                 }
             }
+            androidx.compose.foundation.layout.Spacer(
+                modifier = Modifier.height(80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 8.dp)
+            )
         }
     }
 

@@ -77,6 +77,7 @@ class MarketRepository @Inject constructor(
         traderName: String,
         traderPhone: String,
         note: String,
+        riceType: String = "lúa Khô",
         existingId: String? = null
     ): Result<String> {
         val avg = (priceMin + priceMax) / 2
@@ -93,7 +94,8 @@ class MarketRepository @Inject constructor(
             traderPhone = traderPhone,
             trend = trend,
             active = true,
-            note = note
+            note = note,
+            riceType = riceType
         )
         return firestore.upsertBid(bid)
     }

@@ -90,8 +90,11 @@ fun WeighOptionsSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var bagSampling by remember { mutableStateOf(bagMethodIsSampling) }
+    var bagsPerKgText by remember {
+        mutableStateOf(if (!bagMethodIsSampling && bagSampleCount > 0) bagSampleCount.toString() else "8")
+    }
     var sampleCountText by remember {
-        mutableStateOf(if (bagSampleCount > 0) bagSampleCount.toString() else "")
+        mutableStateOf(if (bagMethodIsSampling && bagSampleCount > 0) bagSampleCount.toString() else "")
     }
     var sampleWeightText by remember {
         mutableStateOf(if (bagSampleTotalWeight > 0.0) bagSampleTotalWeight.toString() else "")
@@ -311,7 +314,7 @@ fun WeighOptionsSheet(
                         color = AppColors.TextHint
                     )
 
-                    if (bagSampling) {
+                    if (!bagSampling) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = AppColors.GreenSurface.copy(alpha = 0.25f),
@@ -323,7 +326,40 @@ fun WeighOptionsSheet(
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    text = "Thông số cân mẫu bao lúa",
+                                    text = "Thông số trừ bao bì từng bao",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.GreenDark
+                                )
+
+                                OutlinedTextField(
+                                    value = bagsPerKgText,
+                                    onValueChange = { v -> bagsPerKgText = v.filter { it.isDigit() } },
+                                    label = { Text("Số bao trên 1 kg") },
+                                    placeholder = { Text("Mặc định: 8 bao = 1 kg") },
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AppColors.GreenPrimary,
+                                        unfocusedBorderColor = AppColors.Divider
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = AppColors.GreenSurface.copy(alpha = 0.25f),
+                            border = BorderStroke(1.dp, AppColors.GreenPrimary.copy(alpha = 0.15f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = "Thông số trừ bao bì",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.GreenDark
@@ -471,8 +507,16 @@ fun WeighOptionsSheet(
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {
-                    val n = sampleCountText.toIntOrNull() ?: 0
-                    val w = sampleWeightText.toDoubleOrNull() ?: 0.0
+                    val n = if (bagSampling) {
+                        sampleCountText.toIntOrNull() ?: 0
+                    } else {
+                        bagsPerKgText.toIntOrNull() ?: 8
+                    }
+                    val w = if (bagSampling) {
+                        sampleWeightText.toDoubleOrNull() ?: 0.0
+                    } else {
+                        0.0
+                    }
                     onSave(false, bagSampling, n, w, inputMode, ttsLocal, currentFontScale)
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),

@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -37,12 +38,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
@@ -124,12 +126,11 @@ fun AiChatScreen(
             ChatSessionsDrawer(
                 sessions = state.sessions,
                 currentId = state.currentSessionId,
-                onNewSession = {
-                    viewModel.newSession()
-                    scope.launch { drawerState.close() }
-                },
                 onSelectSession = { id ->
                     viewModel.switchSession(id)
+                    scope.launch { drawerState.close() }
+                },
+                onClose = {
                     scope.launch { drawerState.close() }
                 }
             )
@@ -213,8 +214,8 @@ fun AiChatScreen(
 private fun ChatSessionsDrawer(
     sessions: List<ChatSession>,
     currentId: String?,
-    onNewSession: () -> Unit,
-    onSelectSession: (String) -> Unit
+    onSelectSession: (String) -> Unit,
+    onClose: () -> Unit
 ) {
     ModalDrawerSheet(
         drawerContainerColor = AppColors.Surface
@@ -222,61 +223,100 @@ private fun ChatSessionsDrawer(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 16.dp)
                 .statusBarsPadding()
         ) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "Lịch sử trò chuyện",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-            )
+            Spacer(Modifier.height(16.dp))
 
+            // Header Row
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.GreenSurface)
-                    .clickable(onClick = onNewSession)
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    "Phiên chat mới",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = AppColors.GreenPrimary,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(sessions, key = { it.id }) { session ->
-                    SessionRow(
-                        session = session,
-                        isCurrent = session.id == currentId,
-                        onClick = { onSelectSession(session.id) }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.History,
+                        contentDescription = null,
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        "Lịch sử trò chuyện",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                }
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Đóng",
+                        tint = AppColors.TextHint
                     )
                 }
             }
+
+            Spacer(Modifier.height(12.dp))
+            androidx.compose.material3.HorizontalDivider(
+                color = AppColors.Divider.copy(alpha = 0.5f),
+                thickness = 1.dp
+            )
+            Spacer(Modifier.height(12.dp))
+
+            if (sessions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.SmartToy,
+                            contentDescription = null,
+                            tint = AppColors.TextHint.copy(alpha = 0.5f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            "Chưa có phiên trò chuyện nào",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextHint
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(sessions, key = { it.id }) { session ->
+                        SessionRow(
+                            session = session,
+                            isCurrent = session.id == currentId,
+                            onClick = { onSelectSession(session.id) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
             Text(
                 "Lịch sử chỉ giữ đến khi bạn tắt ứng dụng.",
                 style = MaterialTheme.typography.labelSmall,
                 color = AppColors.TextHint,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
     }
@@ -288,31 +328,75 @@ private fun SessionRow(
     isCurrent: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
+    val context = LocalContext.current
+    val formattedTime = remember(session.createdAt) {
+        val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        sdf.format(java.util.Date(session.createdAt))
+    }
+
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isCurrent) AppColors.GreenSurface else AppColors.CardBg,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isCurrent) AppColors.GreenPrimary else AppColors.Divider.copy(alpha = 0.5f)
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(
-                if (isCurrent) AppColors.GreenSurface else Color.Transparent
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 2.dp),
+        shadowElevation = if (isCurrent) 1.dp else 0.dp
     ) {
-        Icon(
-            Icons.Filled.SmartToy,
-            contentDescription = null,
-            tint = if (isCurrent) AppColors.GreenPrimary else AppColors.TextHint,
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(Modifier.size(10.dp))
-        Text(
-            text = session.title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isCurrent) AppColors.GreenPrimary else AppColors.TextPrimary,
-            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 1
-        )
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(if (isCurrent) AppColors.GreenPrimary.copy(alpha = 0.15f) else AppColors.SurfaceContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.SmartToy,
+                    contentDescription = null,
+                    tint = if (isCurrent) AppColors.GreenPrimary else AppColors.TextHint,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = session.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isCurrent) AppColors.GreenPrimary else AppColors.TextPrimary,
+                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+
+                Spacer(Modifier.height(2.dp))
+
+                Text(
+                    text = "${session.messages.size} tin nhắn • $formattedTime",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isCurrent) AppColors.GreenPrimary.copy(alpha = 0.8f) else AppColors.TextHint
+                )
+            }
+
+            if (isCurrent) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.GreenPrimary)
+                )
+            }
+        }
     }
 }
 

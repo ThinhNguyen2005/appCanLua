@@ -26,7 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
+
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -45,7 +45,7 @@ import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
-import com.GiaThinh.canlua.util.PremiumState
+
 import com.GiaThinh.canlua.util.TrackScreenRender
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,7 +67,6 @@ fun SettingsScreen(
     val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
-    val premiumInfo by PremiumState.info.collectAsStateWithLifecycle()
 
     var pendingRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
@@ -118,16 +117,6 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            PremiumCard(
-                isActive = premiumInfo.isActive,
-                isEarlyAdopter = premiumInfo.isEarlyAdopter,
-                plan = premiumInfo.plan,
-                sinceMs = premiumInfo.sinceMs,
-                onClick = { navController.navigate("premium") }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
             SectionHeader(
                 icon = Icons.Outlined.Person,
                 label = stringResource(R.string.settings_section_account),
@@ -140,7 +129,7 @@ fun SettingsScreen(
                 onRoleChange = { pendingRole = it }
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             ClickableSettingsRow(
                 icon = Icons.Outlined.Logout,
@@ -152,7 +141,7 @@ fun SettingsScreen(
                 onClick = { if (authState.isSignedIn) showLogoutConfirm = true }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             SectionHeader(
                 icon = Icons.Outlined.Palette,
@@ -168,7 +157,7 @@ fun SettingsScreen(
                 onSelect = { viewModel.setThemeMode(it); themeExpanded = false }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             SectionHeader(
                 icon = Icons.Outlined.Folder,
@@ -178,7 +167,7 @@ fun SettingsScreen(
             )
 
             ClickableSettingsRow(
-                icon = Icons.Outlined.Delete,
+                icon = Icons.Outlined.DeleteForever,
                 iconBg = AppColors.Error.copy(alpha = 0.12f),
                 iconTint = AppColors.Error,
                 title = stringResource(R.string.settings_deleted_cards_title),
@@ -313,29 +302,33 @@ private fun ClickableSettingsRow(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
         label = "rowScale"
     )
+    val elevation by animateFloatAsState(
+        targetValue = if (pressed) 0f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "rowElevation"
+    )
 
-    Box(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(16.dp),
-                ambientColor = Color.Black.copy(alpha = 0.07f),
-                spotColor = Color.Black.copy(alpha = 0.07f)
-            )
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.CardBg)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(bounded = true, color = AppColors.GreenPrimary.copy(alpha = 0.15f)),
-                enabled = enabled,
-                onClick = onClick
-            )
-            .padding(16.dp)
+            .scale(scale),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.CardBg,
+            disabledContainerColor = AppColors.CardBg.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = elevation.dp,
+            pressedElevation = 0.dp
+        ),
+        enabled = enabled,
+        onClick = onClick,
+        interactionSource = interactionSource
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -451,11 +444,23 @@ private fun ExpandableCard(
     selectedValue: String,
     optionsContent: @Composable () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "expandableScale"
+    )
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 0.dp),
+        onClick = onToggle,
+        interactionSource = interactionSource
     ) {
         Column(
             modifier = Modifier.animateContentSize(
@@ -468,11 +473,6 @@ private fun ExpandableCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(
-                        indication = ripple(bounded = true, color = AppColors.GreenPrimary.copy(alpha = 0.15f)),
-                        interactionSource = remember { MutableInteractionSource() },
-                        onClick = onToggle
-                    )
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -530,186 +530,17 @@ private fun ExpandableCard(
 }
 
 @Composable
-private fun PremiumCard(
-    isActive: Boolean,
-    isEarlyAdopter: Boolean,
-    plan: String?,
-    sinceMs: Long,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-        label = "premiumScale"
-    )
-
-    val shadowColor = if (isActive) AppColors.GoldDark.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.08f)
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(20.dp),
-                ambientColor = shadowColor,
-                spotColor = shadowColor
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive) AppColors.GoldLight.copy(alpha = 0.18f) else AppColors.CardBg
-        ),
-        border = BorderStroke(
-            width = 1.5.dp,
-            brush = if (isActive) Brush.linearGradient(
-                listOf(AppColors.GoldAccent.copy(alpha = 0.6f), AppColors.GoldLight.copy(alpha = 0.3f))
-            ) else Brush.linearGradient(
-                listOf(AppColors.Divider, AppColors.Divider)
-            )
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(bounded = true, color = AppColors.GoldDark.copy(alpha = 0.15f)),
-                    onClick = onClick
-                )
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (isActive) AppColors.GoldLight else AppColors.GoldLight.copy(alpha = 0.35f),
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = AppColors.GoldDark,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.settings_premium_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.TextPrimary
-                    )
-                    Text(
-                        text = if (isActive) stringResource(R.string.settings_premium_activated)
-                        else stringResource(R.string.settings_premium_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
-                    )
-                }
-            }
-
-            if (isActive) {
-                val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-                val statusLabel = if (isEarlyAdopter)
-                    stringResource(R.string.settings_premium_early_adopter)
-                else
-                    stringResource(R.string.settings_premium_active)
-                val planText = plan?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.settings_premium_activated)
-                val sinceText = if (sinceMs > 0L)
-                    stringResource(R.string.settings_premium_since, sdf.format(Date(sinceMs)))
-                else ""
-
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val dotColor = if (isEarlyAdopter) AppColors.GoldDark else AppColors.GreenPrimary
-                        val pillBg = if (isEarlyAdopter) AppColors.GoldLight.copy(alpha = 0.6f) else AppColors.GreenSurface
-                        val pillText = if (isEarlyAdopter) AppColors.GoldDark else AppColors.GreenDark
-                        Surface(
-                            shape = RoundedCornerShape(999.dp),
-                            color = pillBg
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(7.dp)
-                                        .clip(RoundedCornerShape(999.dp))
-                                        .background(dotColor)
-                                )
-                                Text(
-                                    text = statusLabel,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = pillText,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-                        }
-                    }
-                    Text(
-                        text = "$planText $sinceText".trim(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
-                    )
-                }
-            } else {
-                Button(
-                    onClick = onClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.GoldDark,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.settings_premium_upgrade),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun RoleSwitcherContent(
     profile: com.GiaThinh.canlua.data.model.Profile?,
     onRoleChange: (String) -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 1.dp,
-                shape = RoundedCornerShape(16.dp),
-                ambientColor = Color.Black.copy(alpha = 0.06f),
-                spotColor = Color.Black.copy(alpha = 0.06f)
-            )
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.CardBg)
-            .padding(16.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.profile_user_role),
                 style = MaterialTheme.typography.titleMedium,

@@ -67,8 +67,6 @@ import com.GiaThinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.GiaThinh.canlua.ui.component.dashboard.ChartMetric
 import com.GiaThinh.canlua.ui.component.dashboard.KpiGrid
 import com.GiaThinh.canlua.ui.component.dashboard.KpiGridItem
-import com.GiaThinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
-import com.GiaThinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.GiaThinh.canlua.ui.component.dashboard.TopTradersCard
 import com.GiaThinh.canlua.ui.component.profile.FarmerProfileSkeleton
 import com.GiaThinh.canlua.ui.component.profile.GradientProfileHeader
@@ -131,6 +129,9 @@ fun FarmerProfileScreen(
     ) {
         FarmerProfileScreenContent(
             navController = navController,
+            profile = profile,
+            dash = dash,
+            traderHistory = profileViewModel.traderHistory.collectAsStateWithLifecycle().value,
             profileViewModel = profileViewModel,
             dashboardViewModel = dashboardViewModel
         )
@@ -140,16 +141,12 @@ fun FarmerProfileScreen(
 @Composable
 fun FarmerProfileScreenContent(
     navController: NavController,
+    profile: com.GiaThinh.canlua.data.model.Profile?,
+    dash: DashboardData,
+    traderHistory: List<TraderHistoryItem>,
     profileViewModel: ProfileViewModel,
     dashboardViewModel: DashboardViewModel
 ) {
-    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
-    val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle()
-
-    // Combined flow — 1 recomposition thay vì 7 staggered emissions.
-    val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
-    val showSkeleton = profile == null || !dash.isAggregated
-
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
     // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
     val lifetimeStats = dash.overallStats
@@ -212,16 +209,6 @@ fun FarmerProfileScreenContent(
                 }
             }
 
-            // ─── TIER 2: Season Selector Chips ───
-            if (dash.seasons.isNotEmpty()) {
-                item {
-                    SeasonSelectorChip(
-                        seasons = dash.seasons,
-                        selectedSeason = dash.selectedSeason,
-                        onSelect = dashboardViewModel::selectSeason
-                    )
-                }
-            }
 
             // ─── TIER 3: Primary KPI Grid 2×2 ───
             dash.currentStats?.let { stats ->
@@ -260,20 +247,6 @@ fun FarmerProfileScreenContent(
                 }
             }
 
-            // ─── TIER 5: Season Comparison Bar Chart ───
-            if (dash.seasonsComparison.isNotEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        SeasonComparisonBarChart(
-                            seasons = dash.seasonsComparison,
-                            selectedSeason = dash.selectedSeason,
-                            metric = ChartMetric.WEIGHT
-                        )
-                    }
-                }
-            }
-
-            // ─── TIER 7: Top Traders + Trader History (Farmer-specific) ───
             if (dash.topTraders.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {

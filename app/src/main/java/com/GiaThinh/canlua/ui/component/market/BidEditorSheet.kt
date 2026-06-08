@@ -36,6 +36,14 @@ import com.GiaThinh.canlua.ui.component.RiceVarietyDropdown
 import com.GiaThinh.canlua.ui.component.ThousandSeparatorTransformation
 import com.GiaThinh.canlua.ui.theme.AppColors
 
+private val RICE_TYPES = listOf(
+    "lúa ướt" to "Lúa ướt",
+    "lúa Khô" to "Lúa khô",
+    "gạo" to "Gạo",
+    "tấm" to "Tấm",
+    "nếp" to "Nếp"
+)
+
 /**
  * Form đăng / sửa giá lúa cho TRADER. Dùng trong ModalBottomSheet ở MarketScreen.
  *
@@ -52,6 +60,7 @@ fun BidEditorSheet(
         region: String,
         trend: String,
         note: String,
+        riceType: String,
         existingId: String?
     ) -> Unit,
     onDismiss: () -> Unit
@@ -66,6 +75,7 @@ fun BidEditorSheet(
     var region by remember { mutableStateOf(existing?.region.orEmpty()) }
     var trend by remember { mutableStateOf(existing?.trend ?: "STABLE") }
     var note by remember { mutableStateOf(existing?.note.orEmpty()) }
+    var riceType by remember { mutableStateOf(existing?.riceType ?: "lúa Khô") }
 
     val isValid = variety.isNotBlank() &&
             priceMinRaw.isNotBlank() &&
@@ -89,7 +99,7 @@ fun BidEditorSheet(
             modifier = Modifier.padding(top = 8.dp)
         )
         Text(
-            text = "Giá lúa của bạn sẽ hiện công khai ở Bảng giá thị trường cho nông dân tham khảo.",
+            text = "Giá sản phẩm của bạn sẽ hiện công khai ở Bảng giá thị trường cho nông dân tham khảo.",
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextHint
         )
@@ -100,6 +110,27 @@ fun BidEditorSheet(
             onSelect = { variety = it },
             modifier = Modifier.fillMaxWidth()
         )
+
+        // Loại sản phẩm
+        Text(
+            text = "LOẠI SẢN PHẨM",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = AppColors.TextSecondary
+        )
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(RICE_TYPES.size) { idx ->
+                val (key, label) = RICE_TYPES[idx]
+                TypeChip(
+                    key = key,
+                    label = label,
+                    selected = riceType,
+                    onSelect = { riceType = it }
+                )
+            }
+        }
 
         // Giá min / max
         Row(
@@ -191,6 +222,7 @@ fun BidEditorSheet(
                         region,
                         trend,
                         note,
+                        riceType,
                         existing?.id
                     )
                 },
@@ -208,6 +240,31 @@ fun BidEditorSheet(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun TypeChip(
+    key: String,
+    label: String,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    val isSelected = key == selected
+    val activeColor = AppColors.GreenPrimary
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (isSelected) activeColor.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
+            .clickable { onSelect(key) }
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = if (isSelected) activeColor else AppColors.TextSecondary
+        )
     }
 }
 

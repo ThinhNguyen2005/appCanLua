@@ -173,9 +173,9 @@
     <string name="weigh_options_impurity_hint_percent" formatted="false">Trừ theo % trên lúa thật. Vd: 2% trên 1000 kg bớt 20 kg.</string>
     <string name="weigh_options_bag_method">Cách tính bao bì</string>
     <string name="weigh_options_bag_single">Từng bao</string>
-    <string name="weigh_options_bag_sample">Cân thử</string>
-    <string name="weigh_options_bag_hint_single">Nhập kg 1 bao rỗng × số bao. Vd: 0.5 kg × 100 = 50 kg.</string>
-    <string name="weigh_options_bag_hint_sample">Cân vài bao rỗng, app tự chia trung bình. Vd: 10 bao = 5 kg.</string>
+    <string name="weigh_options_bag_sample">Tùy chỉnh số bao</string>
+    <string name="weigh_options_bag_hint_single">Quy đổi X bao = 1 kg. Tổng bì = Tổng số bao ÷ X. Vd: 8 bao = 1 kg.</string>
+    <string name="weigh_options_bag_hint_sample">Cân X bao mẫu nặng Y kg. Tổng bì = Tổng số bao × (Y ÷ X).</string>
     <string name="weigh_options_bag_sample_count">Số bao mẫu</string>
     <string name="weigh_options_bag_sample_weight">Cân được (kg)</string>
     <string name="weigh_options_input_scale">Quy cách nhập số kg</string>

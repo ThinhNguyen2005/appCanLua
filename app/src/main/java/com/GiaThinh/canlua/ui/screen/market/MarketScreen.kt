@@ -222,8 +222,8 @@ fun MarketScreenContent(
     var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
 
     val onSubmitBid = remember(bidsViewModel) {
-        { variety: String, pMin: Double, pMax: Double, region: String, trend: String, note: String, existingId: String? ->
-            bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, existingId)
+        { variety: String, pMin: Double, pMax: Double, region: String, trend: String, note: String, riceType: String, existingId: String? ->
+            bidsViewModel.submitBid(variety, pMin, pMax, region, trend, note, riceType, existingId)
         }
     }
     val onDismissEditor = remember {
