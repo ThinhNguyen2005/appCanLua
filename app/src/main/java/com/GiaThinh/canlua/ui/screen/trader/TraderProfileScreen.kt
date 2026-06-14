@@ -77,6 +77,7 @@ import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.GiaThinh.canlua.ui.viewmodel.DashboardData
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
@@ -98,7 +99,6 @@ import com.GiaThinh.canlua.util.TrackScreenRender
  *  8. Account Operations
  */
 import com.GiaThinh.canlua.ui.component.TransitionSafeWrapper
-import com.GiaThinh.canlua.ui.component.profile.TraderProfileSkeleton
 
 @Composable
 fun TraderProfileScreen(
@@ -114,6 +114,14 @@ fun TraderProfileScreen(
     val txState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
     val isDataReady = profile != null && dash.isAggregated && !txState.isLoading
 
+    val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
+    val isGoogleLoggedIn = remember(firebaseUser) {
+        firebaseUser?.providerData?.any { it.providerId == "google.com" } == true
+    }
+    val googleAvatarUrl = remember(firebaseUser) {
+        firebaseUser?.photoUrl?.toString()
+    }
+
     TransitionSafeWrapper(
         isDataReady = isDataReady,
         skeletonContent = { TraderProfileSkeleton() }
@@ -122,7 +130,9 @@ fun TraderProfileScreen(
             navController = navController,
             profileViewModel = profileViewModel,
             dashboardViewModel = dashboardViewModel,
-            traderTransactionsViewModel = traderTransactionsViewModel
+            traderTransactionsViewModel = traderTransactionsViewModel,
+            isGoogleLoggedIn = isGoogleLoggedIn,
+            googleAvatarUrl = googleAvatarUrl
         )
     }
 }
@@ -132,14 +142,15 @@ fun TraderProfileScreenContent(
     navController: NavController,
     profileViewModel: ProfileViewModel,
     dashboardViewModel: DashboardViewModel,
-    traderTransactionsViewModel: TraderTransactionsViewModel
+    traderTransactionsViewModel: TraderTransactionsViewModel,
+    isGoogleLoggedIn: Boolean,
+    googleAvatarUrl: String?
 ) {
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
 
     // Combined flow — 1 recomposition thay vì 7 staggered emissions.
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
-    val showSkeleton = profile == null || !dash.isAggregated
 
     val lifetimeStats = remember(traderTransactionsState) {
         TraderLifetimeStats(
@@ -147,21 +158,6 @@ fun TraderProfileScreenContent(
             totalNetWeight = traderTransactionsState.totalNetWeight,
             totalPaid = traderTransactionsState.totalPaid
         )
-    }
-
-    var editing by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var region by remember { mutableStateOf("") }
-    var cccd by remember { mutableStateOf("") }
-
-    LaunchedEffect(profile?.uid) {
-        profile?.let {
-            name = it.name
-            phone = it.phone
-            region = it.region
-            cccd = it.cccd
-        }
     }
 
     Box(
@@ -179,7 +175,9 @@ fun TraderProfileScreenContent(
                 GradientProfileHeader(
                     name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_trader_default_name),
                     role = profile?.role ?: "TRADER",
-                    email = profile?.email.orEmpty()
+                    email = profile?.email.orEmpty(),
+                    isGoogleLoggedIn = isGoogleLoggedIn,
+                    googleAvatarUrl = googleAvatarUrl
                 )
             }
 
@@ -237,6 +235,19 @@ fun TraderProfileScreenContent(
                     }
                 }
 
+                // ─── TIER 5: Season Comparison Bar Chart ───
+                if (dash.seasonsComparison.isNotEmpty()) {
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            SeasonComparisonBarChart(
+                                seasons = dash.seasonsComparison,
+                                selectedSeason = dash.selectedSeason,
+                                metric = ChartMetric.WEIGHT
+                            )
+                        }
+                    }
+                }
+
                 // ─── TIER 6: AI Crop Insights ───
                 if (!stats.isEmpty) {
                     item {
@@ -247,19 +258,6 @@ fun TraderProfileScreenContent(
                                 onReset = dashboardViewModel::resetAiAnalysis
                             )
                         }
-                    }
-                }
-            }
-
-            // ─── TIER 5: Season Comparison Bar Chart ───
-            if (dash.seasonsComparison.isNotEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        SeasonComparisonBarChart(
-                            seasons = dash.seasonsComparison,
-                            selectedSeason = dash.selectedSeason,
-                            metric = ChartMetric.WEIGHT
-                        )
                     }
                 }
             }
@@ -290,41 +288,6 @@ fun TraderProfileScreenContent(
             // ─── TIER 8: Account Operations ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    ProfileSectionTitle(
-                        title = stringResource(R.string.profile_account_section_title),
-                        subtitle = stringResource(R.string.profile_account_section_subtitle)
-                    )
-                }
-            }
-
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    PersonalInfoCard(
-                        editing = editing,
-                        name = name, onName = { name = it },
-                        phone = phone, onPhone = { phone = it },
-                        region = region, onRegion = { region = it },
-                        cccd = cccd, onCccd = { cccd = it },
-                        onToggleEdit = {
-                            if (editing) {
-                                profile?.let { current ->
-                                    profileViewModel.updateProfile(
-                                        current = current,
-                                        name = name,
-                                        phone = phone,
-                                        region = region,
-                                        cccd = cccd
-                                    )
-                                }
-                            }
-                            editing = !editing
-                        }
-                    )
-                }
-            }
-
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     val premiumInfo by com.GiaThinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
@@ -340,13 +303,8 @@ fun TraderProfileScreenContent(
                     }
                 }
             }
-
-            // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
-            // Profile giờ tập trung vào "tôi là ai + thống kê của tôi".
         }
     }
-
-    // RoleSwitcher đã chuyển sang SettingsScreen — Profile không còn dialog đổi role.
 }
 
 // ─────────────────────────────────────────────────────────────

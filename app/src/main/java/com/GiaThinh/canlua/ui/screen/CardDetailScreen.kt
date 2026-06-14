@@ -13,7 +13,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import com.GiaThinh.canlua.ui.component.PermissionRationaleDialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -33,7 +35,18 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.Grass
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material.icons.outlined.FilterAlt
+import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -66,7 +79,6 @@ import com.GiaThinh.canlua.ui.component.ThousandSeparatorTransformation
 import com.GiaThinh.canlua.ui.component.detail.BagEntriesCard
 import com.GiaThinh.canlua.ui.component.detail.BagEntryActionSheet
 import com.GiaThinh.canlua.ui.component.detail.CardInfoCard
-import com.GiaThinh.canlua.ui.component.detail.DetailSkeleton
 import com.GiaThinh.canlua.ui.component.detail.FinancialSummaryCard
 import com.GiaThinh.canlua.ui.component.detail.RemainingHeroCard
 import com.GiaThinh.canlua.ui.component.detail.WeightSummaryCard
@@ -130,6 +142,7 @@ fun CardDetailScreenContent(
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
 
+
     val numberFormat = remember {
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).apply {
             maximumFractionDigits = 1
@@ -157,9 +170,11 @@ fun CardDetailScreenContent(
             viewModel.refreshFieldLocation(cardId)
             appToast.info(context.getString(R.string.card_detail_updating_location))
         } else {
-            appToast.error("Cần quyền vị trí để định vị ruộng")
+            appToast.error(context.getString(R.string.card_detail_location_denied))
         }
     }
+
+    var showLocationRationale by remember { mutableStateOf(false) }
 
     val viewModelLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     // Pull-to-refresh state
@@ -375,16 +390,21 @@ fun CardDetailScreenContent(
                                             viewModel.refreshFieldLocation(cardId)
                                             appToast.info(context.getString(R.string.card_detail_updating_location))
                                         } else {
-                                            permissionLauncher.launch(
-                                                arrayOf(
-                                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                                )
-                                            )
+                                            showLocationRationale = true
                                         }
                                     },
                                     isLocked = card.isLocked,
-                                    cccd = card.cccd
+                                    cccd = card.cccd,
+                                    modifier = Modifier.combinedClickable(
+                                        onDoubleClick = {
+                                            if (card.isLocked) {
+                                                appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
+                                            } else {
+                                                showEditDialog = true
+                                            }
+                                        },
+                                        onClick = {}
+                                    )
                                 )
                             }
                         }
@@ -404,7 +424,17 @@ fun CardDetailScreenContent(
                                     impurityIsPercent = card.impurityIsPercent,
                                     bagMethodIsSampling = card.bagMethodIsSampling,
                                     bagSampleCount = card.bagSampleCount,
-                                    bagSampleTotalWeight = card.bagSampleTotalWeight
+                                    bagSampleTotalWeight = card.bagSampleTotalWeight,
+                                    modifier = Modifier.combinedClickable(
+                                        onDoubleClick = {
+                                            if (card.isLocked) {
+                                                appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
+                                            } else {
+                                                showEditDialog = true
+                                            }
+                                        },
+                                        onClick = {}
+                                    )
                                 )
                             }
                         }
@@ -492,11 +522,28 @@ fun CardDetailScreenContent(
                 if (showEditDialog) {
                     EditCardDialog(
                         card = card,
+                        showLocationRationale = showLocationRationale,
+                        permissionLauncher = permissionLauncher,
                         onDismiss = { showEditDialog = false },
                         onConfirm = { updatedCard ->
                             viewModel.updateCard(updatedCard)
                             showEditDialog = false
                             appToast.success(context.getString(R.string.card_detail_update_success))
+                        },
+                        onLocationRationaleConfirm = {
+                            showLocationRationale = false
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        },
+                        onLocationRationaleDismiss = {
+                            showLocationRationale = false
+                        },
+                        onRequestLocationPermission = {
+                            showLocationRationale = true
                         }
                     )
                 }
@@ -663,52 +710,38 @@ fun CardDetailScreenContent(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun FormTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = AppColors.TextPrimary,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = AppColors.TextHint) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AppColors.GreenPrimary,
-                unfocusedBorderColor = AppColors.Divider
-            )
-        )
-    }
-}
-
-@Composable
 fun EditCardDialog(
     card: Card,
+    showLocationRationale: Boolean,
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
     onDismiss: () -> Unit,
-    onConfirm: (Card) -> Unit
+    onConfirm: (Card) -> Unit,
+    onLocationRationaleConfirm: () -> Unit,
+    onLocationRationaleDismiss: () -> Unit,
+    onRequestLocationPermission: () -> Unit
 ) {
+    // ── Tab 0: Thông tin chung ────────────────────────────────────────────────
     var farmerName by remember { mutableStateOf(card.name) }
     var traderName by remember { mutableStateOf(card.traderName) }
+    var traderPhone by remember { mutableStateOf(card.traderPhone) }
+    var cccd by remember { mutableStateOf(card.cccd.orEmpty()) }
     var riceVariety by remember { mutableStateOf(card.riceVariety) }
     var seasonLabel by remember { mutableStateOf(card.seasonLabel) }
+
+    // ── Tab 1: Trừ hao ───────────────────────────────────────────────────────
     var moisturePercent by remember { mutableStateOf(if (card.moisturePercent > 0) card.moisturePercent.toString() else "") }
+    var impurityWeight by remember { mutableStateOf(if (card.impurityWeight > 0) card.impurityWeight.toString() else "") }
+
+    // ── Tab 2: Tài chính ─────────────────────────────────────────────────────
     var pricePerKg by remember { mutableStateOf(if (card.pricePerKg > 0) "%.0f".format(card.pricePerKg) else "") }
     var depositAmount by remember { mutableStateOf(if (card.depositAmount > 0) "%.0f".format(card.depositAmount) else "") }
     var paidAmount by remember { mutableStateOf(if (card.paidAmount > 0) "%.0f".format(card.paidAmount) else "") }
 
-    val isValid = farmerName.isNotBlank() && traderName.isNotBlank()
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    val isValid = farmerName.isNotBlank() &&
+                  traderName.isNotBlank() &&
+                  (cccd.isBlank() || cccd.length == 12)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -723,20 +756,93 @@ fun EditCardDialog(
             tonalElevation = 6.dp
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // ── Dialog header ─────────────────────────────────────────────
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(AppColors.GreenSurface)
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.card_detail_edit_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.GreenPrimary
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = null,
+                            tint = AppColors.GreenPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.card_detail_edit_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.GreenPrimary
+                        )
+                    }
+                }
+
+                // ── Tab selector ──────────────────────────────────────────────
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = AppColors.CardBg,
+                    contentColor = AppColors.GreenPrimary,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = AppColors.GreenPrimary
+                        )
+                    }
+                ) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = {
+                            Text(
+                                "Thông tin",
+                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        selectedContentColor = AppColors.GreenPrimary,
+                        unselectedContentColor = AppColors.TextSecondary
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = {
+                            Text(
+                                "Trừ hao",
+                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Scale, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        selectedContentColor = AppColors.GreenPrimary,
+                        unselectedContentColor = AppColors.TextSecondary
+                    )
+                    Tab(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        text = {
+                            Text(
+                                "Tài chính",
+                                fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        selectedContentColor = AppColors.GreenPrimary,
+                        unselectedContentColor = AppColors.TextSecondary
                     )
                 }
 
+                // ── Tab content ───────────────────────────────────────────────
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -744,92 +850,284 @@ fun EditCardDialog(
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    FormTextField(
-                        value = farmerName,
-                        onValueChange = { farmerName = it },
-                        label = stringResource(R.string.card_detail_farmer_name_label),
-                        placeholder = stringResource(R.string.card_detail_farmer_name_placeholder)
-                    )
+                    if (selectedTab == 0) {
+                        // ── Tab 0: Thông tin chung ────────────────────────────
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(modifier = Modifier.weight(1.1f)) {
-                            RiceVarietyDropdown(
-                                selected = riceVariety,
-                                onSelect = { riceVariety = it },
-                                modifier = Modifier.fillMaxWidth()
+                        // Tên chủ ruộng
+                        OutlinedTextField(
+                            value = farmerName,
+                            onValueChange = { farmerName = it },
+                            label = { Text(stringResource(R.string.card_detail_farmer_name_label)) },
+                            placeholder = { Text(stringResource(R.string.card_detail_farmer_name_placeholder), color = AppColors.TextHint) },
+                            leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.GreenPrimary,
+                                unfocusedBorderColor = AppColors.Divider
+                            )
+                        )
+
+                        // Tên thương lái
+                        OutlinedTextField(
+                            value = traderName,
+                            onValueChange = { traderName = it },
+                            label = { Text(stringResource(R.string.card_detail_trader_name_label)) },
+                            placeholder = { Text(stringResource(R.string.card_detail_trader_name_placeholder), color = AppColors.TextHint) },
+                            leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.GreenPrimary,
+                                unfocusedBorderColor = AppColors.Divider
+                            )
+                        )
+
+                        // SĐT + CCCD (equal weight 50/50)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = traderPhone,
+                                onValueChange = { input ->
+                                    val filtered = input.filter { it.isDigit() || it == '+' }
+                                    if (filtered.length <= 15) traderPhone = filtered
+                                },
+                                label = { Text(stringResource(R.string.pdf_trader_phone)) },
+                                leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AppColors.GreenPrimary,
+                                    unfocusedBorderColor = AppColors.Divider
+                                )
+                            )
+                            OutlinedTextField(
+                                value = cccd,
+                                onValueChange = { input ->
+                                    val filtered = input.filter { it.isDigit() }
+                                    if (filtered.length <= 12) cccd = filtered
+                                },
+                                label = { Text(stringResource(R.string.create_card_cccd_label)) },
+                                placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), color = AppColors.TextHint) },
+                                leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                isError = cccd.isNotBlank() && cccd.length != 12,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AppColors.GreenPrimary,
+                                    unfocusedBorderColor = AppColors.Divider
+                                )
                             )
                         }
-                        FormTextField(
-                            value = seasonLabel,
-                            onValueChange = { seasonLabel = it },
-                            label = stringResource(R.string.card_detail_season_label),
-                            placeholder = stringResource(R.string.card_detail_season_placeholder),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
 
-                    FormTextField(
-                        value = traderName,
-                        onValueChange = { traderName = it },
-                        label = stringResource(R.string.card_detail_trader_name_label),
-                        placeholder = stringResource(R.string.card_detail_trader_name_placeholder)
-                    )
+                        // Giống lúa + Vụ mùa (equal weight 50/50)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                RiceVarietyDropdown(
+                                    selected = riceVariety,
+                                    onSelect = { riceVariety = it },
+                                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AppColors.GreenPrimary,
+                                        unfocusedBorderColor = AppColors.Divider,
+                                        focusedLabelColor = AppColors.GreenPrimary,
+                                        unfocusedLabelColor = AppColors.TextHint
+                                    ),
+                                    fillMaxHeight = true
+                                )
+                            }
+                            OutlinedTextField(
+                                value = seasonLabel,
+                                onValueChange = { seasonLabel = it },
+                                label = { Text(stringResource(R.string.card_detail_season_label)) },
+                                placeholder = { Text(stringResource(R.string.card_detail_season_placeholder), color = AppColors.TextHint) },
+                                leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AppColors.GreenPrimary,
+                                    unfocusedBorderColor = AppColors.Divider
+                                )
+                            )
+                        }
+                        // Ghi chú: Giống lúa chỉ lưu tên để hiển thị, không ảnh hưởng tính toán
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(start = 2.dp, top = 2.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Grass,
+                                contentDescription = null,
+                                tint = AppColors.TextHint,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "Giống lúa chỉ hiển thị, không ảnh hưởng tính toán",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.TextHint
+                            )
+                        }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    } else if (selectedTab == 1) {
+                        // ── Tab 1: Trừ hao ────────────────────────────────────
+
+                        // Ghi chú hướng dẫn
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = AppColors.GreenSurface,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Scale,
+                                    contentDescription = null,
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "Thay đổi sẽ tính lại khối lượng thực nhận",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.GreenPrimary
+                                )
+                            }
+                        }
+
+                        // Độ ẩm
                         OutlinedTextField(
                             value = moisturePercent,
-                            onValueChange = { moisturePercent = it },
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() || it == '.' }
+                                if (filtered.length <= 4) moisturePercent = filtered
+                            },
                             label = { Text(stringResource(R.string.create_card_moisture_label)) },
+                            placeholder = { Text("0.0", color = AppColors.TextHint) },
+                            leadingIcon = { Icon(Icons.Outlined.WaterDrop, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            suffix = { Text("%", color = AppColors.TextSecondary) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.GreenPrimary,
+                                unfocusedBorderColor = AppColors.Divider
+                            )
                         )
+
+                        // Tạp chất
+                        OutlinedTextField(
+                            value = impurityWeight,
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() || it == '.' }
+                                if (filtered.length <= 5) impurityWeight = filtered
+                            },
+                            label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
+                            placeholder = { Text("0.0", color = AppColors.TextHint) },
+                            leadingIcon = { Icon(Icons.Outlined.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            suffix = { Text("kg", color = AppColors.TextSecondary) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.GreenPrimary,
+                                unfocusedBorderColor = AppColors.Divider
+                            )
+                        )
+                    } else if (selectedTab == 2) {
+                        // ── Tab 2: Tài chính ──────────────────────────────────
+
+                        // Giá/kg
                         OutlinedTextField(
                             value = pricePerKg,
-                            onValueChange = { pricePerKg = it },
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                pricePerKg = filtered
+                            },
                             label = { Text(stringResource(R.string.create_card_price_label)) },
+                            leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                            suffix = { Text("đ/kg", color = AppColors.TextSecondary) },
                             visualTransformation = ThousandSeparatorTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.GreenPrimary,
+                                unfocusedBorderColor = AppColors.Divider
+                            )
                         )
-                    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = depositAmount,
-                            onValueChange = { depositAmount = it },
-                            label = { Text(stringResource(R.string.create_card_deposit_label)) },
-                            visualTransformation = ThousandSeparatorTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        OutlinedTextField(
-                            value = paidAmount,
-                            onValueChange = { paidAmount = it },
-                            label = { Text(stringResource(R.string.card_detail_paid_amount_label)) },
-                            visualTransformation = ThousandSeparatorTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        // Đặt cọc + Đã trả (equal weight)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = depositAmount,
+                                onValueChange = { input ->
+                                    val filtered = input.filter { it.isDigit() }
+                                    depositAmount = filtered
+                                },
+                                label = { Text(stringResource(R.string.create_card_deposit_label)) },
+                                leadingIcon = { Icon(Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                visualTransformation = ThousandSeparatorTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AppColors.GreenPrimary,
+                                    unfocusedBorderColor = AppColors.Divider
+                                )
+                            )
+                            OutlinedTextField(
+                                value = paidAmount,
+                                onValueChange = { input ->
+                                    val filtered = input.filter { it.isDigit() }
+                                    paidAmount = filtered
+                                },
+                                label = { Text(stringResource(R.string.card_detail_paid_amount_label)) },
+                                leadingIcon = { Icon(Icons.Outlined.Payments, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                visualTransformation = ThousandSeparatorTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AppColors.GreenPrimary,
+                                    unfocusedBorderColor = AppColors.Divider
+                                )
+                            )
+                        }
                     }
                 }
 
+                // ── Action buttons ────────────────────────────────────────────
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), color = AppColors.Divider)
                 Row(
                     modifier = Modifier
@@ -848,10 +1146,13 @@ fun EditCardDialog(
                                 traderName = traderName.trim(),
                                 riceVariety = riceVariety,
                                 seasonLabel = seasonLabel.trim(),
-                                moisturePercent = moisturePercent.toDoubleOrNull() ?: 0.0,
-                                pricePerKg = pricePerKg.toDoubleOrNull() ?: 0.0,
-                                depositAmount = depositAmount.toDoubleOrNull() ?: 0.0,
-                                paidAmount = paidAmount.toDoubleOrNull() ?: 0.0
+                                moisturePercent = moisturePercent.toDoubleOrNull() ?: card.moisturePercent,
+                                impurityWeight = impurityWeight.toDoubleOrNull() ?: card.impurityWeight,
+                                pricePerKg = pricePerKg.toDoubleOrNull() ?: card.pricePerKg,
+                                depositAmount = depositAmount.toDoubleOrNull() ?: card.depositAmount,
+                                paidAmount = paidAmount.toDoubleOrNull() ?: card.paidAmount,
+                                traderPhone = traderPhone.trim(),
+                                cccd = cccd.trim().takeIf { it.isNotEmpty() }
                             )
                             onConfirm(updated)
                         },
@@ -864,6 +1165,17 @@ fun EditCardDialog(
                 }
             }
         }
+    }
+
+    if (showLocationRationale) {
+        PermissionRationaleDialog(
+            title = stringResource(R.string.permission_location_title),
+            message = stringResource(R.string.permission_location_rationale),
+            confirmText = stringResource(R.string.permission_location_button),
+            dismissText = stringResource(R.string.permission_dismiss_button),
+            onConfirm = onLocationRationaleConfirm,
+            onDismiss = onLocationRationaleDismiss
+        )
     }
 }
 

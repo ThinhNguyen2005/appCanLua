@@ -2,13 +2,11 @@ package com.GiaThinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.GiaThinh.canlua.data.model.ChatSession
 import com.GiaThinh.canlua.data.model.Profile
 import com.GiaThinh.canlua.data.model.RicePrice
 import com.GiaThinh.canlua.data.model.WeatherInfo
 import com.GiaThinh.canlua.data.remote.ai.ChatMessage
 import com.GiaThinh.canlua.repository.AiChatRepository
-import com.GiaThinh.canlua.repository.ChatSessionStore
 import com.GiaThinh.canlua.repository.FirestoreRepository
 import com.GiaThinh.canlua.repository.KnowledgeBaseRepository
 import com.GiaThinh.canlua.repository.MarketRepository
@@ -24,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -51,8 +50,7 @@ data class AiChatUiState(
     val isStreaming: Boolean = false,
     val input: String = "",
     val errorMessage: String? = null,
-    val sessions: List<ChatSession> = emptyList(),
-    val currentSessionId: String? = null
+    val rateLimitSeconds: Int = 0
 )
 
 @HiltViewModel
@@ -63,12 +61,32 @@ class AiChatViewModel @Inject constructor(
     profileRepository: ProfileRepository,
     weatherRepository: WeatherRepository,
     private val knowledgeBase: KnowledgeBaseRepository,
-    private val stt: SpeechRecognizerHelper,
-    private val sessionStore: ChatSessionStore
+    private val stt: SpeechRecognizerHelper
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AiChatUiState())
     val state: StateFlow<AiChatUiState> = _state.asStateFlow()
+
+    /** Rate limiting: max 10 messages per 60 seconds window, min 1s between sends. */
+    private val rateLimitMs = 1_000L
+    private val windowMs = 60_000L
+    private val maxMessages = 10
+    private val recentTimestamps = mutableListOf<Long>()
+    private var lastSentTime = 0L
+
+    private fun canSend(): Boolean {
+        val now = System.currentTimeMillis()
+        recentTimestamps.removeAll { now - it > windowMs }
+        val withinBurst = recentTimestamps.size < maxMessages
+        val withinThrottle = now - lastSentTime >= rateLimitMs
+        return withinBurst && withinThrottle
+    }
+
+    private fun recordSend() {
+        val now = System.currentTimeMillis()
+        recentTimestamps.add(now)
+        lastSentTime = now
+    }
 
     val voiceState: StateFlow<VoiceState> = combine(
         stt.state,
@@ -111,22 +129,17 @@ class AiChatViewModel @Inject constructor(
         )
 
     init {
-        if (sessionStore.sessions.value.isEmpty()) {
-            sessionStore.createNew(welcome = welcomeMessages(currentAudience()))
-        } else if (sessionStore.currentId.value == null) {
-            sessionStore.sessions.value.firstOrNull()?.let { sessionStore.switchTo(it.id) }
-        }
-
         viewModelScope.launch {
-            combine(sessionStore.sessions, sessionStore.currentId) { list, id ->
-                list to id
-            }.collect { (list, id) ->
-                val current = list.find { it.id == id }
-                _state.value = _state.value.copy(
-                    sessions = list,
-                    currentSessionId = id,
-                    messages = current?.messages ?: emptyList()
-                )
+            profile.collect { prof ->
+                if (_state.value.messages.isEmpty()) {
+                    val audience = if (prof?.role.equals("TRADER", ignoreCase = true))
+                        KnowledgeBaseRepository.Audience.TRADER
+                    else
+                        KnowledgeBaseRepository.Audience.FARMER
+                    _state.value = _state.value.copy(
+                        messages = welcomeMessages(audience)
+                    )
+                }
             }
         }
     }
@@ -143,25 +156,36 @@ class AiChatViewModel @Inject constructor(
 
     fun send() {
         val text = _state.value.input.trim()
-        val sessionId = _state.value.currentSessionId ?: return
         if (text.isEmpty() || _state.value.isStreaming) return
 
-        sessionStore.renameTitleIfNeeded(sessionId, text)
+        if (!canSend()) {
+            val cooldownSec = ((rateLimitMs - (System.currentTimeMillis() - lastSentTime)) / 1000).toInt().coerceAtLeast(1)
+            _state.value = _state.value.copy(rateLimitSeconds = cooldownSec.coerceAtLeast(1))
+            viewModelScope.launch {
+                repeat(cooldownSec.coerceAtLeast(1)) { i ->
+                    delay(1_000)
+                    _state.value = _state.value.copy(rateLimitSeconds = cooldownSec - i - 1)
+                }
+                _state.value = _state.value.copy(rateLimitSeconds = 0)
+            }
+            return
+        }
+        recordSend()
 
         val userMsg = UiMessage(role = "user", content = text)
-        sessionStore.appendMessage(sessionId, userMsg)
+        val currentMessages = _state.value.messages + userMsg
 
         _state.value = _state.value.copy(
             input = "",
+            messages = currentMessages,
             isStreaming = true,
             errorMessage = null
         )
 
         viewModelScope.launch {
-            val history = sessionStore.getSession(sessionId)?.messages
-                ?.filter { !it.isError && (it.role == "user" || it.role == "assistant") }
-                ?.map { ChatMessage(role = it.role, content = it.content) }
-                .orEmpty()
+            val history = currentMessages
+                .filter { !it.isError && (it.role == "user" || it.role == "assistant") }
+                .map { ChatMessage(role = it.role, content = it.content) }
 
             val audience = currentAudience()
             val kbHits = knowledgeBase.search(text, audience = audience, maxResults = 2)
@@ -185,24 +209,16 @@ class AiChatViewModel @Inject constructor(
                     isError = true
                 )
             }
-            sessionStore.appendMessage(sessionId, reply)
-            _state.value = _state.value.copy(isStreaming = false)
+            _state.value = _state.value.copy(
+                messages = _state.value.messages + reply,
+                isStreaming = false
+            )
         }
     }
 
     fun usePresetPrompt(prompt: String) {
         _state.value = _state.value.copy(input = prompt)
         send()
-    }
-
-    fun newSession() {
-        sessionStore.createNew(welcome = welcomeMessages(currentAudience()))
-        _state.value = _state.value.copy(input = "")
-    }
-
-    fun switchSession(id: String) {
-        sessionStore.switchTo(id)
-        _state.value = _state.value.copy(input = "")
     }
 
     // === Voice ===

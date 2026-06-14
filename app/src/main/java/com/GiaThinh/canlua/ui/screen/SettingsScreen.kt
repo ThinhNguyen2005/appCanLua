@@ -16,9 +16,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Agriculture
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.*
+import com.GiaThinh.canlua.ui.screen.profile.PersonalInfoCard
 import androidx.compose.material3.*
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
@@ -67,11 +69,27 @@ fun SettingsScreen(
     val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var pendingRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
     var showRestartConfirm by remember { mutableStateOf(false) }
     var themeExpanded by remember { mutableStateOf(false) }
+
+    var editing by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var region by remember { mutableStateOf("") }
+    var cccd by remember { mutableStateOf("") }
+
+    LaunchedEffect(profile?.uid) {
+        profile?.let {
+            name = it.name
+            phone = it.phone
+            region = it.region
+            cccd = it.cccd
+        }
+    }
 
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -129,7 +147,49 @@ fun SettingsScreen(
                 onRoleChange = { pendingRole = it }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Tùy chỉnh thông tin cá nhân
+            PersonalInfoCard(
+                editing = editing,
+                name = name, onName = { name = it },
+                phone = phone, onPhone = { phone = it },
+                region = region, onRegion = { region = it },
+                cccd = cccd, onCccd = { cccd = it },
+                onToggleEdit = {
+                    if (editing) {
+                        profile?.let { current ->
+                            profileViewModel.updateProfile(
+                                current = current,
+                                name = name,
+                                phone = phone,
+                                region = region,
+                                cccd = cccd
+                            )
+                        }
+                    }
+                    editing = !editing
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Lịch sử thương lái (chỉ hiển thị với Nông dân)
+            if (profile?.role == "FARMER") {
+                ClickableSettingsRow(
+                    icon = Icons.Outlined.History,
+                    iconBg = AppColors.GreenSurface,
+                    iconTint = AppColors.GreenPrimary,
+                    title = stringResource(R.string.profile_trader_history_title),
+                    subtitle = if (traderHistory.isEmpty()) {
+                        stringResource(R.string.profile_no_transactions)
+                    } else {
+                        stringResource(R.string.profile_trader_partner_count, traderHistory.size)
+                    },
+                    onClick = { navController.navigate("trader_history") }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             ClickableSettingsRow(
                 icon = Icons.Outlined.Logout,

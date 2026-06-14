@@ -245,7 +245,10 @@ private fun ActionRow(
     val rowModifier = if (actionEnabled) {
         baseModifier.clickable(
             interactionSource = interactionSource,
-            indication = ripple(bounded = true, color = actionTint),
+            indication = ripple(
+                bounded = true,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            ),
             onClick = onClick
         )
     } else baseModifier
@@ -332,7 +335,10 @@ private fun FieldAddressRow(
         val addrModifier = if (hasCoordinates) {
             baseAddrModifier.clickable(
                 interactionSource = interactionSource,
-                indication = ripple(bounded = true, color = AppColors.GreenPrimary),
+                indication = ripple(
+                    bounded = true,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ),
                 onClick = onOpenMap
             )
         } else baseAddrModifier

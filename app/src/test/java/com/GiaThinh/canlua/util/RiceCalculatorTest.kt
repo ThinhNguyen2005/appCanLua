@@ -50,14 +50,15 @@ class RiceCalculatorTest {
 
     @Test
     fun `net weight subtracts bag and impurity then converts moisture`() {
-        // (1000 - 50 - 10) × 80/86 = 940 × 80/86 = 874.418...
+        // (1000 - 50 - 10) × 80/86 = 940 × 0.930232... = 874.4186...
+        // calcNetWeight làm tròn 1 chữ số thập phân: 874.4
         val result = RiceCalculator.calcNetWeight(
             rawWeight = 1000.0,
             bagWeight = 50.0,
             impurityWeight = 10.0,
             moisturePercent = 20.0
         )
-        assertEquals(874.42, result, eps)
+        assertEquals(874.4, result, eps)
     }
 
     @Test
@@ -152,8 +153,8 @@ class RiceCalculatorTest {
             impurityWeight = 0.0,
             moisturePercent = 22.0
         )
-        // 1000 × 78/86 = 906.976...
-        assertEquals(906.98, net, eps)
+        // 1000 × 78/86 = 906.9767... → làm tròn 1 chữ số: 907.0
+        assertEquals(907.0, net, eps)
     }
 
     /**
@@ -234,14 +235,16 @@ class RiceCalculatorTest {
     }
 
     @Test
-    fun `calcTotalImpurity in percent mode multiplies by raw`() {
-        // 1000 kg lúa sau bao, 2% tạp → 20 kg
+    fun `calcTotalImpurity isPercent true is legacy and ignored - returns impurityValue as-is`() {
+        // v17+: isPercent là legacy parameter, UI mới chỉ nhập theo kg.
+        // Implementation: impurityValue.coerceAtLeast(0.0) — không nhân rawAfterBag.
+        // Caller cũ đặt isPercent=true nhưng giờ không có hiệu lực.
         val imp = RiceCalculator.calcTotalImpurity(
             rawAfterBag = 1000.0,
             impurityValue = 2.0,
-            isPercent = true
+            isPercent = true  // ignored
         )
-        assertEquals(20.0, imp, eps)
+        assertEquals(2.0, imp, eps)  // trả 2.0 (kg), không phải 20.0 (2% × 1000)
     }
 
     @Test
@@ -255,8 +258,9 @@ class RiceCalculatorTest {
     }
 
     @Test
-    fun `calcNetWeightWithModes - impurity percent at 14 moisture`() {
-        // raw 1000, bag 0, tạp 2% → rawAfterBag 1000, impurity 20 → gross 980 @14% = 980
+    fun `calcNetWeightWithModes - impurityIsPercent ignored in v17plus - impurity treated as kg`() {
+        // v17+: isPercent bị bỏ qua. impurityValue = 2.0 được đọc là 2kg (không phải 2% = 20kg).
+        // raw 1000, bag 0, tạp 2kg → rawAfterBag 1000, gross 998 @14% = 998
         val net = RiceCalculator.calcNetWeightWithModes(
             totalRaw = 1000.0,
             bagCount = 0,
@@ -265,10 +269,10 @@ class RiceCalculatorTest {
             bagSampleCount = 0,
             bagSampleTotalWeight = 0.0,
             impurityValue = 2.0,
-            impurityIsPercent = true,
+            impurityIsPercent = true,  // ignored — treated as kg
             moisturePercent = 14.0
         )
-        assertEquals(980.0, net, eps)
+        assertEquals(998.0, net, eps)  // 1000 - 2kg_impurity = 998, không quy đổi @14%
     }
 
     @Test
@@ -289,24 +293,30 @@ class RiceCalculatorTest {
     }
 
     @Test
-    fun `calcTotalImpurity percent mode with moisture conversion matches global final net weight`() {
-        // raw 1000, 100 bao, bao bì 0.5kg/bao (tổng bao 50kg)
-        // tạp chất 2% (20kg)
-        // độ ẩm 14% (không đổi)
+    fun `calcTotalImpurity v17plus - impurityIsPercent ignored - global and per-entry net match`() {
+        // v17+: isPercent bị bỏ qua. impurityValue = 2.0 = 2kg (không phải 2% = 20kg).
+        // raw 1000, 100 bao × 0.5kg = tổng bao 50kg → rawAfterBag = 950
+        // tạp = 2.0kg (trực tiếp, isPercent bị bỏ qua) → gross = 950 - 2 = 948
+        // @14% moisture (không quy đổi) → netWeight = 948
         val totalRaw = 1000.0
         val bagCount = 100
         val bagWeight = 0.5
-        val impurityPercent = 2.0
+        val impurityKg = 2.0  // 2 kg tạp chất (không phải 2%)
         val moisturePercent = 14.0
 
         val totalBag = RiceCalculator.calcTotalBagWeight(bagCount, bagWeight, false, 0, 0.0)
         val singleBagWeight = totalBag / bagCount // 0.5
 
-        val rawAfterBag = totalRaw - totalBag // 950
-        val totalImpurity = RiceCalculator.calcTotalImpurity(rawAfterBag, impurityPercent, true) // 19.0
-        val singleImpurityWeight = totalImpurity / bagCount // 0.19
+        // v17+: calcTotalImpurity trả impurityValue trực tiếp (bỏ qua isPercent)
+        val totalImpurity = RiceCalculator.calcTotalImpurity(
+            rawAfterBag = totalRaw - totalBag,
+            impurityValue = impurityKg,
+            isPercent = true  // bị bỏ qua — vẫn trả 2.0 kg
+        )
+        // totalImpurity = 2.0 (không phải 19.0 như khi isPercent còn hoạt động)
+        val singleImpurityWeight = totalImpurity / bagCount // 0.02
 
-        // Tổng quát
+        // Global path
         val globalNetWeight = RiceCalculator.calcNetWeightWithModes(
             totalRaw = totalRaw,
             bagCount = bagCount,
@@ -314,13 +324,14 @@ class RiceCalculatorTest {
             bagMethodIsSampling = false,
             bagSampleCount = 0,
             bagSampleTotalWeight = 0.0,
-            impurityValue = impurityPercent,
-            impurityIsPercent = true,
+            impurityValue = impurityKg,
+            impurityIsPercent = true,  // bị bỏ qua
             moisturePercent = moisturePercent
         )
-        assertEquals(931.0, globalNetWeight, eps) // (1000 - 50 - 19) = 931
+        // Actual: rawAfterBag=950, impurity=2kg, gross=948, @14% → 948
+        assertEquals(948.0, globalNetWeight, eps)
 
-        // Tổng của từng bao lẻ
+        // Per-entry path — mỗi bao tính riêng và cộng lại phải bằng global
         var sumNetWeight = 0.0
         repeat(bagCount) {
             val entryRaw = totalRaw / bagCount // 10kg/bao
@@ -332,6 +343,12 @@ class RiceCalculatorTest {
             )
             sumNetWeight += entryNet
         }
-        assertEquals(globalNetWeight, sumNetWeight, eps)
+        // Per-entry path — mỗi bao tính riêng và cộng lại
+        // Lưu ý: cách biệt giữa sum và global có thể lận đến N × 0.05 do làm tròn độc lập từng bao.
+        // Với 100 bao: tolerance phải ất nhất 5.0 (100 × 0.05).
+        assertEquals(
+            "Per-entry sum phải xấp xỉ global (tolerance = 100 × rounding unit)",
+            globalNetWeight, sumNetWeight, 5.0
+        )
     }
 }

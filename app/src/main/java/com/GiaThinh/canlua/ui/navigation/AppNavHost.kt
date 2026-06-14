@@ -1,9 +1,6 @@
 package com.GiaThinh.canlua.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,7 +37,6 @@ fun AppNavHost(
     navController: NavHostController,
     startDestination: String = BottomNavItem.SCALE.route,
     modifier: Modifier = Modifier,
-    aiChatDrawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
     deeplinkCardId: String? = null,
     onDeeplinkConsumed: () -> Unit = {}
 ) {
@@ -107,7 +103,7 @@ fun AppNavHost(
 
         // === Tab 3: AI Chat ===
         composable(BottomNavItem.AI_CHAT.route) {
-            AiChatScreen(drawerState = aiChatDrawerState)
+            AiChatScreen()
         }
 
         // === Tab 4: Tài khoản (FARMER) ===

@@ -4,7 +4,6 @@ import java.lang.ProcessBuilder
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
@@ -18,9 +17,10 @@ val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
-val openWeatherKey: String = localProps.getProperty("OPENWEATHER_API_KEY", "")
-val openRouterKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
 val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY", "")
+val appHandshakeToken: String = localProps.getProperty("APP_HANDSHAKE_TOKEN", "")
+val openRouterApiKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
+val openWeatherApiKey: String = localProps.getProperty("OPENWEATHER_API_KEY", "")
 
 fun encodeBase64(value: String): String {
     return Base64.getEncoder().encodeToString(value.toByteArray())
@@ -34,20 +34,21 @@ val gitCommitCount = runCatching {
 
 android {
     namespace = "com.GiaThinh.canlua"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.GiaThinh.canlua"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = gitCommitCount
         versionName = "1.0.$gitCommitCount"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "OPENWEATHER_API_KEY", "\"${encodeBase64(openWeatherKey)}\"")
-        buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterKey)}\"")
         buildConfigField("String", "MAPS_API_KEY", "\"${encodeBase64(mapsApiKey)}\"")
+        buildConfigField("String", "APP_HANDSHAKE_TOKEN", "\"${encodeBase64(appHandshakeToken)}\"")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterApiKey)}\"")
+        buildConfigField("String", "OPENWEATHER_API_KEY", "\"${encodeBase64(openWeatherApiKey)}\"")
 
         // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
@@ -72,9 +73,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
     }
     buildFeatures {
         compose = true
@@ -185,8 +183,12 @@ dependencies {
     // natively là Stable (không cần @Immutable annotation) → WeightTableCard Skippable hoàn toàn
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.datastore)
 
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

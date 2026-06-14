@@ -31,6 +31,9 @@
         <domain includeSubdomains="true">cdn.tuoitre.vn</domain>
         <domain includeSubdomains="true">image.thanhnien.vn</domain>
         <domain includeSubdomains="true">img.baomoi.com</domain>
+        <!-- Nông nghiệp và Môi trường -->
+        <domain includeSubdomains="true">nongnghiepmoitruong.vn</domain>
+        <domain includeSubdomains="true">ex-cdn.com</domain>
         <!-- Báo điện tử khác hay xuất hiện -->
         <domain includeSubdomains="true">images1.cafef.vn</domain>
         <domain includeSubdomains="true">cdnimg.vietnamplus.vn</domain>

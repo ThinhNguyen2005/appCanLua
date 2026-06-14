@@ -30,7 +30,7 @@ class HttpClient @Inject constructor(
         return executeAndParse(request)
     }
 
-    /** POST JSON body → parse response. */
+    /** POST JSON body → parse response. Hỗ trợ tự follow redirect cho Google Apps Script. */
     inline fun <reified T> postJson(
         url: String,
         body: Any,
@@ -38,10 +38,41 @@ class HttpClient @Inject constructor(
     ): T {
         val json = gson.toJson(body)
         val reqBody = json.toRequestBody("application/json".toMediaType())
-        val request = Request.Builder().url(url).apply {
+        
+        // Tạo client tạm thời tắt tự động follow redirect để bắt mã 302 của GAS
+        val noRedirectClient = client.newBuilder().followRedirects(false).build()
+        
+        var request = Request.Builder().url(url).apply {
             headers.forEach { (k, v) -> addHeader(k, v) }
         }.post(reqBody).build()
-        return executeAndParse(request)
+        
+        var response = noRedirectClient.newCall(request).execute()
+        
+        // GAS trả 302 redirect đến script.googleusercontent.com (CDN).
+        // Phải POST lại nguyên body vì doPost handler cần payload.
+        // Lưu ý: KHÔNG chuyển sang GET ở đây — sẽ mất body và doPost parse fail.
+        if (response.code in listOf(301, 302, 303, 307, 308)) {
+            val location = response.header("Location")
+            response.close()
+            if (location != null) {
+                request = Request.Builder().url(location).apply {
+                    headers.forEach { (k, v) -> addHeader(k, v) }
+                }.post(reqBody).build()
+                response = client.newCall(request).execute()
+            }
+        }
+        
+        response.use { resp ->
+            val raw = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                throw HttpException(resp.code, raw.take(500))
+            }
+            return try {
+                gson.fromJson(raw, T::class.java)
+            } catch (e: JsonSyntaxException) {
+                throw HttpException(resp.code, "JSON parse error: ${e.message}")
+            }
+        }
     }
 
     @PublishedApi

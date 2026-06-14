@@ -552,8 +552,7 @@ fun WeightMetricsCard(
 
                     Surface(
                         color = AppColors.GreenSurface,
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, AppColors.GreenPrimary.copy(alpha = 0.35f))
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
                             text = dialogPreview,
@@ -605,11 +604,7 @@ private fun BagMethodOption(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(18.dp),
-        color = if (selected) AppColors.GreenSurface else AppColors.CardBg,
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) AppColors.GreenPrimary else AppColors.DividerStrong
-        ),
+        color = if (selected) AppColors.GreenSurface else Color(0xFFF8F9FA),
         tonalElevation = if (selected) 2.dp else 0.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -618,7 +613,14 @@ private fun BagMethodOption(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = selected, onClick = onClick)
+                RadioButton(
+                    selected = selected,
+                    onClick = onClick,
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = AppColors.GreenPrimary,
+                        unselectedColor = AppColors.TextHint
+                    )
+                )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
@@ -635,9 +637,8 @@ private fun BagMethodOption(
             }
 
             Surface(
-                color = AppColors.Surface,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, AppColors.DividerStrong)
+                color = AppColors.SurfaceContainer.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = formula,

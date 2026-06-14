@@ -2,6 +2,7 @@ package com.GiaThinh.canlua.ui.component
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
@@ -34,7 +35,15 @@ fun RiceVarietyDropdown(
     selected: String,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
-    suggestions: List<String> = com.GiaThinh.canlua.util.RiceVarieties.popular.take(5)
+    suggestions: List<String> = com.GiaThinh.canlua.util.RiceVarieties.popular.take(5),
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(14.dp),
+    colors: androidx.compose.material3.TextFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ),
+    fillMaxHeight: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -52,16 +61,11 @@ fun RiceVarietyDropdown(
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
-                .heightIn(min = 60.dp),
-            shape = RoundedCornerShape(14.dp),
+                .then(if (fillMaxHeight) Modifier.fillMaxHeight() else Modifier.heightIn(min = 60.dp)),
+            shape = shape,
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyLarge,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            colors = colors
         )
         ExposedDropdownMenu(
             expanded = expanded,

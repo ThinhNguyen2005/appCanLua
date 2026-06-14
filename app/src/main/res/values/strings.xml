@@ -564,5 +564,24 @@
     <string name="weather_advisory_rain">Mưa nhiều — hoãn phơi và phun thuốc, phủ kín bao lúa</string>
     <string name="weather_advisory_hot_sun">Nắng gắt — phơi sớm, tránh giữa trưa, kiểm ẩm thường xuyên</string>
     <string name="weather_advisory_high_humidity">Ẩm cao — mở thoáng kho, tránh ủ bao lâu dễ mốc</string>
+
+    <!-- Permission rationale H-14 -->
+    <string name="permission_location_title">Cho phép truy cập vị trí</string>
+    <string name="permission_location_rationale">Cân Lúa cần vị trí để hiển thị thời tiết chính xác cho khu vực của bạn và cập nhật tọa độ ruộng lúa.</string>
+    <string name="permission_location_button">Cho phép</string>
+    <string name="permission_dismiss_button">Để sau</string>
+
+    <!-- Rate limiting H-13 -->
+    <string name="rate_limit_wait_message">Vui lòng chờ %d giây trước khi gửi tin nhắn tiếp theo.</string>
+
+    <!-- Settings hardcoded strings H-09 -->
+    <string name="settings_logout_rationale">Bạn có chắc chắn muốn đăng xuất không? Dữ liệu chưa đồng bộ có thể bị mất.</string>
+    <string name="settings_copyright">GiaThinh © 2026</string>
+
+    <!-- News offline banner H-07 -->
+    <string name="news_offline_banner">Không cập nhật được — đang dùng dữ liệu cũ</string>
+
+    <!-- Card detail location H-14 -->
+    <string name="card_detail_location_denied">Cần quyền vị trí để định vị ruộng</string>
 </resources>
 

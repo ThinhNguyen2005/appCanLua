@@ -85,6 +85,7 @@ import com.GiaThinh.canlua.ui.viewmodel.DashboardData
 import com.GiaThinh.canlua.ui.viewmodel.DashboardViewModel
 import com.GiaThinh.canlua.ui.viewmodel.ProfileViewModel
 import com.GiaThinh.canlua.util.TrackScreenRender
+import com.google.firebase.auth.FirebaseAuth
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -123,6 +124,14 @@ fun FarmerProfileScreen(
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
     val isDataReady = profile != null && dash.isAggregated
 
+    val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
+    val isGoogleLoggedIn = remember(firebaseUser) {
+        firebaseUser?.providerData?.any { it.providerId == "google.com" } == true
+    }
+    val googleAvatarUrl = remember(firebaseUser) {
+        firebaseUser?.photoUrl?.toString()
+    }
+
     TransitionSafeWrapper(
         isDataReady = isDataReady,
         skeletonContent = { FarmerProfileSkeleton() }
@@ -131,9 +140,10 @@ fun FarmerProfileScreen(
             navController = navController,
             profile = profile,
             dash = dash,
-            traderHistory = profileViewModel.traderHistory.collectAsStateWithLifecycle().value,
             profileViewModel = profileViewModel,
-            dashboardViewModel = dashboardViewModel
+            dashboardViewModel = dashboardViewModel,
+            isGoogleLoggedIn = isGoogleLoggedIn,
+            googleAvatarUrl = googleAvatarUrl
         )
     }
 }
@@ -143,9 +153,10 @@ fun FarmerProfileScreenContent(
     navController: NavController,
     profile: com.GiaThinh.canlua.data.model.Profile?,
     dash: DashboardData,
-    traderHistory: List<TraderHistoryItem>,
     profileViewModel: ProfileViewModel,
-    dashboardViewModel: DashboardViewModel
+    dashboardViewModel: DashboardViewModel,
+    isGoogleLoggedIn: Boolean,
+    googleAvatarUrl: String?
 ) {
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
     // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
@@ -153,21 +164,6 @@ fun FarmerProfileScreenContent(
     val lifetimeSeasonCount = dash.seasons.size
     val lifetimeTotalNetWeight = lifetimeStats?.totalNetWeight ?: 0.0
     val lifetimeTotalRevenue = lifetimeStats?.totalRevenue ?: 0.0
-
-    var editing by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var region by remember { mutableStateOf("") }
-    var cccd by remember { mutableStateOf("") }
-
-    LaunchedEffect(profile?.uid) {
-        profile?.let {
-            name = it.name
-            phone = it.phone
-            region = it.region
-            cccd = it.cccd
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -184,7 +180,9 @@ fun FarmerProfileScreenContent(
                 GradientProfileHeader(
                     name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_farmer_default_name),
                     role = profile?.role ?: "FARMER",
-                    email = profile?.email.orEmpty()
+                    email = profile?.email.orEmpty(),
+                    isGoogleLoggedIn = isGoogleLoggedIn,
+                    googleAvatarUrl = googleAvatarUrl
                 )
             }
 
@@ -247,56 +245,12 @@ fun FarmerProfileScreenContent(
                 }
             }
 
-            if (dash.topTraders.isNotEmpty()) {
+            // ─── TIER 7: Khối Tóm tắt Vụ mùa (thay thế cho Top thương lái mua) ───
+            if (dash.seasonsComparison.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        TopTradersCard(items = dash.topTraders)
+                        SeasonSummaryCard(dash = dash)
                     }
-                }
-            }
-
-            // ─── Lịch sử thương lái — gọn lại 1 row, tap mở TraderHistoryScreen ───
-            // Trước đây render top 5 inline + nút "Xem tất cả" làm Profile dài 600+dp.
-            // Giờ chỉ 1 navigation row thông tin tổng + chevron, đầy đủ list ở route riêng.
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    ProfileNavigationRow(
-                        icon = Icons.Filled.History,
-                        title = stringResource(R.string.profile_trader_history_title),
-                        subtitle = if (traderHistory.isEmpty()) {
-                            stringResource(R.string.profile_no_transactions)
-                        } else {
-                            stringResource(R.string.profile_trader_partner_count, traderHistory.size)
-                        },
-                        onClick = { navController.navigate("trader_history") }
-                    )
-                }
-            }
-
-            // ─── Personal info ───
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    PersonalInfoCard(
-                        editing = editing,
-                        name = name, onName = { name = it },
-                        phone = phone, onPhone = { phone = it },
-                        region = region, onRegion = { region = it },
-                        cccd = cccd, onCccd = { cccd = it },
-                        onToggleEdit = {
-                            if (editing) {
-                                profile?.let { current ->
-                                    profileViewModel.updateProfile(
-                                        current = current,
-                                        name = name,
-                                        phone = phone,
-                                        region = region,
-                                        cccd = cccd
-                                    )
-                                }
-                            }
-                            editing = !editing
-                        }
-                    )
                 }
             }
 
@@ -318,22 +272,78 @@ fun FarmerProfileScreenContent(
                     }
                 }
             }
-
-            // RoleSwitcher + Đăng xuất đã chuyển sang SettingsScreen.
-            // Profile giờ tập trung vào "tôi là ai + thống kê của tôi", không còn
-            // mix thao tác hành vi app (đổi role, signout) — gọn và đỡ duplicate.
         }
     }
-
-    // RoleSwitcher đã chuyển sang SettingsScreen — Profile không còn dialog đổi role.
 }
 
 // ─────────────────────────────────────────────────────────────
+// Khối Tóm tắt Vụ mùa
+// ─────────────────────────────────────────────────────────────
+@Composable
+private fun SeasonSummaryCard(dash: DashboardData) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Tóm tắt vụ mùa",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+            
+            Spacer(Modifier.height(4.dp))
+            
+            val formatter = remember { NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")) }
+            
+            dash.seasonsComparison.forEach { seasonStat ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Vế trái: Tên Vụ mùa
+                    Text(
+                        text = seasonStat.season,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.TextPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    // Vế giữa: Số liệu sản lượng dưới dạng "số KG / số bao" với màu xám nhẹ
+                    Text(
+                        text = "${formatter.format(seasonStat.totalNetWeight)} kg / ${formatter.format(seasonStat.totalBags)} bao",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextHint,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    
+                    // Vế phải: Số tiền cuối cùng nhận được, in đậm và dùng màu xanh lá
+                    Text(
+                        text = "${formatter.format(seasonStat.totalRevenue)} đ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenPrimary
+                    )
+                }
+            }
+        }
+    }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Primary KPI Grid (Farmer): Sản lượng / Doanh thu / KG-bao / Số bao
 // ─────────────────────────────────────────────────────────────
-
 @Composable
 private fun FarmerPrimaryKpiGrid(
     stats: com.GiaThinh.canlua.data.model.SeasonStats,
@@ -385,232 +395,4 @@ private fun FarmerPrimaryKpiGrid(
             )
         )
     )
-}
-
-// ─────────────────────────────────────────────────────────────
-// Trader History (kept from original)
-// ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun TraderHistorySection(history: List<TraderHistoryItem>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.GoldLight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Filled.History,
-                    null,
-                    tint = AppColors.GoldDark,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Lịch sử thương lái",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
-                )
-                Text(
-                    if (history.isEmpty()) "Chưa có giao dịch nào"
-                    else "${history.size} thương lái đã từng mua",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.TextHint
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TraderHistoryRow(item: TraderHistoryItem) {
-    val moneyFmt = remember { NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")) }
-    val dateFmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.GreenSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = item.traderName.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.GreenPrimary
-                )
-            }
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    item.traderName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextPrimary
-                )
-                if (item.traderPhone.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.Phone,
-                            null,
-                            tint = AppColors.TextHint,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(Modifier.size(4.dp))
-                        Text(
-                            item.traderPhone,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.TextHint
-                        )
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.MonetizationOn,
-                        null,
-                        tint = AppColors.GoldDark,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(Modifier.size(4.dp))
-                    Text(
-                        "${moneyFmt.format(item.totalRevenue.toLong())} đ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(Modifier.size(8.dp))
-                    Text("•", color = AppColors.TextHint)
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        "${item.deals} phiên",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
-                    )
-                }
-                Spacer(Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.CalendarToday,
-                        null,
-                        tint = AppColors.TextHint,
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(Modifier.size(4.dp))
-                    Text(
-                        "Lần cuối ${dateFmt.format(Date(item.lastDealDate))}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.TextHint
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyHistoryHint() {
-    AnimatedVisibility(
-        visible = true,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = AppColors.SurfaceContainer)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    Icons.Filled.Storefront,
-                    null,
-                    tint = AppColors.TextHint,
-                    modifier = Modifier.size(36.dp)
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Chưa có thương lái nào",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextSecondary
-                )
-                Text(
-                    "Mỗi khi tạo phiếu cân, tên thương lái sẽ được lưu lại đây.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.TextHint
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ViewAllTradersButton(remaining: Int, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.GreenSurface)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    text = "Xem tất cả thương lái",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.GreenPrimary
-                )
-                Text(
-                    text = "Còn $remaining thương lái khác trong lịch sử",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.TextHint
-                )
-            }
-            Icon(
-                imageVector = androidx.compose.material.icons.Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = AppColors.GreenPrimary
-            )
-        }
-    }
 }

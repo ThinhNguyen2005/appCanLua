@@ -1,12 +1,6 @@
 package com.GiaThinh.canlua.ui.component.market
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -24,45 +18,36 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Air
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Grain
-import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Thermostat
-import androidx.compose.material.icons.filled.Thunderstorm
-import androidx.compose.material.icons.filled.Umbrella
-import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.outlined.Cloud
+import androidx.compose.material.icons.outlined.Grain
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.NightsStay
+import androidx.compose.material.icons.outlined.Thunderstorm
+import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.GiaThinh.canlua.data.model.WeatherInfo
-import com.GiaThinh.canlua.ui.util.scaledSp
+import com.GiaThinh.canlua.ui.theme.AppColors
 
 /**
- * Phase 2.3 — Weather Widget premium.
- *
- * Layout 2 vùng:
- *  - Top row: animated icon + nhiệt độ lớn + tên thành phố
- *  - Bottom strip: 3 stat chips (Ẩm / Gió / Mưa)
- *  - Advisory banner (nếu có) ở dưới cùng
+ * WeatherWidget tối giản theo phong cách Material 3 (Gmail Style).
+ * Loại bỏ gradient sặc sỡ, vòng tròn trang trí và đổ bóng rườm rà.
+ * Tập trung hiển thị thông tin dạng phẳng trên nền CardBg của app.
  */
 @Composable
 fun WeatherWidget(
@@ -71,33 +56,24 @@ fun WeatherWidget(
     errorMessage: String?,
     onRefresh: () -> Unit,
     hasPermission: Boolean = true,
-    isStale: Boolean = false,
+    isStale: Boolean = false, // Giữ nguyên signature để tránh lỗi compile ở gọi hàm
+    containerColor: Color = AppColors.CardBg,
     modifier: Modifier = Modifier
 ) {
-    val gradient = pickGradient(weather)
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 24.dp))
+            .background(containerColor)
+            .clickable(onClick = onRefresh)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Brush.linearGradient(gradient))
-                .clickable(onClick = onRefresh)
-        ) {
-            DecorativeGlow()
-
-            Column(modifier = Modifier.padding(14.dp)) {
-                when {
-                    !hasPermission -> NoPermissionRow(onRefresh)
-                    isLoading && weather == null -> LoadingRow()
-                    errorMessage != null && weather == null -> ErrorRow(errorMessage)
-                    weather != null -> WeatherContent(weather, isLoading, isStale)
-                    else -> ErrorRow("Chưa có dữ liệu thời tiết")
-                }
+        Column(modifier = Modifier.padding(16.dp)) {
+            when {
+                !hasPermission -> NoPermissionRow(onRefresh)
+                isLoading && weather == null -> LoadingRow()
+                errorMessage != null && weather == null -> ErrorRow(errorMessage)
+                weather != null -> WeatherContent(weather)
+                else -> ErrorRow("Chưa có dữ liệu thời tiết")
             }
         }
     }
@@ -108,26 +84,26 @@ private fun NoPermissionRow(onRefresh: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Outlined.LocationOn,
             contentDescription = null,
-            tint = Color.White,
+            tint = AppColors.TextSecondary,
             modifier = Modifier.size(32.dp)
         )
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Thời tiết theo định vị",
-                color = Color.White,
+                color = AppColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Cấp quyền vị trí để cập nhật thời tiết nơi bạn đang ở",
-                color = Color.White.copy(alpha = 0.85f),
+                color = AppColors.TextSecondary,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -135,13 +111,13 @@ private fun NoPermissionRow(onRefresh: () -> Unit) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.White.copy(alpha = 0.22f))
+                .background(AppColors.SurfaceContainer)
                 .clickable(onClick = onRefresh)
                 .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {
             Text(
                 text = "Cấp quyền",
-                color = Color.White,
+                color = AppColors.GreenPrimary,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.labelMedium
             )
@@ -150,93 +126,140 @@ private fun NoPermissionRow(onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun DecorativeGlow() {
-    Box(
-        modifier = Modifier
-            .padding(start = 240.dp)
-            .size(120.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.08f))
-    )
-}
-
-@Composable
-private fun WeatherContent(weather: WeatherInfo, isRefreshing: Boolean, isStale: Boolean) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AnimatedWeatherIcon(weather.iconKey)
-            Spacer(Modifier.width(10.dp))
+private fun WeatherContent(weather: WeatherInfo) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Căn lề Trái: Tên vị trí (dòng trên) & Nhiệt độ lớn + Trạng thái viết hoa chữ cái đầu (dòng dưới)
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.LocationOn,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.9f),
+                        tint = AppColors.TextSecondary,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = weather.location,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f)
+                        color = AppColors.TextSecondary,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
                     )
                 }
-                Row(verticalAlignment = Alignment.Bottom) {
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
-                        text = "${weather.temperature}",
-                        fontSize = 38.scaledSp(),
+                        text = "${weather.temperature}°C",
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        lineHeight = 40.scaledSp()
+                        color = AppColors.TextPrimary,
+                        lineHeight = 34.sp
                     )
                     Text(
-                        text = "°C",
-                        fontSize = 16.scaledSp(),
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White.copy(alpha = 0.86f),
-                        modifier = Modifier.padding(bottom = 5.dp)
+                        text = "•",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextHint
                     )
-                    Spacer(Modifier.width(8.dp))
+                    val capitalizedCondition = remember(weather.condition) {
+                        weather.condition.replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString()
+                        }
+                    }
                     Text(
-                        text = weather.condition,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        modifier = Modifier.padding(bottom = 7.dp)
+                        text = capitalizedCondition,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1
                     )
                 }
             }
-            FreshnessBadge(weather.updatedAt, isRefreshing, isStale)
+
+            // Căn lề Phải: Weather Icon dạng nét mảnh (Outline) kích thước 44.dp
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.SurfaceContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = iconFor(weather.iconKey),
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
+        // 3 Chỉ số phụ (Ẩm, Gió, Mây) hiển thị phẳng 1 dòng: Nhãn (Regular xám) & Số liệu (Bold)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            StatChip(
+            Row(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Filled.WaterDrop,
-                label = "Ẩm",
-                value = "${weather.humidity}%"
-            )
-            StatChip(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Air,
-                label = "Gió",
-                value = "${"%.1f".format(weather.windSpeed)} m/s"
-            )
-            StatChip(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Umbrella,
-                label = "Mây",
-                value = "${weather.rainChance}%"
-            )
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Độ ẩm: ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextHint
+                )
+                Text(
+                    text = "${weather.humidity}%",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            }
+
+            Row(
+                modifier = Modifier.weight(1.1f),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Gió: ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextHint
+                )
+                Text(
+                    text = "${"%.1f".format(weather.windSpeed)} m/s",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            }
+
+            Row(
+                modifier = Modifier.weight(0.9f),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Mây: ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextHint
+                )
+                Text(
+                    text = "${weather.rainChance}%",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            }
         }
 
+        // Advisory Banner (chỉ hiển thị nếu có khuyến nghị thời tiết)
         AnimatedVisibility(
             visible = weather.advisory != null,
             enter = expandVertically(),
@@ -246,145 +269,26 @@ private fun WeatherContent(weather: WeatherInfo, isRefreshing: Boolean, isStale:
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.2f))
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                    .background(AppColors.SurfaceContainer)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Filled.Thermostat,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = AppColors.TextSecondary,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = weather.advisory.orEmpty(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
+                    color = AppColors.TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun StatChip(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.17f))
-            .padding(horizontal = 8.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(14.dp)
-        )
-        Spacer(Modifier.width(5.dp))
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.82f),
-                lineHeight = 10.scaledSp()
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-@Composable
-private fun FreshnessBadge(updatedAt: Long, isRefreshing: Boolean, isStale: Boolean) {
-    val text = if (isRefreshing) "Đang cập nhật"
-        else if (isStale) formatAge(updatedAt) else "Mới"
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.17f))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (isRefreshing) {
-            CircularProgressIndicator(
-                color = Color.White,
-                strokeWidth = 1.5.dp,
-                modifier = Modifier.size(10.dp)
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Filled.Refresh,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(11.dp)
-            )
-        }
-        Spacer(Modifier.width(4.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun AnimatedWeatherIcon(iconKey: String) {
-    val transition = rememberInfiniteTransition(label = "weather-icon")
-    val isSunny = iconKey.startsWith("01")
-    val isRain = iconKey.startsWith("09") || iconKey.startsWith("10")
-
-    // Sun rotates slowly, rain bobs up-down via alpha pulse
-    val rotation by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (isSunny) 360f else 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 14_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rot"
-    )
-    val pulse by transition.animateFloat(
-        initialValue = 0.7f,
-        targetValue = if (isRain) 1.0f else 0.85f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.22f * pulse)),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = iconFor(iconKey),
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier
-                .size(30.dp)
-                .rotate(rotation)
-        )
     }
 }
 
@@ -395,14 +299,14 @@ private fun LoadingRow() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         CircularProgressIndicator(
-            color = Color.White,
+            color = AppColors.GreenPrimary,
             strokeWidth = 2.dp,
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.size(12.dp))
         Text(
             text = "Đang tải thời tiết...",
-            color = Color.White,
+            color = AppColors.TextSecondary,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -416,22 +320,22 @@ private fun ErrorRow(message: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            Icons.Filled.Refresh,
+            imageVector = Icons.Default.Refresh,
             contentDescription = null,
-            tint = Color.White,
+            tint = AppColors.TextSecondary,
             modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.size(8.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Không tải được thời tiết",
-                color = Color.White,
+                color = AppColors.TextPrimary,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = message,
-                color = Color.White.copy(alpha = 0.85f),
+                color = AppColors.TextHint,
                 style = MaterialTheme.typography.labelSmall
             )
         }
@@ -440,48 +344,12 @@ private fun ErrorRow(message: String) {
 
 private fun iconFor(iconKey: String): ImageVector {
     return when {
-        iconKey.startsWith("01") -> Icons.Filled.WbSunny
-        iconKey.startsWith("02") || iconKey.startsWith("03") || iconKey.startsWith("04") -> Icons.Filled.Cloud
-        iconKey.startsWith("09") || iconKey.startsWith("10") -> Icons.Filled.WaterDrop
-        iconKey.startsWith("11") -> Icons.Filled.Thunderstorm
-        iconKey.startsWith("13") -> Icons.Filled.Grain
-        iconKey.endsWith("n") -> Icons.Filled.NightsStay
-        else -> Icons.Filled.WbSunny
-    }
-}
-
-private fun pickGradient(weather: WeatherInfo?): List<Color> {
-    val main = weather?.iconKey.orEmpty()
-    return when {
-        main.startsWith("01") -> listOf(
-            Color(0xFFFF8A3D), Color(0xFFE76F00), Color(0xFF2E7D32)
-        )
-        main.startsWith("02") || main.startsWith("03") || main.startsWith("04") -> listOf(
-            Color(0xFF37474F), Color(0xFF546E7A), Color(0xFF78909C)
-        )
-        main.startsWith("09") || main.startsWith("10") -> listOf(
-            Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF00838F)
-        )
-        main.startsWith("11") -> listOf(
-            Color(0xFF1B2428), Color(0xFF2F4F5A), Color(0xFFB8860B)
-        )
-        main.endsWith("n") -> listOf(
-            Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)
-        )
-        else -> listOf(
-            Color(0xFF1565C0), Color(0xFF2E7D32), Color(0xFFF9A825)
-        )
-    }
-}
-
-private fun formatAge(timestamp: Long): String {
-    val diff = System.currentTimeMillis() - timestamp
-    val mins = diff / 60_000
-    val hours = diff / 3_600_000
-    return when {
-        mins < 1 -> "Vừa xong"
-        mins < 60 -> "$mins phút trước"
-        hours < 24 -> "$hours giờ trước"
-        else -> "Đã lưu"
+        iconKey.startsWith("01") -> Icons.Outlined.WbSunny
+        iconKey.startsWith("02") || iconKey.startsWith("03") || iconKey.startsWith("04") -> Icons.Outlined.Cloud
+        iconKey.startsWith("09") || iconKey.startsWith("10") -> Icons.Outlined.WaterDrop
+        iconKey.startsWith("11") -> Icons.Outlined.Thunderstorm
+        iconKey.startsWith("13") -> Icons.Outlined.Grain
+        iconKey.endsWith("n") -> Icons.Outlined.NightsStay
+        else -> Icons.Outlined.WbSunny
     }
 }

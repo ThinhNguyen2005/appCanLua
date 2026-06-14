@@ -42,30 +42,21 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,7 +71,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.GiaThinh.canlua.data.model.ChatSession
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.AiMarkdownText
 import com.GiaThinh.canlua.ui.util.parseInlineMarkdown
@@ -89,7 +79,6 @@ import com.GiaThinh.canlua.ui.viewmodel.UiMessage
 import com.GiaThinh.canlua.ui.viewmodel.VoiceState
 import com.GiaThinh.canlua.util.TrackScreenRender
 import com.GiaThinh.canlua.util.SpeechRecognizerHelper
-import kotlinx.coroutines.launch
 
 private val PRESETS = listOf(
     "Lúa bị đạo ôn cổ bông xử lý sao?",
@@ -101,301 +90,92 @@ private val PRESETS = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AiChatScreen(
-    viewModel: AiChatViewModel = hiltViewModel(),
-    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    viewModel: AiChatViewModel = hiltViewModel()
 ) {
     TrackScreenRender("ai_chat")
     val state by viewModel.state.collectAsStateWithLifecycle()
     val voice by viewModel.voiceState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     val imeVisible = WindowInsets.isImeVisible
 
     // Auto-scroll xuống tin nhắn cuối khi list grow hoặc khi keyboard mở/đóng.
     // Thêm imeVisible vào key để khi user bắt đầu gõ, list tự cuộn lại đúng vị trí
     // (không bị input bar che mất tin nhắn vừa gửi).
-    LaunchedEffect(state.messages.size, state.currentSessionId, imeVisible) {
+    LaunchedEffect(state.messages.size, imeVisible) {
         if (state.messages.isNotEmpty()) {
             listState.animateScrollToItem(state.messages.size - 1)
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ChatSessionsDrawer(
-                sessions = state.sessions,
-                currentId = state.currentSessionId,
-                onSelectSession = { id ->
-                    viewModel.switchSession(id)
-                    scope.launch { drawerState.close() }
-                },
-                onClose = {
-                    scope.launch { drawerState.close() }
-                }
-            )
-        }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppColors.Surface)
-                // imePadding ở root → toàn bộ content (LazyColumn + InputBar) co theo IME
-                // đồng bộ với keyboard animation. Kết hợp với MainScreen ẩn bottom bar khi
-                // imeVisible → không còn gap thừa giữa Input và keyboard.
-                .imePadding()
-        ) {
-
-            // Preset prompts (chỉ hiển thị khi mới mở chat)
-            AnimatedVisibility(visible = state.messages.size <= 1) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(PRESETS, key = { it }) { preset ->
-                        PresetChip(text = preset, onClick = { viewModel.usePresetPrompt(preset) })
-                    }
-                }
-            }
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(state.messages, key = { it.id }) { msg ->
-                    MessageBubble(msg)
-                }
-                if (state.isStreaming) {
-                    item { TypingIndicator() }
-                }
-            }
-
-            // Voice error banner — auto dismiss khi state IDLE
-            AnimatedVisibility(visible = voice.error != null) {
-                VoiceErrorBanner(
-                    message = voice.error.orEmpty(),
-                    onDismiss = viewModel::clearVoiceError
-                )
-            }
-
-            // Khi IME đóng, BottomBar overlay (capsule + nav inset) đang chiếm đáy →
-            // InputBar phải nâng 88dp để không bị che. IME mở → BottomBar ẩn ở
-            // MainScreen, imePadding của Column đã đẩy InputBar dán sát bàn phím.
-            val imeOpen = WindowInsets.isImeVisible
-            val bottomPadding = if (imeOpen) {
-                0.dp
-            } else {
-                80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            }
-            Box(
-                modifier = Modifier.padding(bottom = bottomPadding)
-            ) {
-                InputBar(
-                    value = state.input,
-                    partial = voice.partial,
-                    voice = voice,
-                    onValueChange = viewModel::onInputChange,
-                    onSend = viewModel::send,
-                    onStartVoice = viewModel::startVoice,
-                    onStopVoice = viewModel::stopVoice,
-                    onCancelVoice = viewModel::cancelVoice,
-                    isStreaming = state.isStreaming
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChatSessionsDrawer(
-    sessions: List<ChatSession>,
-    currentId: String?,
-    onSelectSession: (String) -> Unit,
-    onClose: () -> Unit
-) {
-    ModalDrawerSheet(
-        drawerContainerColor = AppColors.Surface
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .statusBarsPadding()
-        ) {
-            Spacer(Modifier.height(16.dp))
-
-            // Header Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.History,
-                        contentDescription = null,
-                        tint = AppColors.GreenPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        "Lịch sử trò chuyện",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.TextPrimary
-                    )
-                }
-                IconButton(onClick = onClose) {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = "Đóng",
-                        tint = AppColors.TextHint
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            androidx.compose.material3.HorizontalDivider(
-                color = AppColors.Divider.copy(alpha = 0.5f),
-                thickness = 1.dp
-            )
-            Spacer(Modifier.height(12.dp))
-
-            if (sessions.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.SmartToy,
-                            contentDescription = null,
-                            tint = AppColors.TextHint.copy(alpha = 0.5f),
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            "Chưa có phiên trò chuyện nào",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.TextHint
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(sessions, key = { it.id }) { session ->
-                        SessionRow(
-                            session = session,
-                            isCurrent = session.id == currentId,
-                            onClick = { onSelectSession(session.id) }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Lịch sử chỉ giữ đến khi bạn tắt ứng dụng.",
-                style = MaterialTheme.typography.labelSmall,
-                color = AppColors.TextHint,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-private fun SessionRow(
-    session: ChatSession,
-    isCurrent: Boolean,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-    val formattedTime = remember(session.createdAt) {
-        val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-        sdf.format(java.util.Date(session.createdAt))
-    }
-
-    androidx.compose.material3.Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = if (isCurrent) AppColors.GreenSurface else AppColors.CardBg,
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (isCurrent) AppColors.GreenPrimary else AppColors.Divider.copy(alpha = 0.5f)
-        ),
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        shadowElevation = if (isCurrent) 1.dp else 0.dp
+            .fillMaxSize()
+            .background(AppColors.Surface)
+            // imePadding ở root → toàn bộ content (LazyColumn + InputBar) co theo IME
+            // đồng bộ với keyboard animation. Kết hợp với MainScreen ẩn bottom bar khi
+            // imeVisible → không còn gap thừa giữa Input và keyboard.
+            .imePadding()
     ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(if (isCurrent) AppColors.GreenPrimary.copy(alpha = 0.15f) else AppColors.SurfaceContainer),
-                contentAlignment = Alignment.Center
+
+        // Preset prompts (chỉ hiển thị khi mới mở chat)
+        AnimatedVisibility(visible = state.messages.size <= 1) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    Icons.Filled.SmartToy,
-                    contentDescription = null,
-                    tint = if (isCurrent) AppColors.GreenPrimary else AppColors.TextHint,
-                    modifier = Modifier.size(18.dp)
-                )
+                items(PRESETS, key = { it }) { preset ->
+                    PresetChip(text = preset, onClick = { viewModel.usePresetPrompt(preset) })
+                }
             }
+        }
 
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = session.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isCurrent) AppColors.GreenPrimary else AppColors.TextPrimary,
-                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.height(2.dp))
-
-                Text(
-                    text = "${session.messages.size} tin nhắn • $formattedTime",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isCurrent) AppColors.GreenPrimary.copy(alpha = 0.8f) else AppColors.TextHint
-                )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(state.messages, key = { it.id }) { msg ->
+                MessageBubble(msg)
             }
-
-            if (isCurrent) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(AppColors.GreenPrimary)
-                )
+            if (state.isStreaming) {
+                item { TypingIndicator() }
             }
+        }
+
+        // Voice error banner — auto dismiss khi state IDLE
+        AnimatedVisibility(visible = voice.error != null) {
+            VoiceErrorBanner(
+                message = voice.error.orEmpty(),
+                onDismiss = viewModel::clearVoiceError
+            )
+        }
+
+        // Khi IME đóng, BottomBar overlay (capsule + nav inset) đang chiếm đáy →
+        // InputBar phải nâng 88dp để không bị che. IME mở → BottomBar ẩn ở
+        // MainScreen, imePadding của Column đã đẩy InputBar dán sát bàn phím.
+        val imeOpen = WindowInsets.isImeVisible
+        val bottomPadding = if (imeOpen) {
+            0.dp
+        } else {
+            80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        }
+        Box(
+            modifier = Modifier.padding(bottom = bottomPadding)
+        ) {
+            InputBar(
+                value = state.input,
+                partial = voice.partial,
+                voice = voice,
+                onValueChange = viewModel::onInputChange,
+                onSend = viewModel::send,
+                onStartVoice = viewModel::startVoice,
+                onStopVoice = viewModel::stopVoice,
+                onCancelVoice = viewModel::cancelVoice,
+                isStreaming = state.isStreaming
+            )
         }
     }
 }
@@ -422,27 +202,10 @@ private fun PresetChip(text: String, onClick: () -> Unit) {
 @Composable
 private fun MessageBubble(msg: UiMessage) {
     val isUser = msg.role == "user"
-    Row(
+    Box(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     ) {
-        if (!isUser) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(if (msg.isError) AppColors.Error.copy(alpha = 0.15f) else AppColors.GreenSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Filled.SmartToy,
-                    contentDescription = null,
-                    tint = if (msg.isError) AppColors.Error else AppColors.GreenPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(Modifier.size(8.dp))
-        }
         Box(
             modifier = Modifier
                 .widthIn(max = 320.dp)
@@ -488,27 +251,31 @@ private fun MessageBubble(msg: UiMessage) {
 
 @Composable
 private fun TypingIndicator() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
             modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(AppColors.GreenSurface),
-            contentAlignment = Alignment.Center
+                .widthIn(max = 320.dp)
+                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
+                .background(AppColors.CardBg)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CircularProgressIndicator(
                 color = AppColors.GreenPrimary,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                "Đang soạn câu trả lời...",
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.TextHint,
+                fontWeight = FontWeight.Medium
             )
         }
-        Spacer(Modifier.size(8.dp))
-        Text(
-            "Đang soạn câu trả lời...",
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextHint,
-            fontWeight = FontWeight.Medium
-        )
     }
 }
 

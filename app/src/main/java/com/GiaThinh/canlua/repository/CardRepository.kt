@@ -71,8 +71,9 @@ class CardRepository @Inject constructor(
      * bản local mới hơn cloud (cloud sẽ chỉ overwrite local nếu cloud mới hơn).
      */
     suspend fun updateCard(card: Card) {
+        val now = System.currentTimeMillis()
         cardDao.updateCard(card.copy(
-            lastModifiedMs = System.currentTimeMillis(),
+            lastModifiedMs = now,
             cccd = CccdCrypto.encrypt(card.cccd)
         ))
     }
@@ -278,6 +279,7 @@ class CardRepository @Inject constructor(
             depositAmount = calculation.totalDeposit
         ).coerceAtLeast(0.0)
 
+        val now = System.currentTimeMillis()
         val updatedCard = card.copy(
             totalWeight = totalRaw,
             netWeight = finalNetWeight,
@@ -287,7 +289,7 @@ class CardRepository @Inject constructor(
             totalAmount = totalAmount,
             remainingAmount = remainingAmount,
             impurityIsPercent = false,
-            lastModifiedMs = System.currentTimeMillis()
+            lastModifiedMs = now
         )
 
         cardDao.updateCard(updatedCard)

@@ -62,9 +62,28 @@ class WeightInputViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             settingsRepository.weighDefaults.collect { defaults ->
                 val card = _currentCard.value ?: return@collect
-                if (card.weightInputMode != defaults.weightInputMode) {
-                    val updated = card.copy(weightInputMode = defaults.weightInputMode)
+                val computedBagWeight = if (defaults.bagMethodIsSampling && defaults.bagSampleCount > 0) {
+                    defaults.bagSampleTotalWeight / defaults.bagSampleCount
+                } else if (defaults.bagSampleCount > 0) {
+                    1.0 / defaults.bagSampleCount
+                } else {
+                    1.0 / 8.0
+                }
+                if (card.weightInputMode != defaults.weightInputMode ||
+                    card.bagMethodIsSampling != defaults.bagMethodIsSampling ||
+                    card.bagSampleCount != defaults.bagSampleCount ||
+                    card.bagSampleTotalWeight != defaults.bagSampleTotalWeight ||
+                    card.bagWeight != computedBagWeight
+                ) {
+                    val updated = card.copy(
+                        weightInputMode = defaults.weightInputMode,
+                        bagMethodIsSampling = defaults.bagMethodIsSampling,
+                        bagSampleCount = defaults.bagSampleCount,
+                        bagSampleTotalWeight = defaults.bagSampleTotalWeight,
+                        bagWeight = computedBagWeight
+                    )
                     repository.updateCard(updated)
+                    repository.updateCardCalculations(card.id)
                     _currentCard.value = repository.getCardById(card.id)
                 }
             }
@@ -85,6 +104,7 @@ class WeightInputViewModel @Inject constructor(
                 card = repository.getCardById(cardId)
             }
             _currentCard.value = card
+            syncMoistureToInputState(card)
 
             if (card != null) {
                 repository.getWeightEntriesByCardId(cardId).collect { entries ->
@@ -317,7 +337,9 @@ class WeightInputViewModel @Inject constructor(
                 val updatedCard = it.copy(moisturePercent = moisturePercent)
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
-                _currentCard.value = repository.getCardById(cardId)
+                val refreshed = repository.getCardById(cardId)
+                _currentCard.value = refreshed
+                syncMoistureToInputState(refreshed)
             }
         }
     }
@@ -337,6 +359,14 @@ class WeightInputViewModel @Inject constructor(
         super.onCleared()
         weightEntriesJob?.cancel()
         ttsManager.shutdown()
+    }
+
+    /** Giữ [moisturePercent] trong [_weightInputState] đồng bộ với card hiện tại. */
+    private fun syncMoistureToInputState(card: Card?) {
+        val moisture = card?.moisturePercent ?: 0.0
+        if (_weightInputState.value.moisturePercent != moisture) {
+            _weightInputState.value = _weightInputState.value.copy(moisturePercent = moisture)
+        }
     }
 }
 

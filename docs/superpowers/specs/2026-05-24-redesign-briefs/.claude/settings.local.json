@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Skill(pencil-design)",
-      "Skill(pencil-design:*)",
-      "Bash(npx pencil *)"
-    ]
-  }
-}

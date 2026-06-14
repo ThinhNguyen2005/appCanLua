@@ -1,6 +1,7 @@
 package com.GiaThinh.canlua.ui.component.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,9 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Agriculture
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,9 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import coil.compose.AsyncImage
 import com.GiaThinh.canlua.R
 import com.GiaThinh.canlua.ui.theme.AppColors
 
@@ -41,6 +47,8 @@ fun GradientProfileHeader(
     name: String,
     role: String,
     email: String,
+    isGoogleLoggedIn: Boolean = false,
+    googleAvatarUrl: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isTrader = role.equals("TRADER", ignoreCase = true)
@@ -53,56 +61,95 @@ fun GradientProfileHeader(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-        // Tên + role badge cùng hàng — name chiếm phần lớn, badge auto-fit phải.
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = name.ifBlank { defaultName },
-                color = AppColors.TextPrimary,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold
-                ),
-                modifier = Modifier.weight(1f, fill = false),
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.size(10.dp))
-            // Role badge — nhỏ gọn, tint xanh lá nông nghiệp
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(AppColors.GreenSurface)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = roleIcon,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(14.dp)
+            // Avatar tròn 56.dp ở góc trái
+            if (isGoogleLoggedIn && googleAvatarUrl != null) {
+                AsyncImage(
+                    model = googleAvatarUrl,
+                    contentDescription = "Google Avatar",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.SurfaceContainer),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    error = rememberVectorPainter(Icons.Default.Person)
                 )
-                Spacer(Modifier.size(6.dp))
-                Text(
-                    text = roleLabel,
-                    color = AppColors.GreenPrimary,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.SurfaceContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Default Avatar",
+                        tint = AppColors.TextSecondary,
+                        modifier = Modifier.size(28.dp)
                     )
-                )
+                }
             }
-        }
 
-        if (email.isNotBlank()) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = email,
-                color = AppColors.TextHint,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium
-                )
-            )
+            Spacer(Modifier.width(16.dp))
+
+            // Cụm chữ thông tin khách hàng và email ở bên phải
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = name.ifBlank { defaultName },
+                        color = AppColors.TextPrimary,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold
+                        ),
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    // Role badge — nhỏ gọn, tint xanh lá nông nghiệp
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(AppColors.GreenSurface)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = roleIcon,
+                            contentDescription = null,
+                            tint = AppColors.GreenPrimary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = roleLabel,
+                            color = AppColors.GreenPrimary,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
+                }
+
+                if (email.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = email,
+                        color = AppColors.TextHint,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
         }
     }
 }
+

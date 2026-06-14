@@ -1,6 +1,6 @@
 package com.GiaThinh.canlua.util
 
-import android.util.Base64
+import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -11,11 +11,11 @@ object CccdCrypto {
     private val ivSpec: IvParameterSpec
 
     init {
-        // "CanLuaAppCccdKey2026SecureKey!" (32 bytes) base64 encoded
-        val decodedKey = Base64.decode("Q2FuTHVhQXBwQ2NjZEtleTIwMjZTZWN1cmVLZXkh", Base64.DEFAULT)
+        // "CanLuaAppCccdKey2026SecureKeyKey" (32 bytes) base64 encoded
+        val decodedKey = Base64.getDecoder().decode("Q2FuTHVhQXBwQ2NjZEtleTIwMjZTZWN1cmVLZXlLZXk=")
         keySpec = SecretKeySpec(decodedKey, "AES")
         // "CanLuaAppIv2026!" (16 bytes) base64 encoded
-        val decodedIv = Base64.decode("Q2FuTHVhQXBwSXYyMDI2IQ==", Base64.DEFAULT)
+        val decodedIv = Base64.getDecoder().decode("Q2FuTHVhQXBwSXYyMDI2IQ==")
         ivSpec = IvParameterSpec(decodedIv)
     }
 
@@ -28,7 +28,7 @@ object CccdCrypto {
             val cipher = Cipher.getInstance(ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
             val encryptedBytes = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
-            Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
+            Base64.getEncoder().encodeToString(encryptedBytes)
         } catch (e: Exception) {
             plainText
         }
@@ -43,7 +43,7 @@ object CccdCrypto {
         return try {
             val cipher = Cipher.getInstance(ALGORITHM)
             cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
-            val decodedBytes = Base64.decode(cipherText, Base64.NO_WRAP)
+            val decodedBytes = Base64.getDecoder().decode(cipherText)
             val decryptedBytes = cipher.doFinal(decodedBytes)
             String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {

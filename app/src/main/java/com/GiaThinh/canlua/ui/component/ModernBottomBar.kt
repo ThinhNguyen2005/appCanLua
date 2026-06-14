@@ -211,12 +211,12 @@ private fun LabeledNavItem(
         Text(
             text = labelText,
             color = labelColor,
-            fontSize = 11.sp,
-            lineHeight = 13.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall.copy(
+                lineHeight = 13.sp
+            )
         )
     }
 }

@@ -90,7 +90,6 @@ class CardListViewModel @Inject constructor(
         moisturePercent: Double = 0.0,
         seasonLabel: String = "",
         traderPhone: String = "",
-        bagWeight: Double = 0.0,
         impurityWeight: Double = 0.0,
         recordLocation: Boolean = false
     ) {
@@ -106,6 +105,14 @@ class CardListViewModel @Inject constructor(
             }.orEmpty()
 
             val defaults = settingsRepository.getWeighDefaults()
+            val computedBagWeight = if (defaults.bagMethodIsSampling && defaults.bagSampleCount > 0) {
+                defaults.bagSampleTotalWeight / defaults.bagSampleCount
+            } else if (defaults.bagSampleCount > 0) {
+                1.0 / defaults.bagSampleCount
+            } else {
+                1.0 / 8.0
+            }
+
             val newCard = Card(
                 name = trimmedName,
                 cccd = cccd,
@@ -120,7 +127,7 @@ class CardListViewModel @Inject constructor(
                 longitude = geo?.lon,
                 traderPhone = traderPhone.trim(),
                 fieldAddress = address,
-                bagWeight = bagWeight,
+                bagWeight = computedBagWeight,
                 impurityWeight = impurityWeight,
                 impurityIsPercent = defaults.impurityIsPercent,
                 bagMethodIsSampling = defaults.bagMethodIsSampling,

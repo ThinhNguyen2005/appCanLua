@@ -84,13 +84,12 @@ enum class NewsSource(
     ),
 
     /**
-     * Thanh Niên Kinh tế — feed có namespace `media:` và CDATA `<img>`,
-     * cập nhật nhanh tin xuất khẩu gạo, biến động giá.
+     * Nông Nghiệp Môi Trường — chuyên trang nông nghiệp & môi trường.
      */
-    THANHNIEN_ECONOMY(
-        displayName = "Thanh Niên Kinh Tế",
-        rssUrl = "https://thanhnien.vn/rss/kinh-te.rss",
-        defaultTopic = NewsTopic.GRAIN
+    NONGNGHIEPMOITRUONG(
+        displayName = "Nông Nghiệp Môi Trường",
+        rssUrl = "https://nongnghiepmoitruong.vn/nong-nghiep.rss",
+        defaultTopic = NewsTopic.RICE
     ),
 
     /**

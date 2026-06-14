@@ -148,8 +148,8 @@ class WeatherRepository @Inject constructor(
     }
 
     private suspend fun fetchFromNetwork(forceFreshLocation: Boolean = false): Result<WeatherInfo> = withContext(Dispatchers.IO) {
-        if (ApiKeyObfuscator.decode(BuildConfig.OPENWEATHER_API_KEY).isEmpty()) {
-            Log.e(TAG, "fetchFromNetwork: OPENWEATHER_API_KEY rỗng — kiểm tra local.properties + BuildConfig")
+        if (ApiKeyObfuscator.decode(BuildConfig.APP_HANDSHAKE_TOKEN).isEmpty()) {
+            Log.e(TAG, "fetchFromNetwork: APP_HANDSHAKE_TOKEN rỗng — kiểm tra local.properties + BuildConfig")
             return@withContext Result.failure(IllegalStateException(
                 context.getString(com.GiaThinh.canlua.R.string.weather_error_missing_api_key)
             ))
@@ -163,13 +163,17 @@ class WeatherRepository @Inject constructor(
         val location = locFromProvider ?: GeoPoint(10.045, 105.746)
 
         return@withContext try {
-            val url = "https://api.openweathermap.org/data/2.5/weather" +
-                "?lat=${location.lat}&lon=${location.lon}" +
-                "&appid=${ApiKeyObfuscator.decode(BuildConfig.OPENWEATHER_API_KEY)}" +
-                "&units=metric&lang=vi"
-            // KHÔNG log full url — chứa appid. Chỉ log host + lat/lon.
-            Log.d(TAG, "fetchFromNetwork: GET api.openweathermap.org lat=${location.lat} lon=${location.lon}")
+            val token = ApiKeyObfuscator.decode(BuildConfig.APP_HANDSHAKE_TOKEN)
+            val url = "https://script.google.com/macros/s/AKfycbzp9PJYDZACihCX-yl1WYsrW_AQ6k2OdpbmWvgXdGXSwjOiXHHICzSbefR71kqijb8ocQ/exec" +
+                "?token=$token" +
+                "&action=weather" +
+                "&lat=${location.lat}&lon=${location.lon}"
+            Log.d(TAG, "fetchFromNetwork: GET GAS weather proxy lat=${location.lat} lon=${location.lon}")
             val response: OpenWeatherResponse = httpClient.get(url)
+
+            if (response.weather.isEmpty() && response.timestamp == 0L) {
+                return@withContext Result.failure(Exception("Phản hồi thời tiết từ GAS không hợp lệ."))
+            }
 
             Result.success(response.toWeatherInfo(overrideName = null))
         } catch (e: HttpException) {

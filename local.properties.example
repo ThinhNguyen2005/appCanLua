@@ -6,14 +6,11 @@
 # Location of the SDK (Tu dong boi Android Studio hoac nhap thu cong)
 sdk.dir=YOUR_ANDROID_SDK_DIR_PATH
 
-# OpenRouter API Key (Dung cho tinh nang AI Chat)
-OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
-
-# OpenWeather API Key (Dung cho tinh nang Thoi tiet)
-OPENWEATHER_API_KEY=YOUR_OPENWEATHER_API_KEY_HERE
-
 # Google Maps API Key (Dung de hien thi Ban do Lua)
 MAPS_API_KEY=YOUR_MAPS_API_KEY_HERE
+
+# Google Apps Script Web App Handshake Token
+APP_HANDSHAKE_TOKEN=YOUR_APP_HANDSHAKE_TOKEN_HERE
 
 # Telegram Configs (Dung cho telegram notification & feedback bots)
 TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE

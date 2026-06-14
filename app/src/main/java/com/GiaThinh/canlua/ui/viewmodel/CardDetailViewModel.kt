@@ -90,7 +90,11 @@ class CardDetailViewModel @Inject constructor(
                 }
             }
 
-            if (needRecalc || oldCard?.pricePerKg != card.pricePerKg) {
+            if (needRecalc || 
+                oldCard?.pricePerKg != card.pricePerKg ||
+                oldCard?.impurityWeight != card.impurityWeight ||
+                oldCard?.moisturePercent != card.moisturePercent
+            ) {
                 repository.updateCardCalculations(card.id)
                 loadCardById(card.id)
             } else {

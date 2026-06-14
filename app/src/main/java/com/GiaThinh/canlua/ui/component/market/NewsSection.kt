@@ -35,9 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.ui.graphics.toArgb
@@ -50,7 +51,9 @@ import com.GiaThinh.canlua.ui.component.shimmer
 import com.GiaThinh.canlua.util.CustomTabsLauncher
 import com.GiaThinh.canlua.data.model.NewsArticle
 import com.GiaThinh.canlua.data.model.NewsTopic
+import com.GiaThinh.canlua.data.model.WeatherInfo
 import com.GiaThinh.canlua.ui.theme.AppColors
+import com.GiaThinh.canlua.ui.theme.AppDimensions
 import java.util.concurrent.TimeUnit
 
 
@@ -73,65 +76,42 @@ fun NewsSection(
     onSelectTopic: (NewsTopic?) -> Unit,
     onRefresh: () -> Unit,
     onDismissError: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showWeather: Boolean = false,
+    weather: WeatherInfo? = null,
+    isWeatherLoading: Boolean = false,
+    weatherError: String? = null,
+    onWeatherRefresh: () -> Unit = {}
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 24.dp))
             .background(AppColors.CardBg)
             .padding(vertical = 16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.GreenSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Article,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Tin tức nông nghiệp",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
-                )
-                Text(
-                    text = "Cập nhật tự động mỗi 4 giờ qua GAS",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.TextHint
-                )
-            }
-            RefreshButton(isRefreshing = isRefreshing, onClick = onRefresh)
+        if (showWeather) {
+            WeatherWidget(
+                weather = weather,
+                isLoading = isWeatherLoading,
+                errorMessage = weatherError,
+                onRefresh = onWeatherRefresh,
+                containerColor = Color.Transparent,
+                modifier = Modifier.padding(horizontal = 0.dp)
+            )
+            Spacer(Modifier.height(12.dp))
         }
 
-        Spacer(Modifier.height(12.dp))
-
-        // Filter chips
+        // Filter chips (được nuốt trọn vào trong Card tổng, nền CardBg)
         TopicFilterRow(
             selected = selectedTopic,
             onSelect = onSelectTopic
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // Error banner — vẫn hiện cache phía dưới
+        // Error banner — hiển thị bên dưới dải bộ lọc trong Card tổng
         AnimatedVisibility(visible = errorMessage != null) {
             ErrorBanner(message = errorMessage.orEmpty(), onDismiss = onDismissError)
         }
@@ -139,41 +119,55 @@ fun NewsSection(
         // Content
         when {
             articles.isEmpty() && isRefreshing -> {
-                NewsSkeletonList()
+                repeat(10) { index ->
+                    NewsCardSkeleton()
+                    if (index < 9) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .height(0.5.dp)
+                                .background(AppColors.Divider)
+                        )
+                    }
+                }
             }
             articles.isEmpty() -> {
                 EmptyState()
             }
             else -> {
-                val displayCount = if (isExpanded) 20 else 5
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    articles.take(displayCount).forEach { article ->
-                        NewsCard(article = article)
-                    }
-
-                    if (articles.size > 5) {
-                        Spacer(Modifier.height(4.dp))
+                val displayCount = if (isExpanded) 20 else 10
+                articles.take(displayCount).forEachIndexed { index, article ->
+                    NewsCard(article = article)
+                    if (index < displayCount - 1 && index < articles.size - 1) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(AppColors.SurfaceContainer)
-                                .clickable { isExpanded = !isExpanded }
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (isExpanded) "Thu gọn" else "Xem thêm bài viết (${articles.size - 5} bài khác)",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = AppColors.GreenPrimary
-                            )
-                        }
+                                .padding(horizontal = 16.dp)
+                                .height(0.5.dp)
+                                .background(AppColors.Divider)
+                        )
+                    }
+                }
+
+                if (articles.size > 10) {
+                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
+                            .background(AppColors.SurfaceContainer)
+                            .clickable { isExpanded = !isExpanded }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isExpanded) "Thu gọn" else "Xem thêm bài viết (${articles.size - 10} bài khác)",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.GreenPrimary
+                        )
                     }
                 }
             }
@@ -255,12 +249,11 @@ private fun NewsCard(article: NewsArticle) {
     val toolbarColor = AppColors.GreenPrimary
     var isImageError by remember { mutableStateOf(false) }
     val imageUrl = article.thumbnail.takeIf { !it.isNullOrBlank() } ?: getSourceLogoUrl(article.source)
+    val showImage = imageUrl != null && !isImageError
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(AppColors.SurfaceContainer)
             .clickable {
                 CustomTabsLauncher.open(
                     context = context,
@@ -268,18 +261,17 @@ private fun NewsCard(article: NewsArticle) {
                     toolbarColor = toolbarColor.toArgb()
                 )
             }
-            .padding(10.dp),
+            .padding(vertical = 14.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Thumbnail — hiển thị ảnh bài báo hoặc logo của trang báo, nếu cả hai lỗi thì hiện icon mặc định
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(AppColors.GreenSurface),
-            contentAlignment = Alignment.Center
-        ) {
-            if (imageUrl != null && !isImageError) {
+        if (showImage) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
+                    .background(AppColors.SurfaceContainer),
+                contentAlignment = Alignment.Center
+            ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
@@ -287,26 +279,19 @@ private fun NewsCard(article: NewsArticle) {
                         .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(56.dp),
+                    modifier = Modifier.size(48.dp),
                     onError = { isImageError = true }
                 )
-            } else {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Article,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(28.dp)
-                )
             }
+            Spacer(Modifier.width(12.dp))
         }
-
-        Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = article.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
                 color = AppColors.TextPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -323,10 +308,25 @@ private fun NewsCard(article: NewsArticle) {
             }
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TopicBadge(topic = article.topic)
-                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "${article.source} · ${formatRelativeTime(article.publishedAt)}",
+                    text = getTopicDisplayName(article.topic),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = getTopicColor(article.topic),
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = " • ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.TextHint
+                )
+                Text(
+                    text = article.source,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = " • ${formatRelativeTime(article.publishedAt)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = AppColors.TextHint,
                     maxLines = 1,
@@ -337,27 +337,24 @@ private fun NewsCard(article: NewsArticle) {
     }
 }
 
-@Composable
-private fun TopicBadge(topic: String) {
-    val (label, color) = when (topic) {
-        NewsTopic.RICE.name -> "🌾 Lúa" to AppColors.Success
-        NewsTopic.GRAIN.name -> "🌾 Gạo" to AppColors.GoldAccent
-        NewsTopic.WEATHER.name -> "🌧️ Thời tiết" to AppColors.Info
-        NewsTopic.MARKET.name -> "📊 Thị trường" to AppColors.Warning
-        else -> "📰 Tin" to AppColors.TextHint
+private fun getTopicDisplayName(topic: String): String {
+    return when (topic) {
+        NewsTopic.RICE.name -> "Lúa"
+        NewsTopic.GRAIN.name -> "Gạo"
+        NewsTopic.WEATHER.name -> "Thời tiết"
+        NewsTopic.MARKET.name -> "Thị trường"
+        else -> "Tin tức"
     }
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(color.copy(alpha = 0.16f))
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = color
-        )
+}
+
+@Composable
+private fun getTopicColor(topic: String): Color {
+    return when (topic) {
+        NewsTopic.RICE.name -> AppColors.Success
+        NewsTopic.GRAIN.name -> AppColors.GoldAccent
+        NewsTopic.WEATHER.name -> AppColors.Info
+        NewsTopic.MARKET.name -> AppColors.Warning
+        else -> AppColors.TextSecondary
     }
 }
 
@@ -427,31 +424,19 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
     }
 }
 
-@Composable
-private fun NewsSkeletonList() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        repeat(3) { NewsCardSkeleton() }
-    }
-}
 
 @Composable
 private fun NewsCardSkeleton() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(AppColors.SurfaceContainer)
-            .padding(10.dp)
+            .padding(vertical = 14.dp, horizontal = 16.dp),
+        verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
-                .size(86.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .size(48.dp)
+                .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
                 .background(AppColors.SurfaceContainer)
                 .shimmer()
         )
@@ -476,7 +461,7 @@ private fun NewsCardSkeleton() {
             Spacer(Modifier.height(2.dp))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.6f)
+                    .fillMaxWidth(0.4f)
                     .height(10.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(AppColors.SurfaceContainer)

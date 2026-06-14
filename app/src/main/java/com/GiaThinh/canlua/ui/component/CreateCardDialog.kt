@@ -100,7 +100,6 @@ fun CreateCardDialog(
         pricePerKg: Double,
         depositAmount: Double,
         cccd: String?,
-        bagWeight: Double,
         impurityWeight: Double,
         recordLocation: Boolean
     ) -> Unit,
@@ -143,13 +142,11 @@ fun CreateCardDialog(
     var moistureRaw        by remember { mutableStateOf("") }   // "18.2" -> 18.2%
     var priceRaw           by remember { mutableStateOf("") }   // "8200" -> 8.200 đ
     var depositRaw         by remember { mutableStateOf("") }   // "500000" -> 500.000 đ
-    var bagWeightRaw       by remember { mutableStateOf("") }   // "1.0" -> 1.0 kg/bao
     var impurityWeightRaw  by remember { mutableStateOf("") }   // "5.0" -> 5.0 kg
 
     // Trợ giúp giải thích
     var showCccdHelp by remember { mutableStateOf(false) }
     var showImpurityHelp by remember { mutableStateOf(false) }
-    var showBagHelp by remember { mutableStateOf(false) }
     var showMoistureHelp by remember { mutableStateOf(false) }
 
     // Gợi ý giống lúa (ưu tiên DB, sau đó là default, lấy top 5)
@@ -403,36 +400,6 @@ fun CreateCardDialog(
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
 
-                    // Trừ bao bì mặc định (1 dòng)
-                    OutlinedTextField(
-                        value = bagWeightRaw,
-                        onValueChange = { input ->
-                            val filtered = input.filter { it.isDigit() || it == '.' }
-                            if (filtered.length <= 4) bagWeightRaw = filtered
-                        },
-                        label = { Text(stringResource(R.string.create_card_bag_weight_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_bag_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    HapticUtil.tick(context)
-                                    showBagHelp = true
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích trừ bì",
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
 
                     // Trừ tạp chất mặc định (1 dòng)
                     OutlinedTextField(
@@ -608,7 +575,6 @@ fun CreateCardDialog(
                                 priceRaw.toDoubleOrNull() ?: 0.0,
                                 depositRaw.toDoubleOrNull() ?: 0.0,
                                 cccd.trim().takeIf { it.isNotEmpty() },
-                                bagWeightRaw.toDoubleOrNull() ?: 0.0,
                                 impurityWeightRaw.toDoubleOrNull() ?: 0.0,
                                 recordLocation
                             )
@@ -646,12 +612,6 @@ fun CreateCardDialog(
             onDismiss = { showImpurityHelp = false }
         )
 
-        ExplainingPopover(
-            visible = showBagHelp,
-            title = stringResource(R.string.create_card_bag_help_title),
-            description = stringResource(R.string.create_card_bag_help_description),
-            onDismiss = { showBagHelp = false }
-        )
 
         ExplainingPopover(
             visible = showMoistureHelp,

@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.GiaThinh.canlua.auth.GoogleAccount
 import com.GiaThinh.canlua.repository.AuthManager
-import com.GiaThinh.canlua.repository.ChatSessionStore
 import com.GiaThinh.canlua.repository.ProfileRepository
 import com.GiaThinh.canlua.util.AnalyticsHelper
 import com.google.firebase.FirebaseException
@@ -41,8 +40,7 @@ data class AuthUiState(
 class AuthViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val firebaseAuth: FirebaseAuth,
-    private val profileRepository: ProfileRepository,
-    private val chatSessionStore: ChatSessionStore
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -303,7 +301,6 @@ class AuthViewModel @Inject constructor(
 
     fun signOut() {
         authManager.signOut()
-        chatSessionStore.clear() // Xóa phiên chat AI in-memory để tránh leak sang user khác.
         _uiState.value = AuthUiState(
             isSignedIn = false,
             info = "Đã đăng xuất",

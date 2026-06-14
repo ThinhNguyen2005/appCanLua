@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.GiaThinh.canlua.data.firestore.FirestoreRicePrice
+import com.GiaThinh.canlua.ui.component.PermissionRationaleDialog
 import com.GiaThinh.canlua.ui.component.market.BidEditorSheet
 import com.GiaThinh.canlua.ui.component.market.MarketSkeletonList
 import com.GiaThinh.canlua.ui.component.market.NativeAdPlaceholder
@@ -82,6 +83,8 @@ import com.GiaThinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.GiaThinh.canlua.ui.viewmodel.WeatherViewModel
 import com.GiaThinh.canlua.util.PremiumState
 import com.GiaThinh.canlua.util.TrackScreenRender
+import com.GiaThinh.canlua.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -193,6 +196,8 @@ fun MarketScreenContent(
         }
     }
 
+    var showLocationRationale by remember { mutableStateOf(false) }
+
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val isTrader = profile?.role == "TRADER"
     val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
@@ -293,16 +298,19 @@ fun MarketScreenContent(
             )
 
             // Remember stable callbacks to prevent child recomposition on parent state change
-            val onWeatherRefresh = remember {
-                {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val onWeatherRefresh = {
+                if (com.GiaThinh.canlua.util.hasLocationPermission(context)) {
                     permissionLauncher.launch(
                         arrayOf(
                             Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION
                         )
                     )
-                    weatherViewModel.load(forceRefresh = true)
+                } else {
+                    showLocationRationale = true
                 }
+                weatherViewModel.load(forceRefresh = true)
             }
             val onNewsRefresh = remember { { newsViewModel.refresh(forceLocalScrape = true) } }
             val onRefreshNewsPage = remember {
@@ -392,6 +400,28 @@ fun MarketScreenContent(
         }
     }
 
+    if (showLocationRationale) {
+        PermissionRationaleDialog(
+            title = stringResource(R.string.permission_location_title),
+            message = stringResource(R.string.permission_location_rationale),
+            confirmText = stringResource(R.string.permission_location_button),
+            dismissText = stringResource(R.string.permission_dismiss_button),
+            onConfirm = {
+                showLocationRationale = false
+                permissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            },
+            onDismiss = {
+                showLocationRationale = false
+                weatherViewModel.onPermissionDenied()
+            }
+        )
+    }
+
     if (showEditor && isTrader) {
         ModalBottomSheet(
             onDismissRequest = onDismissEditor,
@@ -439,37 +469,23 @@ private fun NewsPage(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
+                start = 0.dp,
+                end = 0.dp,
                 top = 12.dp,
                 bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(key = "weather") {
-                AnimatedVisibility(
-                    visible = !weatherState.isPermissionDeniedByUser && !weatherState.isRateLimited,
-                    enter = fadeIn(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    WeatherWidget(
-                        weather = weatherState.weather,
-                        isLoading = weatherState.isLoading,
-                        errorMessage = weatherState.errorMessage,
-                        hasPermission = weatherState.hasPermission,
-                        isStale = weatherState.isStale,
-                        onRefresh = onWeatherRefresh
-                    )
-                }
-            }
-
             item(key = "native_ad") {
                 AnimatedVisibility(
                     visible = !isPremium,
                     enter = fadeIn(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
-                    NativeAdPlaceholder(onClick = {})
+                    NativeAdPlaceholder(
+                        onClick = {},
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
                 }
             }
 
@@ -481,7 +497,12 @@ private fun NewsPage(
                     errorMessage = errorMessage,
                     onSelectTopic = onSelectTopic,
                     onRefresh = onNewsRefresh,
-                    onDismissError = onDismissError
+                    onDismissError = onDismissError,
+                    showWeather = !weatherState.isPermissionDeniedByUser && !weatherState.isRateLimited,
+                    weather = weatherState.weather,
+                    isWeatherLoading = weatherState.isLoading,
+                    weatherError = weatherState.errorMessage,
+                    onWeatherRefresh = onWeatherRefresh
                 )
             }
 

@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua.data.remote.news
 
+import android.text.Html
 import android.util.Xml
 import com.GiaThinh.canlua.util.extractFirstImg
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +21,10 @@ import javax.inject.Singleton
  *
  * Hỗ trợ:
  *  - RSS 2.0 chuẩn `<item>` với `<title>`, `<link>`, `<description>`, `<pubDate>`
+ *  - Atom `<entry>` với `<link href="...">` (Google News format)
  *  - `media:thumbnail`, `media:content`, `enclosure` cho ảnh
+ *  - `content:encoded` (WordPress/custom) và `summary` (Atom)
+ *  - Redirect following cho Google News articles URLs
  *  - Date format RFC-822 phổ biến của các báo VN và Google News
  *
  * Bỏ qua bài lỗi parse — không throw để 1 item hỏng không phá toàn bộ feed.
@@ -30,52 +34,92 @@ class RssFetcher @Inject constructor(
     private val client: OkHttpClient
 ) {
 
-    private val userAgent =
-        "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 CanLua/1.0"
-
     suspend fun fetch(url: String): List<RssItem> = withContext(Dispatchers.IO) {
         val req = Request.Builder()
             .url(url)
-            .addHeader("User-Agent", userAgent)
             .addHeader("Accept", "application/rss+xml, application/xml, text/xml, */*")
+            .addHeader("User-Agent", "Mozilla/5.0 (compatible; CanLua/1.0)")
             .build()
-        client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) return@withContext emptyList()
-            resp.body?.byteStream()?.use(::parse).orEmpty()
+        try {
+            client.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    android.util.Log.w("RssFetcher", "HTTP error fetching RSS from $url: ${resp.code}")
+                    return@withContext emptyList()
+                }
+                resp.body?.byteStream()?.use { parse(it, url) }.orEmpty()
+            }
+        } catch (e: java.net.ProtocolException) {
+            android.util.Log.e("RssFetcher", "Protocol exception fetching RSS from $url: ${e.message}")
+            emptyList()
+        } catch (e: java.io.IOException) {
+            android.util.Log.e("RssFetcher", "Network/IO exception fetching RSS from $url: ${e.message}")
+            emptyList()
+        } catch (e: Exception) {
+            android.util.Log.e("RssFetcher", "Unexpected error fetching RSS from $url: ${e.message}")
+            emptyList()
         }
     }
 
-    /** Parse stream RSS → list items. Lỗi parse 1 item → bỏ qua, không throw. */
-    private fun parse(input: InputStream): List<RssItem> {
+    /**
+     * Parse stream RSS → list items. Lỗi parse 1 item → bỏ qua, không throw.
+     * @param feedUrl để detect Google News feeds (cần redirect following cho thumbnails)
+     */
+    private fun parse(input: InputStream, feedUrl: String): List<RssItem> {
         val parser = Xml.newPullParser().apply {
             setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
             setInput(input, null)
         }
         val items = mutableListOf<RssItem>()
+        val isGoogleNews = feedUrl.contains("news.google.com", ignoreCase = true)
         var event = parser.eventType
         while (event != XmlPullParser.END_DOCUMENT) {
-            if (event == XmlPullParser.START_TAG && parser.name == "item") {
-                runCatching { parseItem(parser) }.getOrNull()?.let(items::add)
+            if (event == XmlPullParser.START_TAG && (parser.name == "item" || parser.name == "entry")) {
+                runCatching { parseItem(parser, parser.name, isGoogleNews) }.getOrNull()?.let(items::add)
             }
             event = parser.next()
         }
         return items
     }
 
-    private fun parseItem(parser: XmlPullParser): RssItem? {
+    /**
+     * Parse 1 `<item>` (RSS 2.0) hoặc `<entry>` (Atom) thành RssItem.
+     *
+     * Các nguồn RSS khác nhau có cấu trúc khác nhau:
+     *  - Báo VN (VnExpress, Tuổi Trẻ…): description + img trong description, ít khi có media tags
+     *  - Google News: description ngắn (snippet), link trỏ news.google.com → cần redirect để lấy ảnh
+     */
+    private fun parseItem(parser: XmlPullParser, tagName: String, isGoogleNews: Boolean): RssItem? {
         var title = ""
         var link = ""
         var description = ""
         var pubDate = ""
         var mediaThumb: String? = null
+        var resolvedUrl: String? = null // lưu URL sau redirect
 
-        while (!(parser.eventType == XmlPullParser.END_TAG && parser.name == "item")) {
+        while (!(parser.eventType == XmlPullParser.END_TAG && parser.name == tagName)) {
             if (parser.eventType == XmlPullParser.START_TAG) {
                 when (parser.name) {
                     "title" -> title = readTextSafe(parser, "title").trim()
-                    "link" -> link = readTextSafe(parser, "link").trim()
+                    "link" -> {
+                        // RSS 2.0: <link>URL</link>
+                        link = readTextSafe(parser, "link").trim()
+                    }
                     "description" -> description = readTextSafe(parser, "description")
-                    "pubDate" -> pubDate = readTextSafe(parser, "pubDate").trim()
+                    "summary" -> {
+                        // Atom summary (thường ngắn hơn content)
+                        if (description.isEmpty()) description = readTextSafe(parser, "summary")
+                    }
+                    "content" -> {
+                        // Atom content — thường dài hơn summary
+                        if (description.isEmpty()) description = readTextSafe(parser, "content")
+                    }
+                    "content:encoded" -> {
+                        // WordPress/custom blogs — HTML đầy đủ
+                        if (description.isEmpty()) description = readTextSafe(parser, "content:encoded")
+                    }
+                    "pubDate", "published", "updated" -> {
+                        if (pubDate.isEmpty()) pubDate = readTextSafe(parser, parser.name).trim()
+                    }
                     "thumbnail", "content" -> {
                         // media:thumbnail url="..." hoặc media:content url="..."
                         val ns = parser.namespace
@@ -91,19 +135,71 @@ class RssFetcher @Inject constructor(
                         }
                     }
                 }
+                // Atom: <link href="..." rel="alternate"/>
+                if (parser.name == "link" && parser.namespace?.contains("atom", ignoreCase = true) == true) {
+                    val href = parser.getAttributeValue(null, "href")
+                    val rel = parser.getAttributeValue(null, "rel")
+                    if (!href.isNullOrBlank() && (rel == null || rel == "alternate")) {
+                        link = href.trim()
+                    }
+                }
             }
             parser.next()
         }
         if (title.isBlank() || link.isBlank()) return null
+
+        // Extract ảnh từ description HTML (báo VN thường embed ảnh trong description)
+        val descThumb = extractFirstImg(description)
+        // Ưu tiên mediaThumb từ tag > descThumb
+        val thumbnail = ensureHttps(mediaThumb ?: descThumb)
+
+        // Google News: thử resolve redirect để lấy ảnh og:image từ trang gốc
+        // Nếu description ngắn (< 50 chars sau strip) và chưa có ảnh, fetch trang để enrich
+        val stripped = stripShortDescription(description)
+        val needsEnrich = isGoogleNews && (stripped.length < 50 || thumbnail == null)
+        if (needsEnrich) {
+            resolvedUrl = resolveRedirect(link)
+        }
+
         return RssItem(
             title = title,
             link = link,
             description = description,
             pubDateMs = parseRssDate(pubDate),
-            // ensureHttps: ép cleartext http:// → https:// để Coil load được trên Android
-            // (manifest mặc định cấm cleartext, nhiều RSS source vẫn trả http://)
-            thumbnail = ensureHttps(mediaThumb ?: extractFirstImg(description))
+            thumbnail = thumbnail,
+            // Google News: nếu có resolved URL (actual article page), lưu lại để enrich
+            enrichedLink = if (needsEnrich && resolvedUrl != null) resolvedUrl else null
         )
+    }
+
+    /**
+     * Follow redirect chain để lấy URL thực của bài báo (bỏ qua news.google.com redirect).
+     * Trả về URL gốc (actual article page) hoặc null nếu fail.
+     */
+    private fun resolveRedirect(url: String): String? {
+        if (url.isBlank()) return null
+        return try {
+            val req = Request.Builder().url(url).build()
+            client.newCall(req).execute().use { resp ->
+                resp.header("Location")?.takeIf { it.isNotBlank() }
+                    ?: if (resp.isRedirect) url else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Strip HTML, decode entities nhưng KHÔNG cắt ngắn.
+     * Dùng cho logic detect "description quá ngắn cần enrich".
+     */
+    private fun stripShortDescription(html: String): String {
+        if (html.isEmpty()) return ""
+        val text = android.text.Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
+            .replace("\u00A0", " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        return text
     }
 
     /**
@@ -149,7 +245,9 @@ class RssFetcher @Inject constructor(
         val patterns = listOf(
             "EEE, dd MMM yyyy HH:mm:ss zzz",
             "EEE, dd MMM yyyy HH:mm:ss Z",
-            "dd MMM yyyy HH:mm:ss Z"
+            "dd MMM yyyy HH:mm:ss Z",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+            "yyyy-MM-dd'T'HH:mm:ssXXX"
         )
         for (p in patterns) {
             runCatching {

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -170,23 +171,151 @@ fun ProfileSkeleton() {
 @Composable
 fun CardDetailSkeleton() {
     val colors = skeletonColors()
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    val topSpacer = 52.dp // heights.expanded (TOPBAR_H)
+    val cardSpacing = 14.dp // same as LazyColumn verticalArrangement
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(cardSpacing)
     ) {
-        ShimmerBox(Modifier.fillMaxWidth().height(140.dp), 16.dp, colors)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            repeat(3) {
-                ShimmerBox(Modifier.weight(1f).height(48.dp), 12.dp, colors)
+        // Top spacer — matches heights.expanded + 16.dp in real content
+        item { Spacer(modifier = Modifier.height(topSpacer + 16.dp)) }
+
+        // Card 1: Thông tin phiếu (CardInfoCard)
+        item {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surface)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ShimmerBox(Modifier.width(130.dp).height(16.dp), 8.dp, colors)
+                    repeat(5) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ShimmerBox(Modifier.width(110.dp).height(13.dp), 6.dp, colors)
+                            ShimmerBox(Modifier.width(130.dp).height(13.dp), 6.dp, colors)
+                        }
+                    }
+                }
             }
         }
-        repeat(3) {
-            ShimmerBox(Modifier.fillMaxWidth().height(60.dp), 12.dp, colors)
+
+        // Card 2: Khối lượng (WeightSummaryCard)
+        item {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surface)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ShimmerBox(Modifier.width(110.dp).height(16.dp), 8.dp, colors)
+                    repeat(4) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            ShimmerBox(Modifier.width(100.dp).height(13.dp), 6.dp, colors)
+                            ShimmerBox(Modifier.width(90.dp).height(13.dp), 6.dp, colors)
+                        }
+                    }
+                    ShimmerBox(Modifier.fillMaxWidth().height(1.dp), 0.dp, colors.copy(surface = colors.surface.copy(alpha = 0.5f)))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ShimmerBox(Modifier.fillMaxWidth().height(40.dp), 10.dp, colors)
+                }
+            }
+        }
+
+        // Card 3: Tài chính (FinancialSummaryCard)
+        item {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surface)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ShimmerBox(Modifier.width(90.dp).height(16.dp), 8.dp, colors)
+                    repeat(3) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            ShimmerBox(Modifier.width(100.dp).height(13.dp), 6.dp, colors)
+                            ShimmerBox(Modifier.width(110.dp).height(13.dp), 6.dp, colors)
+                        }
+                    }
+                    // "Còn lại" row (highlighted)
+                    ShimmerBox(Modifier.fillMaxWidth().height(1.dp), 0.dp, colors.copy(surface = colors.surface.copy(alpha = 0.5f)))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        ShimmerBox(Modifier.width(80.dp).height(14.dp), 7.dp, colors)
+                        ShimmerBox(Modifier.width(120.dp).height(14.dp), 7.dp, colors)
+                    }
+                }
+            }
+        }
+
+        // Card 4: Bảng cân (BagEntriesCard with HorizontalPager tabs)
+        item {
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surface)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ShimmerBox(Modifier.width(120.dp).height(16.dp), 8.dp, colors)
+                    // Tab row skeleton
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(colors.surface)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        repeat(2) {
+                            ShimmerBox(
+                                Modifier.weight(1f).fillMaxHeight(),
+                                6.dp,
+                                colors,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // Table rows skeleton
+                    repeat(4) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ShimmerBox(Modifier.width(28.dp).height(13.dp), 6.dp, colors)
+                            ShimmerBox(Modifier.width(120.dp).height(13.dp), 6.dp, colors)
+                            ShimmerBox(Modifier.width(60.dp).height(13.dp), 6.dp, colors)
+                        }
+                    }
+                }
+            }
         }
     }
 }

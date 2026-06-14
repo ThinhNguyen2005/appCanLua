@@ -22,12 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
@@ -45,7 +42,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +62,6 @@ import com.GiaThinh.canlua.ui.navigation.BottomNavItem
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.SettingsViewModel
 import com.GiaThinh.canlua.repository.WeighDefaults
-import kotlinx.coroutines.launch
 
 /**
  * MainScreen — Shell chính chứa TopBar + BottomNavigationBar + Content.
@@ -186,9 +181,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
     val showTopBar = currentRoute in navItems.map { it.route } || currentRoute == "trader_transactions"
 
-    // Drawer state cho AI Chat (lifted lên đây để TopBar có thể mở drawer).
-    val aiChatDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+    // Drawer state cho AI Chat đã được gỡ bỏ hoàn toàn.
 
     // Mixed scroll behavior — pin TopBar ở các tab giao dịch (Cân Lúa) và Profile
     // để tránh nhảy ẩn-hiện khi tay dính nước scroll vô tình. Các tab đọc dài
@@ -236,15 +229,6 @@ fun MainScreen(deeplinkCardId: String? = null) {
                     },
                     navigationIcon = {
                         when (currentRoute) {
-                            BottomNavItem.AI_CHAT.route -> IconButton(onClick = {
-                                scope.launch { aiChatDrawerState.open() }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.History,
-                                    contentDescription = stringResource(com.GiaThinh.canlua.R.string.content_open_chat_sessions)
-                                )
-                            }
-
                             "trader_transactions" -> IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -340,7 +324,6 @@ fun MainScreen(deeplinkCardId: String? = null) {
                     navController = navController,
                     startDestination = navItems.first().route,
                     modifier = Modifier.fillMaxSize(),
-                    aiChatDrawerState = aiChatDrawerState,
                     deeplinkCardId = currentDeeplinkCardId,
                     onDeeplinkConsumed = { currentDeeplinkCardId = null }
                 )

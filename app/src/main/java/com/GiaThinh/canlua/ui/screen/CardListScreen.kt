@@ -404,7 +404,7 @@ fun CardListScreenContent(
             suggestedVarieties = suggestedVarieties,
             mode = if (isTrader) CreateCardMode.TRADER else CreateCardMode.FARMER,
             onDismiss = { showCreateDialog = false },
-            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, bagWeight, impurityWeight, recordLocation ->
+            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 // FARMER: name=farmer (owner), traderName=counterparty.
                 // TRADER: name=farmer (counterparty), traderName=trader (owner).
                 val cardName = if (isTrader) counterpartyName else ownerName
@@ -420,7 +420,6 @@ fun CardListScreenContent(
                     moisturePercent = moisture,
                     seasonLabel = season,
                     traderPhone = cardTraderPhone,
-                    bagWeight = bagWeight,
                     impurityWeight = impurityWeight,
                     recordLocation = recordLocation
                 )
