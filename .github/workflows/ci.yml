@@ -1,0 +1,73 @@
+name: Android CI & Release
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-test-reports
+          path: app/build/reports/tests/testDebugUnitTest/
+
+      - name: Upload Run Artifact APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Prepare Release APK
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/canlua-${{ github.ref_name }}.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/debug/canlua-${{ github.ref_name }}.apk
+          name: "Cân Lúa Mobile - Phiên bản ${{ github.ref_name }}"
+          body: |
+            ### 🤖 Phiên bản mới đã được tự động phát hành qua GitHub Actions
+            
+            Chào bạn! Đây là bản cài đặt thử nghiệm được tự động biên dịch và đăng tải.
+            
+            #### 📦 Tải về trực tiếp:
+            * Xem file đính kèm `canlua-${{ github.ref_name }}.apk` phía dưới phần **Assets**.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
