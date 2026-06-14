@@ -1,7 +1,9 @@
 package com.GiaThinh.canlua.repository
 
+import com.GiaThinh.canlua.BuildConfig
 import com.GiaThinh.canlua.data.firestore.FirestoreFeedback
 import com.GiaThinh.canlua.data.remote.HttpClient
+import com.GiaThinh.canlua.util.ApiKeyObfuscator
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -154,8 +156,11 @@ Ref: <code>${feedbackId}</code>
 👉 <b>Trả lời:</b> Hãy nhấn giữ tin nhắn này và chọn <b>"Reply" (Trả lời)</b> để gửi câu trả lời về App cho user.
             """.trimIndent()
 
-            val token = "8719184708:AAEHY0mfzeTyA7Zqu2S7W-Tu4ecYRZqbkjA"
-            val chatId = "5236653379"
+            val token = ApiKeyObfuscator.decode(BuildConfig.TELEGRAM_BOT_TOKEN)
+            val chatId = ApiKeyObfuscator.decode(BuildConfig.TELEGRAM_ADMIN_CHAT_ID)
+            
+            if (token.isEmpty() || chatId.isEmpty()) return
+
             val url = "https://api.telegram.org/bot$token/sendMessage"
 
             val body = mapOf(
