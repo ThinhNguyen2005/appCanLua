@@ -37,11 +37,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.GiaThinh.canlua.R
+import com.GiaThinh.canlua.ui.feedback.LocalAppToast
 import com.GiaThinh.canlua.data.model.AppThemeMode
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
@@ -70,6 +73,7 @@ fun SettingsScreen(
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle(initialValue = emptyList())
+    val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
     var pendingRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
@@ -93,6 +97,35 @@ fun SettingsScreen(
 
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+
+    val isPremium by com.GiaThinh.canlua.util.PremiumState.isPremium.collectAsStateWithLifecycle()
+    val appToast = LocalAppToast.current
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportBackup(
+                context = context,
+                uri = uri,
+                onSuccess = { appToast.success("Xuất dữ liệu sao lưu thành công!") },
+                onError = { err -> appToast.error("Lỗi xuất dữ liệu: $err") }
+            )
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.importBackup(
+                context = context,
+                uri = uri,
+                onSuccess = { count -> appToast.success("Khôi phục thành công $count phiếu cân!") },
+                onError = { err -> appToast.error("Lỗi khôi phục dữ liệu: $err") }
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -144,6 +177,7 @@ fun SettingsScreen(
 
             RoleSwitcherContent(
                 profile = profile,
+                isGuest = isGuestMode,
                 onRoleChange = { pendingRole = it }
             )
 
@@ -233,6 +267,37 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_deleted_cards_title),
                 subtitle = stringResource(R.string.settings_deleted_cards_subtitle),
                 onClick = { navController.navigate("deleted_cards") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ClickableSettingsRow(
+                icon = Icons.Outlined.Backup,
+                iconBg = AppColors.GreenSurface,
+                iconTint = AppColors.GreenPrimary,
+                title = "Sao lưu dữ liệu (Premium)",
+                subtitle = "Xuất dữ liệu phiếu cân ra file JSON",
+                onClick = {
+                    if (isPremium) {
+                        exportLauncher.launch("CanLua_SaoLuu_${System.currentTimeMillis() / 1000}.json")
+                    } else {
+                        appToast.warning("Tính năng sao lưu yêu cầu tài khoản Premium!")
+                        navController.navigate("premium")
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ClickableSettingsRow(
+                icon = Icons.Outlined.Restore,
+                iconBg = AppColors.BlueSurface,
+                iconTint = AppColors.Blue,
+                title = "Khôi phục dữ liệu",
+                subtitle = "Nhập dữ liệu phiếu cân từ file JSON",
+                onClick = {
+                    importLauncher.launch(arrayOf("application/json"))
+                }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -592,6 +657,7 @@ private fun ExpandableCard(
 @Composable
 private fun RoleSwitcherContent(
     profile: com.GiaThinh.canlua.data.model.Profile?,
+    isGuest: Boolean = false,
     onRoleChange: (String) -> Unit
 ) {
     Card(
@@ -608,9 +674,9 @@ private fun RoleSwitcherContent(
                 color = AppColors.TextPrimary
             )
             Text(
-                text = stringResource(R.string.profile_user_role_subtitle),
+                text = if (isGuest) "🔒 Đăng nhập để chuyển đổi vai trò" else stringResource(R.string.profile_user_role_subtitle),
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.TextHint
+                color = if (isGuest) AppColors.Orange else AppColors.TextHint
             )
             Spacer(Modifier.height(12.dp))
             Row(
@@ -622,18 +688,31 @@ private fun RoleSwitcherContent(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val currentRole = profile?.role ?: "FARMER"
+                val appToast = com.GiaThinh.canlua.ui.feedback.LocalAppToast.current
                 RoleChipButton(
                     icon = Icons.Filled.Agriculture,
                     label = stringResource(R.string.farmer),
                     selected = currentRole != "TRADER",
-                    onClick = { if (currentRole != "FARMER") onRoleChange("FARMER") },
+                    onClick = {
+                        if (isGuest) {
+                            appToast.warning("Bạn cần đăng nhập mới có thể chuyển đổi vai trò!")
+                        } else if (currentRole != "FARMER") {
+                            onRoleChange("FARMER")
+                        }
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 RoleChipButton(
                     icon = Icons.Filled.Storefront,
                     label = stringResource(R.string.trader),
                     selected = currentRole == "TRADER",
-                    onClick = { if (currentRole != "TRADER") onRoleChange("TRADER") },
+                    onClick = {
+                        if (isGuest) {
+                            appToast.warning("Bạn cần đăng nhập mới có thể chuyển đổi vai trò!")
+                        } else if (currentRole != "TRADER") {
+                            onRoleChange("TRADER")
+                        }
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }

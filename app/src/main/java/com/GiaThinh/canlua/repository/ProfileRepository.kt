@@ -28,7 +28,8 @@ import javax.inject.Singleton
 class ProfileRepository @Inject constructor(
     private val profileDao: ProfileDao,
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) {
     /**
      * Lưu profile cho user **đang đăng nhập**. Nếu chưa sign-in → no-op.
@@ -88,9 +89,22 @@ class ProfileRepository @Inject constructor(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun latestProfile(): Flow<Profile?> = authUidFlow().flatMapLatest { uid ->
-        if (uid.isNullOrBlank()) flowOf(null)
-        else profileDao.getProfileByUid(uid).map { profile ->
-            profile?.copy(cccd = CccdCrypto.decrypt(profile.cccd).orEmpty())
+        if (uid.isNullOrBlank()) {
+            val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+            val isGuest = prefs.getBoolean("guest_mode", false)
+            if (isGuest) {
+                flowOf(Profile(
+                    uid = "GUEST",
+                    name = "Khách",
+                    role = "FARMER"
+                ))
+            } else {
+                flowOf(null)
+            }
+        } else {
+            profileDao.getProfileByUid(uid).map { profile ->
+                profile?.copy(cccd = CccdCrypto.decrypt(profile.cccd).orEmpty())
+            }
         }
     }
 

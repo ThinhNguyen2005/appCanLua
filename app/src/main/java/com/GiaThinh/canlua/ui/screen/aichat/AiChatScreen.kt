@@ -39,13 +39,22 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -97,25 +107,29 @@ fun AiChatScreen(
     val voice by viewModel.voiceState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val imeVisible = WindowInsets.isImeVisible
+    val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
-    // Auto-scroll xuống tin nhắn cuối khi list grow hoặc khi keyboard mở/đóng.
-    // Thêm imeVisible vào key để khi user bắt đầu gõ, list tự cuộn lại đúng vị trí
-    // (không bị input bar che mất tin nhắn vừa gửi).
-    LaunchedEffect(state.messages.size, imeVisible) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.size - 1)
+    if (isGuestMode) {
+        AiChatLockedScreen(onLoginClick = viewModel::disableGuestMode)
+    } else {
+        // Auto-scroll xuống tin nhắn cuối khi list grow hoặc khi keyboard mở/đóng.
+        // Thêm imeVisible vào key để khi user bắt đầu gõ, list tự cuộn lại đúng vị trí
+        // (không bị input bar che mất tin nhắn vừa gửi).
+        LaunchedEffect(state.messages.size, imeVisible) {
+            if (state.messages.isNotEmpty()) {
+                listState.animateScrollToItem(state.messages.size - 1)
+            }
         }
-    }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppColors.Surface)
-            // imePadding ở root → toàn bộ content (LazyColumn + InputBar) co theo IME
-            // đồng bộ với keyboard animation. Kết hợp với MainScreen ẩn bottom bar khi
-            // imeVisible → không còn gap thừa giữa Input và keyboard.
-            .imePadding()
-    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppColors.Surface)
+                // imePadding ở root → toàn bộ content (LazyColumn + InputBar) co theo IME
+                // đồng bộ với keyboard animation. Kết hợp với MainScreen ẩn bottom bar khi
+                // imeVisible → không còn gap thừa giữa Input và keyboard.
+                .imePadding()
+        ) {
 
         // Preset prompts (chỉ hiển thị khi mới mở chat)
         AnimatedVisibility(visible = state.messages.size <= 1) {
@@ -176,6 +190,7 @@ fun AiChatScreen(
                 onCancelVoice = viewModel::cancelVoice,
                 isStreaming = state.isStreaming
             )
+        }
         }
     }
 }
@@ -480,6 +495,184 @@ private fun ActionButton(
                     contentDescription = null,
                     tint = AppColors.TextHint
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.Surface)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(AppColors.OrangeSurface, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Lock,
+                    contentDescription = null,
+                    tint = AppColors.Orange,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            // Text
+            Text(
+                text = "Trợ lý AI Cân Lúa 🤖",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+
+            Text(
+                text = "Tính năng Hỏi đáp AI chỉ dành cho thành viên đã đăng nhập. Hãy đăng ký ngay để mở khóa các đặc quyền hấp dẫn!",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+            // Comparison Table
+            ComparisonTable()
+
+            // Early Adopter Promo Banner
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = AppColors.GreenSurface),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Đăng nhập sớm trước ngày 01/07/2026 để nhận ngay gói Premium Early Adopter miễn phí trọn đời!",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.GreenPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Login button
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
+            ) {
+                Text(
+                    text = "Đăng Nhập / Đăng Ký Ngay",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun ComparisonTable() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Header Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.SurfaceContainer, RoundedCornerShape(8.dp))
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Loại", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = "Hỏi đáp AI", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = "Quảng cáo", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = "Sao lưu", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = "Ưu đãi sớm", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Khách Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Khách", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)
+                Text(text = "Khóa 🔒", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Error)
+                Text(text = "Có", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = "Không", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+                Text(text = "Không", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+            }
+
+            HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.3f), thickness = 0.5.dp)
+
+            // Thường Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Người dùng\nthường", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)
+                Text(text = "3 câu/ngày", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Blue)
+                Text(text = "Có", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = "Không", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+                Text(text = "Tặng Pre 🎁", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)
+            }
+
+            HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.3f), thickness = 0.5.dp)
+
+            // Premium Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Premium", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AppColors.GreenPrimary)
+                Text(text = "100 câu/ngày", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppColors.GreenPrimary)
+                Text(text = "Không QC ✨", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)
+                Text(text = "Xuất JSON", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = "Kích hoạt", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
             }
         }
     }

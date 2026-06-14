@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthScreen(
     onSuccess: () -> Unit,
+    onSkipLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     TrackScreenRender("auth")
@@ -176,6 +177,20 @@ fun AuthScreen(
                             }
                         }
                     )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    TextButton(
+                        onClick = onSkipLogin,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
+                    ) {
+                        Text(
+                            text = "Trải nghiệm không cần đăng nhập (Khách)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
 

@@ -6,6 +6,7 @@ import com.GiaThinh.canlua.data.model.Profile
 import com.GiaThinh.canlua.data.model.TraderHistoryItem
 import com.GiaThinh.canlua.repository.CardRepository
 import com.GiaThinh.canlua.repository.ProfileRepository
+import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.ui.screen.UserRole
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,8 +18,20 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val cardRepository: CardRepository
+    private val cardRepository: CardRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    val isGuestMode: StateFlow<Boolean> = settingsRepository.guestMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = settingsRepository.isGuestMode()
+        )
+
+    fun disableGuestMode() {
+        settingsRepository.setGuestMode(false)
+    }
 
     /** Latest profile — emits null until first save. */
     val profile = profileRepository.latestProfile()

@@ -38,21 +38,7 @@ class SyncableCardRepository @Inject constructor(
     private val authManager: AuthManager,
     private val locationProvider: LocationProvider
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val syncJobs = ConcurrentHashMap<Long, Job>()
-
-    private fun scheduleDebouncedCardSync(cardId: Long) {
-        syncJobs[cardId]?.cancel()
-        syncJobs[cardId] = scope.launch {
-            delay(5000) // Trì hoãn 5 giây để gom cụm các sự kiện gõ liên tiếp
-            syncJobs.remove(cardId)
-            if (syncManager.canSync()) {
-                syncManager.syncCardAndDetails(cardId)
-            } else {
-                syncManager.scheduleImmediateSync()
-            }
-        }
-    }
+    // Sync to Firestore disabled for performance and cost optimization in 2026 local-first refactor
 
     fun getAllCards(): Flow<List<Card>> = cardRepository.getAllCards()
 
@@ -65,99 +51,43 @@ class SyncableCardRepository @Inject constructor(
     suspend fun getCardById(id: Long) = cardRepository.getCardById(id)
 
     suspend fun insertCard(card: Card): Long {
-        val id = cardRepository.insertCard(card)
-        if (syncManager.canSync()) {
-            val cardWithId = card.copy(id = id)
-            syncManager.syncCard(cardWithId)
-        } else {
-            // Offline/No Wifi → enqueue OneTimeWorkRequest, WorkManager sẽ tự chạy
-            // SyncWorker khi có mạng và kết nối Wi-Fi.
-            syncManager.scheduleImmediateSync()
-        }
-        return id
+        return cardRepository.insertCard(card)
     }
 
     suspend fun updateCard(card: Card) {
         cardRepository.updateCard(card)
-        scheduleDebouncedCardSync(card.id)
     }
 
     /**
-     * Xoá card local + Firestore (nếu đã từng sync).
-     * `CardRepository.deleteCard` đã ghi tombstone trước khi xoá Room → bug
-     * "phiếu phục sinh" sau pull được fix triệt để (pull check tombstone trước).
-     *
-     * Trên Firestore không có CASCADE → xoá tay child docs trước, parent sau
-     * để tránh orphan rác trên cloud. Nếu offline → tombstone giữ
-     * `cloudDeleted = false`, background worker retry.
+     * Xoá card local.
      */
     suspend fun deleteCard(card: Card) {
-        val fsCardId = card.firestoreId
-        // 1. Ghi tombstone + xoá Room TRƯỚC.
-        //    Lý do: nếu mình xoá cloud trước, app crash giữa chừng → cloud đã
-        //    xoá nhưng local còn → user thấy phiếu trên 1 máy, máy khác mất.
-        //    Ghi tombstone trước đảm bảo có "ý định xoá" persisted.
         cardRepository.deleteCard(card)
-
-        // 2. Đẩy delete lên cloud nếu online + có firestoreId.
-        if (fsCardId != null && syncManager.canSync()) {
-            val ok = runCatching {
-                firestoreRepository.getWeightEntriesByCardId(fsCardId).getOrNull().orEmpty()
-                    .forEach { entry ->
-                        if (entry.id.isNotBlank()) firestoreRepository.deleteWeightEntry(entry.id)
-                    }
-                firestoreRepository.getTransactionsByCardId(fsCardId).getOrNull().orEmpty()
-                    .forEach { tx ->
-                        if (tx.id.isNotBlank()) firestoreRepository.deleteTransaction(tx.id)
-                    }
-                firestoreRepository.deleteCard(fsCardId).getOrNull()
-            }.isSuccess
-
-            // Nếu xoá cloud thành công → đánh dấu tombstone đã clean cloud,
-            // không retry trong background nữa.
-            if (ok) {
-                val uid = authManager.currentUser?.uid.orEmpty()
-                cardRepository.getDeletedCards(uid).first()
-                    .firstOrNull { it.firestoreId == fsCardId }
-                    ?.let { cardRepository.markTombstoneCloudDeleted(it.id) }
-            }
-        }
     }
 
     fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>> =
         cardRepository.getWeightEntriesByCardId(cardId)
 
     suspend fun insertWeightEntry(weightEntry: WeightEntry): Long {
-        val id = cardRepository.insertWeightEntry(weightEntry)
-        scheduleDebouncedCardSync(weightEntry.cardId)
-        return id
+        return cardRepository.insertWeightEntry(weightEntry)
     }
 
     suspend fun updateWeightEntry(weightEntry: WeightEntry) {
         cardRepository.updateWeightEntry(weightEntry)
-        scheduleDebouncedCardSync(weightEntry.cardId)
     }
 
     /**
-     * Xoá entry local + Firestore. Nếu entry chưa từng sync (firestoreId=null)
-     * thì chỉ xoá local — không có gì trên cloud để xoá.
+     * Xoá entry local.
      */
     suspend fun deleteWeightEntry(weightEntry: WeightEntry) {
-        val fsId = weightEntry.firestoreId
-        if (fsId != null && syncManager.canSync()) {
-            firestoreRepository.deleteWeightEntry(fsId)
-        }
         cardRepository.deleteWeightEntry(weightEntry)
-        scheduleDebouncedCardSync(weightEntry.cardId)
     }
 
     fun getTransactionsByCardId(cardId: Long): Flow<List<Transaction>> =
         cardRepository.getTransactionsByCardId(cardId)
 
     suspend fun insertTransaction(transaction: Transaction): Long {
-        val id = cardRepository.insertTransaction(transaction)
-        scheduleDebouncedCardSync(transaction.cardId)
-        return id
+        return cardRepository.insertTransaction(transaction)
     }
 
     suspend fun calculateCardTotals(cardId: Long) =
@@ -165,27 +95,18 @@ class SyncableCardRepository @Inject constructor(
 
     suspend fun updateCardCalculations(cardId: Long) {
         cardRepository.updateCardCalculations(cardId)
-        scheduleDebouncedCardSync(cardId)
     }
 
     suspend fun findByQrToken(token: String): Card? = cardRepository.findByQrToken(token)
 
     suspend fun updateQrToken(cardId: Long, token: String) {
         cardRepository.updateQrToken(cardId, token)
-        scheduleDebouncedCardSync(cardId)
     }
 
     suspend fun lockCard(cardId: Long, traderId: String) {
         cardRepository.lockCard(cardId, traderId)
-        // Lock card là hành động one-off quan trọng cuối cùng, đồng bộ tức thì
-        cardRepository.getCardById(cardId)?.let { updatedCard ->
-            if (syncManager.canSync()) {
-                syncManager.syncCard(updatedCard)
-            } else {
-                syncManager.scheduleImmediateSync()
-            }
-        }
     }
+
 
 }
 

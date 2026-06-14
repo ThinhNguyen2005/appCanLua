@@ -13,7 +13,9 @@ import com.GiaThinh.canlua.repository.MarketRepository
 import com.GiaThinh.canlua.repository.ProfileRepository
 import com.GiaThinh.canlua.repository.WeatherRepository
 import com.GiaThinh.canlua.repository.WeatherState
+import com.GiaThinh.canlua.repository.SettingsRepository
 import com.GiaThinh.canlua.util.SpeechRecognizerHelper
+import com.GiaThinh.canlua.util.PremiumState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,8 +63,21 @@ class AiChatViewModel @Inject constructor(
     profileRepository: ProfileRepository,
     weatherRepository: WeatherRepository,
     private val knowledgeBase: KnowledgeBaseRepository,
-    private val stt: SpeechRecognizerHelper
+    private val stt: SpeechRecognizerHelper,
+    private val settingsRepository: SettingsRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
+
+    val isGuestMode: StateFlow<Boolean> = settingsRepository.guestMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = settingsRepository.isGuestMode()
+        )
+
+    fun disableGuestMode() {
+        settingsRepository.setGuestMode(false)
+    }
 
     private val _state = MutableStateFlow(AiChatUiState())
     val state: StateFlow<AiChatUiState> = _state.asStateFlow()
@@ -158,6 +173,26 @@ class AiChatViewModel @Inject constructor(
         val text = _state.value.input.trim()
         if (text.isEmpty() || _state.value.isStreaming) return
 
+        val isGuest = profile.value == null || profile.value?.uid == "GUEST"
+        if (isGuest) {
+            _state.value = _state.value.copy(errorMessage = "Bà con cần đăng nhập để trò chuyện với trợ lý AI nông nghiệp.")
+            return
+        }
+
+        val premium = PremiumState.isPremium.value
+        val dailyCount = PremiumState.dailyAiQueries.value
+        val limit = if (premium) PremiumState.PREMIUM_AI_QUERIES_PER_DAY else PremiumState.FREE_AI_QUERIES_PER_DAY
+
+        if (dailyCount >= limit) {
+            val errorMsg = if (premium) {
+                "Hạn mức chat AI hôm nay đã hết để tránh spam hệ thống. Bà con quay lại vào ngày mai nhé."
+            } else {
+                "Bà con đã dùng hết 3 lượt chat AI miễn phí hôm nay. Vui lòng nâng cấp Premium để chat không giới hạn."
+            }
+            _state.value = _state.value.copy(errorMessage = errorMsg)
+            return
+        }
+
         if (!canSend()) {
             val cooldownSec = ((rateLimitMs - (System.currentTimeMillis() - lastSentTime)) / 1000).toInt().coerceAtLeast(1)
             _state.value = _state.value.copy(rateLimitSeconds = cooldownSec.coerceAtLeast(1))
@@ -199,6 +234,7 @@ class AiChatViewModel @Inject constructor(
                 audience = audience
             )
             val reply = if (result.isSuccess) {
+                PremiumState.incrementDailyAiCreated(context)
                 firestoreRepository.incrementAiQueryCount()
                 UiMessage(role = "assistant", content = result.getOrNull().orEmpty())
             } else {

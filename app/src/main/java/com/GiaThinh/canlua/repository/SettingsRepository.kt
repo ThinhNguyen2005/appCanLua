@@ -24,6 +24,7 @@ class SettingsRepository @Inject constructor(
     private val KEY_AUTO_SYNC_ENABLED = "auto_sync_enabled"
     private val KEY_THEME_MODE = "theme_mode"
     private val KEY_SYNC_ONLY_WIFI = "sync_only_wifi"
+    private val KEY_GUEST_MODE = "guest_mode"
 
     // Weigh-options defaults (v17): áp dụng cho phiếu mới tạo. Phiếu cũ giữ mode đã lưu.
     private val KEY_IMPURITY_IS_PERCENT = "weigh_impurity_is_percent"
@@ -53,6 +54,9 @@ class SettingsRepository @Inject constructor(
     private val _ttsEnabled = MutableStateFlow(prefs.getBoolean(KEY_TTS_ENABLED, true))
     val ttsEnabled: Flow<Boolean> = _ttsEnabled.asStateFlow()
 
+    private val _guestMode = MutableStateFlow(prefs.getBoolean(KEY_GUEST_MODE, false))
+    val guestMode: Flow<Boolean> = _guestMode.asStateFlow()
+
     init {
         prefs.registerOnSharedPreferenceChangeListener { _, key ->
             if (key == KEY_FONT_SCALE) {
@@ -72,6 +76,9 @@ class SettingsRepository @Inject constructor(
             }
             if (key == KEY_THEME_MODE) {
                 _appThemeMode.value = readThemeMode()
+            }
+            if (key == KEY_GUEST_MODE) {
+                _guestMode.value = prefs.getBoolean(KEY_GUEST_MODE, false)
             }
         }
     }
@@ -158,6 +165,15 @@ class SettingsRepository @Inject constructor(
     private fun readThemeMode(): AppThemeMode {
         val name = prefs.getString(KEY_THEME_MODE, AppThemeMode.LIGHT.name)
         return AppThemeMode.fromName(name)
+    }
+
+    fun isGuestMode(): Boolean {
+        return prefs.getBoolean(KEY_GUEST_MODE, false)
+    }
+
+    fun setGuestMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_GUEST_MODE, enabled).apply()
+        _guestMode.value = enabled
     }
 }
 

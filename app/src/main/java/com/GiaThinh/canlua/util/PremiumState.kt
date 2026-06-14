@@ -44,6 +44,8 @@ object PremiumState {
      */
     private const val KEY_DAILY_COUNT = "daily_created_count"
     private const val KEY_DAILY_DATE = "daily_counter_date"
+    private const val KEY_AI_DAILY_COUNT = "ai_daily_created_count"
+    private const val KEY_AI_DAILY_DATE = "ai_daily_counter_date"
 
     /** Key prefs để user không bị apply early adopter nhiều lần. */
     private const val KEY_EARLY_ADOPTER_APPLIED = "early_adopter_applied"
@@ -56,6 +58,8 @@ object PremiumState {
      * Premium khi mùa vụ nhiều phiếu/ngày.
      */
     const val FREE_CARDS_PER_DAY = 3
+    const val FREE_AI_QUERIES_PER_DAY = 3
+    const val PREMIUM_AI_QUERIES_PER_DAY = 100
 
     /**
      * Timestamp cutoff cho Early Adopter — cài app TRƯỚC ngày này = nhận Premium free.
@@ -91,6 +95,10 @@ object PremiumState {
     /** Số phiếu đã tạo hôm nay (counter chỉ tăng, không trừ khi xoá). */
     private val _dailyCreated = MutableStateFlow(0)
     val dailyCreated: StateFlow<Int> = _dailyCreated.asStateFlow()
+
+    /** Số lượt chat AI hôm nay (counter chỉ tăng). */
+    private val _dailyAiQueries = MutableStateFlow(0)
+    val dailyAiQueries: StateFlow<Int> = _dailyAiQueries.asStateFlow()
 
     /**
      * Kiểm tra và apply Early Adopter Premium nếu thỏa điều kiện.
@@ -133,6 +141,12 @@ object PremiumState {
         // Feature bị tắt từ Remote Config → bỏ qua
         if (!earlyAdopterEnabled) return
 
+        // CHECK GUEST MODE: Khách không được hưởng ưu đãi Early Adopter
+        val isGuest = context.applicationContext
+            .getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .getBoolean("guest_mode", false)
+        if (isGuest) return
+
         val prefs = getEncryptedPrefs(context)
         val cutoff = remoteCutoffMs ?: EARLY_ADOPTER_CUTOFF_MS
         val alreadyPremium = prefs.getBoolean(KEY_IS_PREMIUM, false)
@@ -167,14 +181,21 @@ object PremiumState {
 
     fun init(context: Context) {
         val prefs = getEncryptedPrefs(context)
-        val stored = prefs.getBoolean(KEY_IS_PREMIUM, false)
+        
+        // CHECK GUEST MODE: Khách không bao giờ được hưởng các đặc quyền Premium
+        val isGuest = context.applicationContext
+            .getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .getBoolean("guest_mode", false)
+
+        val stored = if (isGuest) false else prefs.getBoolean(KEY_IS_PREMIUM, false)
         val lastVerified = prefs.getLong(KEY_LAST_VERIFIED, 0L)
         val since = prefs.getLong(KEY_PREMIUM_SINCE, 0L)
-        val plan = prefs.getString(KEY_PLAN, null)
-        val isEarlyAdopterApplied = prefs.getBoolean(KEY_EARLY_ADOPTER_APPLIED, false)
+        val plan = if (isGuest) null else prefs.getString(KEY_PLAN, null)
+        val isEarlyAdopterApplied = !isGuest && prefs.getBoolean(KEY_EARLY_ADOPTER_APPLIED, false)
         val now = System.currentTimeMillis()
         val withinGrace = lastVerified > 0L && (now - lastVerified) <= GRACE_MS
-        val active = stored && withinGrace
+        val active = stored && withinGrace && !isGuest
+
         _isPremium.value = active
         _info.value = Info(
             isActive = active,
@@ -185,6 +206,7 @@ object PremiumState {
         )
         // Sync counter — auto reset nếu hôm nay khác ngày lưu trong prefs.
         _dailyCreated.value = readAndRolloverDailyCount(context)
+        _dailyAiQueries.value = readAndRolloverDailyAiCount(context)
     }
 
     /**
@@ -228,6 +250,36 @@ object PremiumState {
             .putInt(KEY_DAILY_COUNT, next)
             .apply()
         _dailyCreated.value = next
+        return next
+    }
+
+    private fun readAndRolloverDailyAiCount(context: Context): Int {
+        val prefs = getEncryptedPrefs(context)
+        val today = PremiumQuotaLogic.todayKey()
+        val savedDate = prefs.getString(KEY_AI_DAILY_DATE, null)
+        val savedCount = prefs.getInt(KEY_AI_DAILY_COUNT, 0)
+        val (newCount, newDate) = PremiumQuotaLogic.rolloverDailyCount(
+            savedDate = savedDate,
+            savedCount = savedCount,
+            todayKey = today
+        )
+        if (savedDate != newDate) {
+            prefs.edit()
+                .putString(KEY_AI_DAILY_DATE, newDate)
+                .putInt(KEY_AI_DAILY_COUNT, newCount)
+                .apply()
+        }
+        return newCount
+    }
+
+    fun incrementDailyAiCreated(context: Context): Int {
+        val current = readAndRolloverDailyAiCount(context)
+        val next = current + 1
+        getEncryptedPrefs(context)
+            .edit()
+            .putInt(KEY_AI_DAILY_COUNT, next)
+            .apply()
+        _dailyAiQueries.value = next
         return next
     }
 

@@ -22,8 +22,12 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -475,6 +479,70 @@ fun PremiumStatusCard(
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun GuestLoginPromoCard(
+    onLoginClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.OrangeSurface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null,
+                        tint = AppColors.Orange,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(Modifier.size(12.dp))
+                Text(
+                    text = "🔑 Trải nghiệm Chế độ Khách",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            }
+
+            Text(
+                text = "Bạn đang trải nghiệm ứng dụng dưới danh nghĩa Khách. Đăng nhập ngay hôm nay để đồng bộ dữ liệu an toàn, sử dụng Trợ lý AI và nhận ưu đãi Premium Early Adopter miễn phí trọn đời (trước ngày 01/07/2026)!",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextSecondary
+            )
+
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
+            ) {
+                Text(
+                    text = "Đăng Nhập / Đăng Ký Ngay",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
         }
     }

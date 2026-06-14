@@ -1,5 +1,6 @@
 package com.GiaThinh.canlua
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,6 +33,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ -> }
+
     // Tạo InitViewModel trước setContent để dùng với setKeepOnScreenCondition.
     // @AndroidEntryPoint đã override defaultViewModelProviderFactory → Hilt factory.
     private lateinit var initViewModel: InitViewModel
@@ -41,6 +46,17 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
 
         super.onCreate(savedInstanceState)
+
+        // Request all runtime permissions at once on app launch
+        requestPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        )
 
         // Khởi tạo InitViewModel sau super() (Hilt đã inject xong).
         initViewModel = ViewModelProvider(this)[InitViewModel::class.java]
@@ -59,6 +75,7 @@ class MainActivity : ComponentActivity() {
             val appThemeMode by settingsViewModel.appThemeMode.collectAsStateWithLifecycle(AppThemeMode.AUTO)
             val language by settingsViewModel.language.collectAsStateWithLifecycle()
             val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+            val isGuestMode by settingsViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
             // isDataReady đã true khi native splash exit; subscribe ở đây để trigger
             // LaunchedEffect khi trạng thái thay đổi (edge case: auth nhanh hơn DB).
             val isDataReady by initViewModel.isDataReady.collectAsStateWithLifecycle()
@@ -70,25 +87,29 @@ class MainActivity : ComponentActivity() {
 
                     // startDest chờ cả hai: auth state xác định + DB đã warm-up.
                     val startDest = when {
+                        isGuestMode -> "main?cardId={cardId}"
                         !authState.isSignedIn -> "login"
                         authState.needsProfileSetup == null || !isDataReady -> "splash"
                         authState.needsProfileSetup == true -> "profile_setup"
-                        else -> "main"
+                        else -> "main?cardId={cardId}"
                     }
 
                     // Khi bất kỳ điều kiện nào thay đổi, điều hướng đến đúng màn.
-                    LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup, isDataReady) {
+                    LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup, isDataReady, isGuestMode) {
                         val currentRoute = rootNavController.currentDestination?.route
                         if (currentRoute == "role_request") return@LaunchedEffect
 
                         val target = when {
+                            isGuestMode -> "main?cardId={cardId}"
                             !authState.isSignedIn -> "login"
                             authState.needsProfileSetup == null || !isDataReady -> null // chờ
                             authState.needsProfileSetup == true -> "profile_setup"
-                            else -> "main"
+                            else -> "main?cardId={cardId}"
                         } ?: return@LaunchedEffect
 
-                        if (currentRoute != target) {
+                        val isTargetMain = target.startsWith("main")
+                        val isCurrentMain = currentRoute?.startsWith("main") == true
+                        if (currentRoute != target && !(isTargetMain && isCurrentMain)) {
                             rootNavController.navigate(target) {
                                 popUpTo(rootNavController.graph.id) { inclusive = true }
                             }
@@ -106,7 +127,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("login") {
-                            AuthScreen(onSuccess = { /* no-op */ })
+                            AuthScreen(
+                                onSuccess = { /* no-op */ },
+                                onSkipLogin = { settingsViewModel.setGuestMode(true) }
+                            )
                         }
 
                         composable("profile_setup") {

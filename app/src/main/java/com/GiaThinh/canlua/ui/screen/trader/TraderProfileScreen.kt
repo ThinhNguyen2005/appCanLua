@@ -74,6 +74,7 @@ import com.GiaThinh.canlua.ui.screen.profile.PersonalInfoCard
 import com.GiaThinh.canlua.ui.screen.profile.PremiumStatusCard
 import com.GiaThinh.canlua.ui.screen.profile.PremiumUpsellCard
 import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
+import com.GiaThinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
@@ -113,6 +114,7 @@ fun TraderProfileScreen(
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
     val txState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
     val isDataReady = profile != null && dash.isAggregated && !txState.isLoading
+    val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
     val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
     val isGoogleLoggedIn = remember(firebaseUser) {
@@ -132,7 +134,8 @@ fun TraderProfileScreen(
             dashboardViewModel = dashboardViewModel,
             traderTransactionsViewModel = traderTransactionsViewModel,
             isGoogleLoggedIn = isGoogleLoggedIn,
-            googleAvatarUrl = googleAvatarUrl
+            googleAvatarUrl = googleAvatarUrl,
+            isGuestMode = isGuestMode
         )
     }
 }
@@ -144,7 +147,8 @@ fun TraderProfileScreenContent(
     dashboardViewModel: DashboardViewModel,
     traderTransactionsViewModel: TraderTransactionsViewModel,
     isGoogleLoggedIn: Boolean,
-    googleAvatarUrl: String?
+    googleAvatarUrl: String?,
+    isGuestMode: Boolean
 ) {
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
@@ -179,6 +183,15 @@ fun TraderProfileScreenContent(
                     isGoogleLoggedIn = isGoogleLoggedIn,
                     googleAvatarUrl = googleAvatarUrl
                 )
+            }
+
+            // ─── Guest Mode Login Card ───
+            if (isGuestMode) {
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        GuestLoginPromoCard(onLoginClick = { profileViewModel.disableGuestMode() })
+                    }
+                }
             }
 
             // ─── TIER 1: Quick Stats Glass Grid ───

@@ -78,6 +78,7 @@ import com.GiaThinh.canlua.ui.screen.profile.PersonalInfoCard
 import com.GiaThinh.canlua.ui.screen.profile.PremiumStatusCard
 import com.GiaThinh.canlua.ui.screen.profile.PremiumUpsellCard
 import com.GiaThinh.canlua.ui.screen.profile.RoleSwitcher
+import com.GiaThinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.GiaThinh.canlua.ui.theme.AppColors
 import com.GiaThinh.canlua.ui.util.DashboardFormatter
 import com.GiaThinh.canlua.ui.viewmodel.AuthViewModel
@@ -123,6 +124,7 @@ fun FarmerProfileScreen(
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
     val isDataReady = profile != null && dash.isAggregated
+    val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
     val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
     val isGoogleLoggedIn = remember(firebaseUser) {
@@ -143,7 +145,8 @@ fun FarmerProfileScreen(
             profileViewModel = profileViewModel,
             dashboardViewModel = dashboardViewModel,
             isGoogleLoggedIn = isGoogleLoggedIn,
-            googleAvatarUrl = googleAvatarUrl
+            googleAvatarUrl = googleAvatarUrl,
+            isGuestMode = isGuestMode
         )
     }
 }
@@ -156,7 +159,8 @@ fun FarmerProfileScreenContent(
     profileViewModel: ProfileViewModel,
     dashboardViewModel: DashboardViewModel,
     isGoogleLoggedIn: Boolean,
-    googleAvatarUrl: String?
+    googleAvatarUrl: String?,
+    isGuestMode: Boolean
 ) {
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
     // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
@@ -184,6 +188,15 @@ fun FarmerProfileScreenContent(
                     isGoogleLoggedIn = isGoogleLoggedIn,
                     googleAvatarUrl = googleAvatarUrl
                 )
+            }
+
+            // ─── Guest Mode Login Card ───
+            if (isGuestMode) {
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        GuestLoginPromoCard(onLoginClick = { profileViewModel.disableGuestMode() })
+                    }
+                }
             }
 
             // ─── TIER 1: Quick Stats Glass Grid ───

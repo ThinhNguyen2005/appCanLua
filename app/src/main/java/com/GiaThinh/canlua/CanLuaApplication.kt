@@ -125,67 +125,36 @@ class CanLuaApplication : Application(), Configuration.Provider {
      */
     private fun scheduleOrphanClaim() {
         appScope.launch {
-            // Đợi đến khi có user sign-in (cold start hoặc lần đăng nhập đầu).
-            authManager.authStateFlow.filterNotNull().first()
-            cardRepository.get().claimOrphanCardsForCurrentUser()
-        }
-    }
-
-    /**
-     * Auto pull cards/entries/transactions từ Firestore mỗi khi user đăng nhập.
-     *
-     * Trigger: phát hiện uid chuyển từ null → non-null (cold-start với session
-     * lưu sẵn, sign-in mới, hoặc sign-out → sign-in user khác). Khác uid →
-     * trigger lại lần nữa cho user mới.
-     *
-     * `distinctUntilChanged` để không trigger lại khi token refresh (uid không
-     * đổi). Pull lỗi (no internet, Firestore down) → silent — user vẫn dùng
-     * được local data offline-first.
-     */
-    private fun scheduleAutoPullOnSignIn() {
-        appScope.launch {
-            authManager.authStateFlow
-                .map { it?.uid }
-                .distinctUntilChanged()
-                .collect { uid ->
-                    if (uid != null && syncManager.get().canSync() && settingsRepository.isAutoSyncEnabled()) {
-                        // Chỉ tự động tải dữ liệu từ đám mây về nếu cơ sở dữ liệu trên máy trống (đăng nhập lần đầu / cài mới)
-                        val localCards = cardRepository.get().getAllCards().first()
-                        if (localCards.isEmpty()) {
-                            // M-03: Nhường CPU cho luồng chính vẽ giao diện khởi động
-                            kotlinx.coroutines.yield()
-                            syncManager.get().pullAllForCurrentUser()
-                        }
-                    }
-                }
-        }
-    }
-
-    private fun observeAutoSyncPreference() {
-        appScope.launch {
-            settingsRepository.autoSyncEnabled.collect { enabled ->
-                if (enabled) {
-                    schedulePeriodicSync()
-                } else {
-                    WorkManager.getInstance(this@CanLuaApplication).cancelUniqueWork("sync-worker")
-                }
+            // Đợi đến khi có user đăng nhập (lắng nghe liên tục sự thay đổi auth).
+            authManager.authStateFlow.filterNotNull().collect {
+                // Tự động tắt guest mode khi người dùng đã đăng nhập thành công
+                settingsRepository.setGuestMode(false)
+                // Khởi tạo lại trạng thái Premium
+                PremiumState.init(this@CanLuaApplication)
+                applyEarlyAdopterPremiumSync()
+                // Claim orphan cards
+                cardRepository.get().claimOrphanCardsForCurrentUser()
             }
         }
     }
 
+    /**
+     * Auto pull disabled in 2026 local-first refactor.
+     */
+    private fun scheduleAutoPullOnSignIn() {
+        // No-op
+    }
+
+    private fun observeAutoSyncPreference() {
+        // Hủy công việc đồng bộ định kỳ nếu có
+        try {
+            WorkManager.getInstance(this).cancelUniqueWork("sync-worker")
+        } catch (e: Exception) {
+            // Bỏ qua nếu WorkManager chưa được khởi tạo
+        }
+    }
+
     private fun schedulePeriodicSync() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
-            .build()
-
-        val request = PeriodicWorkRequestBuilder<SyncWorker>(24, TimeUnit.HOURS)
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "sync-worker",
-            ExistingPeriodicWorkPolicy.KEEP,
-            request
-        )
+        // No-op
     }
 }

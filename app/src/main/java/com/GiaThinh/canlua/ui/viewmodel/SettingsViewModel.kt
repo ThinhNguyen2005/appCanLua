@@ -18,7 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val cardRepository: com.GiaThinh.canlua.repository.CardRepository,
+    private val authManager: com.GiaThinh.canlua.repository.AuthManager
 ) : ViewModel() {
     
     val isTtsEnabled: StateFlow<Boolean> = settingsRepository.ttsEnabled
@@ -94,6 +96,43 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: AppThemeMode) {
         viewModelScope.launch {
             settingsRepository.setThemeMode(mode)
+        }
+    }
+
+    val isGuestMode: StateFlow<Boolean> = settingsRepository.guestMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = settingsRepository.isGuestMode()
+        )
+
+    fun setGuestMode(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setGuestMode(enabled)
+        }
+    }
+
+    fun exportBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val uid = authManager.currentUser?.uid ?: "GUEST"
+            val result = com.GiaThinh.canlua.util.BackupManager.exportData(context, uri, uid, cardRepository)
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                onError(result.exceptionOrNull()?.message ?: "Lỗi xuất dữ liệu")
+            }
+        }
+    }
+
+    fun importBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val uid = authManager.currentUser?.uid ?: "GUEST"
+            val result = com.GiaThinh.canlua.util.BackupManager.importData(context, uri, uid, cardRepository)
+            if (result.isSuccess) {
+                onSuccess(result.getOrNull() ?: 0)
+            } else {
+                onError(result.exceptionOrNull()?.message ?: "Lỗi nhập dữ liệu")
+            }
         }
     }
 }
