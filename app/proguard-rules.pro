@@ -13,8 +13,8 @@
 # Firestore dùng reflection để deserialize — phải giữ tên field gốc.
 # Áp dụng cho tất cả class trong package data.firestore và data.model
 # có annotation @SerializedName hoặc field public.
--keep class com.GiaThinh.canlua.data.firestore.** { *; }
--keepclassmembers class com.GiaThinh.canlua.data.model.** {
+-keep class com.giathinh.canlua.data.firestore.** { *; }
+-keepclassmembers class com.giathinh.canlua.data.model.** {
     <init>();
     <fields>;
 }
@@ -37,9 +37,27 @@
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt
 
+# === Markwon (Markdown renderer cho AI chat) ===
+# Markwon dùng reflection để scan classpath tìm Linkify/Strikethrough extensions
+# và nội bộ TablePlugin cũng reflection. Nếu R8 obfuscate →
+# NoSuchMethodError/ClassNotFoundException → crash app khi render AI response ở release.
+-keep class io.noties.markwon.** { *; }
+-keep interface io.noties.markwon.** { *; }
+-dontwarn io.noties.markwon.**
+
+# === OpenRouter AI (data.remote.ai.*) ===
+# Gson reflection dùng tên field gốc để parse response từ OpenRouter.
+# Nếu không keep, R8 obfuscate field name (content → a, choices → b) →
+# Gson đọc field lỗi → choices = emptyList() → AI trả message rỗng.
+-keep class com.giathinh.canlua.data.remote.ai.** { *; }
+-keepclassmembers class com.giathinh.canlua.data.remote.ai.** {
+    <init>();
+    <fields>;
+}
+
 # === Strip verbose debug logs trong release ===
 # Log.i/w/e/wtf vẫn giữ để Crashlytics + adb logcat khi user report bug.
 -assumenosideeffects class android.util.Log {
     public static int d(...);
     public static int v(...);
-}
+}

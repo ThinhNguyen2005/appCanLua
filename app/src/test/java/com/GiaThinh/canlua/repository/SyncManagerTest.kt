@@ -1,11 +1,11 @@
-package com.GiaThinh.canlua.repository
+package com.giathinh.canlua.repository
 
 import android.content.Context
-import com.GiaThinh.canlua.data.dao.CardDao
-import com.GiaThinh.canlua.data.dao.TransactionDao
-import com.GiaThinh.canlua.data.dao.WeightEntryDao
-import com.GiaThinh.canlua.data.model.Card
-import com.GiaThinh.canlua.data.model.DeletedCard
+import com.giathinh.canlua.data.dao.CardDao
+import com.giathinh.canlua.data.dao.TransactionDao
+import com.giathinh.canlua.data.dao.WeightEntryDao
+import com.giathinh.canlua.data.model.Card
+import com.giathinh.canlua.data.model.DeletedCard
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery

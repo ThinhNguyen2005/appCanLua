@@ -1,13 +1,13 @@
-package com.GiaThinh.canlua.util
+package com.giathinh.canlua.util
 
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
-import com.GiaThinh.canlua.data.model.Card
-import com.GiaThinh.canlua.data.model.Transaction
-import com.GiaThinh.canlua.data.model.TransactionType
-import com.GiaThinh.canlua.data.model.WeightEntry
-import com.GiaThinh.canlua.repository.CardRepository
+import com.giathinh.canlua.data.model.Card
+import com.giathinh.canlua.data.model.Transaction
+import com.giathinh.canlua.data.model.TransactionType
+import com.giathinh.canlua.data.model.WeightEntry
+import com.giathinh.canlua.repository.CardRepository
 import io.mockk.*
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking

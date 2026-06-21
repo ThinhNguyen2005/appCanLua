@@ -16,7 +16,6 @@
     <string name="topbar_ai_subtitle">ສະໜັບສະໜູນໂດຍ Gemini</string>
     <string name="content_open_chat_sessions">ເປີດລາຍຊື່ການສົນທະນາ</string>
     <string name="content_back">ກັບຄືນ</string>
-    <string name="content_scan_qr">ສະແກນ QR</string>
     <string name="content_settings">ການຕັ້ງຄ່າ</string>
     <string name="action_cancel">ຍົກເລີກ</string>
     <string name="action_later">ໄວ້ເທື່ອຫຼັງ</string>
@@ -104,7 +103,6 @@
     <string name="card_item_impurity">ສິ່ງປະປົນ %1$s ກິໂລ</string>
     <string name="card_item_weigh_count">%1$d ຄັ້ງຊັ່ງ</string>
     <string name="card_item_remaining_amount">ເຫຼືອ: %1$s đ</string>
-    <string name="card_item_qr_verified">✓ QR ຢືນຢັນແລ້ວ</string>
     <string name="card_item_paid_in_full">ຈ່າຍເຕັມຈຳນວນ</string>
     <string name="weight_label_weight">ນ້ຳໜັກ</string>
     <string name="weight_label_total_weight">ນ້ຳໜັກລວມ</string>
@@ -257,8 +255,6 @@
     <string name="header_unlock_card_content">ປົດລັອກໃບຊັ່ງ</string>
     <string name="header_lock_card_content">ລັອກໃບຊັ່ງ</string>
     <string name="header_delete_card">ລຶບໃບຊັ່ງ</string>
-    <string name="header_create_qr">ສ້າງ QR</string>
-    <string name="header_scan_qr_trader">ສະແກນ QR (ພໍ່ຄ້າ)</string>
     <string name="header_export_pdf">ສົ່ງອອກ PDF ໃບຊັ່ງ</string>
     <string name="dropdown_rice_variety_placeholder">ຕົວຢ່າງ: ST25...</string>
     <string name="dropdown_season_placeholder">ຕົວຢ່າງ: ລະດູແລ້ງ 2026</string>
@@ -278,28 +274,6 @@
     <string name="sync_status_success">ຊິງຄ໌ແລ້ວ</string>
     <string name="sync_status_error">ຊິງຄ໌ຜິດພາດ</string>
     <string name="sync_status_ready">ພ້ອມແລ້ວ</string>
-    <string name="qr_generate_title">ລະຫັດ QR ທຸລະກຳ</string>
-    <string name="qr_generate_variety">ແນວພັນ: %1$s</string>
-    <string name="qr_generate_content_description">ລະຫັດ QR ທຸລະກຳ</string>
-    <string name="qr_generate_instruction">ໃຫ້ພໍ່ຄ້າສະແກນລະຫັດນີ້</string>
-    <string name="qr_generate_refresh">ສ້າງລະຫັດໃໝ່</string>
-    <string name="qr_generate_verified">ທຸລະກຳໄດ້ຮັບການຢືນຢันແລ້ວ</string>
-    <string name="qr_generate_token">Token: %1$s...</string>
-    <string name="qr_scan_confirmed">ຢືນຢັນໃບຊັ່ງແລ້ວ</string>
-    <string name="qr_scan_already_confirmed">ເຈົ້າໄດ້ຢືນຢັນໃບຊັ່ງນີ້ແລ້ວ</string>
-    <string name="qr_scan_not_found">ບໍ່ພົບໃບຊັ່ງ. ຊາວນາຕ້ອງຊິງຄ໌ຂໍ້ມູນກ່ອນການສະແກន</string>
-    <string name="qr_scan_locked_by_other">ໃບຊັ່ງນີ້ຖືກຢືນຢັນໂດຍພໍ່ຄ້າຄົນອື່ນແລ້ວ</string>
-    <string name="qr_scan_error">ບໍ່ສາມາດຢືນຢັນໃບຊັ່ງໄດ້, ກະລຸນາກວດສອບເນັດ ແລະ ລອງໃໝ່</string>
-    <string name="qr_scan_camera_permission_title">ຕ້ອງການສິດກ້ອງ</string>
-    <string name="qr_scan_camera_permission_message">ອະນຸຍາດໃຫ້ແອັບໃຊ້ກ້ອງເພື່ອສະແກນ QR</string>
-    <string name="qr_scan_camera_permission_action">ອະນຸຍາດກ້ອງ</string>
-    <string name="qr_scan_success_title">ຢືນຢັນສຳເລັດ!</string>
-    <string name="qr_scan_farmer">ຊາວນາ</string>
-    <string name="qr_scan_continue">ສະແກນຕໍ່</string>
-    <string name="qr_scan_view_book">ເບິ່ງສົມຸດ</string>
-    <string name="qr_scan_login_required">ເຈົ້າຕ້ອງເຂົ້າສູ່ລະບົບກ່ອນການສະແກន QR</string>
-    <string name="qr_scan_invalid_code">ລະຫັດ QR ບໍ່ຖືກຕ້ອງ</string>
-    <string name="qr_scan_instruction">ຫັນກ້ອງໄປທີ່ QR ຂອງຊາວນາ</string>
     <string name="pdf_section_transaction_info">I. ຂໍ້ມູນທຸລະກຳ</string>
     <string name="pdf_farmer">ຊາວນາ</string>
     <string name="pdf_trader">ພໍ່ຄ້າ</string>
@@ -346,6 +320,7 @@
     <string name="font_large">ໃຫຍ່</string>
     <string name="font_xlarge">ໃຫຍ່ພິເສດ</string>
 
+    <string name="settings_theme_subtitle">ເລືອກໂໝດສີ</string>
     <string name="profile_farmer_default_name">ຊາວນາ</string>
     <string name="profile_trader_default_name">ພໍ່ຄ້າ</string>
     <string name="profile_farmer_account">ບັນຊີຊາວນາ</string>
@@ -411,7 +386,6 @@
     <string name="pdf_subtitle">ແບບຟອມໃບຊັ່ງເອເລັກໂຕຣນິກພາຍໃນ</string>
     <string name="pdf_created_at">ວັນທີສ້າງ: %1$s</string>
     <string name="pdf_verification_hash">Hash ຢືນຢັນ: %1$s</string>
-    <string name="pdf_qr_instruction">ສະແກນ QR ເພື່ອສົມທຽບ</string>
     <string name="pdf_card_date">ໃບຊັ່ງ #%1$d · %2$s</string>
     <string name="pdf_footer">ໜ້າ %1$d · ສ້າງໂດຍ Cân Lúa Mobile · Hash %2$s · %3$s</string>
 
@@ -523,10 +497,24 @@
     <string name="weather_advisory_rain">ຝົນຕົກໜັກ — ເລື່ອນການສີດຢາ 24 ຊົ່ວໂມງ, ເສີມຄັນນາ</string>
     <string name="weather_advisory_hot_sun">ແດດຮ້ອນຈັດ — ກວດສອບນ້ຳໃນນາ, ຫົດນ້ຳຍາມແລງທີ່ເຢັນ</string>
     <string name="weather_advisory_high_humidity">ຄວາມຊຸ່ມຊື່ນສູງ — ລະວັງໂລກໃບໄໝ້ ແລະ ເພ້ຍກະໂດດສີນ້ຳຕານ</string>
+    <string name="card_detail_location_denied">ຕ້ອງການອະນຸຍາດຕຳແໜ່ງ ເພື່ອລະບຸພິກັດທົ່ງນາ</string>
     <string name="settings_section_premium">Premium</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_section_display">Display</string>
     <string name="settings_section_language">Language</string>
     <string name="settings_section_sync">Sync</string>
     <string name="settings_section_data">Data</string>
+    <string name="permission_location_title">ອະນຸຍາດການເຂົ້າເຖິງສະຖານທີ່</string>
+    <string name="permission_location_rationale">ການຊັ່ງນໍ້າໜັກເຂົ້າຕ້ອງການສະຖານທີ່ເພື່ອສະແດງສະພາບອາກາດທີ່ຖືກຕ້ອງສຳລັບພື້ນທີ່ຂອງທ່ານ ແລະ ອັບເດດພິກັດທົ່ງນາເຂົ້າ.</string>
+    <string name="permission_location_button">ອະນຸຍາດ</string>
+    <string name="permission_dismiss_button">ໄວ້ທີຫຼັງ</string>
+    <string name="rate_limit_wait_message">ກະລຸນາລໍຖ້າ %d ວິນາທີ ກ່ອນທີ່ຈະສົ່ງຂໍ້ຄວາມຕໍ່ໄປ.</string>
+    <string name="settings_logout_rationale">ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການອອກຈາກລະບົບ? ຂໍ້ມູນທີ່ຍັງບໍ່ທັນຊິງຄ໌ອາດຈະເສຍຫາຍ.</string>
+    <string name="settings_copyright">GiaThinh © 2026</string>
+    <string name="news_offline_banner">ອັບເດດບໍ່ສຳເລັດ — ກຳລັງໃຊ້ຂໍ້ມູນເກົ່າ</string>
+    <string name="theme_light">ໂໝດແຈ້ງ</string>
+    <string name="theme_high_contrast">ໂໝດມືດ</string>
+    <string name="theme_oled">ໂໝດມືດ AMOLED</string>
+    <string name="theme_auto">ຕາມລະບົບ</string>
+    <string name="settings_theme_title">ຮູບລັກສະນະ</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua.data.model
+package com.giathinh.canlua.data.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

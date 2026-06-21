@@ -16,7 +16,6 @@
     <string name="topbar_ai_subtitle">由 Gemini 提供支持</string>
     <string name="content_open_chat_sessions">打开聊天会话列表</string>
     <string name="content_back">返回</string>
-    <string name="content_scan_qr">扫描二维码</string>
     <string name="content_settings">设置</string>
     <string name="action_cancel">取消</string>
     <string name="action_later">稍后</string>
@@ -104,7 +103,6 @@
     <string name="card_item_impurity">杂质 %1$s 公斤</string>
     <string name="card_item_weigh_count">称重 %1$d 次</string>
     <string name="card_item_remaining_amount">剩余：%1$s 盾</string>
-    <string name="card_item_qr_verified">✓ 二维码已验证</string>
     <string name="card_item_paid_in_full">已付清</string>
     <string name="weight_label_weight">重量</string>
     <string name="weight_label_total_weight">总重量</string>
@@ -257,8 +255,6 @@
     <string name="header_unlock_card_content">解锁称重单</string>
     <string name="header_lock_card_content">锁定称重单</string>
     <string name="header_delete_card">删除称重单</string>
-    <string name="header_create_qr">生成二维码</string>
-    <string name="header_scan_qr_trader">扫码确认 (收购商)</string>
     <string name="header_export_pdf">导出 PDF 称重单</string>
     <string name="dropdown_rice_variety_placeholder">例：ST25...</string>
     <string name="dropdown_season_placeholder">例：2026年早稻</string>
@@ -278,28 +274,6 @@
     <string name="sync_status_success">已同步</string>
     <string name="sync_status_error">同步失败</string>
     <string name="sync_status_ready">就绪</string>
-    <string name="qr_generate_title">交易二维码</string>
-    <string name="qr_generate_variety">品种：%1$s</string>
-    <string name="qr_generate_content_description">交易二维码</string>
-    <string name="qr_generate_instruction">请将此二维码出示给收购商扫描</string>
-    <string name="qr_generate_refresh">生成新二维码</string>
-    <string name="qr_generate_verified">交易已被成功确认</string>
-    <string name="qr_generate_token">凭证令牌：%1$s...</string>
-    <string name="qr_scan_confirmed">称重单确认成功</string>
-    <string name="qr_scan_already_confirmed">您之前已确认过此称重单</string>
-    <string name="qr_scan_not_found">未找到称重单。请让农民先同步数据再重新扫描</string>
-    <string name="qr_scan_locked_by_other">此单已被其他收购商确认</string>
-    <string name="qr_scan_error">无法确认单据，请检查网络并重试</string>
-    <string name="qr_scan_camera_permission_title">需要相机权限</string>
-    <string name="qr_scan_camera_permission_message">允许应用使用相机以扫描二维码</string>
-    <string name="qr_scan_camera_permission_action">授予相机权限</string>
-    <string name="qr_scan_success_title">验证成功！</string>
-    <string name="qr_scan_farmer">农民</string>
-    <string name="qr_scan_continue">继续扫码</string>
-    <string name="qr_scan_view_book">查看账本</string>
-    <string name="qr_scan_login_required">请先登录账户再扫描二维码</string>
-    <string name="qr_scan_invalid_code">无效的二维码</string>
-    <string name="qr_scan_instruction">请将摄像头对准农民出示的二维码</string>
     <string name="pdf_section_transaction_info">I. 交易概况</string>
     <string name="pdf_farmer">销售方 (农户)</string>
     <string name="pdf_trader">收购方 (商户)</string>
@@ -346,6 +320,7 @@
     <string name="font_large">大</string>
     <string name="font_xlarge">超大</string>
 
+    <string name="settings_theme_subtitle">选择色彩模式</string>
     <string name="profile_farmer_default_name">农民</string>
     <string name="profile_trader_default_name">客商</string>
     <string name="profile_farmer_account">农民账户</string>
@@ -411,7 +386,6 @@
     <string name="pdf_subtitle">内部结算称重电子凭证</string>
     <string name="pdf_created_at">开单时间：%1$s</string>
     <string name="pdf_verification_hash">验真哈希：%1$s</string>
-    <string name="pdf_qr_instruction">扫描上方二维码进行账目对账</string>
     <string name="pdf_card_date">单据 #%1$d · %2$s</string>
     <string name="pdf_footer">第 %1$d 页 · 由 Cân Lúa Mobile 生成 · Hash %2$s · %3$s</string>
 
@@ -467,6 +441,7 @@
     <string name="settings_language_subtitle">选择应用显示的语言种类</string>
 
     <!-- Settings Section Headers -->
+    <string name="card_detail_location_denied">需要定位权限以定位农田</string>
     <string name="settings_section_premium">Premium</string>
     <string name="settings_section_account">账户</string>
     <string name="settings_section_display">显示</string>
@@ -532,4 +507,17 @@
     <string name="weather_advisory_rain">强降雨 — 推迟24小时喷药，加固田埂</string>
     <string name="weather_advisory_hot_sun">烈日 — 检查稻田水量，傍晚凉爽时浇水</string>
     <string name="weather_advisory_high_humidity">高湿 — 注意稻瘟病、褐飞虱</string>
+    <string name="permission_location_title">允许位置访问</string>
+    <string name="permission_location_rationale">称重稻米需要获取位置信息，以便显示您所在地区的准确天气并更新稻田坐标。</string>
+    <string name="permission_location_button">允许</string>
+    <string name="permission_dismiss_button">稍后</string>
+    <string name="rate_limit_wait_message">请等待 %d 秒后再发送下一条消息。</string>
+    <string name="settings_logout_rationale">确定要退出登录吗？未同步的数据可能会丢失</string>
+    <string name="settings_copyright">GiaThinh © 2026</string>
+    <string name="news_offline_banner">更新失败 — 正在使用旧数据</string>
+    <string name="theme_light">浅色模式</string>
+    <string name="theme_high_contrast">深色模式</string>
+    <string name="theme_oled">AMOLED 深色模式</string>
+    <string name="theme_auto">跟随系统</string>
+    <string name="settings_theme_title">外观</string>
 </resources>

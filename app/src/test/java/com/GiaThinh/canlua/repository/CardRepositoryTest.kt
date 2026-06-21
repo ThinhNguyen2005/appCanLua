@@ -1,14 +1,14 @@
-package com.GiaThinh.canlua.repository
+package com.giathinh.canlua.repository
 
-import com.GiaThinh.canlua.data.dao.CardDao
-import com.GiaThinh.canlua.data.dao.TransactionDao
-import com.GiaThinh.canlua.data.dao.WeightEntryDao
-import com.GiaThinh.canlua.data.dao.DeletedCardDao
-import com.GiaThinh.canlua.data.model.Card
-import com.GiaThinh.canlua.data.model.WeightEntry
-import com.GiaThinh.canlua.data.model.Transaction
-import com.GiaThinh.canlua.data.model.TransactionType
-import com.GiaThinh.canlua.util.CccdCrypto
+import com.giathinh.canlua.data.dao.CardDao
+import com.giathinh.canlua.data.dao.TransactionDao
+import com.giathinh.canlua.data.dao.WeightEntryDao
+import com.giathinh.canlua.data.dao.DeletedCardDao
+import com.giathinh.canlua.data.model.Card
+import com.giathinh.canlua.data.model.WeightEntry
+import com.giathinh.canlua.data.model.Transaction
+import com.giathinh.canlua.data.model.TransactionType
+import com.giathinh.canlua.util.CccdCrypto
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
 import io.mockk.coVerify

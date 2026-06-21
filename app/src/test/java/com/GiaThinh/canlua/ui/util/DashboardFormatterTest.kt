@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua.ui.util
+package com.giathinh.canlua.ui.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

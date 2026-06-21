@@ -1,6 +1,6 @@
-package com.GiaThinh.canlua.ui.viewmodel
+package com.giathinh.canlua.ui.viewmodel
 
-import com.GiaThinh.canlua.data.model.WeightEntry
+import com.giathinh.canlua.data.model.WeightEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

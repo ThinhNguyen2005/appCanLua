@@ -16,7 +16,6 @@
     <string name="topbar_ai_subtitle">ដំណើរការដោយ Gemini</string>
     <string name="content_open_chat_sessions">បើកបញ្ជីសម័យជជែក</string>
     <string name="content_back">ត្រឡប់ក្រោយ</string>
-    <string name="content_scan_qr">ស្កែនកូដ QR</string>
     <string name="content_settings">ការកំណត់</string>
     <string name="action_cancel">បោះបង់</string>
     <string name="action_later">ពេលក្រោយ</string>
@@ -104,7 +103,6 @@
     <string name="card_item_impurity">កាកសំណល់ %1$s គីឡូ</string>
     <string name="card_item_weigh_count">ថ្លឹង %1$d ដង</string>
     <string name="card_item_remaining_amount">នៅសល់៖ %1$s đ</string>
-    <string name="card_item_qr_verified">✓ QR បានផ្ទៀងផ្ទាត់</string>
     <string name="card_item_paid_in_full">បានទូទាត់ពេញលេញ</string>
     <string name="weight_label_weight">ទម្ងន់</string>
     <string name="weight_label_total_weight">ទម្ងន់សរុប</string>
@@ -257,8 +255,6 @@
     <string name="header_unlock_card_content">ដោះសោសំបុត្រ</string>
     <string name="header_lock_card_content">ចាក់សោសំបុត្រ</string>
     <string name="header_delete_card">លុបសំបុត្រ</string>
-    <string name="header_create_qr">បង្កើត QR</string>
-    <string name="header_scan_qr_trader">ស្កេន QR (ឈ្មួញ)</string>
     <string name="header_export_pdf">នាំចេញ PDF សំបុត្រថ្លឹង</string>
     <string name="dropdown_rice_variety_placeholder">ឧទាហរណ៍៖ ST25...</string>
     <string name="dropdown_season_placeholder">ឧទាហរណ៍៖ រដូវប្រាំង 2026</string>
@@ -278,28 +274,6 @@
     <string name="sync_status_success">បានសមកាលកម្ម</string>
     <string name="sync_status_error">កំហុសសមកាលកម្ម</string>
     <string name="sync_status_ready">រួចរាល់</string>
-    <string name="qr_generate_title">កូដ QR ប្រតិបត្តិការ</string>
-    <string name="qr_generate_variety">ពូជ៖ %1$s</string>
-    <string name="qr_generate_content_description">កូដ QR ប្រតិបត្តិការ</string>
-    <string name="qr_generate_instruction">បង្ហាញកូដនេះឱ្យឈ្មួញស្កេន</string>
-    <string name="qr_generate_refresh">បង្កើតកូដថ្មី</string>
-    <string name="qr_generate_verified">ប្រតិបត្តិការត្រូវបានផ្ទៀងផ្ទាត់រួចរាល់</string>
-    <string name="qr_generate_token">ថូខឹន៖ %1$s...</string>
-    <string name="qr_scan_confirmed">បានបញ្ជាក់វិក្កយបត្រថ្លឹង</string>
-    <string name="qr_scan_already_confirmed">អ្នកបានបញ្ជាក់វិក្កយបត្រថ្លឹងនេះរួចហើយ</string>
-    <string name="qr_scan_not_found">រកមិនឃើញវិក្កយបត្រទេ។ កសិករត្រូវសមកាលកម្មទិន្នន័យមុនពេលស្កែន</string>
-    <string name="qr_scan_locked_by_other">វិក្កយបត្រនេះត្រូវបានបញ្ជាក់ដោយឈ្មួញផ្សេងរួចហើយ</string>
-    <string name="qr_scan_error">មិនអាចបញ្ជាក់វិក្កយបត្របានទេ សូមពិនិត្យបណ្តាញអ៊ីនធឺណិត ហើយព្យាយាមម្តងទៀត</string>
-    <string name="qr_scan_camera_permission_title">ត្រូវការសិទ្ធិប្រើកាមេរ៉ា</string>
-    <string name="qr_scan_camera_permission_message">អនុញ្ញាតឱ្យកម្មវិធីប្រើកាមេរ៉ាដើម្បីស្កេន QR</string>
-    <string name="qr_scan_camera_permission_action">អនុញ្ញាតកាមេរ៉ា</string>
-    <string name="qr_scan_success_title">ផ្ទៀងផ្ទាត់ជោគជ័យ!</string>
-    <string name="qr_scan_farmer">កសិករ</string>
-    <string name="qr_scan_continue">ស្កេនបន្ត</string>
-    <string name="qr_scan_view_book">មើលសៀវភៅ</string>
-    <string name="qr_scan_login_required">អ្នកត្រូវតែចូលគណនីមុនពេលស្កែន QR</string>
-    <string name="qr_scan_invalid_code">កូដ QR មិនត្រឹមត្រូវ</string>
-    <string name="qr_scan_instruction">ដាក់កាមេរ៉ាទៅកាន់កូដ QR របស់កសិករ</string>
     <string name="pdf_section_transaction_info">I. ព័ត៌មានប្រតិបត្តិការ</string>
     <string name="pdf_farmer">កសិករ</string>
     <string name="pdf_trader">ឈ្មួញ</string>
@@ -346,7 +320,6 @@
     <string name="pdf_subtitle">គំរូវិក្កយបត្រថ្លឹងអេឡិចត្រូនិកផ្ទៃក្នុង</string>
     <string name="pdf_created_at">ថ្ងៃបង្កើត៖ %1$s</string>
     <string name="pdf_verification_hash">Hash ផ្ទៀងផ្ទាត់៖ %1$s</string>
-    <string name="pdf_qr_instruction">ស្កែន QR ដើម្បីផ្ទៀងផ្ទាត់</string>
     <string name="pdf_card_date">វិក្កយបត្រ #%1$d · %2$s</string>
     <string name="pdf_footer">ទំព័រ %1$d · បង្កើតដោយ Cân Lúa Mobile · Hash %2$s · %3$s</string>
 
@@ -387,6 +360,7 @@
     <string name="font_large">ធំ</string>
     <string name="font_xlarge">ធំបំផុត</string>
 
+    <string name="settings_theme_subtitle">ជ្រើសរើសរបៀបពណ៌</string>
     <string name="profile_farmer_default_name">កសិករ</string>
     <string name="profile_trader_default_name">អាជីវករ</string>
     <string name="profile_farmer_account">គណនីកសិករ</string>
@@ -525,10 +499,24 @@
     <string name="weather_advisory_rain">ភ្លៀងធ្លាក់ខ្លាំង — ពន្យារពេលបាញ់ថ្នាំ ២៤ម៉ោង ពង្រឹងច្រាំង</string>
     <string name="weather_advisory_hot_sun">ថ្ងៃក្តៅខ្លាំង — ពិនិត្យទឹកស្រែ ស្រោចទឹកពេលល្ងាចត្រជាក់</string>
     <string name="weather_advisory_high_humidity">សំណើមខ្ពស់ — ប្រយ័ត្នជំងឺស្រពោន និងមមាចត្នោត</string>
+    <string name="card_detail_location_denied">ត្រូវការអនុញ្ញាតទីតាំង ដើម្បីកំណត់ទីតាំងវាលស្រែ</string>
     <string name="settings_section_premium">Premium</string>
     <string name="settings_section_account">Account</string>
     <string name="settings_section_display">Display</string>
     <string name="settings_section_language">Language</string>
     <string name="settings_section_sync">Sync</string>
     <string name="settings_section_data">Data</string>
-</resources>
+    <string name="permission_location_title">អនុញ្ញាតឱ្យចូលប្រើទីតាំង</string>
+    <string name="permission_location_rationale">ការថ្លឹងទម្ងន់អង្ករតម្រូវឱ្យមានទីតាំងមួយដើម្បីបង្ហាញអាកាសធាតុត្រឹមត្រូវសម្រាប់តំបន់របស់អ្នក និងធ្វើបច្ចុប្បន្នភាពកូអរដោនេវាលស្រែ។</string>
+    <string name="permission_location_button">អនុញ្ញាត</string>
+    <string name="permission_dismiss_button">ទុកពេលក្រោយ</string>
+    <string name="rate_limit_wait_message">សូមរង់ចាំ %d វិនាទី មុនពេលផ្ញើសារបន្ទាប់។</string>
+    <string name="settings_logout_rationale">តើអ្នកប្រាកដជាចង់ចាកចេញមែនទេ? ទិន្នន័យដែលមិនទាន់បានធ្វើបច្ចុប្បន្នភាពអាចនឹងត្រូវបាត់បង់។</string>
+    <string name="settings_copyright">GiaThinh © 2026</string>
+    <string name="news_offline_banner">មិនអាចធ្វើបច្ចុប្បន្នភាពបានទេ — កំពុងប្រើប្រាស់ទិន្នន័យចាស់</string>
+    <string name="theme_light">របៀបពន្លឺ</string>
+    <string name="theme_high_contrast">របៀបងងឹត</string>
+    <string name="theme_oled">របៀបងងឹត AMOLED</string>
+    <string name="theme_auto">តាមប្រព័ន្ធ</string>
+    <string name="settings_theme_title">រូបរាង</string>
+</resources>

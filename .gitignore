@@ -25,6 +25,9 @@ error.txt
 /.codegraph
 /.firebase
 /.vscode
-/.doc/FIRESTORE_RULES.md
+/.doc/*
 /.firebase/*
 /.gas/*
+duLieuKiemtra.md
+CLAUDE.md
+/app/release/*

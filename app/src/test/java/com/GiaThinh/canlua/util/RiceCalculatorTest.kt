@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua.util
+package com.giathinh.canlua.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -175,37 +175,7 @@ class RiceCalculatorTest {
         assertTrue("Chênh lệch phải > 100kg/tấn", correct - buggy > 100)
     }
 
-    // === generateQrToken ===
 
-    @Test
-    fun `qr token has 32 hex characters`() {
-        val token = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 1_000_000.0)
-        assertEquals(32, token.length)
-        assertTrue("Token phải là hex chars", token.all { it in '0'..'9' || it in 'a'..'f' })
-    }
-
-    @Test
-    fun `qr token differs for different cards`() {
-        // 2 cards khác nhau cùng moment → token khác (nhờ cardId trong hash input).
-        val t1 = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 1_000_000.0)
-        val t2 = RiceCalculator.generateQrToken(cardId = 2L, netWeight = 100.0, totalAmount = 1_000_000.0)
-        assertTrue("Token 2 cards khác nhau phải khác", t1 != t2)
-    }
-
-    @Test
-    fun `qr token differs when amount changes`() {
-        val t1 = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 1_000_000.0)
-        val t2 = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 2_000_000.0)
-        assertTrue("Token đổi khi totalAmount đổi → ngăn replay khác giá", t1 != t2)
-    }
-
-    @Test
-    fun `qr token is deterministic within same time bucket`() {
-        // Cùng cardId + weight + amount + cùng phút → cùng token.
-        val t1 = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 1_000_000.0)
-        val t2 = RiceCalculator.generateQrToken(cardId = 1L, netWeight = 100.0, totalAmount = 1_000_000.0)
-        assertEquals(t1, t2)
-    }
 
     // === Per-card mode helpers (v17) ===
 

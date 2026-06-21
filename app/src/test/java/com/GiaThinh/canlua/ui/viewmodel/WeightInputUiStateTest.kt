@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua.ui.viewmodel
+package com.giathinh.canlua.ui.viewmodel
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

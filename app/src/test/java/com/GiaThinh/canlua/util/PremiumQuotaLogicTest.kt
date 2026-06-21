@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua.util
+package com.giathinh.canlua.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

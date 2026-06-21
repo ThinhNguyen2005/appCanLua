@@ -20,7 +20,6 @@ val localProps = Properties().apply {
 val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY", "")
 val appHandshakeToken: String = localProps.getProperty("APP_HANDSHAKE_TOKEN", "")
 val openRouterApiKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
-val openWeatherApiKey: String = localProps.getProperty("OPENWEATHER_API_KEY", "")
 val telegramBotToken: String = localProps.getProperty("TELEGRAM_BOT_TOKEN", "")
 val telegramAdminChatId: String = localProps.getProperty("TELEGRAM_ADMIN_CHAT_ID", "")
 
@@ -35,11 +34,11 @@ val gitCommitCount = runCatching {
 }.getOrDefault(1)
 
 android {
-    namespace = "com.GiaThinh.canlua"
+    namespace = "com.giathinh.canlua"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.GiaThinh.canlua"
+        applicationId = "com.giathinh.canlua"
         minSdk = 24
         targetSdk = 37
         versionCode = gitCommitCount
@@ -50,7 +49,6 @@ android {
         buildConfigField("String", "MAPS_API_KEY", "\"${encodeBase64(mapsApiKey)}\"")
         buildConfigField("String", "APP_HANDSHAKE_TOKEN", "\"${encodeBase64(appHandshakeToken)}\"")
         buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterApiKey)}\"")
-        buildConfigField("String", "OPENWEATHER_API_KEY", "\"${encodeBase64(openWeatherApiKey)}\"")
         buildConfigField("String", "TELEGRAM_BOT_TOKEN", "\"${encodeBase64(telegramBotToken)}\"")
         buildConfigField("String", "TELEGRAM_ADMIN_CHAT_ID", "\"${encodeBase64(telegramAdminChatId)}\"")
 
@@ -62,12 +60,17 @@ android {
         release {
             // R8 minify + shrink resources cho APK gọn 60-70% và obfuscate code.
             // Hilt/Room/Firestore/Coil/Compose có rules trong proguard-rules.pro.
+            //
+            // isShrinkResources tắt vì resource shrinker có thể xóa asset JSON trong assets/
+            // (agronomy_knowledge.json, trader_knowledge.json) — dữ liệu RAG cho AI chat.
+            // Vẫn giữ isMinifyEnabled = true để code minify/obfuscate.
             isMinifyEnabled = true
-            isShrinkResources = true
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             // Tắt minify cho debug build nhanh + Crashlytics symbols mapping rõ ràng.
@@ -87,6 +90,7 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
@@ -148,14 +152,7 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
 
-    // QR Code generate
-    implementation(libs.zxing.core)
 
-    // QR Code scan (ML Kit + CameraX)
-    implementation(libs.mlkit.barcode.scanning)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
 
     // Location (GPS for weather + map)
     implementation(libs.play.services.location)

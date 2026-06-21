@@ -1,7 +1,7 @@
-package com.GiaThinh.canlua.repository
+package com.giathinh.canlua.repository
 
-import com.GiaThinh.canlua.data.firestore.FirestoreCard
-import com.GiaThinh.canlua.data.model.Card
+import com.giathinh.canlua.data.firestore.FirestoreCard
+import com.giathinh.canlua.data.model.Card
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

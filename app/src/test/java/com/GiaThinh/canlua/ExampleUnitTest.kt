@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua
+package com.giathinh.canlua
 
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package com.GiaThinh.canlua.ui.screen.map
+package com.giathinh.canlua.ui.screen.map
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

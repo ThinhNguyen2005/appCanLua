@@ -17,7 +17,6 @@
     <string name="topbar_ai_subtitle">Được hỗ trợ bởi Gemini</string>
     <string name="content_open_chat_sessions">Mở danh sách phiên chat</string>
     <string name="content_back">Quay lại</string>
-    <string name="content_scan_qr">Quét mã QR</string>
     <string name="content_settings">Cài đặt</string>
 
     <string name="action_cancel">Hủy</string>
@@ -129,7 +128,6 @@
     <string name="card_item_impurity">Tạp %1$s kg</string>
     <string name="card_item_weigh_count">%1$d lần cân</string>
     <string name="card_item_remaining_amount">Còn: %1$s đ</string>
-    <string name="card_item_qr_verified">✓ QR đã xác thực</string>
     <string name="card_item_paid_in_full">Đã trả đủ tiền</string>
 
     <string name="weight_label_weight">Khối lượng</string>
@@ -291,8 +289,6 @@
     <string name="header_unlock_card_content">Mở khóa phiếu</string>
     <string name="header_lock_card_content">Khóa phiếu</string>
     <string name="header_delete_card">Xóa phiếu</string>
-    <string name="header_create_qr">Tạo mã QR</string>
-    <string name="header_scan_qr_trader">Quét QR (Thương lái)</string>
     <string name="header_export_pdf">Xuất phiếu cân PDF</string>
 
     <string name="dropdown_rice_variety_placeholder">VD: ST25...</string>
@@ -306,7 +302,7 @@
     <string name="ai_insights_error_subtitle">Đã xảy ra lỗi</string>
     <string name="ai_insights_idle_subtitle">Hiểu nhanh vụ mùa của bạn</string>
     <string name="ai_insights_close">Đóng</string>
-    <string name="ai_insights_idle_body">Để AI đọc số liệu của vụ này và đưa ra insights về sản lượng, doanh thu, giống lúa hiệu quả, cùng khuyến nghị cho vụ tới.</string>
+    <string name="ai_insights_idle_body">Để AI đọc số liệu của vụ này và đưa ra phân tích về sản lượng, doanh thu, giống lúa hiệu quả, cùng khuyến nghị cho vụ tới.</string>
     <string name="ai_insights_analyze_action">Phân tích vụ này bằng AI</string>
     <string name="ai_insights_retry">Thử lại</string>
 
@@ -316,29 +312,7 @@
     <string name="sync_status_error">Lỗi đồng bộ</string>
     <string name="sync_status_ready">Sẵn sàng</string>
 
-    <string name="qr_generate_title">Mã QR Giao Dịch</string>
-    <string name="qr_generate_variety">Giống: %1$s</string>
-    <string name="qr_generate_content_description">Mã QR giao dịch</string>
-    <string name="qr_generate_instruction">Đưa mã này cho thương lái quét</string>
-    <string name="qr_generate_refresh">Tạo mã mới</string>
-    <string name="qr_generate_verified">Giao dịch đã được xác thực</string>
-    <string name="qr_generate_token">Token: %1$s...</string>
 
-    <string name="qr_scan_confirmed">Đã xác nhận phiếu</string>
-    <string name="qr_scan_already_confirmed">Phiếu này đã được bạn xác nhận trước đó</string>
-    <string name="qr_scan_not_found">Không tìm thấy phiếu. Nông dân cần đồng bộ dữ liệu trước khi quét</string>
-    <string name="qr_scan_locked_by_other">Phiếu này đã được thương lái khác xác nhận</string>
-    <string name="qr_scan_error">Không thể xác nhận phiếu, vui lòng kiểm tra mạng và thử lại</string>
-    <string name="qr_scan_camera_permission_title">Cần quyền Camera</string>
-    <string name="qr_scan_camera_permission_message">Cho phép ứng dụng sử dụng camera để quét mã QR</string>
-    <string name="qr_scan_camera_permission_action">Cấp quyền Camera</string>
-    <string name="qr_scan_success_title">Xác Thực Thành Công!</string>
-    <string name="qr_scan_farmer">Nông dân</string>
-    <string name="qr_scan_continue">Quét tiếp</string>
-    <string name="qr_scan_view_book">Xem sổ</string>
-    <string name="qr_scan_login_required">Bạn cần đăng nhập trước khi quét QR</string>
-    <string name="qr_scan_invalid_code">Mã QR không hợp lệ</string>
-    <string name="qr_scan_instruction">Hướng camera vào mã QR của nông dân</string>
 
     <!-- Vietnamese -->
     <string name="personal_information">Thông tin cá nhân</string>
@@ -363,10 +337,10 @@
     <string name="font_large">Lớn</string>
     <string name="font_xlarge">Rất lớn</string>
 
-    <string name="theme_light">Sáng</string>
-    <string name="theme_high_contrast">Tối tương phản tốt</string>
-    <string name="theme_oled">Tối sâu (AMOLED)</string>
-    <string name="theme_auto">Tự động theo thiết bị</string>
+    <string name="theme_light">Chế độ Sáng</string>
+    <string name="theme_high_contrast">Chế độ tối</string>
+    <string name="theme_oled">Chế độ tối (AMOLED)</string>
+    <string name="theme_auto">Tự động (Theo hệ thống)</string>
 
     <string name="settings_theme_title">Giao diện</string>
     <string name="settings_theme_subtitle">Chọn chế độ màu sắc cho app</string>
@@ -464,7 +438,6 @@
     <string name="pdf_subtitle">Mẫu phiếu cân điện tử nội bộ</string>
     <string name="pdf_created_at">Ngày lập: %1$s</string>
     <string name="pdf_verification_hash">Mã xác thực: %1$s</string>
-    <string name="pdf_qr_instruction">Quét QR để đối chiếu</string>
     <string name="pdf_card_date">Phiếu #%1$d · %2$s</string>
     <string name="pdf_footer">Trang %1$d · Tạo bởi Cân Lúa Mobile · Hash %2$s · %3$s</string>
 
@@ -583,5 +556,6 @@
 
     <!-- Card detail location H-14 -->
     <string name="card_detail_location_denied">Cần quyền vị trí để định vị ruộng</string>
+    <string name="settings_section_premium">Premium</string>
 </resources>
 
