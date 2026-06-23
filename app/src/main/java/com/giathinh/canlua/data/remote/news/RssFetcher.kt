@@ -37,7 +37,7 @@ class RssFetcher @Inject constructor(
         val req = Request.Builder()
             .url(url)
             .addHeader("Accept", "application/rss+xml, application/xml, text/xml, */*")
-            .addHeader("User-Agent", "Mozilla/5.0 (compatible; CanLua/1.0)")
+            .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .build()
         try {
             client.newCall(req).execute().use { resp ->
@@ -47,6 +47,9 @@ class RssFetcher @Inject constructor(
                 }
                 resp.body?.byteStream()?.use { parse(it, url) }.orEmpty()
             }
+        } catch (e: org.xmlpull.v1.XmlPullParserException) {
+            android.util.Log.w("RssFetcher", "XML parsing error fetching RSS from $url: ${e.message}")
+            emptyList()
         } catch (e: java.net.ProtocolException) {
             android.util.Log.e("RssFetcher", "Protocol exception fetching RSS from $url: ${e.message}")
             emptyList()
@@ -152,53 +155,14 @@ class RssFetcher @Inject constructor(
         // Ưu tiên mediaThumb từ tag > descThumb
         val thumbnail = ensureHttps(mediaThumb ?: descThumb)
 
-        // Google News: thử resolve redirect để lấy ảnh og:image từ trang gốc
-        // Nếu description ngắn (< 50 chars sau strip) và chưa có ảnh, fetch trang để enrich
-        val stripped = stripShortDescription(description)
-        val needsEnrich = isGoogleNews && (stripped.length < 50 || thumbnail == null)
-        if (needsEnrich) {
-            resolvedUrl = resolveRedirect(link)
-        }
-
         return RssItem(
             title = title,
             link = link,
             description = description,
             pubDateMs = parseRssDate(pubDate),
             thumbnail = thumbnail,
-            // Google News: nếu có resolved URL (actual article page), lưu lại để enrich
-            enrichedLink = if (needsEnrich && resolvedUrl != null) resolvedUrl else null
+            enrichedLink = null
         )
-    }
-
-    /**
-     * Follow redirect chain để lấy URL thực của bài báo (bỏ qua news.google.com redirect).
-     * Trả về URL gốc (actual article page) hoặc null nếu fail.
-     */
-    private fun resolveRedirect(url: String): String? {
-        if (url.isBlank()) return null
-        return try {
-            val req = Request.Builder().url(url).build()
-            client.newCall(req).execute().use { resp ->
-                resp.header("Location")?.takeIf { it.isNotBlank() }
-                    ?: if (resp.isRedirect) url else null
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
-     * Strip HTML, decode entities nhưng KHÔNG cắt ngắn.
-     * Dùng cho logic detect "description quá ngắn cần enrich".
-     */
-    private fun stripShortDescription(html: String): String {
-        if (html.isEmpty()) return ""
-        val text = android.text.Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
-            .replace("\u00A0", " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-        return text
     }
 
     /**

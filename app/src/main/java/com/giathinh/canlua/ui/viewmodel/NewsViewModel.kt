@@ -46,8 +46,12 @@ class NewsViewModel @Inject constructor(
 
     fun loadData() {
         viewModelScope.launch(Dispatchers.IO) {
-            if (repository.isEmpty() || repository.isStale()) {
-                refresh(forceLocalScrape = false)
+            // Luôn ưu tiên đồng bộ từ Supabase khi mở màn hình để có tin mới nhất
+            repository.refreshFromSupabase()
+            
+            // Nếu vẫn rỗng (lỗi mạng) thì cào RSS làm fallback
+            if (repository.isEmpty()) {
+                repository.refresh()
             }
         }
     }
@@ -56,11 +60,11 @@ class NewsViewModel @Inject constructor(
         _selectedTopic.value = topic
     }
 
-    fun refresh(forceLocalScrape: Boolean = false) {
+    fun refresh() {
         if (_ui.value.isRefreshing) return
         viewModelScope.launch {
             _ui.value = _ui.value.copy(isRefreshing = true, errorMessage = null)
-            val result = repository.refresh(forceLocalScrape = forceLocalScrape)
+            val result = repository.refresh()
             _ui.value = _ui.value.copy(
                 isRefreshing = false,
                 errorMessage = result.exceptionOrNull()?.message?.takeIf { result.isFailure },

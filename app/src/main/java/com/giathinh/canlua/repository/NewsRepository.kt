@@ -7,13 +7,16 @@ import com.giathinh.canlua.data.remote.news.NewsSource
 import com.giathinh.canlua.data.remote.news.RssFetcher
 import com.giathinh.canlua.data.remote.news.RssItem
 import com.giathinh.canlua.util.stripHtml
-import com.google.firebase.firestore.FirebaseFirestore
+import com.giathinh.canlua.data.remote.SupabaseClient
+import com.google.gson.annotations.SerializedName
+import javax.inject.Named
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -25,21 +28,21 @@ import javax.inject.Singleton
 /**
  * Repository bài báo nông nghiệp — offline-first dùng Room làm cache.
  *
- * Kiến trúc mới (GAS-powered với Local RSS Fallback):
- *   - Ưu tiên kéo dữ liệu sạch được crawl từ GAS lưu trên Firestore.
- *   - Nếu Firestore trống hoặc gặp lỗi mạng, app tự động fallback dùng RssFetcher
- *     để cào trực tiếp từ 11 nguồn báo VN.
- *   - Cả GAS và App đều băm link bằng MD5 để làm ID bài viết, tránh trùng lặp dữ liệu trong Room.
+ * Chiến lược: RSS-first.
+ *   - Fetch trực tiếp từ 11+ nguồn báo VN qua RssFetcher.
+ *   - Kết quả upsert vào Room (cache offline).
  *   - Google News sources: resolve redirect + enrich og:image từ trang gốc.
+ *   - Không còn phụ thuộc Firestore cho bài báo.
  */
 @Singleton
 class NewsRepository @Inject constructor(
     private val dao: NewsArticleDao,
-    private val firestore: FirebaseFirestore,
     private val rssFetcher: RssFetcher,
-    private val httpClient: OkHttpClient // for enrichment requests
+    private val httpClient: OkHttpClient, // for og:image enrichment
+    private val supabase: SupabaseClient,
+    @Named("supabaseUrl") private val supabaseUrl: String,
+    @Named("supabaseAnonKey") private val supabaseAnonKey: String
 ) {
-    private val newsCollection get() = firestore.collection("news_articles")
 
     /** Stream bài theo topic từ Room (offline-first); null = tất cả. */
     fun observe(topic: NewsTopic? = null, limit: Int = 30): Flow<List<NewsArticle>> =
@@ -52,93 +55,68 @@ class NewsRepository @Inject constructor(
     }
 
     /**
-     * Fetch bài mới nhất từ Firestore về Room.
-     * Nếu không có dữ liệu trên Firestore hoặc lỗi mạng, tự động cào tin từ RSS cục bộ.
+     * Fetch fresh articles from RSS sources → upsert into Room.
      *
-     * @return số bài unique đã upsert vào Room
+     * @return number of unique articles upserted
      */
-    suspend fun refresh(forceLocalScrape: Boolean = false): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun refresh(): Result<Int> = withContext(Dispatchers.IO) {
         runCatching {
             val now = System.currentTimeMillis()
             val cutoffMs = now - TimeUnit.DAYS.toMillis(14)
-            var fetchedCount = 0
 
-            // 1. Thử kéo dữ liệu từ Firestore trước
-            val firestoreResult = runCatching {
-                val snapshot = newsCollection
-                    .whereGreaterThan("publishedAt", cutoffMs)
-                    .orderBy("publishedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                    .limit(60)
-                    .get()
-                    .await()
-
-                snapshot.documents.mapNotNull { doc ->
-                    runCatching {
-                        NewsArticle(
-                            id          = doc.getString("id") ?: doc.id,
-                            title       = doc.getString("title") ?: return@mapNotNull null,
-                            description = doc.getString("description") ?: "",
-                            link        = doc.getString("link") ?: return@mapNotNull null,
-                            source      = doc.getString("source") ?: "",
-                            thumbnail   = doc.getString("thumbnail"),
-                            publishedAt = doc.getLong("publishedAt") ?: now,
-                            topic       = doc.getString("topic") ?: NewsTopic.MARKET.name,
-                            cachedAt    = doc.getLong("cachedAt") ?: now
-                        )
-                    }.getOrNull()
-                }
+            // 1. Fetch from Supabase first
+            val supabaseArticles = fetchFromSupabase().getOrDefault(emptyList())
+            if (supabaseArticles.isNotEmpty()) {
+                dao.upsertAll(supabaseArticles)
             }
 
-            val cloudArticles = firestoreResult.getOrNull().orEmpty()
-            val shouldScrapeLocal = forceLocalScrape || cloudArticles.isEmpty()
-
-            val allArticles = mutableListOf<NewsArticle>()
-            allArticles.addAll(cloudArticles)
-
-            if (shouldScrapeLocal) {
-                // 2. Fallback hoặc chủ động cào tin từ RSS các trang báo
-                val localArticles = mutableListOf<NewsArticle>()
-                val jobs = NewsSource.entries.map { src ->
+            // 2. Parallel fetch from all RSS sources
+            val localArticles = mutableListOf<NewsArticle>()
+            val jobs = coroutineScope {
+                NewsSource.entries.map { src ->
                     async {
                         runCatching {
-                            val items = rssFetcher.fetch(src.rssUrl)
-                            items.map { item ->
-                                mapToArticle(item, src, now)
-                            }
+                            rssFetcher.fetch(src.rssUrl).map { item -> mapToArticle(item, src, now) }
                         }.getOrNull().orEmpty()
                     }
                 }
+            }
+            jobs.awaitAll().forEach { localArticles.addAll(it) }
 
-                val results = jobs.awaitAll()
-                results.forEach { localArticles.addAll(it) }
+            // Filter by time limit, sort by date, and take top 60 first.
+            val candidateArticles = localArticles
+                .filter { it.publishedAt >= cutoffMs }
+                .sortedByDescending { it.publishedAt }
+                .take(60)
 
-                // Enrich descriptions + thumbnails cho Google News items
-                val googleNewsItems = localArticles.filter { isGoogleNewsSource(it.source) }
-                val enrichedArticles = if (googleNewsItems.isNotEmpty()) {
-                    enrichGoogleNewsItems(googleNewsItems, now)
-                } else emptyList()
+            // Split into Google News candidates vs local candidates
+            val googleNewsCandidates = candidateArticles.filter { isGoogleNewsSource(it.source) }
+            val localCandidates = candidateArticles.filter { !isGoogleNewsSource(it.source) }
 
-                // Merge: giữ original, thay thế bằng enriched nếu có cải thiện
-                val enrichedMap = enrichedArticles.associateBy { it.id }
-                val merged = localArticles.map { article ->
-                    enrichedMap[article.id] ?: article
-                }
-
-                val filteredLocal = merged
-                    .filter { it.publishedAt >= cutoffMs }
-                    .sortedByDescending { it.publishedAt }
-                    .take(60)
-
-                allArticles.addAll(filteredLocal)
+            // Resolve and enrich Google News items concurrently with a Semaphore limit of 5
+            val semaphore = Semaphore(5)
+            val resolvedGoogleNews = coroutineScope {
+                googleNewsCandidates.map { article ->
+                    async {
+                        semaphore.withPermit {
+                            resolveAndEnrichGoogleNews(article, now)
+                        }
+                    }
+                }.awaitAll()
             }
 
-            if (allArticles.isNotEmpty()) {
-                dao.upsertAll(allArticles)
+            // Merge back, sort again, distinct by ID, and take top 60
+            val articles = (localCandidates + resolvedGoogleNews)
+                .sortedByDescending { it.publishedAt }
+                .distinctBy { it.id }
+                .take(60)
+
+            if (articles.isNotEmpty()) {
+                dao.upsertAll(articles)
                 dao.deleteOlderThan(cutoffMs)
-                fetchedCount = allArticles.distinctBy { it.id }.size
             }
 
-            fetchedCount
+            articles.size + supabaseArticles.size
         }
     }
 
@@ -180,25 +158,94 @@ class NewsRepository @Inject constructor(
                sourceName.contains("Google", ignoreCase = true)
     }
 
-    /**
-     * Enrich Google News articles: resolve og:image + meta description từ actual article page.
-     * Tránh fetch article page trong hot path — chỉ enrich khi:
-     *   - description < 30 chars (snippet ngắn)
-     *   - thumbnail == null
-     */
-    private suspend fun enrichGoogleNewsItems(articles: List<NewsArticle>, now: Long): List<NewsArticle> {
-        val needsEnrichment = articles.filter {
-            it.description.length < 30 || it.thumbnail.isNullOrBlank()
-        }
-        if (needsEnrichment.isEmpty()) return articles
-
-        return coroutineScope {
-            needsEnrichment.map { article ->
-                async(Dispatchers.IO) {
-                    enrichFromArticlePage(article, now)
+    /** Tracing redirect URL của Google News RSS items dùng HEAD requests. */
+    private fun resolveRedirect(url: String): String {
+        if (!url.contains("news.google.com", ignoreCase = true)) return url
+        
+        var currentUrl = url
+        val redirectLessClient = httpClient.newBuilder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .build()
+            
+        var redirectCount = 0
+        val maxRedirects = 3
+        
+        while (redirectCount < maxRedirects) {
+            val req = Request.Builder()
+                .url(currentUrl)
+                .head()
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .build()
+                
+            try {
+                redirectLessClient.newCall(req).execute().use { resp ->
+                    if (resp.code in 300..399) {
+                        val location = resp.header("Location")
+                        if (!location.isNullOrBlank()) {
+                            val nextUrl = if (location.startsWith("/")) {
+                                val uri = java.net.URI(currentUrl)
+                                "${uri.scheme}://${uri.host}$location"
+                            } else {
+                                location
+                            }
+                            currentUrl = nextUrl
+                            redirectCount++
+                            continue
+                        }
+                    } else if (resp.code == 405) {
+                        // Fallback sang GET nếu HEAD bị chặn/không hỗ trợ
+                        val getReq = Request.Builder()
+                            .url(currentUrl)
+                            .get()
+                            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                            .build()
+                        redirectLessClient.newCall(getReq).execute().use { getResp ->
+                            if (getResp.code in 300..399) {
+                                val location = getResp.header("Location")
+                                if (!location.isNullOrBlank()) {
+                                    val nextUrl = if (location.startsWith("/")) {
+                                        val uri = java.net.URI(currentUrl)
+                                        "${uri.scheme}://${uri.host}$location"
+                                    } else {
+                                        location
+                                    }
+                                    currentUrl = nextUrl
+                                    redirectCount++
+                                    return@use
+                                }
+                            }
+                        }
+                    }
                 }
-            }.awaitAll()
+            } catch (e: Exception) {
+                android.util.Log.w("NewsRepo", "Redirect resolve failed for $currentUrl: ${e.message}")
+                break
+            }
+            break
         }
+        return currentUrl
+    }
+
+    private suspend fun resolveAndEnrichGoogleNews(article: NewsArticle, now: Long): NewsArticle = withContext(Dispatchers.IO) {
+        val resolvedUrl = resolveRedirect(article.link)
+        
+        var updatedArticle = if (resolvedUrl != article.link) {
+            article.copy(
+                id = resolvedUrl.md5(),
+                link = resolvedUrl
+            )
+        } else {
+            article
+        }
+        
+        if (updatedArticle.description.length < 30 || updatedArticle.thumbnail.isNullOrBlank()) {
+            updatedArticle = enrichFromArticlePage(updatedArticle, now)
+        }
+        
+        updatedArticle
     }
 
     /** Fetch actual article page → trích xuất og:image + meta description. */
@@ -209,7 +256,7 @@ class NewsRepository @Inject constructor(
         val req = Request.Builder()
             .url(article.link)
             .addHeader("Accept", "text/html,application/xhtml+xml,*/*")
-            .addHeader("User-Agent", "Mozilla/5.0 (compatible; CanLua/1.0)")
+            .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .build()
 
         try {
@@ -290,4 +337,65 @@ class NewsRepository @Inject constructor(
     suspend fun isEmpty(): Boolean = withContext(Dispatchers.IO) {
         dao.count() == 0
     }
+
+    /**
+     * Fetch the latest news articles from Supabase.
+     */
+    suspend fun fetchFromSupabase(): Result<List<NewsArticle>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val type = com.google.gson.reflect.TypeToken
+                .getParameterized(List::class.java, NewsArticleDto::class.java).type
+            val dtos = supabase.getList<NewsArticleDto>(
+                baseUrl = supabaseUrl,
+                anonKey = supabaseAnonKey,
+                table = "news_articles",
+                params = mapOf(
+                    "order" to "published_at.desc",
+                    "limit" to "60"
+                ),
+                type = type
+            )
+            android.util.Log.d("NewsRepo", "Fetched ${dtos.size} articles from Supabase")
+            dtos.map { it.toNewsArticle() }
+        }.onFailure { e ->
+            android.util.Log.w("NewsRepo", "Error fetching news from Supabase: ${e.message}")
+        }
+    }
+
+    /**
+     * Fetch from Supabase and cache/upsert to Room.
+     */
+    suspend fun refreshFromSupabase(): Result<Int> = withContext(Dispatchers.IO) {
+        fetchFromSupabase().map { articles ->
+            if (articles.isNotEmpty()) {
+                dao.upsertAll(articles)
+            }
+            articles.size
+        }
+    }
+}
+
+/** DTO matching the Supabase `news_articles` table column names (snake_case). */
+data class NewsArticleDto(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("title") val title: String = "",
+    @SerializedName("description") val description: String? = "",
+    @SerializedName("link") val link: String = "",
+    @SerializedName("source") val source: String? = "",
+    @SerializedName("thumbnail") val thumbnail: String? = null,
+    @SerializedName("published_at") val published_at: Long = 0L,
+    @SerializedName("topic") val topic: String = "MARKET",
+    @SerializedName("cached_at") val cached_at: Long = 0L
+) {
+    fun toNewsArticle() = NewsArticle(
+        id          = id,
+        title       = title,
+        description = description.orEmpty(),
+        link        = link,
+        source      = source.orEmpty(),
+        thumbnail   = thumbnail,
+        publishedAt = published_at,
+        topic       = topic,
+        cachedAt    = if (cached_at > 0L) cached_at else System.currentTimeMillis()
+    )
 }

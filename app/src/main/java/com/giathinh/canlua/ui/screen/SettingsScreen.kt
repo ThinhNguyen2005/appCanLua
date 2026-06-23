@@ -304,7 +304,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
             title = { Text(stringResource(R.string.settings_sign_out), fontWeight = FontWeight.Bold) },
-            text = { Text("Bạn có chắc chắn muốn đăng xuất không? Dữ liệu chưa đồng bộ có thể bị mất.") },
+            text = { Text(stringResource(R.string.settings_logout_rationale)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -857,16 +857,16 @@ private fun RestartConfirmDialog(
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Khởi động lại ứng dụng", fontWeight = FontWeight.Bold) },
-        text = { Text("Vui lòng khởi động lại ứng dụng để cập nhật vai trò và giao diện mới.") },
+        title = { Text(stringResource(R.string.settings_restart_title), fontWeight = FontWeight.Bold) },
+        text = { Text(stringResource(R.string.settings_restart_text)) },
         confirmButton = {
             TextButton(onClick = onRestart) {
-                Text("Khởi động lại ngay", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.settings_restart_confirm), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Để sau", color = AppColors.TextSecondary)
+                Text(stringResource(R.string.settings_restart_dismiss), color = AppColors.TextSecondary)
             }
         },
         shape = RoundedCornerShape(20.dp),

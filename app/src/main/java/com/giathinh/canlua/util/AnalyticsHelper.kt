@@ -74,9 +74,6 @@ object AnalyticsHelper {
         putString("error_class", errorClass)
     }
 
-    fun roleRequested() = log("role_requested")
-    fun roleApproved() = log("role_approved")
-
     // ─── Exception logging ───
 
     /**

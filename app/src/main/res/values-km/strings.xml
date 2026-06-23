@@ -519,4 +519,10 @@
     <string name="theme_oled">របៀបងងឹត AMOLED</string>
     <string name="theme_auto">តាមប្រព័ន្ធ</string>
     <string name="settings_theme_title">រូបរាង</string>
+
+    <!-- App Restart translation keys -->
+    <string name="settings_restart_title">ចាប់ផ្តើមកម្មវិធីឡើងវិញ</string>
+    <string name="settings_restart_text">សូមចាប់ផ្តើមកម្មវិធីឡើងវិញដើម្បីអនុវត្តតួនាទី និងចំណុចប្រទាក់ថ្មី។</string>
+    <string name="settings_restart_confirm">ចាប់ផ្តើមឡើងវិញឥឡូវនេះ</string>
+    <string name="settings_restart_dismiss">ទុកពេលក្រោយ</string>
 </resources>

@@ -524,5 +524,11 @@
     <string name="theme_oled">AMOLED dark mode</string>
     <string name="theme_auto">System default</string>
     <string name="settings_theme_title">Theme</string>
+
+    <!-- App Restart translation keys -->
+    <string name="settings_restart_title">Restart Application</string>
+    <string name="settings_restart_text">Please restart the application to apply the new role and interface.</string>
+    <string name="settings_restart_confirm">Restart now</string>
+    <string name="settings_restart_dismiss">Later</string>
 </resources>
 

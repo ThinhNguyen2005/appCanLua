@@ -1,7 +1,7 @@
 package com.giathinh.canlua.repository
 
+import android.util.Log
 import com.giathinh.canlua.data.dao.RicePriceDao
-import com.giathinh.canlua.data.firestore.FirestoreRicePrice
 import com.giathinh.canlua.data.model.PricePoint
 import com.giathinh.canlua.data.model.RicePrice
 import kotlinx.coroutines.Dispatchers
@@ -11,24 +11,26 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 import kotlin.random.Random
-import android.util.Log
 import kotlinx.coroutines.withContext
 
 /**
- * Phase 2.1 — MVP với mock data realistic dựa trên giá thị trường ĐBSCL 2026.
- * Phase 2.2 — Firestore sync: TRADER write, FARMER read on-demand.
+ * Market data repository — offline-first with Room as local cache.
  *
- * v3 (2026-05-26): Bỏ snapshot listener thường trực. FARMER chỉ refresh khi mở tab
- * Market (one-shot fetch + cache vào Room). Lý do: listener treo singleton scope
- * không bao giờ hủy → bombard main thread cả khi user không xem giá.
+ * Remote source: Supabase `rice_prices` table (read-only from app).
+ * Write path:    Google Sheets → Apps Script → Supabase REST API.
+ *
+ * Strategy:
+ *  1. UI reads from Room (instant, always available offline).
+ *  2. On tab open, call [refreshFromSupabase] which fetches Supabase → upserts Room.
+ *  3. TTL prevents hammering the API on every recomposition.
  */
 @Singleton
 class MarketRepository @Inject constructor(
     private val ricePriceDao: RicePriceDao,
-    private val firestore: MarketFirestoreRepository
+    private val supabase: SupabasePriceRepository
 ) {
     private var lastRefreshTimeMs = 0L
-    private val refreshTtlMs = 10 * 1000L // 10 giây (Đồng bộ tức thì)
+    private val refreshTtlMs = 10 * 60 * 1000L // 10 minutes
 
     fun getAllPrices(): Flow<List<RicePrice>> = ricePriceDao.getAllPrices()
 
@@ -41,73 +43,43 @@ class MarketRepository @Inject constructor(
     }
 
     /**
-     * One-shot fetch từ Firestore → mirror vào Room. UI gọi khi vào tab Market.
-     * Empty list không overwrite Room (giữ mock + dữ liệu cũ làm fallback).
-     *
-     * Hỗ trợ cache TTL 10 phút nếu [forceRefresh] = false.
+     * Fetch fresh prices from Supabase → mirror into Room.
+     * Respects [refreshTtlMs] cache unless [forceRefresh] = true.
+     * On network failure, Room cache remains untouched (graceful degradation).
      */
-    suspend fun refreshFromFirestore(forceRefresh: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
-        val now = System.currentTimeMillis()
-        if (!forceRefresh && (now - lastRefreshTimeMs < refreshTtlMs) && ricePriceDao.countPrices() > 0) {
-            Log.d("MarketRepo", "refreshFromFirestore: Cache is fresh (<10m), skipping network fetch")
-            return@withContext Result.success(Unit)
+    suspend fun refreshFromSupabase(forceRefresh: Boolean = false): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val isFresh = !forceRefresh
+                    && (now - lastRefreshTimeMs < refreshTtlMs)
+                    && ricePriceDao.countPrices() > 0
+
+            if (isFresh) {
+                Log.d("MarketRepo", "Cache fresh (<10m), skipping network fetch")
+                return@withContext Result.success(Unit)
+            }
+
+            val result = supabase.fetchActivePrices()
+            result.fold(
+                onSuccess = { prices ->
+                    if (prices.isNotEmpty()) {
+                        ricePriceDao.clear()
+                        ricePriceDao.upsertAll(prices)
+                        Log.d("MarketRepo", "Updated Room with ${prices.size} prices from Supabase")
+                    }
+                    lastRefreshTimeMs = now
+                    Result.success(Unit)
+                },
+                onFailure = { error ->
+                    Log.w("MarketRepo", "Supabase fetch failed, using Room cache: ${error.message}")
+                    Result.failure(error)
+                }
+            )
         }
 
-        val result = firestore.fetchActiveBids()
-        result.fold(
-            onSuccess = { bids ->
-                if (bids.isNotEmpty()) {
-                    ricePriceDao.clear() // Xóa sạch dữ liệu giả lập (mock data) cũ
-                    ricePriceDao.upsertAll(bids.map { it.toRicePrice() })
-                }
-                lastRefreshTimeMs = now
-                Result.success(Unit)
-            },
-            onFailure = { Result.failure(it) }
-        )
-    }
-
-    /** TRADER submit / update bid. */
-    suspend fun submitBid(
-        variety: String,
-        priceMin: Double,
-        priceMax: Double,
-        region: String,
-        trend: String,
-        traderName: String,
-        traderPhone: String,
-        note: String,
-        riceType: String = "lúa Khô",
-        existingId: String? = null
-    ): Result<String> {
-        val avg = (priceMin + priceMax) / 2
-        val bid = FirestoreRicePrice(
-            id = existingId.orEmpty(),
-            variety = variety,
-            priceMin = priceMin,
-            priceMax = priceMax,
-            priceAvg7d = avg,
-            region = region,
-            updatedAt = System.currentTimeMillis(),
-            traderId = firestore.currentUserId.orEmpty(),
-            traderName = traderName,
-            traderPhone = traderPhone,
-            trend = trend,
-            active = true,
-            note = note,
-            riceType = riceType
-        )
-        return firestore.upsertBid(bid)
-    }
-
-    suspend fun deleteBid(bidId: String): Result<Unit> = firestore.deactivateBid(bidId)
-
-    /** Stream bids của TRADER hiện tại — đổ thẳng từ Firestore. */
-    fun observeMyBids(): Flow<List<FirestoreRicePrice>> = firestore.observeMyBids()
-
     /**
-     * Seed mock data nếu DB trống. Chạy 1 lần ở app startup cho demo.
-     * Khi Firestore có data thật, mock sẽ bị overwrite (mock dùng id "mock_*").
+     * Seed mock data on first launch when Room is empty.
+     * Real data from Supabase will overwrite mocks on first successful fetch.
      */
     suspend fun seedMockDataIfEmpty() = withContext(Dispatchers.IO) {
         if (ricePriceDao.countPrices() > 0) return@withContext
@@ -126,13 +98,12 @@ class MarketRepository @Inject constructor(
         val prices = varieties.map { v ->
             val priceMin = randomNear(v.minBase, 100.0)
             val priceMax = randomNear(v.maxBase, 100.0)
-            val priceAvg = (priceMin + priceMax) / 2
             RicePrice(
                 id = "mock_${v.variety}",
                 variety = v.variety,
                 priceMin = priceMin,
                 priceMax = priceMax,
-                priceAvg7d = priceAvg,
+                priceAvg7d = (priceMin + priceMax) / 2,
                 region = "ĐBSCL",
                 updatedAt = now,
                 traderId = null,
@@ -142,7 +113,7 @@ class MarketRepository @Inject constructor(
         }
         ricePriceDao.upsertAll(prices)
 
-        // Generate 30 days history per variety
+        // Generate 30-day price history per variety
         val history = mutableListOf<PricePoint>()
         for (v in varieties) {
             val basePrice = (v.minBase + v.maxBase) / 2
@@ -153,8 +124,7 @@ class MarketRepository @Inject constructor(
                     "DOWN" -> -(30 - dayBack) * 6.0
                     else -> 0.0
                 }
-                val noise = Random.nextDouble(-150.0, 150.0)
-                val avg = basePrice + trendBias + noise
+                val avg = basePrice + trendBias + Random.nextDouble(-150.0, 150.0)
                 history.add(
                     PricePoint(
                         variety = v.variety,
@@ -180,19 +150,5 @@ class MarketRepository @Inject constructor(
         val minBase: Double,
         val maxBase: Double,
         val trend: String
-    )
-
-    private fun FirestoreRicePrice.toRicePrice() = RicePrice(
-        id = id,
-        variety = variety,
-        priceMin = priceMin,
-        priceMax = priceMax,
-        priceAvg7d = priceAvg7d,
-        region = region,
-        updatedAt = updatedAt,
-        traderId = traderId.takeIf { it.isNotEmpty() },
-        traderName = if (source.isNotEmpty()) source else traderName.takeIf { it.orEmpty().isNotEmpty() },
-        trend = trend,
-        riceType = riceType
     )
 }

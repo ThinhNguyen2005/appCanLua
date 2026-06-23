@@ -5,19 +5,31 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# === Source info — giữ để Crashlytics stack trace có line numbers ===
--keepattributes SourceFile,LineNumberTable
+# === Attributes — Giữ generic signatures và annotations để Gson/Room không bị ClassCastException/reflection error ===
+-keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*,SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
 
+# === Google Sign-In & Credential Manager ===
+# Giữ các class của Credential Manager và Google ID Token để không bị tối ưu hóa/strip mất ở release build.
+-if class androidx.credentials.CredentialManager
+-keep class androidx.credentials.playservices.** { *; }
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class androidx.credentials.** { *; }
+
 # === Firestore / Gson model classes ===
-# Firestore dùng reflection để deserialize — phải giữ tên field gốc.
-# Áp dụng cho tất cả class trong package data.firestore và data.model
-# có annotation @SerializedName hoặc field public.
+# Giữ nguyên toàn bộ class name và field name trong package model và firestore.
+# Giúp Gson, Room và Firestore hoạt động bằng reflection ổn định ở bản release.
 -keep class com.giathinh.canlua.data.firestore.** { *; }
--keepclassmembers class com.giathinh.canlua.data.model.** {
-    <init>();
-    <fields>;
-}
+-keep class com.giathinh.canlua.data.model.** { *; }
+
+# === DTOs & Models used for JSON serialization/deserialization ===
+-keep class com.giathinh.canlua.data.remote.ai.** { *; }
+-keep class com.giathinh.canlua.repository.RicePriceDto { *; }
+-keep class com.giathinh.canlua.repository.NewsArticleDto { *; }
+-keep class com.giathinh.canlua.repository.KnowledgeBaseRepository$KnowledgeEntry { *; }
+-keep class com.giathinh.canlua.repository.KnowledgeBaseRepository$KbFile { *; }
+-keep class com.giathinh.canlua.util.BackupManager$CardBackupWrapper { *; }
+-keep class com.giathinh.canlua.util.BackupManager$BackupPayload { *; }
 
 # === Room entity & DAO ===
 # Room tạo implementation bằng annotation processor — không cần keep DAO interface
@@ -34,7 +46,6 @@
 }
 
 # === Kotlin Serialization ===
--keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.AnnotationsKt
 
 # === Markwon (Markdown renderer cho AI chat) ===
@@ -45,15 +56,6 @@
 -keep interface io.noties.markwon.** { *; }
 -dontwarn io.noties.markwon.**
 
-# === OpenRouter AI (data.remote.ai.*) ===
-# Gson reflection dùng tên field gốc để parse response từ OpenRouter.
-# Nếu không keep, R8 obfuscate field name (content → a, choices → b) →
-# Gson đọc field lỗi → choices = emptyList() → AI trả message rỗng.
--keep class com.giathinh.canlua.data.remote.ai.** { *; }
--keepclassmembers class com.giathinh.canlua.data.remote.ai.** {
-    <init>();
-    <fields>;
-}
 
 # === Strip verbose debug logs trong release ===
 # Log.i/w/e/wtf vẫn giữ để Crashlytics + adb logcat khi user report bug.

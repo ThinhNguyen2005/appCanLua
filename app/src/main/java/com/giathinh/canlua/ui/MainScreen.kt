@@ -178,7 +178,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
     val topBarSubtitle = if (topBarSubtitleRes != null) stringResource(topBarSubtitleRes) else null
 
-    val showTopBar = currentRoute in navItems.map { it.route } || currentRoute == "trader_transactions"
+    val showTopBar = (currentRoute in navItems.map { it.route } && currentRoute != BottomNavItem.MARKET.route) || currentRoute == "trader_transactions"
 
     // Drawer state cho AI Chat đã được gỡ bỏ hoàn toàn.
 

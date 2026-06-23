@@ -557,5 +557,11 @@
     <!-- Card detail location H-14 -->
     <string name="card_detail_location_denied">Cần quyền vị trí để định vị ruộng</string>
     <string name="settings_section_premium">Premium</string>
+
+    <!-- App Restart translation keys -->
+    <string name="settings_restart_title">Khởi động lại ứng dụng</string>
+    <string name="settings_restart_text">Vui lòng khởi động lại ứng dụng để cập nhật vai trò và giao diện mới.</string>
+    <string name="settings_restart_confirm">Khởi động lại ngay</string>
+    <string name="settings_restart_dismiss">Để sau</string>
 </resources>
 

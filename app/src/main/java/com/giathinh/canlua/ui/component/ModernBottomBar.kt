@@ -67,25 +67,26 @@ fun ModernBottomBar(
     onItemClick: (BottomBarItemSpec) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(0.dp), // Phẳng hoàn toàn, không bo góc
+        color = AppColors.CardBg, // Sử dụng CardBg (trắng tinh ở Light mode, xám đậm ở Dark mode) để tạo độ tương phản cực tốt với nền xanh nhạt
+        tonalElevation = 8.dp // Tạo độ nổi khối chuẩn Material 3
     ) {
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = AppColors.Surface,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-            modifier = Modifier
-                .fillMaxWidth()
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // Thanh phân cách phía trên có độ tương phản cao, tách biệt rõ ràng với phần nội dung app
+            androidx.compose.material3.HorizontalDivider(
+                thickness = 1.dp,
+                color = AppColors.DividerStrong
+            )
+            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 72.dp)
-                    .padding(vertical = 6.dp),
+                    .navigationBarsPadding() // Đệm hệ thống dưới nút điều hướng ảo
+                    .height(64.dp), // Chiều cao tối ưu tiêu chuẩn
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {

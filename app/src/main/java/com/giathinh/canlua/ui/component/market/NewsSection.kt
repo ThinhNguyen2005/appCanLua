@@ -1,6 +1,7 @@
 package com.giathinh.canlua.ui.component.market
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,9 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -97,58 +102,65 @@ fun NewsSection(
             ErrorBanner(message = errorMessage.orEmpty(), onDismiss = onDismissError)
         }
 
-        // Content
-        when {
-            articles.isEmpty() && isRefreshing -> {
-                repeat(10) { index ->
-                    NewsCardSkeleton()
-                    if (index < 9) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .height(0.5.dp)
-                                .background(AppColors.Divider)
-                        )
+        // Content with smooth Crossfade transition
+        Crossfade(
+            targetState = articles.isEmpty() && isRefreshing,
+            label = "news_content_fade"
+        ) { loading ->
+            if (loading) {
+                Column {
+                    repeat(10) { index ->
+                        NewsCardSkeleton()
+                        if (index < 9) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .height(0.5.dp)
+                                    .background(AppColors.Divider)
+                            )
+                        }
                     }
                 }
-            }
-            articles.isEmpty() -> {
-                EmptyState()
-            }
-            else -> {
-                val displayCount = if (isExpanded) 20 else 10
-                articles.take(displayCount).forEachIndexed { index, article ->
-                    NewsCard(article = article)
-                    if (index < displayCount - 1 && index < articles.size - 1) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .height(0.5.dp)
-                                .background(AppColors.Divider)
-                        )
-                    }
-                }
+            } else {
+                if (articles.isEmpty()) {
+                    EmptyState()
+                } else {
+                    Column {
+                        val displayCount = if (isExpanded) 20 else 10
+                        articles.take(displayCount).forEachIndexed { index, article ->
+                            NewsCard(article = article)
+                            if (index < displayCount - 1 && index < articles.size - 1) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                        .height(0.5.dp)
+                                        .background(AppColors.Divider)
+                                )
+                            }
+                        }
 
-                if (articles.size > 10) {
-                    Spacer(Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
-                            .background(AppColors.SurfaceContainer)
-                            .clickable { isExpanded = !isExpanded }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (isExpanded) "Thu gọn" else "Xem thêm bài viết (${articles.size - 10} bài khác)",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.GreenPrimary
-                        )
+                        if (articles.size > 10) {
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
+                                    .background(AppColors.SurfaceContainer)
+                                    .clickable { isExpanded = !isExpanded }
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (isExpanded) "Thu gọn" else "Xem thêm bài viết (${articles.size - 10} bài khác)",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.GreenPrimary
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -177,6 +189,7 @@ private fun TopicFilterRow(
     selected: NewsTopic?,
     onSelect: (NewsTopic?) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val items = listOf<Pair<NewsTopic?, String>>(
         null to "Tất cả",
         NewsTopic.RICE to "Lúa",
@@ -190,13 +203,17 @@ private fun TopicFilterRow(
         items(items, key = { it.first?.name ?: "_all" }) { (topic, label) ->
             val isSelected = selected == topic
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(
                         if (isSelected) AppColors.GreenPrimary
                         else AppColors.SurfaceContainer
                     )
-                    .clickable { onSelect(topic) }
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onSelect(topic)
+                    }
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Text(
@@ -244,14 +261,14 @@ private fun NewsCard(article: NewsArticle) {
             .padding(vertical = 14.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
-        if (showImage) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
-                    .background(AppColors.SurfaceContainer),
-                contentAlignment = Alignment.Center
-            ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
+                .background(AppColors.SurfaceContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            if (showImage) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
@@ -262,9 +279,11 @@ private fun NewsCard(article: NewsArticle) {
                     modifier = Modifier.size(48.dp),
                     onError = { isImageError = true }
                 )
+            } else {
+                com.giathinh.canlua.ui.screen.market.GoogleNewsPlaceholder(modifier = Modifier.size(48.dp))
             }
-            Spacer(Modifier.width(12.dp))
         }
+        Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -393,10 +412,10 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
         )
         IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                imageVector = Icons.Default.Close,
                 contentDescription = "Đóng",
                 tint = AppColors.OfflineText.copy(alpha = 0.6f),
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }

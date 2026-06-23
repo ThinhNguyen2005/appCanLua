@@ -1,26 +1,31 @@
 package com.giathinh.canlua.ui.screen.market
 
-import androidx.compose.foundation.layout.Row
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,10 +33,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.PriceChange
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -43,26 +49,35 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.giathinh.canlua.data.firestore.FirestoreRicePrice
+import com.giathinh.canlua.ui.component.MarketSkeleton
+import com.giathinh.canlua.ui.component.TransitionSafeWrapper
 import com.giathinh.canlua.ui.component.market.BidEditorSheet
 import com.giathinh.canlua.ui.component.market.MarketSkeletonList
 import com.giathinh.canlua.ui.component.market.NativeAdPlaceholder
@@ -77,24 +92,7 @@ import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.ui.viewmodel.TraderBidsViewModel
 import com.giathinh.canlua.util.PremiumState
 import com.giathinh.canlua.util.TrackScreenRender
-import com.giathinh.canlua.R
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlinx.coroutines.launch
-
-/**
- * Module 2 — Bảng Tin Giá Lúa & Thị Trường
- *
- * Layout: TabRow + HorizontalPager 2 trang.
- *  - Page 0 "Tin tức": NativeAd + NewsSection (cuộn chung trong LazyColumn)
- *  - Page 1 "Bảng giá lúa": Giá rao của bạn (nếu trader) + Bảng giá thu mua
- *
- * Tab và pager đồng bộ 2 chiều.
- */
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
-import com.giathinh.canlua.ui.component.MarketSkeleton
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -109,8 +107,6 @@ fun MarketScreen() {
     val prices by viewModel.prices.collectAsStateWithLifecycle()
     val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
     val isDataReady = !isLoading || prices.isNotEmpty() || newsArticles.isNotEmpty()
-
-
 
     TransitionSafeWrapper(
         isDataReady = isDataReady,
@@ -144,7 +140,6 @@ fun MarketScreenContent(
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
     val activePage by remember { derivedStateOf { pagerState.currentPage } }
     val isNewsActive = activePage == 0
-    val isPricesActive = activePage == 1
 
     LaunchedEffect(isNewsActive) {
         if (isNewsActive) {
@@ -152,34 +147,14 @@ fun MarketScreenContent(
         }
     }
 
-    val newsArticles = if (isNewsActive) {
-        newsViewModel.articles.collectAsStateWithLifecycle().value
-    } else {
-        emptyList()
-    }
-    val newsTopic = if (isNewsActive) {
-        newsViewModel.selectedTopic.collectAsStateWithLifecycle().value
-    } else {
-        null
-    }
-    val newsUi = if (isNewsActive) {
-        newsViewModel.ui.collectAsStateWithLifecycle().value
-    } else {
-        com.giathinh.canlua.ui.viewmodel.NewsUiState()
-    }
+    val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
+    val newsTopic by newsViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val newsUi by newsViewModel.ui.collectAsStateWithLifecycle()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val isTrader = profile?.role == "TRADER"
     val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
-    val myBids = if (isPricesActive) {
-        bidsViewModel.myBids.collectAsStateWithLifecycle().value
-    } else {
-        emptyList()
-    }
-    val bidUiState = if (isPricesActive) {
-        bidsViewModel.uiState.collectAsStateWithLifecycle().value
-    } else {
-        com.giathinh.canlua.ui.viewmodel.TraderBidUiState()
-    }
+    val myBids: List<Nothing> = emptyList()
+    val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -189,8 +164,26 @@ fun MarketScreenContent(
     val newsListState = rememberLazyListState()
     val pricesListState = rememberLazyListState()
 
-    // FAB chỉ hiện ở tab "Bảng giá lúa" — nơi thương lái thực sự đăng giá.
-    val fabExpanded = pricesListState.isScrollingUp() || myBids.isEmpty()
+    val newsScrollingUp = newsListState.isScrollingUp()
+    val pricesScrollingUp = pricesListState.isScrollingUp()
+    val scrollingUp = if (pagerState.currentPage == 0) newsScrollingUp else pricesScrollingUp
+
+    LaunchedEffect(scrollingUp) {
+        com.giathinh.canlua.ui.util.BottomBarVisibility.set(scrollingUp)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            com.giathinh.canlua.ui.util.BottomBarVisibility.reset()
+        }
+    }
+
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottomContentPadding = remember(navBarPadding) { 96.dp + navBarPadding }
+    val bottomFabPadding = remember(navBarPadding) { 80.dp + navBarPadding }
+
+    val fabVisible = scrollingUp || prices.isEmpty()
+    val fabExpanded = pricesScrollingUp || myBids.isEmpty()
 
     var showEditor by remember { mutableStateOf(false) }
     var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
@@ -220,7 +213,6 @@ fun MarketScreenContent(
         }
     }
 
-    // H-08: Hiển thị Snackbar khi Market refresh thất bại (lỗi mạng / Firestore)
     LaunchedEffect(refreshError) {
         refreshError?.let {
             snackbarHostState.showSnackbar(it)
@@ -232,20 +224,27 @@ fun MarketScreenContent(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (isTrader && pagerState.currentPage == 1) {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        editingBid = null
-                        showEditor = true
-                    },
-                    expanded = fabExpanded,
-                    icon = {
-                        Icon(Icons.Filled.Add, contentDescription = "Đăng giá mới")
-                    },
-                    text = { Text("Đăng giá mới", fontWeight = FontWeight.SemiBold) },
-                    containerColor = AppColors.GreenPrimary,
-                    contentColor = AppColors.CardBg,
-                    modifier = Modifier.padding(bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-                )
+                AnimatedVisibility(
+                    visible = fabVisible,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+                ) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            editingBid = null
+                            showEditor = true
+                        },
+                        expanded = fabExpanded,
+                        icon = {
+                            Icon(Icons.Filled.Add, contentDescription = "Đăng giá mới")
+                        },
+                        text = { Text("Đăng giá mới", fontWeight = FontWeight.SemiBold) },
+                        containerColor = AppColors.GreenPrimary,
+                        contentColor = AppColors.CardBg,
+                        modifier = Modifier.padding(bottom = bottomFabPadding),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
             }
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -256,9 +255,6 @@ fun MarketScreenContent(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Weather không cố định trên đỉnh — đã chiếm gần nửa màn hình nếu sticky.
-            // Đưa vào item đầu của LazyColumn NewsPage → cuộn 1 chút là tự ẩn, chỉ TabRow ở lại.
-            // TabRow fixed phía trên pager để user luôn nhảy được tab kể cả đang ở cuối list.
             MarketTabRow(
                 selectedTab = pagerState.currentPage,
                 onSelect = { tab ->
@@ -266,18 +262,11 @@ fun MarketScreenContent(
                 }
             )
 
-            // Remember stable callbacks to prevent child recomposition on parent state change
-            val context = androidx.compose.ui.platform.LocalContext.current
-            val onNewsRefresh = remember { { newsViewModel.refresh(forceLocalScrape = true) } }
-            val onRefreshNewsPage = remember {
-                {
-                    newsViewModel.refresh(forceLocalScrape = true)
-                }
-            }
-
+            val onNewsRefresh = remember { { newsViewModel.refresh() } }
+            val onRefreshNewsPage = remember { { newsViewModel.refresh() } }
             val onSelectTopic = remember { newsViewModel::selectTopic }
             val onDismissError = remember { newsViewModel::clearError }
-            val onRefreshPrices = remember { { viewModel.refreshFromFirestore() } }
+            val onRefreshPrices = remember { { viewModel.refreshFromSupabase() } }
             val onSelectTrend = remember { viewModel::setTrendFilter }
             val onSelectVariety = remember { viewModel::selectVariety }
             val onEditBid = remember {
@@ -301,6 +290,7 @@ fun MarketScreenContent(
                         isRefreshing = newsUi.isRefreshing,
                         errorMessage = newsUi.errorMessage,
                         isPremium = isPremium,
+                        bottomPadding = bottomContentPadding,
                         onSelectTopic = onSelectTopic,
                         onRefresh = onRefreshNewsPage,
                         onNewsRefresh = onNewsRefresh,
@@ -313,6 +303,7 @@ fun MarketScreenContent(
                         filter = filter,
                         isTrader = isTrader,
                         myBids = myBids,
+                        bottomPadding = bottomContentPadding,
                         onRefresh = onRefreshPrices,
                         onSelectTrend = onSelectTrend,
                         onSelectVariety = onSelectVariety,
@@ -324,12 +315,12 @@ fun MarketScreenContent(
         }
     }
 
-    // Chart bottom sheet
     if (selectedVariety != null) {
         ModalBottomSheet(
             onDismissRequest = { viewModel.selectVariety(null) },
             sheetState = sheetState,
-            containerColor = AppColors.Surface
+            containerColor = AppColors.Surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -353,13 +344,12 @@ fun MarketScreenContent(
         }
     }
 
-
-
     if (showEditor && isTrader) {
         ModalBottomSheet(
             onDismissRequest = onDismissEditor,
             sheetState = editorSheetState,
-            containerColor = AppColors.Surface
+            containerColor = AppColors.Surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             BidEditorSheet(
                 existing = editingBid,
@@ -372,9 +362,51 @@ fun MarketScreenContent(
 }
 
 /**
- * Page 0 — Tin tức nông nghiệp (+ Weather card + Native Ad nếu user Free).
- * PullToRefreshBox riêng → kéo xuống refresh news + weather, không động đến market.
+ * Phục vụ xử lý khi tin tức bị thiếu ảnh đại diện.
+ * Biểu tượng được vẽ thủ công theo phong cách tối giản & thanh lịch của Google News.
  */
+@Composable
+fun GoogleNewsPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFF1F3F4), Color(0xFFE8EAED))
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(12.dp)
+        ) {
+            // Biểu tượng tờ báo giả lập
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Khối màu xanh làm điểm nhấn thương hiệu giống Google News
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFF4285F4))
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Box(modifier = Modifier.size(width = 32.dp, height = 4.dp).background(Color(0xFF5F6368)))
+                    Box(modifier = Modifier.size(width = 20.dp, height = 4.dp).background(Color(0xFF5F6368)))
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            // Các đường line giả văn bản bên dưới tờ báo
+            Box(modifier = Modifier.size(width = 58.dp, height = 4.dp).background(Color(0xFF9AA0A6)))
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(modifier = Modifier.size(width = 44.dp, height = 4.dp).background(Color(0xFFBDC1C6)))
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewsPage(
@@ -384,6 +416,7 @@ private fun NewsPage(
     isRefreshing: Boolean,
     errorMessage: String?,
     isPremium: Boolean,
+    bottomPadding: androidx.compose.ui.unit.Dp,
     onSelectTopic: (com.giathinh.canlua.data.model.NewsTopic?) -> Unit,
     onRefresh: () -> Unit,
     onNewsRefresh: () -> Unit,
@@ -403,7 +436,7 @@ private fun NewsPage(
                 start = 0.dp,
                 end = 0.dp,
                 top = 12.dp,
-                bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                bottom = bottomPadding
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -437,9 +470,6 @@ private fun NewsPage(
     }
 }
 
-/**
- * Page 1 — Bảng giá lúa: bids của trader (nếu có) + bảng giá thu mua chung.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PricesPage(
@@ -449,6 +479,7 @@ private fun PricesPage(
     filter: com.giathinh.canlua.ui.viewmodel.MarketFilter,
     isTrader: Boolean,
     myBids: List<FirestoreRicePrice>,
+    bottomPadding: androidx.compose.ui.unit.Dp,
     onRefresh: () -> Unit,
     onSelectTrend: (String?) -> Unit,
     onSelectVariety: (String?) -> Unit,
@@ -469,16 +500,16 @@ private fun PricesPage(
                 start = 16.dp,
                 end = 16.dp,
                 top = 12.dp,
-                bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                bottom = bottomPadding
             ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (isTrader && myBids.isNotEmpty()) {
                 val isOffline = myBids.any { it.isFromCache }
                 item {
                     SectionTitle(
-                        title = if (isOffline) "Giá rao của bạn (đang xem ngoại tuyến)" else "Giá rao của bạn",
-                        subtitle = "${myBids.size} tin đang đăng · nhấn để chỉnh sửa"
+                        title = if (isOffline) "Giá rao của bạn (ngoại tuyến)" else "Giá rao của bạn",
+                        subtitle = "${myBids.size} tin đang đăng · chạm nhẹ để chỉnh sửa"
                     )
                 }
                 items(myBids, key = { "mine_${it.id}" }) { bid ->
@@ -500,7 +531,7 @@ private fun PricesPage(
             item {
                 SectionTitle(
                     title = "Giá thu mua hôm nay",
-                    subtitle = "Bảng giá lúa, gạo · ${prices.size} kết quả"
+                    subtitle = "Bảng giá lúa gạo toàn quốc · ${prices.size} kết quả"
                 )
             }
 
@@ -524,8 +555,7 @@ private fun PricesPage(
 }
 
 /**
- * Tab row "Tin tức | Bảng giá lúa, gạo" — đồng bộ 2 chiều với HorizontalPager.
- * Tap tab → animateScrollToPage; vuốt ngang trên pager → indicator tự follow.
+ * UI TabRow được tái cấu trúc theo style Modern Pill Indicator.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -537,7 +567,15 @@ private fun MarketTabRow(
         selectedTabIndex = selectedTab,
         containerColor = AppColors.Surface,
         contentColor = AppColors.GreenPrimary,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(selectedTab),
+                width = 48.dp,
+                color = AppColors.GreenPrimary,
+                shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+            )
+        }
     ) {
         Tab(
             selected = selectedTab == 0,
@@ -547,14 +585,15 @@ private fun MarketTabRow(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 12.dp)
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(vertical = 14.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Article,
-                    contentDescription = "Tin tức",
+                    contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
+                Spacer(Modifier.width(6.dp))
                 Text(
                     text = "Tin tức",
                     fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium,
@@ -570,18 +609,21 @@ private fun MarketTabRow(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 12.dp)
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(vertical = 14.dp)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.PriceChange,
-                    contentDescription = "Bảng giá lúa, gạo",
+                    contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
+                Spacer(Modifier.width(6.dp))
                 Text(
                     text = "Bảng giá lúa, gạo",
                     fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -589,14 +631,19 @@ private fun MarketTabRow(
 }
 
 @Composable
-private fun SectionTitle(title: String, subtitle: String) {
-    Column(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) {
+private fun SectionTitle(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(vertical = 4.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = AppColors.TextPrimary
         )
+        Spacer(Modifier.height(2.dp))
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
@@ -610,13 +657,14 @@ private fun FooterNote() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
+            .padding(vertical = 8.dp)
             .clip(RoundedCornerShape(12.dp))
+            .background(AppColors.SurfaceContainer)
             .padding(12.dp)
     ) {
         Text(
             text = "💡 Dữ liệu mang tính tham khảo, được tổng hợp từ thương lái khu vực ĐBSCL. " +
-                    "Phiên bản tiếp theo sẽ tích hợp giá real-time theo GPS.",
+                    "Phiên bản tiếp theo sẽ tích hợp giá real-time định vị bằng vệ tinh GPS.",
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextHint
         )
@@ -624,8 +672,7 @@ private fun FooterNote() {
 }
 
 /**
- * Filter chips dùng cho FARMER để lọc theo xu hướng giá.
- * Phase 2.2 — có thể mở rộng thêm region/variety về sau.
+ * Filter chips cải tiến với phản hồi xúc giác nhẹ nhàng khi nhấn và thiết kế thanh lịch hơn.
  */
 @Composable
 private fun FilterChipsRow(
@@ -648,31 +695,49 @@ private fun FilterChipsRow(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    // H-10: Đảm bảo touch target tối thiểu 48dp theo Material guidelines
                     .heightIn(min = 48.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(if (selected) color.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(
+                        if (selected) color.copy(alpha = 0.12f) else Color.Transparent
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (selected) color else AppColors.Divider,
+                        shape = RoundedCornerShape(24.dp)
+                    )
                     .clickable {
-                        // H-10: Haptic feedback khi chọn filter
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSelectTrend(key)
                     }
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (selected) color else AppColors.TextSecondary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    if (selected) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (selected) color else AppColors.TextSecondary
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * Card hiển thị bid riêng của trader trong section "Giá rao của bạn".
- * Tap → edit; long-press / icon delete → xoá.
+ * Card giá cá nhân của Trader, nâng cấp bo góc và hiển thị thông tin rõ ràng.
  */
 @Composable
 private fun MyBidCard(
@@ -710,7 +775,7 @@ private fun MyBidCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = bid.variety.ifBlank { "—" },
+                    text = bid.variety.ifBlank { "Chưa xác định" },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary,
@@ -719,49 +784,63 @@ private fun MyBidCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(trendColor.copy(alpha = 0.16f))
+                        .background(trendColor.copy(alpha = 0.12f))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = trendLabel,
                         style = MaterialTheme.typography.labelSmall,
                         color = trendColor,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "${numberFormat.format(bid.priceMin.toLong())} – ${numberFormat.format(bid.priceMax.toLong())} đ/kg",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
                 color = AppColors.GreenPrimary
             )
+            Spacer(Modifier.height(4.dp))
             if (bid.region.isNotBlank()) {
                 Text(
-                    text = "Khu vực: ${bid.region}",
+                    text = "📍 Khu vực: ${bid.region}",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextSecondary
                 )
             }
             if (bid.note.isNotBlank()) {
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = bid.note,
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextHint,
-                    maxLines = 2
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
             ) {
-                androidx.compose.material3.TextButton(onClick = onDelete) {
-                    Text("Xoá", color = AppColors.Error)
+                androidx.compose.material3.TextButton(
+                    onClick = onDelete,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Xoá tin", color = AppColors.Error, fontWeight = FontWeight.Medium)
                 }
-                androidx.compose.material3.TextButton(onClick = onEdit) {
-                    Text("Sửa", color = AppColors.GreenPrimary, fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.Button(
+                    onClick = onEdit,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = AppColors.GreenPrimary.copy(alpha = 0.1f),
+                        contentColor = AppColors.GreenPrimary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Sửa giá", fontWeight = FontWeight.SemiBold)
                 }
             }
         }

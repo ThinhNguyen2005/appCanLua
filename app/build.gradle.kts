@@ -22,6 +22,8 @@ val appHandshakeToken: String = localProps.getProperty("APP_HANDSHAKE_TOKEN", ""
 val openRouterApiKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
 val telegramBotToken: String = localProps.getProperty("TELEGRAM_BOT_TOKEN", "")
 val telegramAdminChatId: String = localProps.getProperty("TELEGRAM_ADMIN_CHAT_ID", "")
+val supabaseUrl: String = localProps.getProperty("SUPABASE_URL", "")
+val supabaseAnonKey: String = localProps.getProperty("SUPABASE_ANON_KEY", "")
 
 fun encodeBase64(value: String): String {
     return Base64.getEncoder().encodeToString(value.toByteArray())
@@ -51,6 +53,9 @@ android {
         buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterApiKey)}\"")
         buildConfigField("String", "TELEGRAM_BOT_TOKEN", "\"${encodeBase64(telegramBotToken)}\"")
         buildConfigField("String", "TELEGRAM_ADMIN_CHAT_ID", "\"${encodeBase64(telegramAdminChatId)}\"")
+        // Supabase — anon key is public (RLS enforced server-side), no need to base64 encode
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
 
         // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey

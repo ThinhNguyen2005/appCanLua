@@ -520,4 +520,10 @@
     <string name="theme_oled">AMOLED 深色模式</string>
     <string name="theme_auto">跟随系统</string>
     <string name="settings_theme_title">外观</string>
+
+    <!-- App Restart translation keys -->
+    <string name="settings_restart_title">重新启动应用</string>
+    <string name="settings_restart_text">请重新启动应用程序以应用新的角色和界面。</string>
+    <string name="settings_restart_confirm">立即重启</string>
+    <string name="settings_restart_dismiss">稍后</string>
 </resources>

@@ -87,8 +87,8 @@ class MarketViewModel @Inject constructor(
             seedJob = viewModelScope.launch {
                 try {
                     marketRepository.seedMockDataIfEmpty()
-                    // TỰ ĐỘNG TẢI DỮ LIỆU THẬT NGAY LÚC KHỞI ĐỘNG
-                    refreshFromFirestore()
+                    // Auto-fetch from Supabase on startup
+                    refreshFromSupabase()
                 } finally {
                     _isLoading.value = false
                 }
@@ -97,21 +97,21 @@ class MarketViewModel @Inject constructor(
     }
 
     /**
-     * One-shot refresh từ Firestore — gọi khi user mở tab Market hoặc pull-to-refresh.
+     * One-shot refresh from Supabase — call when user opens Market tab or pull-to-refresh.
      */
-    fun refreshFromFirestore() {
+    fun refreshFromSupabase() {
         viewModelScope.launch {
             _isLoading.value = true
             _refreshError.value = null
-            
-            val result = marketRepository.refreshFromFirestore(forceRefresh = true)
+
+            val result = marketRepository.refreshFromSupabase(forceRefresh = true)
             result.fold(
                 onSuccess = {
-                    android.util.Log.d("MarketVM", "Tải dữ liệu từ Firestore thành công!")
+                    android.util.Log.d("MarketVM", "Loaded prices from Supabase")
                 },
                 onFailure = { error ->
-                    android.util.Log.e("MarketVM", "Lỗi tải Firestore: ${error.message}", error)
-                    _refreshError.value = "Không thể tải giá mới: ${error.message ?: "Lỗi kết nối Firebase"}"
+                    android.util.Log.e("MarketVM", "Supabase fetch error: ${error.message}", error)
+                    _refreshError.value = "Không thể tải giá mới: ${error.message ?: "Lỗi kết nối"}"
                 }
             )
             _isLoading.value = false

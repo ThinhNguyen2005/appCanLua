@@ -4,21 +4,27 @@
  * =====================================
  * Cào bài báo nông nghiệp từ các RSS nguồn Việt Nam,
  * phân loại theo topic, trích xuất mô tả + ảnh từ trang gốc cho nguồn Google News,
- * lọc trùng qua Firestore trước khi Enrich để tiết kiệm hạn ngạch mạng & thời gian chạy.
+ * lọc trùng qua Supabase trước khi Enrich để tiết kiệm hạn ngạch mạng & thời gian chạy.
  *
  * Setup:
  *   1. Mở script.google.com → New project → Paste toàn bộ file này.
- *   2. Vào Project Settings → điền FIRESTORE_PROJECT_ID.
- *   3. Thêm OAuth scope trong appsscript.json:
- *      "oauthScopes": ["https://www.googleapis.com/auth/datastore", "https://www.googleapis.com/auth/script.external_request"]
- *   4. Run → setupTriggers → Authorize.
+ *   2. Điền SUPABASE_URL và SUPABASE_SERVICE_ROLE_KEY dưới cấu hình.
+ *   3. Vào Project Settings (biểu tượng bánh răng) → Tích chọn "Show 'appsscript.json' manifest file in editor".
+ *   4. Quay lại bộ soạn thảo (Editor) → Mở file `appsscript.json` và bổ sung cấu hình `oauthScopes` như sau:
+ *      "oauthScopes": [
+ *        "https://www.googleapis.com/auth/script.external_request",
+ *        "https://www.googleapis.com/auth/script.scriptapp"
+ *      ]
+ *   5. Chọn hàm "setupTriggers" → Nhấn "Run" → Cấp quyền (Authorize) khi được hỏi.
  */
 
 // ─── CẤU HÌNH ──────────────────────────────────────────────────────────────
-var FIRESTORE_PROJECT_ID = "canlua-3995f";
-var COLLECTION = "news_articles";
+var SUPABASE_URL = "https://wuongoybucznvfbuzzjh.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1b25nb3lidWN6bnZmYnV6empoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDY4NjMsImV4cCI6MjA5NDc4Mjg2M30.laUhoFYWhf16p4D3Bqngf9xhPzI20YE_TNlG-W8CAMI"; // public anon key
+var SUPABASE_GAS_KEY = "gas_sync_secret_68593"; // secret key for RLS bypass write
+var TABLE = "news_articles";
 var MAX_AGE_DAYS = 14;        // Bài cũ hơn 14 ngày sẽ bị bỏ qua
-var MAX_ARTICLES_PER_RUN = 50; // Giới hạn số bài đẩy lên Firestore mỗi lần chạy
+var MAX_ARTICLES_PER_RUN = 50; // Giới hạn số bài đẩy lên Supabase mỗi lần chạy
 
 // ─── DANH SÁCH NGUỒN RSS ───────────────────────────────────────────────────
 // Phân loại:
@@ -106,9 +112,9 @@ function crawlAndPushNews() {
   var allArticles = [];
   var seenIds = {};
 
-  // ── Bước 1: Lấy danh sách id đã có trong Firestore (L3 dedup)
+  // ── Bước 1: Lấy danh sách id đã có trong Supabase (L3 dedup)
   var existingIds = fetchExistingIds();
-  Logger.log("Existing articles in Firestore: " + Object.keys(existingIds).length);
+  Logger.log("Existing articles in Supabase: " + Object.keys(existingIds).length);
 
   // ── Bước 2: Fetch tất cả RSS song song
   var requests = RSS_SOURCES.map(function(src) {
@@ -145,8 +151,7 @@ function crawlAndPushNews() {
   Logger.log("Sources OK: " + successCount + " | Failed: " + failCount);
   Logger.log("Total unique articles in RAM: " + allArticles.length);
 
-  // ── Bước 4: Lọc bỏ bài đã có sẵn trong Firestore trước khi Enrich ─────────
-  // Tối ưu cực lớn: Chỉ thực hiện tải trang gốc và làm giàu dữ liệu cho bài viết thực sự mới.
+  // ── Bước 4: Lọc bỏ bài đã có sẵn trong Supabase trước khi Enrich ─────────
   var newArticles = allArticles.filter(function(a) {
     return !existingIds[a.id];
   });
@@ -170,7 +175,7 @@ function crawlAndPushNews() {
     }
   });
 
-  // Lọc lại toWrite để loại bỏ bài sau khi giải mã có ID trùng với bài đã tồn tại trong Firestore
+  // Lọc lại toWrite để loại bỏ bài sau khi giải mã có ID trùng với bài đã tồn tại trong Supabase
   toWrite = toWrite.filter(function(article) {
     if (existingIds[article.id]) {
       Logger.log("Skipped duplicate article after decode: " + article.title);
@@ -200,56 +205,47 @@ function crawlAndPushNews() {
     }
   }
 
-  // ── Bước 6: Chỉ push bài thực sự mới lên Firestore ─────────────────────
+  // ── Bước 6: Chỉ push bài thực sự mới lên Supabase ─────────────────────
   var pushed = 0;
   var failed = 0;
   var skipped = 0;
   toWrite.forEach(function(article) {
     // Lớp bảo vệ cuối: đảm bảo description hợp lệ trước khi ghi DB
-    var sanitized = sanitizeArticleForFirestore(article);
+    var sanitized = sanitizeArticleForSupabase(article);
     if (sanitized.dropped) {
       Logger.log("Skipped article (no usable description): " + article.title);
       skipped++;
       return;
     }
     article.description = sanitized.description;
-    var ok = insertToFirestore(article);
+    var ok = insertToSupabase(article);
     if (ok) pushed++; else failed++;
   });
   Logger.log("Done. Pushed: " + pushed + " | Failed: " + failed + " | Skipped: " + skipped);
 }
 
-// ─── FIRESTORE: LẤY DANH SÁCH ID ĐÃ CÓ (L3) ───────────────────────────────
+// ─── SUPABASE: LẤY DANH SÁCH ID ĐÃ CÓ (L3) ───────────────────────────────
 function fetchExistingIds() {
-  var token  = ScriptApp.getOAuthToken();
-  var url    = "https://firestore.googleapis.com/v1/projects/" + FIRESTORE_PROJECT_ID
-    + "/databases/(default)/documents:runQuery";
-
-  var query = {
-    structuredQuery: {
-      from:   [{ collectionId: COLLECTION }],
-      select: { fields: [{ fieldPath: "id" }] },
-      limit:  2000
-    }
+  var url = SUPABASE_URL + "/rest/v1/" + TABLE + "?select=id";
+  var options = {
+    method: "get",
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+    },
+    muteHttpExceptions: true
   };
-
   var existing = {};
   try {
-    var resp = UrlFetchApp.fetch(url, {
-      method:          "POST",
-      contentType:     "application/json",
-      headers:         { "Authorization": "Bearer " + token },
-      payload:         JSON.stringify(query),
-      muteHttpExceptions: true
-    });
+    var resp = UrlFetchApp.fetch(url, options);
     var results = JSON.parse(resp.getContentText());
-    results.forEach(function(r) {
-      if (!r.document) return;
-      var idField = r.document.fields && r.document.fields.id;
-      if (idField && idField.stringValue) {
-        existing[idField.stringValue] = true;
-      }
-    });
+    if (Array.isArray(results)) {
+      results.forEach(function(r) {
+        if (r.id) {
+          existing[r.id] = true;
+        }
+      });
+    }
   } catch (e) {
     Logger.log("fetchExistingIds error: " + e);
   }
@@ -743,53 +739,51 @@ function classifyTopic(text, fallback) {
   return fallback;
 }
 
-// ─── FIRESTORE REST API ────────────────────────────────────────────────────
-function insertToFirestore(article) {
-  var token = ScriptApp.getOAuthToken();
-  var url = "https://firestore.googleapis.com/v1/projects/" + FIRESTORE_PROJECT_ID
-    + "/databases/(default)/documents/" + COLLECTION
-    + "?documentId=" + article.id;
-
-  var body = {
-    fields: {
-      id:          { stringValue: article.id },
-      title:       { stringValue: article.title },
-      description: { stringValue: article.description || "" },
-      link:        { stringValue: article.link },
-      source:      { stringValue: article.source },
-      thumbnail:   article.thumbnail ? { stringValue: article.thumbnail } : { nullValue: null },
-      publishedAt: { integerValue: String(article.publishedAt) },
-      topic:       { stringValue: article.topic },
-      cachedAt:    { integerValue: String(article.cachedAt) }
-    }
+// ─── SUPABASE REST API ────────────────────────────────────────────────────
+function insertToSupabase(article) {
+  var url = SUPABASE_URL + "/rest/v1/" + TABLE;
+  var payload = {
+    id:          article.id,
+    title:       article.title,
+    description: article.description || "",
+    link:        article.link,
+    source:      article.source,
+    thumbnail:   article.thumbnail,
+    published_at: article.publishedAt,
+    topic:       article.topic,
+    cached_at:    article.cachedAt
   };
 
   try {
     var resp = UrlFetchApp.fetch(url, {
-      method:             "POST",   // POST + documentId = CREATE (lỗi 409 nếu đã tồn tại)
+      method:             "POST",
       contentType:        "application/json",
-      headers:            { "Authorization": "Bearer " + token },
-      payload:            JSON.stringify(body),
+      headers:            {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'x-gas-key': SUPABASE_GAS_KEY,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      payload:            JSON.stringify(payload),
       muteHttpExceptions: true
     });
     var code = resp.getResponseCode();
-    if (code === 200 || code === 201) return true;
-    if (code === 409) return true;
-    Logger.log("Firestore INSERT failed for " + article.id + ": " + code);
+    if (code === 200 || code === 201 || code === 204) return true;
+    Logger.log("Supabase INSERT failed for " + article.id + ": " + code + " - " + resp.getContentText());
     return false;
   } catch (e) {
-    Logger.log("Firestore fetch error: " + e);
+    Logger.log("Supabase fetch error: " + e);
     return false;
   }
 }
 
 /**
- * Sanitize lần cuối trước khi ghi Firestore — đảm bảo tuyệt đối không có
+ * Sanitize lần cuối trước khi ghi Supabase — đảm bảo tuyệt đối không có
  * description rỗng / chỉ là boilerplate Google News / quá ngắn.
  * Trả về object { description, dropped } — dropped = true nếu bài này nên
  * được bỏ qua hoàn toàn vì description vẫn không thể tạo được.
  */
-function sanitizeArticleForFirestore(article) {
+function sanitizeArticleForSupabase(article) {
   var desc = (article.description || "").trim();
 
   // Phát hiện & loại bỏ boilerplate Google News (trong trường hợp còn sót)
@@ -813,46 +807,20 @@ function sanitizeArticleForFirestore(article) {
 }
 
 function cleanOldArticles() {
-  var token = ScriptApp.getOAuthToken();
   var cutoffMs = new Date().getTime() - (MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
-  var url = "https://firestore.googleapis.com/v1/projects/" + FIRESTORE_PROJECT_ID
-    + "/databases/(default)/documents:runQuery";
-
-  var query = {
-    structuredQuery: {
-      from: [{ collectionId: COLLECTION }],
-      where: {
-        fieldFilter: {
-          field: { fieldPath: "publishedAt" },
-          op: "LESS_THAN",
-          value: { integerValue: String(cutoffMs) }
-        }
-      },
-      limit: 200
-    }
+  var url = SUPABASE_URL + "/rest/v1/" + TABLE + "?published_at=lt." + cutoffMs;
+  var options = {
+    method: "delete",
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'x-gas-key': SUPABASE_GAS_KEY
+    },
+    muteHttpExceptions: true
   };
-
   try {
-    var resp = UrlFetchApp.fetch(url, {
-      method: "POST",
-      contentType: "application/json",
-      headers: { "Authorization": "Bearer " + token },
-      payload: JSON.stringify(query),
-      muteHttpExceptions: true
-    });
-    var results = JSON.parse(resp.getContentText());
-    var deleted = 0;
-    results.forEach(function(r) {
-      if (!r.document) return;
-      var docUrl = "https://firestore.googleapis.com/v1/" + r.document.name;
-      UrlFetchApp.fetch(docUrl, {
-        method: "DELETE",
-        headers: { "Authorization": "Bearer " + token },
-        muteHttpExceptions: true
-      });
-      deleted++;
-    });
-    Logger.log("Cleaned " + deleted + " old articles from Firestore.");
+    var resp = UrlFetchApp.fetch(url, options);
+    Logger.log("Cleaned old articles. Response: " + resp.getResponseCode());
   } catch (e) {
     Logger.log("cleanOldArticles error: " + e);
   }

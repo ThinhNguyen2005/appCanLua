@@ -20,7 +20,6 @@ import com.giathinh.canlua.ui.MainScreen
 import com.giathinh.canlua.ui.screen.AppSplashScreen
 import com.giathinh.canlua.ui.screen.AuthScreen
 import com.giathinh.canlua.ui.screen.ProfileSetupScreen
-import com.giathinh.canlua.ui.screen.RoleRequestScreen
 import com.giathinh.canlua.ui.theme.CanLuaTheme
 import com.giathinh.canlua.ui.viewmodel.AuthViewModel
 import com.giathinh.canlua.ui.viewmodel.InitViewModel
@@ -95,7 +94,6 @@ class MainActivity : ComponentActivity() {
                     // Khi bất kỳ điều kiện nào thay đổi, điều hướng đến đúng màn.
                     LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup, isDataReady, isGuestMode) {
                         val currentRoute = rootNavController.currentDestination?.route
-                        if (currentRoute == "role_request") return@LaunchedEffect
 
                         val target = when {
                             isGuestMode -> "main?cardId={cardId}"
@@ -136,10 +134,6 @@ class MainActivity : ComponentActivity() {
                                 navController = rootNavController,
                                 onComplete = { authViewModel.markProfileCompleted() }
                             )
-                        }
-
-                        composable("role_request") {
-                            RoleRequestScreen(navController = rootNavController)
                         }
 
                         composable(

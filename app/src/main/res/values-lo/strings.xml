@@ -517,4 +517,10 @@
     <string name="theme_oled">ໂໝດມືດ AMOLED</string>
     <string name="theme_auto">ຕາມລະບົບ</string>
     <string name="settings_theme_title">ຮູບລັກສະນະ</string>
+
+    <!-- App Restart translation keys -->
+    <string name="settings_restart_title">ເລີ່ມຕົ້ນແອັບພລິເຄຊັນໃໝ່</string>
+    <string name="settings_restart_text">ກະລຸນາເລີ່ມແອັບພລິເຄຊັນໃໝ່ເພື່ອໃຊ້ບົດບາດ ແລະການໂຕ້ຕອບໃໝ່.</string>
+    <string name="settings_restart_confirm">ເລີ່ມໃໝ່ດຽວນີ້</string>
+    <string name="settings_restart_dismiss">ໄວ້ກ່ອນ</string>
 </resources>

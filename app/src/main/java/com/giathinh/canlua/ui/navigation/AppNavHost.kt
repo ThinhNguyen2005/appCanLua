@@ -16,7 +16,6 @@ import com.giathinh.canlua.ui.screen.SettingsScreen
 import com.giathinh.canlua.ui.screen.SyncStatusScreen
 import com.giathinh.canlua.ui.screen.TraderHistoryScreen
 import com.giathinh.canlua.ui.screen.WeightInputScreen
-import com.giathinh.canlua.ui.screen.RoleRequestScreen
 import com.giathinh.canlua.ui.screen.aichat.AiChatScreen
 import com.giathinh.canlua.ui.screen.market.MarketScreen
 import com.giathinh.canlua.ui.screen.map.RiceMapScreen
@@ -128,11 +127,6 @@ fun AppNavHost(
         // Sub-screen của trader_profile (mở qua row "Sổ giao dịch").
         composable("trader_transactions") {
             TraderTransactionsScreen(navController = navController)
-        }
-
-        // === Màn yêu cầu nâng cấp Role TRADER ===
-        composable("role_request") {
-            RoleRequestScreen(navController = navController)
         }
 
         // === Màn hình gửi/nhận phản hồi ===
