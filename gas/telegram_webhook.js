@@ -13,13 +13,19 @@
  * 7. Thiết lập Webhook cho Telegram Bot bằng cách truy cập URL trên trình duyệt:
  *    https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=<URL_WEB_APP_GOOGLE_APPS_SCRIPT>
  */
+
 // === CẤU HÌNH HỆ THỐNG ===
-const TELEGRAM_BOT_TOKEN = "8719184708:AAEHY0mfzeTyA7Zqu2S7W-Tu4ecYRZqbkjA";
-const ADMIN_CHAT_ID = "5236653379";
-// Thay thế thông tin Service Account từ Firebase của bạn vào đây:
-const FIREBASE_PROJECT_ID = "canlua-3995f"; // Project ID của Firebase
-const FIREBASE_CLIENT_EMAIL = "firebase-adminsdk-fbsvc@canlua-3995f.iam.gserviceaccount.com"; // Điền email của service account
-const FIREBASE_PRIVATE_KEY ="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDqJVbcjxRvJ00E\nLWI1uXKI8kRm6YxFNw/Pxb2NC0fiA25mlRUMiyg9lAGjF1StLBJM5xBIZ/urjaGS\niSd0dNLeeKrp52TUuIxDBMpupfQC/3FjqxJEsyy61wX38XatQgaFYHWagx6zmPH7\nsSnTlsWwbXj1JkILGktz/IAm3dCFcScd2n8r2Uu3vYCoAWOJFTTAAz6LRYk4n342\nhoHH6AiDh1yoeuCPlPRi5hibGGLREaFBVq4coEgyej+7a/w5gY+1kg7ATVAq28GU\nPGriZVYmaA5VxznUE0VJluq9y4ZR+XkTPyF8KfJtdhcNi2/7tY3ptggsgACHuA7p\n5NiomnVrAgMBAAECggEAYgvesp8LbHwliPFEJcERD/163SlA/p7O9S8Vb6FgqWjM\naxJUbRs8b4SxpsyXPaitxRwgumEohq7ZEJZ0OhTNVDFtSGMH2veobEvuRKUjZ7n1\njknNbY0l1ttBeZDYJDb4qhM5S8lKKuSJt9546ExDXdyJgQZTM3kATYJXW28Y6Tcq\nnNpeqAaGfMAXfxW20eJZjkEhpW8msnu43aoATQNcBlsTzDyG1z/HTn3Tw2vrmbQN\n+pFlceZeUFt9PeG6uEMIYeH1hIwrNEwTIxzHCy0mHQaitAHuBi2oc7vdXi0wywBu\nu5EocI1X5bXCF2PadqAkdkt/a4ot5nBXSukzPWyIgQKBgQD4UTalkMeThivN2FT2\nLkzo8RX5dprM4Zw9cs4RONHOEX7x9C2gHcYhiTX1srfUf1drioX4zVlx7J50bYyJ\n6Fqmgvz2+ibyd9thySNm4sRE1K44jPIdRQc0Z019ToE17c71mbUT/Sp1O3mw/ugk\n2dE93PK6zk0+sRM/sUtC17CwKwKBgQDxY+HJOKl10b38z94S7bjhp43xjtykPRgs\nYzzgLGUvChg3vXy7kpKo0F4gtpXBeHPxFqIj/34PLcijJrP61EsXAqGPrUiARBo/\nSDO4sMr33qJW3YH3jUl6emJEpCFv6QT4GUe/By+LfsffRPUyzKSeDNG6BAry3Oai\nImvy+4lvwQKBgBWAmtXNaqrIpIRnpjvHGJvXPIrkjVUOeEQN6/Ar1mcctrxm44iI\n63497nE/L5H0EPLcBOvdhFBMKBB26AONHkRq9VLBqJu4a0PVcf5Xxp0bOZbmBZUp\nRA1yoJAoOyIbXJ+B1t9LPeD27Hu6JwoB3o+X0WEBukiidsM+LAE2wjMPAoGAV8ah\nOMFw5ZXiRwbzUuC8pNl/xQHU+6f3nVRss3uRQ5yhF8vAipiO2fIC+FRMenCpgFZh\nmUNzfGOCnMkbEy+VKoXbZ9p0Dag1/yLrI9Kty5paX8nmU7U9rdrI1vrz6bTLCMhw\njWc4g7oTRf3WR6WgipRQwxprPMrU1so7hLywykECgYEAkWIb686C1B9JsTm4iNTo\nOucw5YhfGVq6oXGxqAjah+lh9HtWfJ/5V6bDsNbFmCP/XQS6uABxLjGiAg/I+tM1\nfq9HGUH/kbtMraqLMMFJ23cr8BCu+YaNo7K6/voQjGfPAFj/4X6V4bFHfFRlTrJk\nxzdPcz7TxIMAqmF55hp+FYQ=\n-----END PRIVATE KEY-----\n"; // Điền private key (bao gồm cả các ký tự \n)
+// KHÔNG hardcode các thông tin nhạy cảm trên Git.
+// Hãy thiết lập các biến này trong Script Properties của Google Apps Script (Project Settings -> Script Properties).
+const scriptProperties = PropertiesService.getScriptProperties();
+const TELEGRAM_BOT_TOKEN = scriptProperties.getProperty("TELEGRAM_BOT_TOKEN");
+const ADMIN_CHAT_ID = scriptProperties.getProperty("ADMIN_CHAT_ID");
+
+// Thông tin Service Account từ Firebase được lấy cấu hình từ Script Properties:
+const FIREBASE_PROJECT_ID = scriptProperties.getProperty("FIREBASE_PROJECT_ID"); 
+const FIREBASE_CLIENT_EMAIL = scriptProperties.getProperty("FIREBASE_CLIENT_EMAIL"); 
+const FIREBASE_PRIVATE_KEY = scriptProperties.getProperty("FIREBASE_PRIVATE_KEY");
+
 /**
  * Hàm nhận request POST từ Telegram Webhook khi Admin thực hiện gửi tin nhắn hoặc trả lời (Reply).
  */
@@ -66,6 +72,7 @@ function doPost(e) {
     return HtmlService.createHtmlOutput(JSON.stringify({ status: "error", message: error.toString() }));
   }
 }
+
 /**
  * Gửi tin nhắn Telegram từ Bot
  */
@@ -89,6 +96,7 @@ function sendTelegramMessage(chatId, text, replyToMessageId) {
   
   UrlFetchApp.fetch(url, options);
 }
+
 /**
  * Thực hiện cập nhật tài liệu phản hồi trên Firestore qua REST API bằng JWT OAuth2
  */
@@ -126,6 +134,7 @@ function updateFirestoreFeedback(feedbackId, replyText, replyTimestamp) {
     return false;
   }
 }
+
 /**
  * Tạo GCP Access Token từ Service Account Key sử dụng JWT (không cần thư viện ngoài)
  */
@@ -170,6 +179,7 @@ function getGcpAccessToken() {
     return null;
   }
 }
+
 function base64EncodeSafe(input) {
   let encoded;
   if (typeof input === 'string') {
