@@ -29,6 +29,11 @@ jobs:
 
       - name: Grant Execute Permission for Gradlew
         run: chmod +x gradlew
+        
+      - name: Create Dummy google-services.json
+        run: |
+          mkdir -p app
+          echo '{"project_info":{"project_number":"12345","project_id":"mock-id","storage_bucket":"mock-bucket"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.giathinh.canlua"}},"oauth_client":[],"api_key":[{"current_key":"mock-key"}],"services":{}}],"configuration_version":"1"}' > app/google-services.json
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --no-daemon
