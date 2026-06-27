@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -101,7 +102,8 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val rawEnterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val pinnedRoutes = listOf(
         BottomNavItem.SCALE.route,
-        BottomNavItem.ACCOUNT.route
+        BottomNavItem.HISTORY.route,
+        BottomNavItem.STATISTICS.route
     )
     val scrollBehavior = remember(currentRoute) {
         if (currentRoute in pinnedRoutes) rawPinnedBehavior else rawEnterAlwaysBehavior
@@ -134,6 +136,12 @@ fun MainScreen(deeplinkCardId: String? = null) {
                                     contentDescription = stringResource(com.giathinh.canlua.R.string.weigh_options_icon_content)
                                 )
                             }
+                        }
+                        IconButton(onClick = { navController.navigate("settings") }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = stringResource(com.giathinh.canlua.R.string.topbar_settings)
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(

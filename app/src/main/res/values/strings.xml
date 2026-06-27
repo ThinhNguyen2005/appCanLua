@@ -4,6 +4,7 @@
     <string name="role_trader">Thương Lái</string>
 
     <string name="nav_scale">Cân Lúa</string>
+    <string name="nav_history">Lịch sử</string>
     <string name="nav_market">Thị Trường</string>
     <string name="nav_ai_chat">Hỏi đáp AI</string>
     <string name="nav_account">Thống kê</string>

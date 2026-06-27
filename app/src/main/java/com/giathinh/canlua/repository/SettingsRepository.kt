@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.data.model.FontScale
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ class SettingsRepository @Inject constructor(
     private val KEY_LANGUAGE = "language"
     private val KEY_AUTO_SYNC_ENABLED = "auto_sync_enabled"
     private val KEY_THEME_MODE = "theme_mode"
+    private val KEY_UI_MODE = "ui_mode"
     private val KEY_SYNC_ONLY_WIFI = "sync_only_wifi"
     private val KEY_GUEST_MODE = "guest_mode"
 
@@ -41,6 +43,9 @@ class SettingsRepository @Inject constructor(
 
     private val _appThemeMode = MutableStateFlow(readThemeMode())
     val appThemeMode: Flow<AppThemeMode> = _appThemeMode.asStateFlow()
+
+    private val _uiMode = MutableStateFlow(readUiMode())
+    val uiMode: Flow<AppUiMode> = _uiMode.asStateFlow()
 
     private val _autoSyncEnabled = MutableStateFlow(isAutoSyncEnabled())
     val autoSyncEnabled: Flow<Boolean> = _autoSyncEnabled.asStateFlow()
@@ -77,6 +82,9 @@ class SettingsRepository @Inject constructor(
             if (key == KEY_THEME_MODE) {
                 _appThemeMode.value = readThemeMode()
             }
+            if (key == KEY_UI_MODE) {
+                _uiMode.value = readUiMode()
+            }
             if (key == KEY_GUEST_MODE) {
                 _guestMode.value = prefs.getBoolean(KEY_GUEST_MODE, false)
             }
@@ -88,6 +96,13 @@ class SettingsRepository @Inject constructor(
     fun setThemeMode(mode: AppThemeMode) {
         prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
         _appThemeMode.value = mode
+    }
+
+    fun getUiMode(): AppUiMode = readUiMode()
+
+    fun setUiMode(mode: AppUiMode) {
+        prefs.edit().putString(KEY_UI_MODE, mode.name).apply()
+        _uiMode.value = mode
     }
 
     fun isTtsEnabled(): Boolean {
@@ -165,6 +180,11 @@ class SettingsRepository @Inject constructor(
     private fun readThemeMode(): AppThemeMode {
         val name = prefs.getString(KEY_THEME_MODE, AppThemeMode.LIGHT.name)
         return AppThemeMode.fromName(name)
+    }
+
+    private fun readUiMode(): AppUiMode {
+        val name = prefs.getString(KEY_UI_MODE, AppUiMode.STANDARD.name)
+        return AppUiMode.fromName(name)
     }
 
     fun isGuestMode(): Boolean {

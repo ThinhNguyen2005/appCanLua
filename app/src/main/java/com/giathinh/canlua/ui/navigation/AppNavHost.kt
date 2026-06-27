@@ -37,6 +37,11 @@ fun AppNavHost(
         popExitTransition = FadeScalePopExit
     ) {
         composable(BottomNavItem.SCALE.route) {
+            // TODO: Replace with new HomeScreen in Phase 2
+            CardListScreen(navController = navController)
+        }
+
+        composable(BottomNavItem.HISTORY.route) {
             CardListScreen(navController = navController)
         }
 
@@ -60,7 +65,7 @@ fun AppNavHost(
             SettingsScreen(navController = navController)
         }
 
-        composable(BottomNavItem.ACCOUNT.route) {
+        composable(BottomNavItem.STATISTICS.route) {
             StatisticsScreen(navController = navController)
         }
 

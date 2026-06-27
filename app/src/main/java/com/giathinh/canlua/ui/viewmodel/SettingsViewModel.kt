@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.repository.SettingsRepository
 import com.giathinh.canlua.repository.WeighDefaults
@@ -55,6 +56,13 @@ class SettingsViewModel @Inject constructor(
             initialValue = settingsRepository.getThemeMode()
         )
 
+    val uiMode: StateFlow<AppUiMode> = settingsRepository.uiMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = settingsRepository.getUiMode()
+        )
+
     val weighDefaults: StateFlow<WeighDefaults> = settingsRepository.weighDefaults
         .stateIn(
             scope = viewModelScope,
@@ -93,6 +101,12 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: AppThemeMode) {
         viewModelScope.launch {
             settingsRepository.setThemeMode(mode)
+        }
+    }
+
+    fun setUiMode(mode: AppUiMode) {
+        viewModelScope.launch {
+            settingsRepository.setUiMode(mode)
         }
     }
 

@@ -53,6 +53,7 @@ fun SettingsScreen(
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
+    val uiMode by viewModel.uiMode.collectAsStateWithLifecycle()
 
     var themeExpanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
@@ -98,6 +99,49 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            // --- UI Mode Switch (Simple/Standard) ---
+            SettingsCardBox {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Giao diện đơn giản",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Làm to chữ, phóng to nút bấm, ẩn các tính năng phức tạp dành cho người lớn tuổi.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextSecondary
+                        )
+                    }
+                    Switch(
+                        checked = uiMode == com.giathinh.canlua.data.model.AppUiMode.SIMPLE,
+                        onCheckedChange = { isSimple ->
+                            viewModel.setUiMode(
+                                if (isSimple) com.giathinh.canlua.data.model.AppUiMode.SIMPLE
+                                else com.giathinh.canlua.data.model.AppUiMode.STANDARD
+                            )
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AppColors.GreenPrimary,
+                            uncheckedThumbColor = AppColors.TextSecondary,
+                            uncheckedTrackColor = AppColors.Surface
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             SectionHeader(
                 icon = Icons.Outlined.Palette,
                 label = stringResource(R.string.settings_section_display),
@@ -112,25 +156,49 @@ fun SettingsScreen(
                 onSelect = { viewModel.setThemeMode(it); themeExpanded = false }
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            SectionHeader(
-                icon = Icons.Outlined.Folder,
-                label = stringResource(R.string.settings_section_data),
-                iconBg = AppColors.OrangeSurface,
-                iconTint = AppColors.Orange
-            )
-
-            ClickableSettingsRow(
-                icon = Icons.Outlined.DeleteForever,
-                iconBg = AppColors.Error.copy(alpha = 0.12f),
-                iconTint = AppColors.Error,
-                title = stringResource(R.string.settings_deleted_cards_title),
-                subtitle = stringResource(R.string.settings_deleted_cards_subtitle),
-                onClick = { navController.navigate("deleted_cards") }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
+            // --- TTS Switch ---
+            SettingsCardBox {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        IconBadge(icon = Icons.Outlined.RecordVoiceOver, bg = AppColors.OrangeSurface, tint = AppColors.Orange)
+                        Column {
+                            Text(
+                                text = stringResource(R.string.settings_tts_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = AppColors.TextPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_tts_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.TextHint
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isTtsEnabled,
+                        onCheckedChange = { viewModel.setTtsEnabled(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AppColors.GreenPrimary,
+                            uncheckedThumbColor = AppColors.TextSecondary,
+                            uncheckedTrackColor = AppColors.Surface
+                        )
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }

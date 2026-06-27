@@ -40,7 +40,8 @@ private val OFFSET_TWEEN = tween<IntOffset>(
  */
 private val TAB_ORDER: List<String> = listOf(
     BottomNavItem.SCALE.route,           // 0
-    BottomNavItem.ACCOUNT.route          // 1
+    BottomNavItem.HISTORY.route,         // 1
+    BottomNavItem.STATISTICS.route       // 2
 )
 
 /**

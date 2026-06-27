@@ -40,11 +40,12 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val fontScale by settingsViewModel.fontScale.collectAsStateWithLifecycle(FontScale.NORMAL)
             val appThemeMode by settingsViewModel.appThemeMode.collectAsStateWithLifecycle(AppThemeMode.AUTO)
+            val uiMode by settingsViewModel.uiMode.collectAsStateWithLifecycle(com.giathinh.canlua.data.model.AppUiMode.STANDARD)
             val language by settingsViewModel.language.collectAsStateWithLifecycle()
 
             LocaleUtil.applyLanguage(this, language)
 
-            CanLuaTheme(appThemeMode = appThemeMode, fontScale = fontScale) {
+            CanLuaTheme(appThemeMode = appThemeMode, uiMode = uiMode, fontScale = fontScale) {
                 com.giathinh.canlua.ui.feedback.AppToastHost {
                     val rootNavController = rememberNavController()
 
