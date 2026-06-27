@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.giathinh.canlua.ui.theme.AppColors
-import com.giathinh.canlua.util.FirebaseRemoteConfigManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,8 +47,8 @@ fun HelpBottomSheet(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val tutorialUrl = FirebaseRemoteConfigManager.tutorialVideoUrl
-    val websiteUrl = FirebaseRemoteConfigManager.websiteUrl
+    val tutorialUrl = "https://example.com/tutorial"
+    val websiteUrl = "https://example.com"
 
     fun openUrl(url: String) {
         runCatching {

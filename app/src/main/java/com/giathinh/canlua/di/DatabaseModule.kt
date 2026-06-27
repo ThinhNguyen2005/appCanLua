@@ -8,6 +8,7 @@ import com.giathinh.canlua.data.dao.ProfileDao
 import com.giathinh.canlua.data.database.AppDatabase
 import com.giathinh.canlua.repository.SettingsRepository
 import com.giathinh.canlua.util.TextToSpeechManager
+import com.giathinh.canlua.data.dao.DeletedCardDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,19 +47,7 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideRicePriceDao(database: AppDatabase): com.giathinh.canlua.data.dao.RicePriceDao {
-        return database.ricePriceDao()
-    }
-
-
-
-    @Provides
-    fun provideNewsArticleDao(database: AppDatabase): com.giathinh.canlua.data.dao.NewsArticleDao {
-        return database.newsArticleDao()
-    }
-
-    @Provides
-    fun provideDeletedCardDao(database: AppDatabase): com.giathinh.canlua.data.dao.DeletedCardDao {
+    fun provideDeletedCardDao(database: AppDatabase): DeletedCardDao {
         return database.deletedCardDao()
     }
 

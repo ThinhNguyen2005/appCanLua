@@ -35,11 +35,9 @@ class CardRepository @Inject constructor(
     private val cardDao: CardDao,
     private val weightEntryDao: WeightEntryDao,
     private val transactionDao: TransactionDao,
-    private val deletedCardDao: com.giathinh.canlua.data.dao.DeletedCardDao,
-    private val authManager: AuthManager
+    private val deletedCardDao: com.giathinh.canlua.data.dao.DeletedCardDao
 ) {
-    /** Empty string khi chưa sign-in → DAO query trả empty (không match row nào). */
-    private fun uid(): String = authManager.currentUser?.uid.orEmpty()
+    private fun uid(): String = ""
 
     fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid()).map { list ->
         list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }

@@ -31,9 +31,7 @@ fun CardListEmptyState(
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Outlined.Scale,
     title: String = stringResource(R.string.card_list_empty_title),
-    subtitle: String = stringResource(R.string.card_list_empty_subtitle),
-    onSyncClick: (() -> Unit)? = null,
-    syncing: Boolean = false
+    subtitle: String = stringResource(R.string.card_list_empty_subtitle)
 ) {
     Column(
         modifier = modifier

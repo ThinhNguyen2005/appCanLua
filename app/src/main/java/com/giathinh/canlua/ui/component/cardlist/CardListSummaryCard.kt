@@ -33,9 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.giathinh.canlua.R
-import com.giathinh.canlua.repository.SyncStatus
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.R
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -44,8 +43,6 @@ fun CardListSummaryCard(
     cardCount: Int,
     totalKg: Double,
     totalAmount: Double,
-    syncStatus: SyncStatus,
-    showSyncStatus: Boolean,
     modifier: Modifier = Modifier,
     titlePrefix: String = stringResource(R.string.card_list_today_prefix),
     amountLabel: String = stringResource(R.string.card_list_total_income),
@@ -98,11 +95,7 @@ fun CardListSummaryCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    // showSyncStatus hiện được giữ nguyên signature để tương thích ngược,
-                    // nhưng ở bản hiện tại KHÔNG render SyncStatusPulse theo yêu cầu
-                    // "bỏ chấm pulse ở trang Cân lúa".
-                    @Suppress("UNUSED_PARAMETER")
-                    val ignored = showSyncStatus
+                    // SyncStatus removed
                 }
 
                 // Row 1: 3 metric chính (giữ nguyên)

@@ -17,8 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val cardRepository: com.giathinh.canlua.repository.CardRepository,
-    private val authManager: com.giathinh.canlua.repository.AuthManager
+    private val cardRepository: com.giathinh.canlua.repository.CardRepository
 ) : ViewModel() {
     
     val isTtsEnabled: StateFlow<Boolean> = settingsRepository.ttsEnabled
@@ -110,28 +109,5 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun exportBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            val uid = authManager.currentUser?.uid ?: "GUEST"
-            val result = com.giathinh.canlua.util.BackupManager.exportData(context, uri, uid, cardRepository)
-            if (result.isSuccess) {
-                onSuccess()
-            } else {
-                onError(result.exceptionOrNull()?.message ?: "Lỗi xuất dữ liệu")
-            }
-        }
-    }
-
-    fun importBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            val uid = authManager.currentUser?.uid ?: "GUEST"
-            val result = com.giathinh.canlua.util.BackupManager.importData(context, uri, uid, cardRepository)
-            if (result.isSuccess) {
-                onSuccess(result.getOrNull() ?: 0)
-            } else {
-                onError(result.exceptionOrNull()?.message ?: "Lỗi nhập dữ liệu")
-            }
-        }
-    }
 }
 

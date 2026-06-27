@@ -586,11 +586,6 @@ fun CardDetailScreenContent(
                 },
                 onExportPdf = {
                     if (isLoading) return@CustomHeader
-                    if (!com.giathinh.canlua.util.PremiumState.isPremium.value) {
-                        appToast.warning(context.getString(R.string.card_detail_pdf_premium_required))
-                        navController.navigate("premium")
-                        return@CustomHeader
-                    }
                     scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                         runCatching {
                             val file = com.giathinh.canlua.util.PdfExporter.export(

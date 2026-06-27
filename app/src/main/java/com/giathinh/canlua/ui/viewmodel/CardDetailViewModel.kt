@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
-import com.giathinh.canlua.repository.SyncableCardRepository
+import com.giathinh.canlua.repository.CardRepository
 import com.giathinh.canlua.data.location.LocationProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CardDetailViewModel @Inject constructor(
-    private val repository: SyncableCardRepository,
+    private val repository: CardRepository,
     private val locationProvider: LocationProvider
 ) : ViewModel() {
 

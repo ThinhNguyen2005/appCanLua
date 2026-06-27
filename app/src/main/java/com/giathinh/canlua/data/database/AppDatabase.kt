@@ -8,16 +8,14 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 import com.giathinh.canlua.data.dao.CardDao
-import com.giathinh.canlua.data.dao.NewsArticleDao
-import com.giathinh.canlua.data.dao.RicePriceDao
 import com.giathinh.canlua.data.dao.TransactionDao
 import com.giathinh.canlua.data.dao.WeightEntryDao
 import com.giathinh.canlua.data.model.Card
-import com.giathinh.canlua.data.model.NewsArticle
-import com.giathinh.canlua.data.model.PricePoint
-import com.giathinh.canlua.data.model.RicePrice
 import com.giathinh.canlua.data.model.Transaction
 import com.giathinh.canlua.data.model.WeightEntry
+import com.giathinh.canlua.data.model.DeletedCard
+import com.giathinh.canlua.data.dao.ProfileDao
+import com.giathinh.canlua.data.dao.DeletedCardDao
 import com.giathinh.canlua.data.model.Profile
 import com.giathinh.canlua.data.converter.DateConverter
 
@@ -27,10 +25,7 @@ import com.giathinh.canlua.data.converter.DateConverter
         WeightEntry::class,
         Transaction::class,
         Profile::class,
-        RicePrice::class,
-        PricePoint::class,
-        NewsArticle::class,
-        com.giathinh.canlua.data.model.DeletedCard::class
+        DeletedCard::class
     ],
     version = 18,
     exportSchema = false
@@ -40,10 +35,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun cardDao(): CardDao
     abstract fun weightEntryDao(): WeightEntryDao
     abstract fun transactionDao(): TransactionDao
-    abstract fun profileDao(): com.giathinh.canlua.data.dao.ProfileDao
-    abstract fun ricePriceDao(): RicePriceDao
-    abstract fun newsArticleDao(): NewsArticleDao
-    abstract fun deletedCardDao(): com.giathinh.canlua.data.dao.DeletedCardDao
+    abstract fun profileDao(): ProfileDao
+    abstract fun deletedCardDao(): DeletedCardDao
 
     companion object {
         @Volatile

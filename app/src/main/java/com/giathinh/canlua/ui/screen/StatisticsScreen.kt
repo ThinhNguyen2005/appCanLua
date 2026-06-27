@@ -35,98 +35,47 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.giathinh.canlua.R
 import androidx.navigation.NavController
-import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.giathinh.canlua.ui.component.dashboard.KpiGrid
 import com.giathinh.canlua.ui.component.dashboard.KpiGridItem
-import com.giathinh.canlua.ui.component.profile.FarmerProfileSkeleton
-import com.giathinh.canlua.ui.component.profile.GradientProfileHeader
 import com.giathinh.canlua.ui.component.profile.ProfileSectionTitle
 import com.giathinh.canlua.ui.component.profile.QuickStatsGlassGrid
 import com.giathinh.canlua.ui.component.profile.SecondaryStatsRow
-import com.giathinh.canlua.ui.screen.profile.PremiumStatusCard
-import com.giathinh.canlua.ui.screen.profile.PremiumUpsellCard
-import com.giathinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.DashboardFormatter
 import com.giathinh.canlua.ui.viewmodel.DashboardData
 import com.giathinh.canlua.ui.viewmodel.DashboardViewModel
-import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.util.TrackScreenRender
-import com.google.firebase.auth.FirebaseAuth
 import java.text.NumberFormat
 import java.util.Locale
-
-/**
- * Tab "Tài khoản" cho NÔNG DÂN — phiên bản Premium 2026.
- *
- * Layout 8 tiers (theo phân cấp UX):
- *  0. Gradient Hero Header (không avatar)
- *  1. Quick Stats Glass Grid (3 ô chồng lên header)
- *  2. Season Selector Chips
- *  3. Primary KPI Grid 2x2 (Sản lượng / Doanh thu / KG-bao TB / Số bao)
- *  4. Secondary Stats Pills (Độ ẩm + Tạp chất + Khô/Ướt)
- *  5. Season Comparison Bar Chart
- *  6. AI Crop Insights
- *  7. Top Traders + Trader History
- *  8. Account Operations (Thông tin · Đổi vai trò · Premium · Logout)
- *
- * PERFORMANCE: Tiêu thụ dashboardData thay vì 7 StateFlow riêng lẻ.
- * DashboardViewModel.combine() gom TẤT CẢ data thành 1 atomic emission,
- * chống Flow Avalanche — chỉ 1 recomposition thay vì 5-7.
- */
 import com.giathinh.canlua.ui.component.TransitionSafeWrapper
 
 @Composable
-fun FarmerProfileScreen(
+fun StatisticsScreen(
     navController: NavController
 ) {
-    TrackScreenRender("farmer_profile")
-    val profileViewModel: ProfileViewModel = hiltViewModel()
+    TrackScreenRender("statistics_screen")
     val dashboardViewModel: DashboardViewModel = hiltViewModel()
 
-    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
-    val isDataReady = profile != null && dash.isAggregated
-    val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
+    val isDataReady = dash.isAggregated
 
-    val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
-    val isGoogleLoggedIn = remember(firebaseUser) {
-        firebaseUser?.providerData?.any { it.providerId == "google.com" } == true
-    }
-    val googleAvatarUrl = remember(firebaseUser) {
-        firebaseUser?.photoUrl?.toString()
-    }
-
-    TransitionSafeWrapper(
-        isDataReady = isDataReady,
-        skeletonContent = { FarmerProfileSkeleton() }
-    ) {
-        FarmerProfileScreenContent(
-            navController = navController,
-            profile = profile,
+    if (!isDataReady) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            androidx.compose.material3.CircularProgressIndicator(color = AppColors.GreenPrimary)
+        }
+    } else {
+        StatisticsScreenContent(
             dash = dash,
-            profileViewModel = profileViewModel,
-            dashboardViewModel = dashboardViewModel,
-            isGoogleLoggedIn = isGoogleLoggedIn,
-            googleAvatarUrl = googleAvatarUrl,
-            isGuestMode = isGuestMode
+            dashboardViewModel = dashboardViewModel
         )
     }
 }
 
 @Composable
-fun FarmerProfileScreenContent(
-    navController: NavController,
-    profile: com.giathinh.canlua.data.model.Profile?,
+fun StatisticsScreenContent(
     dash: DashboardData,
-    profileViewModel: ProfileViewModel,
-    dashboardViewModel: DashboardViewModel,
-    isGoogleLoggedIn: Boolean,
-    googleAvatarUrl: String?,
-    isGuestMode: Boolean
+    dashboardViewModel: DashboardViewModel
 ) {
-    // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
-    // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
     val lifetimeStats = dash.overallStats
     val lifetimeSeasonCount = dash.seasons.size
     val lifetimeTotalNetWeight = lifetimeStats?.totalNetWeight ?: 0.0
@@ -139,31 +88,9 @@ fun FarmerProfileScreenContent(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 96.dp),
+            contentPadding = PaddingValues(bottom = 96.dp, top = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ─── TIER 0: Gradient Hero Header ───
-            item {
-                GradientProfileHeader(
-                    name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_farmer_default_name),
-                    role = profile?.role ?: "FARMER",
-                    email = profile?.email.orEmpty(),
-                    isGoogleLoggedIn = isGoogleLoggedIn,
-                    googleAvatarUrl = googleAvatarUrl
-                )
-            }
-
-            // ─── Guest Mode Login Card ───
-            if (isGuestMode) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        GuestLoginPromoCard(onLoginClick = { profileViewModel.disableGuestMode() })
-                    }
-                }
-            }
-
-            // ─── TIER 1: Quick Stats Glass Grid ───
-            // Luôn hiển thị (kể cả khi user mới, seasonsComparison rỗng → hiển thị 0)
             item {
                 QuickStatsGlassGrid(
                     seasonCount = lifetimeSeasonCount,
@@ -173,7 +100,6 @@ fun FarmerProfileScreenContent(
                 )
             }
 
-            // Section title cho phần thống kê mùa vụ
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     ProfileSectionTitle(
@@ -183,8 +109,6 @@ fun FarmerProfileScreenContent(
                 }
             }
 
-
-            // ─── TIER 3: Primary KPI Grid 2×2 ───
             dash.currentStats?.let { stats ->
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -195,7 +119,6 @@ fun FarmerProfileScreenContent(
                     }
                 }
 
-                // ─── TIER 4: Secondary Stats Pills ───
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         SecondaryStatsRow(
@@ -206,22 +129,8 @@ fun FarmerProfileScreenContent(
                         )
                     }
                 }
-
-                // ─── TIER 6: AI Crop Insights ───
-                if (!stats.isEmpty) {
-                    item {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            AiInsightsCard(
-                                state = dash.aiAnalysis,
-                                onAnalyze = dashboardViewModel::analyzeWithAi,
-                                onReset = dashboardViewModel::resetAiAnalysis
-                            )
-                        }
-                    }
-                }
             }
 
-            // ─── TIER 7: Khối Tóm tắt Vụ mùa (thay thế cho Top thương lái mua) ───
             if (dash.seasonsComparison.isNotEmpty()) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -229,32 +138,10 @@ fun FarmerProfileScreenContent(
                     }
                 }
             }
-
-            // ─── Premium card (active hoặc upsell) ───
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val premiumInfo by com.giathinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
-                    if (premiumInfo.isActive) {
-                        PremiumStatusCard(
-                            plan = premiumInfo.plan,
-                            sinceMs = premiumInfo.sinceMs,
-                            isEarlyAdopter = premiumInfo.isEarlyAdopter,
-                            onClick = { navController.navigate("premium") }
-                        )
-                    } else {
-                        PremiumUpsellCard(
-                            onClick = { navController.navigate("premium") }
-                        )
-                    }
-                }
-            }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Khối Tóm tắt Vụ mùa
-// ─────────────────────────────────────────────────────────────
 @Composable
 private fun SeasonSummaryCard(dash: DashboardData) {
     Card(
@@ -287,7 +174,6 @@ private fun SeasonSummaryCard(dash: DashboardData) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Vế trái: Tên Vụ mùa
                     Text(
                         text = seasonStat.season,
                         style = MaterialTheme.typography.bodyMedium,
@@ -296,7 +182,6 @@ private fun SeasonSummaryCard(dash: DashboardData) {
                         modifier = Modifier.weight(1f)
                     )
                     
-                    // Vế giữa: Số liệu sản lượng dưới dạng "số KG / số bao" với màu xám nhẹ
                     Text(
                         text = "${formatter.format(seasonStat.totalNetWeight)} kg / ${formatter.format(seasonStat.totalBags)} bao",
                         style = MaterialTheme.typography.bodyMedium,
@@ -304,7 +189,6 @@ private fun SeasonSummaryCard(dash: DashboardData) {
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
                     
-                    // Vế phải: Số tiền cuối cùng nhận được, in đậm và dùng màu xanh lá
                     Text(
                         text = "${formatter.format(seasonStat.totalRevenue)} đ",
                         style = MaterialTheme.typography.bodyMedium,
@@ -317,9 +201,6 @@ private fun SeasonSummaryCard(dash: DashboardData) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Primary KPI Grid (Farmer): Sản lượng / Doanh thu / KG-bao / Số bao
-// ─────────────────────────────────────────────────────────────
 @Composable
 private fun FarmerPrimaryKpiGrid(
     stats: com.giathinh.canlua.data.model.SeasonStats,

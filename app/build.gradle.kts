@@ -7,27 +7,9 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
-    alias(libs.plugins.firebase.perf)
 }
 
-// Load API keys từ local.properties (không commit). Fallback empty string nếu chưa cấu hình.
-val localProps = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
-}
-val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY", "")
-val appHandshakeToken: String = localProps.getProperty("APP_HANDSHAKE_TOKEN", "")
-val openRouterApiKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
-val telegramBotToken: String = localProps.getProperty("TELEGRAM_BOT_TOKEN", "")
-val telegramAdminChatId: String = localProps.getProperty("TELEGRAM_ADMIN_CHAT_ID", "")
-val supabaseUrl: String = localProps.getProperty("SUPABASE_URL", "")
-val supabaseAnonKey: String = localProps.getProperty("SUPABASE_ANON_KEY", "")
-
-fun encodeBase64(value: String): String {
-    return Base64.getEncoder().encodeToString(value.toByteArray())
-}
+// Offline Only
 
 val gitCommitCount = runCatching {
      val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").start()
@@ -48,17 +30,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "MAPS_API_KEY", "\"${encodeBase64(mapsApiKey)}\"")
-        buildConfigField("String", "APP_HANDSHAKE_TOKEN", "\"${encodeBase64(appHandshakeToken)}\"")
-        buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterApiKey)}\"")
-        buildConfigField("String", "TELEGRAM_BOT_TOKEN", "\"${encodeBase64(telegramBotToken)}\"")
-        buildConfigField("String", "TELEGRAM_ADMIN_CHAT_ID", "\"${encodeBase64(telegramAdminChatId)}\"")
-        // Supabase — anon key is public (RLS enforced server-side), no need to base64 encode
-        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
 
-        // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
-        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -129,26 +101,7 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.perf)
-    implementation(libs.firebase.storage)
-    implementation(libs.firebase.remoteconfig)
-    implementation(libs.firebase.appcheck.debug)
-    implementation(libs.firebase.appcheck.playintegrity)
-    implementation(libs.play.services.auth)
 
-    // Credentials & Identity
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
-
-    // Coroutines
-    implementation(libs.kotlinx.coroutines.play.services)
 
     // WorkManager (auto sync)
     implementation(libs.androidx.work.runtime.ktx)
@@ -159,31 +112,7 @@ dependencies {
 
 
 
-    // Location (GPS for weather + map)
-    implementation(libs.play.services.location)
 
-    // Google Maps Compose + Clustering utils
-    implementation(libs.maps.compose)
-    implementation(libs.maps.compose.utils)
-    implementation(libs.play.services.maps)
-
-    // Accompanist Permissions
-    implementation(libs.accompanist.permissions)
-
-    // Networking (OpenRouter AI API)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
-    implementation(libs.gson)
-
-    // Markdown renderer for AI responses, including tables
-    implementation(libs.markwon.core)
-    implementation(libs.markwon.ext.tables)
-
-    // Coil — load thumbnail bài báo trong NewsSection
-    implementation(libs.coil.compose)
-
-    // AndroidX Browser — Chrome Custom Tab cho mở bài báo external
-    implementation(libs.androidx.browser)
 
     // Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện
     // natively là Stable (không cần @Immutable annotation) → WeightTableCard Skippable hoàn toàn

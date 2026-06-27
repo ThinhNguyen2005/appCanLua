@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
-import com.giathinh.canlua.repository.SyncableCardRepository
+import com.giathinh.canlua.repository.CardRepository
 import com.giathinh.canlua.repository.SettingsRepository
 import com.giathinh.canlua.util.RiceCalculator
 import com.giathinh.canlua.util.TextToSpeechManager
@@ -23,7 +23,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WeightInputViewModel @Inject constructor(
-    private val repository: SyncableCardRepository,
+    private val repository: CardRepository,
     private val ttsManager: TextToSpeechManager,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {

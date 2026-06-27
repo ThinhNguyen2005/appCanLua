@@ -3,7 +3,7 @@ package com.giathinh.canlua.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
-import com.giathinh.canlua.repository.SyncableCardRepository
+import com.giathinh.canlua.repository.CardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,15 +19,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.giathinh.canlua.data.location.LocationProvider
 import com.giathinh.canlua.repository.SettingsRepository
-import com.giathinh.canlua.repository.FirestoreRepository
 import java.util.Date
 
 @HiltViewModel
 class CardListViewModel @Inject constructor(
-    private val repository: SyncableCardRepository,
+    private val repository: CardRepository,
     private val settingsRepository: SettingsRepository,
-    private val locationProvider: LocationProvider,
-    private val firestoreRepository: FirestoreRepository
+    private val locationProvider: LocationProvider
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)
