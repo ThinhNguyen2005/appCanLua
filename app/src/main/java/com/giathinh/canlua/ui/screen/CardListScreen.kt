@@ -71,7 +71,8 @@ import com.giathinh.canlua.ui.feedback.LocalAppToast
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardListScreen(
-    navController: NavController
+    navController: NavController,
+    showFab: Boolean = false
 ) {
     com.giathinh.canlua.util.TrackScreenRender("card_list")
     val viewModel: CardListViewModel = hiltViewModel()
@@ -87,7 +88,8 @@ fun CardListScreen(
     ) {
         CardListScreenContent(
             navController = navController,
-            viewModel = viewModel
+            viewModel = viewModel,
+            showFab = showFab
         )
     }
 }
@@ -96,7 +98,8 @@ fun CardListScreen(
 @Composable
 fun CardListScreenContent(
     navController: NavController,
-    viewModel: CardListViewModel
+    viewModel: CardListViewModel,
+    showFab: Boolean = false
 ) {
     val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -302,7 +305,7 @@ fun CardListScreenContent(
         }
 
         AnimatedVisibility(
-            visible = fabVisible,
+            visible = showFab && fabVisible,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier

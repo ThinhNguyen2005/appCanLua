@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import com.giathinh.canlua.ui.screen.CardDetailScreen
 import com.giathinh.canlua.ui.screen.CardListScreen
 import com.giathinh.canlua.ui.screen.DeletedCardsScreen
+import com.giathinh.canlua.ui.screen.HomeScreen
 import com.giathinh.canlua.ui.screen.StatisticsScreen
 import com.giathinh.canlua.ui.screen.SettingsScreen
 import com.giathinh.canlua.ui.screen.WeightInputScreen
@@ -37,12 +38,12 @@ fun AppNavHost(
         popExitTransition = FadeScalePopExit
     ) {
         composable(BottomNavItem.SCALE.route) {
-            // TODO: Replace with new HomeScreen in Phase 2
-            CardListScreen(navController = navController)
+            HomeScreen(navController = navController)
         }
 
         composable(BottomNavItem.HISTORY.route) {
-            CardListScreen(navController = navController)
+            // Full list với tìm kiếm/lọc — không có FAB (FAB chỉ trên HomeScreen)
+            CardListScreen(navController = navController, showFab = false)
         }
 
         composable("card_detail/{cardId}") { backStackEntry ->
