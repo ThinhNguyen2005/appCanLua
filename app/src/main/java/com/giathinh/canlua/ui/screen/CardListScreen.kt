@@ -76,6 +76,8 @@ fun CardListScreen(
     com.giathinh.canlua.util.TrackScreenRender("card_list")
     val viewModel: CardListViewModel = hiltViewModel()
 
+    // Kích hoạt flow Room DB query ngay lập tức để isLoading chuyển sang false khi có data.
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isDataReady = !isLoading
 
