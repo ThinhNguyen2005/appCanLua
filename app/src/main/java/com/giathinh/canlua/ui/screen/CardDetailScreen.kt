@@ -779,7 +779,7 @@ fun EditCardDialog(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Thông tin chung",
+                                    text = stringResource(R.string.edit_card_tab_info),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.GreenPrimary
@@ -918,7 +918,7 @@ fun EditCardDialog(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Trừ hao & Tài chính",
+                                    text = stringResource(R.string.edit_card_tab_financial),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.Orange
@@ -979,7 +979,7 @@ fun EditCardDialog(
                                     },
                                     label = { Text(stringResource(R.string.create_card_price_label)) },
                                     leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                    suffix = { Text("đ/kg", color = AppColors.TextSecondary) },
+                                    suffix = { Text(stringResource(R.string.edit_card_price_suffix), color = AppColors.TextSecondary) },
                                     visualTransformation = ThousandSeparatorTransformation(),
                                     textStyle = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,

@@ -147,7 +147,7 @@ private fun HomeScreenStandard(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Phím tắt nhanh",
+                        text = stringResource(R.string.home_quick_actions_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
@@ -157,7 +157,7 @@ private fun HomeScreenStandard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         QuickActionCard(
-                            title = "Tạo phiếu mới",
+                            title = stringResource(R.string.home_quick_create),
                             icon = Icons.Default.Add,
                             backgroundColor = AppColors.GreenSurface,
                             iconColor = AppColors.GreenPrimary,
@@ -165,7 +165,7 @@ private fun HomeScreenStandard(
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionCard(
-                            title = "Lịch sử phiếu",
+                            title = stringResource(R.string.home_quick_history),
                             icon = Icons.Default.History,
                             backgroundColor = AppColors.BlueSurface,
                             iconColor = AppColors.Blue,
@@ -178,7 +178,7 @@ private fun HomeScreenStandard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         QuickActionCard(
-                            title = "Báo cáo thống kê",
+                            title = stringResource(R.string.home_quick_statistics),
                             icon = Icons.Default.BarChart,
                             backgroundColor = AppColors.OrangeSurface,
                             iconColor = AppColors.Orange,
@@ -186,7 +186,7 @@ private fun HomeScreenStandard(
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionCard(
-                            title = "Cài đặt hệ thống",
+                            title = stringResource(R.string.home_quick_settings),
                             icon = Icons.Default.Settings,
                             backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
                             iconColor = AppColors.TextSecondary,
@@ -205,14 +205,14 @@ private fun HomeScreenStandard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Phiếu cân gần đây",
+                        text = stringResource(R.string.home_recent_cards_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                     TextButton(onClick = { navController.navigate("history") }) {
                         Text(
-                            text = "Xem tất cả",
+                             text = stringResource(R.string.home_see_all),
                             color = AppColors.GreenPrimary,
                             fontWeight = FontWeight.Bold
                         )
@@ -233,7 +233,7 @@ private fun HomeScreenStandard(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Chưa có phiếu cân nào.",
+                            text = stringResource(R.string.home_no_cards_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextSecondary
                         )
@@ -256,12 +256,12 @@ private fun HomeScreenStandard(
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
-            ownerName = "Nông dân",
+            ownerName = stringResource(R.string.home_default_owner_name),
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 viewModel.createNewCard(
-                    name = "Nông dân",
+                    name = stringResource(R.string.home_default_owner_name),
                     cccd = cccd,
                     traderName = counterpartyName,
                     pricePerKg = price,
@@ -332,7 +332,7 @@ private fun HomeScreenSimple(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "TỔNG CÂN HÔM NAY",
+                        text = stringResource(R.string.home_today_total_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.GreenDark,
@@ -348,7 +348,7 @@ private fun HomeScreenSimple(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Số phiếu: ${todayCards.size} phiếu",
+                        text = stringResource(R.string.home_today_card_count, todayCards.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextSecondary,
@@ -361,28 +361,28 @@ private fun HomeScreenSimple(
 
             // 2. Large Action Buttons
             SimpleLargeButton(
-                text = "TẠO PHIẾU CÂN MỚI",
+                text = stringResource(R.string.home_btn_create_new),
                 icon = Icons.Default.Add,
                 color = AppColors.GreenPrimary,
                 onClick = { showCreateDialog = true }
             )
 
             SimpleLargeButton(
-                text = "XEM LỊCH SỬ PHIẾU",
+                text = stringResource(R.string.home_btn_view_history),
                 icon = Icons.Default.History,
                 color = AppColors.Blue,
                 onClick = { navController.navigate("history") }
             )
 
             SimpleLargeButton(
-                text = "XEM THỐNG KÊ MÙA VỤ",
+                text = stringResource(R.string.home_btn_view_stats),
                 icon = Icons.Default.BarChart,
                 color = AppColors.Orange,
                 onClick = { navController.navigate("statistics") }
             )
 
             SimpleLargeButton(
-                text = "CÀI ĐẶT HỆ THỐNG",
+                text = stringResource(R.string.home_btn_settings),
                 icon = Icons.Default.Settings,
                 color = AppColors.TextSecondary,
                 onClick = { navController.navigate("settings") }
@@ -392,12 +392,12 @@ private fun HomeScreenSimple(
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
-            ownerName = "Nông dân",
+            ownerName = stringResource(R.string.home_default_owner_name),
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 viewModel.createNewCard(
-                    name = "Nông dân",
+                    name = stringResource(R.string.home_default_owner_name),
                     cccd = cccd,
                     traderName = counterpartyName,
                     pricePerKg = price,

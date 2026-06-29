@@ -19,6 +19,7 @@
     <string name="content_open_chat_sessions">Mở danh sách phiên chat</string>
     <string name="content_back">Quay lại</string>
     <string name="content_settings">Cài đặt</string>
+    <string name="fab_create_new_description">Tạo phiếu cân mới</string>
 
     <string name="action_cancel">Hủy</string>
     <string name="action_later">Để sau</string>
@@ -564,5 +565,47 @@
     <string name="settings_restart_text">Vui lòng khởi động lại ứng dụng để cập nhật vai trò và giao diện mới.</string>
     <string name="settings_restart_confirm">Khởi động lại ngay</string>
     <string name="settings_restart_dismiss">Để sau</string>
+
+    <!-- HomeScreen hardcoded strings -->
+    <string name="home_quick_actions_title">Phím tắt nhanh</string>
+    <string name="home_quick_create">Tạo phiếu mới</string>
+    <string name="home_quick_history">Lịch sử phiếu</string>
+    <string name="home_quick_statistics">Báo cáo thống kê</string>
+    <string name="home_quick_settings">Cài đặt hệ thống</string>
+    <string name="home_recent_cards_title">Phiếu cân gần đây</string>
+    <string name="home_see_all">Xem tất cả</string>
+    <string name="home_no_cards_yet">Chưa có phiếu cân nào.</string>
+    <string name="home_default_owner_name">Nông dân</string>
+    <string name="home_today_total_label">TỔNG CÂN HÔM NAY</string>
+    <string name="home_today_card_count">Số phiếu: %d phiếu</string>
+    <string name="home_btn_create_new">TẠO PHIẾU CÂN MỚI</string>
+    <string name="home_btn_view_history">XEM LỊCH SỬ PHIẾU</string>
+    <string name="home_btn_view_stats">XEM THỐNG KÊ MÙA VỤ</string>
+    <string name="home_btn_settings">CÀI ĐẶT HỆ THỐNG</string>
+
+    <!-- EditCardDialog hardcoded strings -->
+    <string name="edit_card_tab_info">Thông tin chung</string>
+    <string name="edit_card_tab_financial">Trừ hao &amp; Tài chính</string>
+    <string name="edit_card_price_suffix">đ/kg</string>
+
+    <!-- SettingsScreen hardcoded strings -->
+    <string name="settings_simple_mode_label">Giao diện đơn giản</string>
+    <string name="settings_simple_mode_desc">Làm to chữ, phóng to nút bấm, ẩn các tính năng phức tạp dành cho người lớn tuổi.</string>
+    <string name="settings_scale_config_label">Cấu hình cân lúa</string>
+    <string name="settings_bag_deduct_label">Cách trừ bao bì mặc định</string>
+    <string name="settings_bag_deduct_desc">Quy định cách trừ khối lượng bao bì khi tạo phiếu cân mới.</string>
+    <string name="settings_bag_unit_title">Bao đơn vị (X bao = 1 kg)</string>
+    <string name="settings_bag_unit_example">Ví dụ: 8 bao quy đổi ra 1 kg bì</string>
+    <string name="settings_bag_unit_field_label">Số bao quy đổi 1 kg bì</string>
+    <string name="settings_bag_sample_title">Cân mẫu (Tùy chỉnh)</string>
+    <string name="settings_bag_sample_desc">Cân X bao mẫu ra Y kg bì</string>
+    <string name="settings_bag_sample_count_label">Số bao mẫu</string>
+    <string name="settings_bag_sample_weight_label">Tổng kg mẫu</string>
+    <string name="settings_keyboard_label">Bàn phím nhập cân</string>
+    <string name="settings_keyboard_desc">Thay đổi cỡ chữ và phím nhập trên màn hình cân lúa.</string>
+    <string name="settings_keyboard_small_title">Bàn phím nhỏ</string>
+    <string name="settings_keyboard_small_desc">Phím nhỏ gọn</string>
+    <string name="settings_keyboard_large_title">Bàn phím to</string>
+    <string name="settings_keyboard_large_desc">Nút bấm lớn dễ ấn</string>
 </resources>
 
