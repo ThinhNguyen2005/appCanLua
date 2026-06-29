@@ -180,14 +180,14 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Giao diện đơn giản",
+                            text = stringResource(R.string.settings_simple_mode_label),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.TextPrimary
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Làm to chữ, phóng to nút bấm, ẩn các tính năng phức tạp dành cho người lớn tuổi.",
+                            text = stringResource(R.string.settings_simple_mode_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextSecondary
                         )
@@ -274,7 +274,7 @@ fun SettingsScreen(
 
             SectionHeader(
                 icon = Icons.Outlined.Scale,
-                label = "Cấu hình cân lúa",
+                label = stringResource(R.string.settings_scale_config_label),
                 iconBg = AppColors.GreenSurface,
                 iconTint = AppColors.GreenPrimary
             )
@@ -283,13 +283,13 @@ fun SettingsScreen(
             SettingsCardBox {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Cách trừ bao bì mặc định",
+                        text = stringResource(R.string.settings_bag_deduct_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = "Quy định cách trừ khối lượng bao bì khi tạo phiếu cân mới.",
+                        text = stringResource(R.string.settings_bag_deduct_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextSecondary
                     )
@@ -313,8 +313,8 @@ fun SettingsScreen(
                                 colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Bao đơn vị (X bao = 1 kg)", fontWeight = FontWeight.SemiBold)
-                                Text("Ví dụ: 8 bao quy đổi ra 1 kg bì", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                                Text(stringResource(R.string.settings_bag_unit_title), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.settings_bag_unit_example), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                             }
                         }
                     }
@@ -323,7 +323,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = bagsPerKgTextLocal,
                             onValueChange = { bagsPerKgTextLocal = it.filter { ch -> ch.isDigit() } },
-                            label = { Text("Số bao quy đổi 1 kg bì") },
+                            label = { Text(stringResource(R.string.settings_bag_unit_field_label)) },
                             suffix = { Text("bao = 1 kg") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
@@ -349,8 +349,8 @@ fun SettingsScreen(
                                 colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Cân mẫu (Tùy chỉnh)", fontWeight = FontWeight.SemiBold)
-                                Text("Cân X bao mẫu ra Y kg bì", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                                Text(stringResource(R.string.settings_bag_sample_title), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.settings_bag_sample_desc), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                             }
                         }
                     }
@@ -363,7 +363,7 @@ fun SettingsScreen(
                             OutlinedTextField(
                                 value = sampleCountTextLocal,
                                 onValueChange = { sampleCountTextLocal = it.filter { ch -> ch.isDigit() } },
-                                label = { Text("Số bao mẫu") },
+                                label = { Text(stringResource(R.string.settings_bag_sample_count_label)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
@@ -375,7 +375,7 @@ fun SettingsScreen(
                                     sampleWeightTextLocal = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }
                                         .replace(',', '.')
                                 },
-                                label = { Text("Tổng kg mẫu") },
+                                label = { Text(stringResource(R.string.settings_bag_sample_weight_label)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
@@ -392,13 +392,13 @@ fun SettingsScreen(
             SettingsCardBox {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Bàn phím nhập cân",
+                        text = stringResource(R.string.settings_keyboard_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = "Thay đổi cỡ chữ và phím nhập trên màn hình cân lúa.",
+                        text = stringResource(R.string.settings_keyboard_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextSecondary
                     )
@@ -423,8 +423,8 @@ fun SettingsScreen(
                                     onClick = { inputModeLocal = "SMALL" },
                                     colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
                                 )
-                                Text("Bàn phím nhỏ", fontWeight = FontWeight.SemiBold)
-                                Text("Phím nhỏ gọn", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                                Text(stringResource(R.string.settings_keyboard_small_title), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.settings_keyboard_small_desc), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                             }
                         }
 
@@ -442,8 +442,8 @@ fun SettingsScreen(
                                     onClick = { inputModeLocal = "LARGE" },
                                     colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
                                 )
-                                Text("Bàn phím to", fontWeight = FontWeight.SemiBold)
-                                Text("Nút bấm lớn dễ ấn", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                                Text(stringResource(R.string.settings_keyboard_large_title), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.settings_keyboard_large_desc), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
                             }
                         }
                     }

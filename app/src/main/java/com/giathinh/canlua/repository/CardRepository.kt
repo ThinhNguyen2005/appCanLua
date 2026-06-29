@@ -37,6 +37,14 @@ class CardRepository @Inject constructor(
     private val transactionDao: TransactionDao,
     private val deletedCardDao: com.giathinh.canlua.data.dao.DeletedCardDao
 ) {
+    /**
+     * OFFLINE-ONLY BRANCH: Auth đã bị loại bỏ. Tất cả dữ liệu thuộc về 1 "user" duy nhất
+     * trên thiết bị. uid="" hoạt động đúng vì DAO query WHERE ownerUid='' sẽ match
+     * tất cả card được tạo trên branch này (ownerUid cũng được stamp là "").
+     *
+     * ⚠️ Nếu cần merge lại với branch multi-user, thay thế hàm này bằng:
+     *    private fun uid() = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+     */
     private fun uid(): String = ""
 
     fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid()).map { list ->

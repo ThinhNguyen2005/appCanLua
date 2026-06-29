@@ -19,6 +19,7 @@
     <string name="content_open_chat_sessions">Mở danh sách phiên chat</string>
     <string name="content_back">Quay lại</string>
     <string name="content_settings">Cài đặt</string>
+    <string name="fab_create_new_description">Tạo phiếu cân mới</string>
 
     <string name="action_cancel">Hủy</string>
     <string name="action_later">Để sau</string>
@@ -565,151 +566,46 @@
     <string name="settings_restart_confirm">Khởi động lại ngay</string>
     <string name="settings_restart_dismiss">Để sau</string>
 
-    <!-- MainScreen -->
-    <string name="fab_create_card_content">Tạo phiếu mới</string>
+    <!-- HomeScreen hardcoded strings -->
+    <string name="home_quick_actions_title">Phím tắt nhanh</string>
+    <string name="home_quick_create">Tạo phiếu mới</string>
+    <string name="home_quick_history">Lịch sử phiếu</string>
+    <string name="home_quick_statistics">Báo cáo thống kê</string>
+    <string name="home_quick_settings">Cài đặt hệ thống</string>
+    <string name="home_recent_cards_title">Phiếu cân gần đây</string>
+    <string name="home_see_all">Xem tất cả</string>
+    <string name="home_no_cards_yet">Chưa có phiếu cân nào.</string>
+    <string name="home_default_owner_name">Nông dân</string>
+    <string name="home_today_total_label">TỔNG CÂN HÔM NAY</string>
+    <string name="home_today_card_count">Số phiếu: %d phiếu</string>
+    <string name="home_btn_create_new">TẠO PHIẾU CÂN MỚI</string>
+    <string name="home_btn_view_history">XEM LỊCH SỬ PHIẾU</string>
+    <string name="home_btn_view_stats">XEM THỐNG KÊ MÙA VỤ</string>
+    <string name="home_btn_settings">CÀI ĐẶT HỆ THỐNG</string>
 
-    <!-- HomeScreen -->
-    <string name="home_quick_actions">Phím tắt nhanh</string>
-    <string name="home_action_create_card">Tạo phiếu mới</string>
-    <string name="home_action_history">Lịch sử phiếu</string>
-    <string name="home_action_statistics">Báo cáo thống kê</string>
-    <string name="home_action_settings">Cài đặt hệ thống</string>
-    <string name="home_recent_cards">Phiếu cân gần đây</string>
-    <string name="home_view_all">Xem tất cả</string>
-    <string name="home_empty_state">Chưa có phiếu cân nào.</string>
-    <string name="home_daily_total">TỔNG CÂN HÔM NAY</string>
-    <string name="home_daily_card_count">Số phiếu: %1$d phiếu</string>
-    <string name="home_create_card_button">TẠO PHIẾU CÂN MỚI</string>
+    <!-- EditCardDialog hardcoded strings -->
+    <string name="edit_card_tab_info">Thông tin chung</string>
+    <string name="edit_card_tab_financial">Trừ hao &amp; Tài chính</string>
+    <string name="edit_card_price_suffix">đ/kg</string>
 
-    <!-- CardListScreen -->
-    <string name="card_list_toast_deleted">Đã xoá phiếu %1$s</string>
-    <string name="card_list_toast_delete_error">Không xoá được phiếu. Thử lại sau</string>
-    <string name="card_list_search_placeholder">Tìm kiếm (tên thương lái, giống lúa)…</string>
-    <string name="card_list_clear_search">Xóa</string>
-    <string name="card_list_filter_debt_free">Hết nợ</string>
-    <string name="card_list_filter_has_debt">Còn nợ</string>
-
-    <!-- DeletedCardsScreen -->
-    <string name="deleted_cards_title">Phiếu đã xoá</string>
-    <string name="deleted_cards_summary">%1$d phiếu đã xoá. Khôi phục hoặc xoá vĩnh viễn để giải phóng dung lượng.</string>
-    <string name="deleted_cards_permanent_delete_title">Xoá vĩnh viễn?</string>
-    <string name="deleted_cards_permanent_delete_message">Phiếu \"%1$s\" sẽ bị xoá hoàn toàn khỏi lịch sử. Hành động này KHÔNG thể hoàn tác.</string>
-    <string name="deleted_cards_permanent_delete_confirm">Xoá vĩnh viễn</string>
-    <string name="deleted_cards_no_name">(không tên)</string>
-    <string name="deleted_cards_date_subtitle">Phiếu ngày %1$s</string>
-    <string name="deleted_cards_weight_display">%1$s kg</string>
-    <string name="deleted_cards_amount_display">%1$s đ</string>
-    <string name="deleted_cards_deleted_at">Đã xoá lúc %1$s</string>
-    <string name="deleted_cards_restore">Khôi phục</string>
-    <string name="deleted_cards_empty_title">Chưa có phiếu nào bị xoá</string>
-    <string name="deleted_cards_empty_subtitle">Phiếu bạn xoá sẽ được lưu lại đây để có thể khôi phục.</string>
-
-    <!-- SettingsScreen — Simple UI mode -->
-    <string name="settings_simple_ui_title">Giao diện đơn giản</string>
-    <string name="settings_simple_ui_desc">Làm to chữ, phóng to nút bấm, ẩn các tính năng phức tạp dành cho người lớn tuổi.</string>
-    <string name="settings_weigh_config_title">Cấu hình cân lúa</string>
-    <string name="settings_bag_method_title">Cách trừ bao bì mặc định</string>
-    <string name="settings_bag_method_desc">Quy định cách trừ khối lượng bao bì khi tạo phiếu cân mới.</string>
-    <string name="settings_bag_single_unit">Bao đơn vị (X bao = 1 kg)</string>
-    <string name="settings_bag_single_hint">Ví dụ: 8 bao quy đổi ra 1 kg bì</string>
-    <string name="settings_bag_single_ratio">Số bao quy đổi 1 kg bì</string>
-    <string name="settings_bag_single_suffix">bao = 1 kg</string>
-    <string name="settings_bag_sampling">Cân mẫu (Tùy chỉnh)</string>
-    <string name="settings_bag_sampling_hint">Cân X bao mẫu ra Y kg bì</string>
-    <string name="settings_bag_sampling_count">Số bao mẫu</string>
-    <string name="settings_bag_sampling_total">Tổng kg mẫu</string>
-    <string name="settings_keyboard_title">Bàn phím nhập cân</string>
+    <!-- SettingsScreen hardcoded strings -->
+    <string name="settings_simple_mode_label">Giao diện đơn giản</string>
+    <string name="settings_simple_mode_desc">Làm to chữ, phóng to nút bấm, ẩn các tính năng phức tạp dành cho người lớn tuổi.</string>
+    <string name="settings_scale_config_label">Cấu hình cân lúa</string>
+    <string name="settings_bag_deduct_label">Cách trừ bao bì mặc định</string>
+    <string name="settings_bag_deduct_desc">Quy định cách trừ khối lượng bao bì khi tạo phiếu cân mới.</string>
+    <string name="settings_bag_unit_title">Bao đơn vị (X bao = 1 kg)</string>
+    <string name="settings_bag_unit_example">Ví dụ: 8 bao quy đổi ra 1 kg bì</string>
+    <string name="settings_bag_unit_field_label">Số bao quy đổi 1 kg bì</string>
+    <string name="settings_bag_sample_title">Cân mẫu (Tùy chỉnh)</string>
+    <string name="settings_bag_sample_desc">Cân X bao mẫu ra Y kg bì</string>
+    <string name="settings_bag_sample_count_label">Số bao mẫu</string>
+    <string name="settings_bag_sample_weight_label">Tổng kg mẫu</string>
+    <string name="settings_keyboard_label">Bàn phím nhập cân</string>
     <string name="settings_keyboard_desc">Thay đổi cỡ chữ và phím nhập trên màn hình cân lúa.</string>
-    <string name="settings_keyboard_small">Bàn phím nhỏ</string>
-    <string name="settings_keyboard_small_hint">Phím nhỏ gọn</string>
-    <string name="settings_keyboard_large">Bàn phím to</string>
-    <string name="settings_keyboard_large_hint">Nút bấm lớn dễ ấn</string>
-
-    <!-- CardDetailScreen — EditCardDialog -->
-    <string name="edit_card_section_general">Thông tin chung</string>
-    <string name="edit_card_section_deductions">Trừ hao &amp; Tài chính</string>
-    <string name="edit_card_suffix_kg">kg</string>
-    <string name="edit_card_suffix_price">đ/kg</string>
-
-    <!-- CardItem -->
-    <string name="card_item_detail_content">Xem chi tiết</string>
-    <string name="card_item_moisture_content">Độ ẩm</string>
-    <string name="card_item_bag_content">Trọng lượng bao bì</string>
-    <string name="card_item_impurity_content">Tỷ lệ tạp chất</string>
-
-    <!-- CreateCardDialog -->
-    <string name="create_card_location_permission">Cần cấp quyền vị trí để định vị ruộng</string>
-    <string name="create_card_section_info">Thông tin phiếu cân</string>
-    <string name="create_card_cccd_help_content">Giải thích CCCD</string>
-    <string name="create_card_section_deduction">Đơn giá &amp; Khấu trừ</string>
-    <string name="create_card_impurity_help_content">Giải thích tạp chất</string>
-    <string name="create_card_moisture_help_content">Giải thích độ ẩm</string>
-    <string name="create_card_gps_checkbox">Lưu vị trí GPS ruộng</string>
-    <string name="create_card_gps_hint">Ghi lại tọa độ để hiển thị trên bản đồ lúa</string>
-
-    <!-- StatisticsScreen -->
-    <string name="stats_season_summary">Tóm tắt vụ mùa</string>
-    <string name="stats_weight_bags">%1$s kg / %2$s bao</string>
-
-    <!-- ProfileComponents -->
-    <string name="profile_guest_banner_title">Trải nghiệm Chế độ Khách</string>
-    <string name="profile_guest_banner_desc">Bạn đang trải nghiệm ứng dụng dưới danh nghĩa Khách. Đăng nhập ngay hôm nay để lưu trữ dữ liệu an toàn và đồng bộ đa thiết bị.</string>
-    <string name="profile_guest_cta">Đăng Nhập / Đăng Ký Ngay</string>
-
-    <!-- WeightSummaryCard -->
-    <string name="weight_summary_bag_ratio">%1$s bao · %2$d bao = %3$s kg</string>
-    <string name="weight_summary_bag_ratio_one">%1$s bao · %2$d bao = 1 kg</string>
-    <string name="weight_summary_impurity_direct">Nhập trực tiếp kg tạp chất</string>
-
-    <!-- WeightMetricsCard -->
-    <string name="weight_metrics_card1_title">Chỉ số cân &amp; Khấu trừ</string>
-    <string name="weight_metrics_impurity_preview">Đang trừ %1$s kg tạp chất</string>
-    <string name="weight_metrics_bag_preview">Đang trừ %1$s kg bao bì</string>
-    <string name="weight_metrics_bag_setup">Thiết lập bao bì</string>
-    <string name="weight_metrics_card2_title">Đơn giá &amp; Thanh toán</string>
-    <string name="weight_metrics_price_label">Đơn giá</string>
-    <string name="weight_metrics_bag_dialog_title">Thiết lập trừ bao bì</string>
-    <string name="weight_metrics_bag_dialog_desc">Chọn cách quy đổi số bao sang kg bì. Công thức áp dụng ngay cho phiếu này.</string>
-    <string name="weight_metrics_bag_unit_option">Bao đơn vị (X bao = 1 kg)</string>
-    <string name="weight_metrics_bag_unit_desc">Mỗi X bao quy đổi 1 kg bì. VD: 8 bao lúa nặng 1 kg bì</string>
-    <string name="weight_metrics_bag_count_label">Số bao</string>
-    <string name="weight_metrics_bag_count_suffix">bao = 1 kg</string>
-
-    <!-- WeighOptionsSheet -->
-    <string name="weigh_options_bag_params">Thông số trừ bao bì từng bao</string>
-    <string name="weigh_options_bag_unit_count">Số bao trên 1 kg</string>
-    <string name="weigh_options_bag_unit_default">Mặc định: 8 bao = 1 kg</string>
-    <string name="weigh_options_bag_params_title">Thông số trừ bao bì</string>
-
-    <!-- HelpBottomSheet -->
-    <string name="help_action_feedback_desc">Báo lỗi hoặc đề xuất tính năng mới</string>
-    <string name="help_action_tutorial_desc">Video hướng dẫn từng bước sử dụng</string>
-    <string name="help_action_web_desc">Tài liệu, cập nhật và tin tức mới nhất</string>
-
-    <!-- CardListSummaryCard -->
-    <string name="card_summary_today">Tổng quan hôm nay</string>
-    <string name="card_summary_subtitle">Theo dõi nhanh số phiếu, sản lượng và dòng tiền</string>
-    <string name="card_summary_yield">Sản lượng</string>
-    <string name="card_summary_avg_price">Đơn giá TB</string>
-    <string name="card_summary_bags">Số bao</string>
-    <string name="card_summary_productivity">Năng suất ước tính</string>
-    <string name="card_summary_productivity_unit">kg/công</string>
-
-    <!-- CardListEmptyState -->
-    <string name="card_list_empty_reload_prompt">Bạn muốn tải lại dữ liệu đã lưu trữ?</string>
-
-    <!-- ViewModels (transaction descriptions) -->
-    <string name="tx_description_deposit_update">Cập nhật tiền cọc</string>
-    <string name="tx_description_paid_update">Cập nhật đã trả</string>
-    <string name="tx_description_deposit">Tiền cọc</string>
-
-    <!-- SpeechRecognizer -->
-    <string name="speech_device_unsupported">Thiết bị không hỗ trợ nhận dạng giọng nói</string>
-    <string name="speech_launch_error">Không thể khởi chạy nhận dạng giọng nói. Bà con vui lòng cài đặt/bật Google Speech Services hoặc gõ phím để chat.</string>
-    <string name="speech_unknown_error">Lỗi không xác định (%1$s)</string>
-
-    <!-- Permission dialog defaults -->
-    <string name="permission_confirm_default">Cho phép</string>
-    <string name="permission_dismiss_default">Để sau</string>
+    <string name="settings_keyboard_small_title">Bàn phím nhỏ</string>
+    <string name="settings_keyboard_small_desc">Phím nhỏ gọn</string>
+    <string name="settings_keyboard_large_title">Bàn phím to</string>
+    <string name="settings_keyboard_large_desc">Nút bấm lớn dễ ấn</string>
 </resources>
 
