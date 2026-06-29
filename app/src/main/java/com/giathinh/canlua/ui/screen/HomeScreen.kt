@@ -41,7 +41,7 @@ import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.ui.component.CardItem
 import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.component.CreateCardMode
-import com.giathinh.canlua.ui.component.CardListSkeleton
+import com.giathinh.canlua.ui.component.SkeletonList
 import com.giathinh.canlua.ui.component.cardlist.CardListSummaryCard
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.LocalAppUiMode
@@ -221,7 +221,7 @@ private fun HomeScreenStandard(
 
             if (isLoading) {
                 item {
-                    CardListSkeleton(count = 2)
+                    SkeletonList(count = 2)
                 }
             } else if (recentCards.isEmpty()) {
                 item {
