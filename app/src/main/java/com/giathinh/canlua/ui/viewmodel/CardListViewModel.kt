@@ -40,14 +40,24 @@ class CardListViewModel @Inject constructor(
     private val _selectedSeasonFilter = MutableStateFlow<String?>(null)
     val selectedSeasonFilter: StateFlow<String?> = _selectedSeasonFilter.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _selectedPaymentFilter = MutableStateFlow<Boolean?>(null) // null = all, true = paid, false = unpaid
+    val selectedPaymentFilter: StateFlow<Boolean?> = _selectedPaymentFilter.asStateFlow()
+
     val cards: StateFlow<List<Card>> = combine(
         repository.getAllCards(),
         _selectedVarietyFilter,
-        _selectedSeasonFilter
-    ) { all, variety, season ->
+        _selectedSeasonFilter,
+        _searchQuery,
+        _selectedPaymentFilter
+    ) { all, variety, season, query, payment ->
         all.filter { card ->
-            (variety == null || card.riceVariety == variety) &&
-                    (season == null || card.seasonLabel == season)
+            (variety == null || card.riceVariety.equals(variety, ignoreCase = true)) &&
+            (season == null || card.seasonLabel.equals(season, ignoreCase = true)) &&
+            (query.isBlank() || card.traderName.contains(query, ignoreCase = true) || card.riceVariety.contains(query, ignoreCase = true)) &&
+            (payment == null || card.isPaid == payment)
         }
     }.onEach { _isLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -65,6 +75,14 @@ class CardListViewModel @Inject constructor(
         _isLoading.value = false
     }
 
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setPaymentFilter(payment: Boolean?) {
+        _selectedPaymentFilter.value = payment
+    }
+
     fun setVarietyFilter(variety: String?) {
         _selectedVarietyFilter.value = variety
     }
@@ -76,6 +94,8 @@ class CardListViewModel @Inject constructor(
     fun clearFilters() {
         _selectedVarietyFilter.value = null
         _selectedSeasonFilter.value = null
+        _searchQuery.value = ""
+        _selectedPaymentFilter.value = null
     }
 
     fun createNewCard(

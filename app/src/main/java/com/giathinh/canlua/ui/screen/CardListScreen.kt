@@ -18,15 +18,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -48,7 +63,7 @@ import androidx.navigation.NavController
 import com.giathinh.canlua.ui.component.CardItem
 import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.component.CreateCardMode
-import com.giathinh.canlua.ui.component.CardListSkeleton
+import com.giathinh.canlua.ui.component.SkeletonList
 import com.giathinh.canlua.ui.component.cardlist.CardListEmptyState
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterBar
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterSheet
@@ -83,7 +98,7 @@ fun CardListScreen(
 
     TransitionSafeWrapper(
         isDataReady = isDataReady,
-        skeletonContent = { CardListSkeleton() }
+        skeletonContent = { SkeletonList(count = 3) }
     ) {
         CardListScreenContent(
             navController = navController,
@@ -107,6 +122,8 @@ fun CardListScreenContent(
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
     val selectedSeason by viewModel.selectedSeasonFilter.collectAsStateWithLifecycle()
     val availableSeasons by viewModel.availableSeasons.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedPayment by viewModel.selectedPaymentFilter.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val appToast = LocalAppToast.current
@@ -181,6 +198,151 @@ fun CardListScreenContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // ── Pinned Search & Filter Header ─────────────────────────────
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+                tonalElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Search Bar
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.setSearchQuery(it) },
+                        placeholder = { 
+                            Text(
+                                "Tìm kiếm (tên thương lái, giống lúa)...", 
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = AppColors.TextHint
+                            ) 
+                        },
+                        leadingIcon = { 
+                            Icon(
+                                imageVector = Icons.Default.Search, 
+                                contentDescription = null,
+                                tint = AppColors.TextSecondary,
+                                modifier = Modifier.size(20.dp)
+                            ) 
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear, 
+                                        contentDescription = "Xóa",
+                                        tint = AppColors.TextSecondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AppColors.TextPrimary,
+                            unfocusedTextColor = AppColors.TextPrimary,
+                            focusedBorderColor = AppColors.GreenPrimary,
+                            unfocusedBorderColor = AppColors.Divider
+                        )
+                    )
+                    
+                    // Quick Filter Chips Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Filter sheet trigger button
+                        FilterChip(
+                            selected = selectedFilter != null,
+                            onClick = { showFilterSheet = true },
+                            label = { 
+                                Text(
+                                    if (selectedFilter != null) selectedFilter!! else "Giống lúa",
+                                    fontWeight = FontWeight.SemiBold
+                                ) 
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Tune,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColors.GreenPrimary.copy(alpha = 0.12f),
+                                selectedLabelColor = AppColors.GreenPrimary,
+                                selectedLeadingIconColor = AppColors.GreenPrimary,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                labelColor = AppColors.TextSecondary,
+                                iconColor = AppColors.TextSecondary
+                            )
+                        )
+
+                        // Payment Filter Chips
+                        FilterChip(
+                            selected = selectedPayment == null,
+                            onClick = { viewModel.setPaymentFilter(null) },
+                            label = { Text("Tất cả", fontWeight = FontWeight.SemiBold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColors.GreenPrimary.copy(alpha = 0.12f),
+                                selectedLabelColor = AppColors.GreenPrimary,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                labelColor = AppColors.TextSecondary
+                            )
+                        )
+                        FilterChip(
+                            selected = selectedPayment == true,
+                            onClick = { viewModel.setPaymentFilter(true) },
+                            label = { Text("Hết nợ", fontWeight = FontWeight.SemiBold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColors.GreenPrimary.copy(alpha = 0.12f),
+                                selectedLabelColor = AppColors.GreenPrimary,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                labelColor = AppColors.TextSecondary
+                            )
+                        )
+                        FilterChip(
+                            selected = selectedPayment == false,
+                            onClick = { viewModel.setPaymentFilter(false) },
+                            label = { Text("Còn nợ", fontWeight = FontWeight.SemiBold) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AppColors.GreenPrimary.copy(alpha = 0.12f),
+                                selectedLabelColor = AppColors.GreenPrimary,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                labelColor = AppColors.TextSecondary
+                            )
+                        )
+
+                        // Season chips (Dynamic from availableSeasons)
+                        availableSeasons.forEach { season ->
+                            FilterChip(
+                                selected = selectedSeason == season,
+                                onClick = {
+                                    if (selectedSeason == season) viewModel.setSeasonFilter(null)
+                                    else viewModel.setSeasonFilter(season)
+                                },
+                                label = { Text(season, fontWeight = FontWeight.SemiBold) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AppColors.GreenPrimary.copy(alpha = 0.12f),
+                                    selectedLabelColor = AppColors.GreenPrimary,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    labelColor = AppColors.TextSecondary
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
             val pullState = rememberPullToRefreshState()
             Crossfade(
                 targetState = showSkeleton,
@@ -188,7 +350,7 @@ fun CardListScreenContent(
                 label = "card_list_crossfade"
             ) { skeleton ->
                 if (skeleton) {
-                    CardListSkeleton(count = 3, listState = listState)
+                    SkeletonList(count = 3)
                 } else {
                     PullToRefreshBox(
                         isRefreshing = manualRefreshing,
@@ -242,21 +404,8 @@ fun CardListScreenContent(
                                 )
                             }
 
-                            if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
-                                item(key = "filter_bar") {
-                                    CardListFilterBar(
-                                        selectedSeason = selectedSeason,
-                                        selectedVariety = selectedFilter,
-                                        onOpenFilter = { showFilterSheet = true },
-                                        onClearSeason = { viewModel.setSeasonFilter(null) },
-                                        onClearVariety = { viewModel.setVarietyFilter(null) },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-
                             if (cards.isEmpty()) {
-                                val isFiltered = selectedFilter != null || selectedSeason != null
+                                val isFiltered = selectedFilter != null || selectedSeason != null || selectedPayment != null || searchQuery.isNotEmpty()
                                 item(key = "empty") {
                                     if (isFiltered) {
                                         CardListEmptyState(
@@ -299,8 +448,6 @@ fun CardListScreenContent(
                 }
             }
         }
-
-        // Removed local FAB to use docked BottomAppBar FAB
     }
 
     if (showDeleteConfirmDialog && cardToDelete != null) {
