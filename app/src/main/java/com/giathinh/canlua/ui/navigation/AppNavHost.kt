@@ -9,10 +9,10 @@ import androidx.navigation.compose.composable
 import com.giathinh.canlua.ui.screen.CardDetailScreen
 import com.giathinh.canlua.ui.screen.CardListScreen
 import com.giathinh.canlua.ui.screen.DeletedCardsScreen
-import com.giathinh.canlua.ui.screen.HomeScreen
 import com.giathinh.canlua.ui.screen.StatisticsScreen
 import com.giathinh.canlua.ui.screen.SettingsScreen
 import com.giathinh.canlua.ui.screen.WeightInputScreen
+import com.giathinh.canlua.ui.screen.HomeScreen
 
 @Composable
 fun AppNavHost(
@@ -42,8 +42,7 @@ fun AppNavHost(
         }
 
         composable(BottomNavItem.HISTORY.route) {
-            // Full list với tìm kiếm/lọc — không có FAB (FAB chỉ trên HomeScreen)
-            CardListScreen(navController = navController, showFab = false)
+            CardListScreen(navController = navController)
         }
 
         composable("card_detail/{cardId}") { backStackEntry ->

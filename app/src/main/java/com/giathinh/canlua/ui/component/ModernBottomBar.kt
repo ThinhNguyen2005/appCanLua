@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -60,6 +61,50 @@ import com.giathinh.canlua.util.HapticUtil
  *  - Label `fontSize=11sp, maxLines=1, ellipsis` → không overflow ngay cả "Tài khoản".
  *  - Tổng height 72dp (icon 24 + indicator pad + label 14 + spacing).
  */
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
+import com.giathinh.canlua.ui.navigation.BottomNavItem
+
+class BottomBarCutoutShape(private val cutoutRadiusDp: Dp) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val cutoutRadius = with(density) { cutoutRadiusDp.toPx() }
+        val path = Path().apply {
+            moveTo(0f, 0f)
+            val middle = size.width / 2
+            val cutoutLeft = middle - cutoutRadius
+            val cutoutRight = middle + cutoutRadius
+            
+            lineTo(cutoutLeft, 0f)
+            arcTo(
+                rect = Rect(
+                    left = cutoutLeft,
+                    top = -cutoutRadius,
+                    right = cutoutRight,
+                    bottom = cutoutRadius
+                ),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = -180f,
+                forceMoveTo = false
+            )
+            lineTo(size.width, 0f)
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
+
 @Composable
 fun ModernBottomBar(
     items: List<BottomBarItemSpec>,
@@ -69,28 +114,47 @@ fun ModernBottomBar(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(0.dp), // Phẳng hoàn toàn, không bo góc
-        color = AppColors.CardBg, // Sử dụng CardBg (trắng tinh ở Light mode, xám đậm ở Dark mode) để tạo độ tương phản cực tốt với nền xanh nhạt
-        tonalElevation = 8.dp // Tạo độ nổi khối chuẩn Material 3
+        shape = BottomBarCutoutShape(38.dp), // Radius 38dp to comfortably fit 56dp FAB + 10dp gap
+        color = AppColors.CardBg,
+        tonalElevation = 8.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.DividerStrong.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding() // Đệm hệ thống dưới nút điều hướng ảo
+                .height(64.dp), // Chiều cao tối ưu tiêu chuẩn
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Thanh phân cách phía trên có độ tương phản cao, tách biệt rõ ràng với phần nội dung app
-            androidx.compose.material3.HorizontalDivider(
-                thickness = 1.dp,
-                color = AppColors.DividerStrong
-            )
-            
+            // Left side items (Cân Lúa)
+            val leftItems = items.filter { it.route == BottomNavItem.SCALE.route }
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding() // Đệm hệ thống dưới nút điều hướng ảo
-                    .height(64.dp), // Chiều cao tối ưu tiêu chuẩn
+                modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items.forEach { item ->
+                leftItems.forEach { item ->
+                    val selected = currentRoute == item.route
+                    LabeledNavItem(
+                        item = item,
+                        selected = selected,
+                        onClick = { onItemClick(item) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Central spacer for the FAB
+            Spacer(modifier = Modifier.width(76.dp))
+
+            // Right side items (Lịch sử, Thống kê)
+            val rightItems = items.filter { it.route != BottomNavItem.SCALE.route }
+            Row(
+                modifier = Modifier.weight(1.2f), // slightly wider to balance 2 items vs 1 item
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                rightItems.forEach { item ->
                     val selected = currentRoute == item.route
                     LabeledNavItem(
                         item = item,

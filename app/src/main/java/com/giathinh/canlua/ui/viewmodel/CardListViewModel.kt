@@ -89,7 +89,8 @@ class CardListViewModel @Inject constructor(
         seasonLabel: String = "",
         traderPhone: String = "",
         impurityWeight: Double = 0.0,
-        recordLocation: Boolean = false
+        recordLocation: Boolean = false,
+        onCreated: ((Long) -> Unit)? = null
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             val trimmedName = name.trim()
@@ -145,6 +146,12 @@ class CardListViewModel @Inject constructor(
                     )
                 )
                 repository.updateCardCalculations(cardId)
+            }
+
+            if (onCreated != null) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    onCreated(cardId)
+                }
             }
         }
     }

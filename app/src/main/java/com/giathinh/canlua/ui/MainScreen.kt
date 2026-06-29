@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -44,8 +45,20 @@ import com.giathinh.canlua.ui.component.weight.WeighOptionsSheet
 import com.giathinh.canlua.ui.navigation.AppNavHost
 import com.giathinh.canlua.ui.navigation.BottomNavItem
 import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
+import com.giathinh.canlua.ui.viewmodel.CardListViewModel
+import com.giathinh.canlua.ui.component.CreateCardBottomSheet
+import com.giathinh.canlua.ui.component.CreateCardMode
+import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.repository.WeighDefaults
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Add
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -68,6 +81,9 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
 
     val showWeighOptionsSheet = remember { mutableStateOf(false) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    val cardListViewModel: CardListViewModel = hiltViewModel()
+    val suggestedVarieties by cardListViewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
     
     val navItems = BottomNavItem.navItems
 
@@ -175,25 +191,49 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showBottomBar,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
                     modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
-                    ModernBottomBar(
-                        items = bottomBarItems,
-                        currentRoute = currentRoute,
-                        onItemClick = { item ->
-                            if (currentRoute != item.route) {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        ModernBottomBar(
+                            items = bottomBarItems,
+                            currentRoute = currentRoute,
+                            onItemClick = { item ->
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
+                        )
+
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        androidx.compose.material3.FloatingActionButton(
+                            onClick = {
+                                com.giathinh.canlua.util.HapticUtil.tick(context)
+                                showCreateDialog = true
+                            },
+                            containerColor = AppColors.GreenPrimary,
+                            contentColor = Color.White,
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            modifier = Modifier
+                                .offset(y = (-18).dp)
+                                .size(56.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Tạo phiếu mới"
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
@@ -202,6 +242,33 @@ fun MainScreen(deeplinkCardId: String? = null) {
     if (showWeighOptionsSheet.value) {
         WeighOptionsSheetWrapper(
             onDismiss = { showWeighOptionsSheet.value = false }
+        )
+    }
+
+    if (showCreateDialog) {
+        CreateCardBottomSheet(
+            ownerName = "Nông dân",
+            suggestedVarieties = suggestedVarieties,
+            onDismiss = { showCreateDialog = false },
+            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
+                cardListViewModel.createNewCard(
+                    name = "Nông dân",
+                    cccd = cccd,
+                    traderName = counterpartyName,
+                    pricePerKg = price,
+                    depositAmount = deposit,
+                    riceVariety = variety,
+                    moisturePercent = moisture,
+                    seasonLabel = season,
+                    traderPhone = counterpartyPhone,
+                    impurityWeight = impurityWeight,
+                    recordLocation = recordLocation,
+                    onCreated = { cardId ->
+                        navController.navigate("card_detail/$cardId")
+                        showCreateDialog = false
+                    }
+                )
+            }
         )
     }
 }

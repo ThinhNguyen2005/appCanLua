@@ -2,305 +2,254 @@ package com.giathinh.canlua.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.giathinh.canlua.data.model.Card
+import com.giathinh.canlua.R
+import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.ui.component.CardItem
-import com.giathinh.canlua.ui.component.CardListSkeleton
 import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.component.CreateCardMode
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
-import com.giathinh.canlua.ui.component.cardlist.CardListEmptyState
+import com.giathinh.canlua.ui.component.CardListSkeleton
 import com.giathinh.canlua.ui.component.cardlist.CardListSummaryCard
-import com.giathinh.canlua.ui.component.cardlist.DeleteCardConfirmDialog
-import com.giathinh.canlua.ui.feedback.LocalAppToast
-import com.giathinh.canlua.ui.navigation.BottomNavItem
 import com.giathinh.canlua.ui.theme.AppColors
-import com.giathinh.canlua.ui.util.isScrollingUp
+import com.giathinh.canlua.ui.theme.LocalAppUiMode
 import com.giathinh.canlua.ui.viewmodel.CardListViewModel
-import com.giathinh.canlua.ui.viewmodel.DeleteCardEvent
-import kotlinx.coroutines.delay
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
-private const val HOME_MAX_CARDS = 5
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController
+    navController: NavController,
+    viewModel: CardListViewModel = hiltViewModel()
 ) {
-    com.giathinh.canlua.util.TrackScreenRender("home")
-    val viewModel: CardListViewModel = hiltViewModel()
+    com.giathinh.canlua.util.TrackScreenRender("home_screen")
 
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val uiMode = LocalAppUiMode.current
 
-    TransitionSafeWrapper(
-        isDataReady = !isLoading,
-        skeletonContent = { CardListSkeleton() }
-    ) {
-        HomeScreenContent(
+    if (uiMode == AppUiMode.SIMPLE) {
+        HomeScreenSimple(
             navController = navController,
-            viewModel = viewModel
+            viewModel = viewModel,
+            cards = cards,
+            isLoading = isLoading
+        )
+    } else {
+        HomeScreenStandard(
+            navController = navController,
+            viewModel = viewModel,
+            cards = cards,
+            isLoading = isLoading
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeScreenContent(
+private fun HomeScreenStandard(
     navController: NavController,
-    viewModel: CardListViewModel
+    viewModel: CardListViewModel,
+    cards: List<com.giathinh.canlua.data.model.Card>,
+    isLoading: Boolean
 ) {
-    val allCards by viewModel.cards.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
-    val appToast = LocalAppToast.current
-
-    // 5 phiếu gần nhất (all cards đã sắp xếp theo ngày desc từ DB)
-    val recentCards = remember(allCards) { allCards.take(HOME_MAX_CARDS) }
-    val hasMoreCards = remember(allCards) { allCards.size > HOME_MAX_CARDS }
-
     var showCreateDialog by remember { mutableStateOf(false) }
-    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-    var cardToDelete by remember { mutableStateOf<Card?>(null) }
 
-    val listState = rememberLazyListState()
-    val scrollingUp = listState.isScrollingUp()
-    val fabVisible by remember { derivedStateOf { scrollingUp || recentCards.isEmpty() } }
-
-    LaunchedEffect(fabVisible) {
-        com.giathinh.canlua.ui.util.BottomBarVisibility.set(fabVisible)
-    }
-    androidx.compose.runtime.DisposableEffect(Unit) {
-        onDispose { com.giathinh.canlua.ui.util.BottomBarVisibility.reset() }
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.deleteEvents.collect { event ->
-            when (event) {
-                is DeleteCardEvent.Success -> appToast.success("Đã xoá phiếu ${event.cardName}")
-                DeleteCardEvent.Error -> appToast.error("Không xoá được phiếu. Thử lại sau")
-            }
-        }
-    }
-
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
 
-    val todayCards = remember(allCards) {
+    val todayCards = remember(cards) {
         val todayCal = Calendar.getInstance()
-        allCards.filter { card ->
+        cards.filter { card ->
             val cardCal = Calendar.getInstance().apply { time = card.date }
             cardCal.get(Calendar.DAY_OF_YEAR) == todayCal.get(Calendar.DAY_OF_YEAR) &&
                     cardCal.get(Calendar.YEAR) == todayCal.get(Calendar.YEAR)
         }
     }
-
+    
     val todayTotalKg = remember(todayCards) { todayCards.sumOf { it.totalWeight } }
     val todayTotalAmount = remember(todayCards) { todayCards.sumOf { it.totalAmount } }
-    val todayAvgPrice = remember(todayCards) {
-        val priced = todayCards.filter { it.pricePerKg > 0 }
-        if (priced.isEmpty()) null else priced.map { it.pricePerKg }.average()
+    val todayAvgPricePerKg = remember(todayCards) {
+        val pricedCards = todayCards.filter { it.pricePerKg > 0 }
+        if (pricedCards.isEmpty()) null else pricedCards.map { it.pricePerKg }.average()
     }
     val todayBagCount = remember(todayCards) {
         val total = todayCards.sumOf { it.bagCount }
         if (total <= 0) null else total
     }
 
-    val onCardClick = remember(navController) {
-        { id: Long -> navController.navigate("card_detail/$id") }
-    }
-    val onCardDelete: (Card) -> Unit = remember {
-        { card ->
-            cardToDelete = card
-            showDeleteConfirmDialog = true
-        }
+    val recentCards = remember(cards) {
+        cards.take(5)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Crossfade(
-            targetState = isLoading,
-            animationSpec = tween(300),
-            label = "home_crossfade"
-        ) { skeleton ->
-            if (skeleton) {
-                CardListSkeleton(count = 3, listState = listState)
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        bottom = 104.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // 1. Summary Card
+            item {
+                CardListSummaryCard(
+                    cardCount = todayCards.size,
+                    totalKg = todayTotalKg,
+                    totalAmount = todayTotalAmount,
+                    avgPricePerKg = todayAvgPricePerKg,
+                    bagCount = todayBagCount
+                )
+            }
+
+            // 2. Quick Action Grid
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    item(key = "summary_card") {
-                        CardListSummaryCard(
-                            cardCount = todayCards.size,
-                            totalKg = todayTotalKg,
-                            totalAmount = todayTotalAmount,
-                            avgPricePerKg = todayAvgPrice,
-                            bagCount = todayBagCount
+                    Text(
+                        text = "Phím tắt nhanh",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickActionCard(
+                            title = "Tạo phiếu mới",
+                            icon = Icons.Default.Add,
+                            backgroundColor = AppColors.GreenSurface,
+                            iconColor = AppColors.GreenPrimary,
+                            onClick = { showCreateDialog = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionCard(
+                            title = "Lịch sử phiếu",
+                            icon = Icons.Default.History,
+                            backgroundColor = AppColors.BlueSurface,
+                            iconColor = AppColors.Blue,
+                            onClick = { navController.navigate("history") },
+                            modifier = Modifier.weight(1f)
                         )
                     }
-
-                    if (recentCards.isEmpty()) {
-                        item(key = "empty") { CardListEmptyState() }
-                    } else {
-                        item(key = "recent_header") {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp, bottom = 2.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Phiếu cân gần nhất",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
-                                if (hasMoreCards) {
-                                    Row(
-                                        modifier = Modifier
-                                            .clickable {
-                                                navController.navigate(BottomNavItem.HISTORY.route) {
-                                                    launchSingleTop = true
-                                                }
-                                            }
-                                            .padding(4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                    ) {
-                                        Text(
-                                            text = "Xem tất cả",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = AppColors.GreenPrimary,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-                                            contentDescription = null,
-                                            tint = AppColors.GreenPrimary,
-                                            modifier = Modifier.padding(top = 1.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        items(
-                            items = recentCards,
-                            key = { it.id }
-                        ) { card ->
-                            CardItem(
-                                card = card,
-                                onClick = onCardClick,
-                                onDelete = onCardDelete
-                            )
-                        }
-
-                        if (hasMoreCards) {
-                            item(key = "view_more_footer") {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            navController.navigate(BottomNavItem.HISTORY.route) {
-                                                launchSingleTop = true
-                                            }
-                                        }
-                                        .padding(vertical = 12.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Xem toàn bộ ${allCards.size} phiếu cân",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = AppColors.GreenPrimary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-                                        contentDescription = null,
-                                        tint = AppColors.GreenPrimary
-                                    )
-                                }
-                            }
-                        }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickActionCard(
+                            title = "Báo cáo thống kê",
+                            icon = Icons.Default.BarChart,
+                            backgroundColor = AppColors.OrangeSurface,
+                            iconColor = AppColors.Orange,
+                            onClick = { navController.navigate("statistics") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionCard(
+                            title = "Cài đặt hệ thống",
+                            icon = Icons.Default.Settings,
+                            backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                            iconColor = AppColors.TextSecondary,
+                            onClick = { navController.navigate("settings") },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
-        }
 
-        // FAB Tạo phiếu cân
-        AnimatedVisibility(
-            visible = fabVisible,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 96.dp)
-        ) {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateDialog = true },
-                containerColor = AppColors.GreenPrimary,
-                contentColor = AppColors.CardBg,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = {
+            // 3. Recent 5 Cards list
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Tạo phiếu cân",
-                        fontWeight = FontWeight.Bold
+                        text = "Phiếu cân gần đây",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                    TextButton(onClick = { navController.navigate("history") }) {
+                        Text(
+                            text = "Xem tất cả",
+                            color = AppColors.GreenPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            if (isLoading) {
+                item {
+                    CardListSkeleton(count = 2)
+                }
+            } else if (recentCards.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Chưa có phiếu cân nào.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextSecondary
+                        )
+                    }
+                }
+            } else {
+                items(
+                    items = recentCards,
+                    key = { it.id }
+                ) { card ->
+                    CardItem(
+                        card = card,
+                        onClick = { id -> navController.navigate("card_detail/$id") },
+                        onDelete = { /* Handled on History Screen, no delete on Home standard for safety/cleanliness */ }
                     )
                 }
-            )
+            }
         }
     }
 
@@ -308,7 +257,6 @@ private fun HomeScreenContent(
         CreateCardBottomSheet(
             ownerName = "Nông dân",
             suggestedVarieties = suggestedVarieties,
-            mode = CreateCardMode.FARMER,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 viewModel.createNewCard(
@@ -322,25 +270,241 @@ private fun HomeScreenContent(
                     seasonLabel = season,
                     traderPhone = counterpartyPhone,
                     impurityWeight = impurityWeight,
-                    recordLocation = recordLocation
+                    recordLocation = recordLocation,
+                    onCreated = { cardId ->
+                        navController.navigate("card_detail/$cardId")
+                        showCreateDialog = false
+                    }
                 )
             }
         )
     }
+}
 
-    if (showDeleteConfirmDialog && cardToDelete != null) {
-        val targetCard = cardToDelete ?: return
-        DeleteCardConfirmDialog(
-            card = targetCard,
-            onConfirm = {
-                viewModel.deleteCard(targetCard)
-                showDeleteConfirmDialog = false
-                cardToDelete = null
-            },
-            onDismiss = {
-                showDeleteConfirmDialog = false
-                cardToDelete = null
+@Composable
+private fun HomeScreenSimple(
+    navController: NavController,
+    viewModel: CardListViewModel,
+    cards: List<com.giathinh.canlua.data.model.Card>,
+    isLoading: Boolean
+) {
+    val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
+
+    val todayCards = remember(cards) {
+        val todayCal = Calendar.getInstance()
+        cards.filter { card ->
+            val cardCal = Calendar.getInstance().apply { time = card.date }
+            cardCal.get(Calendar.DAY_OF_YEAR) == todayCal.get(Calendar.DAY_OF_YEAR) &&
+                    cardCal.get(Calendar.YEAR) == todayCal.get(Calendar.YEAR)
+        }
+    }
+    
+    val todayTotalKg = remember(todayCards) { todayCards.sumOf { it.totalWeight } }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 1. Huge Metric display
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = AppColors.GreenSurface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "TỔNG CÂN HÔM NAY",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenDark,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "${numberFormat.format(todayTotalKg)} kg",
+                        fontSize = 38.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppColors.GreenPrimary,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Số phiếu: ${todayCards.size} phiếu",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 2. Large Action Buttons
+            SimpleLargeButton(
+                text = "TẠO PHIẾU CÂN MỚI",
+                icon = Icons.Default.Add,
+                color = AppColors.GreenPrimary,
+                onClick = { showCreateDialog = true }
+            )
+
+            SimpleLargeButton(
+                text = "XEM LỊCH SỬ PHIẾU",
+                icon = Icons.Default.History,
+                color = AppColors.Blue,
+                onClick = { navController.navigate("history") }
+            )
+
+            SimpleLargeButton(
+                text = "XEM THỐNG KÊ MÙA VỤ",
+                icon = Icons.Default.BarChart,
+                color = AppColors.Orange,
+                onClick = { navController.navigate("statistics") }
+            )
+
+            SimpleLargeButton(
+                text = "CÀI ĐẶT HỆ THỐNG",
+                icon = Icons.Default.Settings,
+                color = AppColors.TextSecondary,
+                onClick = { navController.navigate("settings") }
+            )
+        }
+    }
+
+    if (showCreateDialog) {
+        CreateCardBottomSheet(
+            ownerName = "Nông dân",
+            suggestedVarieties = suggestedVarieties,
+            onDismiss = { showCreateDialog = false },
+            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
+                viewModel.createNewCard(
+                    name = "Nông dân",
+                    cccd = cccd,
+                    traderName = counterpartyName,
+                    pricePerKg = price,
+                    depositAmount = deposit,
+                    riceVariety = variety,
+                    moisturePercent = moisture,
+                    seasonLabel = season,
+                    traderPhone = counterpartyPhone,
+                    impurityWeight = impurityWeight,
+                    recordLocation = recordLocation,
+                    onCreated = { cardId ->
+                        navController.navigate("card_detail/$cardId")
+                        showCreateDialog = false
+                    }
+                )
             }
         )
+    }
+}
+
+// Support components
+
+@Composable
+private fun QuickActionCard(
+    title: String,
+    icon: ImageVector,
+    backgroundColor: Color,
+    iconColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .height(90.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(backgroundColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun SimpleLargeButton(
+    text: String,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color,
+            contentColor = Color.White
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Left
+            )
+        }
     }
 }

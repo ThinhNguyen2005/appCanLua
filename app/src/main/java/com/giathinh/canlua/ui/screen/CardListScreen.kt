@@ -71,8 +71,7 @@ import com.giathinh.canlua.ui.feedback.LocalAppToast
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardListScreen(
-    navController: NavController,
-    showFab: Boolean = false
+    navController: NavController
 ) {
     com.giathinh.canlua.util.TrackScreenRender("card_list")
     val viewModel: CardListViewModel = hiltViewModel()
@@ -88,8 +87,7 @@ fun CardListScreen(
     ) {
         CardListScreenContent(
             navController = navController,
-            viewModel = viewModel,
-            showFab = showFab
+            viewModel = viewModel
         )
     }
 }
@@ -98,8 +96,7 @@ fun CardListScreen(
 @Composable
 fun CardListScreenContent(
     navController: NavController,
-    viewModel: CardListViewModel,
-    showFab: Boolean = false
+    viewModel: CardListViewModel
 ) {
     val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -114,7 +111,6 @@ fun CardListScreenContent(
     val context = LocalContext.current
     val appToast = LocalAppToast.current
     
-    var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
     var cardToDelete by remember { mutableStateOf<com.giathinh.canlua.data.model.Card?>(null) }
@@ -304,55 +300,7 @@ fun CardListScreenContent(
             }
         }
 
-        AnimatedVisibility(
-            visible = showFab && fabVisible,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 96.dp)
-        ) {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateDialog = true },
-                containerColor = AppColors.GreenPrimary,
-                contentColor = AppColors.CardBg,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = {
-                    Text(
-                        text = "Tạo phiếu cân",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            )
-        }
-    }
-
-    if (showCreateDialog) {
-        CreateCardBottomSheet(
-            ownerName = ownerName,
-            suggestedVarieties = suggestedVarieties,
-            mode = CreateCardMode.FARMER,
-            onDismiss = { showCreateDialog = false },
-            onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
-                val cardName = ownerName
-                val cardTraderName = counterpartyName
-                val cardTraderPhone = counterpartyPhone
-                viewModel.createNewCard(
-                    name = cardName,
-                    cccd = cccd,
-                    traderName = cardTraderName,
-                    pricePerKg = price,
-                    depositAmount = deposit,
-                    riceVariety = variety,
-                    moisturePercent = moisture,
-                    seasonLabel = season,
-                    traderPhone = cardTraderPhone,
-                    impurityWeight = impurityWeight,
-                    recordLocation = recordLocation
-                )
-            }
-        )
+        // Removed local FAB to use docked BottomAppBar FAB
     }
 
     if (showDeleteConfirmDialog && cardToDelete != null) {
