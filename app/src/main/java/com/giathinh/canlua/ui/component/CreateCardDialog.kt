@@ -39,7 +39,9 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -286,283 +288,365 @@ fun CreateCardBottomSheet(
                         .fillMaxWidth()
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-
-                    // Section: Thông tin lô hàng
-                    SectionLabel(stringResource(R.string.create_card_section_lot))
-
-                    // Giống lúa ▼
-                    RiceVarietyDropdown(
-                        selected = riceVariety,
-                        onSelect = { riceVariety = it },
-                        suggestions = combinedSuggestions,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Vụ mùa (Manual)
-                    FormTextField(
-                        value = seasonLabel,
-                        onValueChange = { seasonLabel = it },
-                        label = stringResource(R.string.card_list_filter_season),
-                        placeholder = stringResource(R.string.dropdown_season_placeholder),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Row 2: Tên counterparty
-                    FormTextField(
-                        value = counterpartyName,
-                        onValueChange = { counterpartyName = it },
-                        label = stringResource(R.string.create_card_counterparty_name_label, counterpartyLabel),
-                        placeholder = stringResource(R.string.create_card_counterparty_name_placeholder, counterpartyLabel),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Row 2.1: SĐT counterparty — có nút liên hệ bên phải
-                    OutlinedTextField(
-                        value = counterpartyPhone,
-                        onValueChange = { input ->
-                            val filtered = input.filter { it.isDigit() || it == '+' || it == ' ' || it == '-' }
-                            if (filtered.length <= 15) counterpartyPhone = filtered
-                        },
-                        label = { Text(stringResource(R.string.create_card_counterparty_phone_label, counterpartyLabel)) },
-                        placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        trailingIcon = {
-                            val hasPermission = ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.READ_CONTACTS
-                            ) == PackageManager.PERMISSION_GRANTED
-                            
-                            IconButton(
-                                onClick = {
-                                    if (hasPermission) {
-                                        contactPickerLauncher.launch(null)
-                                    } else {
-                                        permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ContactPhone,
-                                    contentDescription = stringResource(R.string.create_card_contacts_select),
-                                    tint = AppColors.GreenPrimary
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
-
-                    // Row 2.2: CCCD counterparty — 12 số
-                    OutlinedTextField(
-                        value = cccd,
-                        onValueChange = { input ->
-                            val digits = input.filter { it.isDigit() }
-                            if (digits.length <= 12) cccd = digits
-                        },
-                        label = { Text(stringResource(R.string.create_card_cccd_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    HapticUtil.tick(context)
-                                    showCccdHelp = true
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích CCCD",
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
-
-                    Spacer(Modifier.height(4.dp))
-
-                    // Section: Giá & Thanh toán
-                    SectionLabel(stringResource(R.string.create_card_section_payment))
-
-                    Text(
-                        text = stringResource(R.string.create_card_weight_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextHint,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-
-
-                    // Trừ tạp chất mặc định (1 dòng)
-                    OutlinedTextField(
-                        value = impurityWeightRaw,
-                        onValueChange = { input ->
-                            val filtered = input.filter { it.isDigit() || it == '.' }
-                            if (filtered.length <= 5) impurityWeightRaw = filtered
-                        },
-                        label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_impurity_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    HapticUtil.tick(context)
-                                    showImpurityHelp = true
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích tạp chất",
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
-
-                    // Độ ẩm % (1 dòng)
-                    OutlinedTextField(
-                        value = moistureRaw,
-                        onValueChange = { input ->
-                            val filtered = input.filter { it.isDigit() || it == '.' }
-                            if (filtered.length <= 4) moistureRaw = filtered
-                        },
-                        label = { Text(stringResource(R.string.create_card_moisture_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    HapticUtil.tick(context)
-                                    showMoistureHelp = true
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích độ ẩm",
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
-
-                    // Đơn giá đ/kg (1 dòng)
-                    OutlinedTextField(
-                        value = priceRaw,
-                        onValueChange = { input ->
-                            val digits = input.filter { it.isDigit() }
-                            if (digits.length <= 7) priceRaw = digits
-                        },
-                        label = { Text(stringResource(R.string.create_card_price_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        visualTransformation = ThousandSeparatorTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
-
-                    // Row 5: Tiền cọc — full width
-                    OutlinedTextField(
-                        value = depositRaw,
-                        onValueChange = { input ->
-                            val digits = input.filter { it.isDigit() }
-                            if (digits.length <= 10) depositRaw = digits
-                        },
-                        label = { Text(stringResource(R.string.create_card_deposit_label)) },
-                        placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        visualTransformation = ThousandSeparatorTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = dialogTextFieldColors()
-                    )
-
-                    // Row 6: Opt-in GPS vị trí ruộng
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Card 1: Thông tin phiếu cân (Xanh lá)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
-                        Checkbox(
-                            checked = recordLocation,
-                            onCheckedChange = { checked ->
-                                if (checked) {
-                                    if (hasLocationPermission(context)) {
-                                        recordLocation = true
-                                    } else {
-                                        gpsPermissionLauncher.launch(
-                                            arrayOf(
-                                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                                Manifest.permission.ACCESS_COARSE_LOCATION
-                                            )
-                                        )
-                                    }
-                                } else {
-                                    recordLocation = false
-                                }
-                            },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = AppColors.GreenPrimary,
-                                uncheckedColor = AppColors.TextSecondary
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text(
-                                text = "Lưu vị trí GPS ruộng",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = AppColors.TextPrimary
+                            // Accent top border
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(AppColors.GreenPrimary)
                             )
-                            Text(
-                                text = "Ghi lại tọa độ để hiển thị trên bản đồ lúa",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.TextSecondary
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Text(
+                                    text = "Thông tin phiếu cân",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.GreenPrimary
+                                )
+
+                                // Giống lúa ▼
+                                RiceVarietyDropdown(
+                                    selected = riceVariety,
+                                    onSelect = { riceVariety = it },
+                                    suggestions = combinedSuggestions,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Vụ mùa (Manual) + Gợi ý nhanh
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    FormTextField(
+                                        value = seasonLabel,
+                                        onValueChange = { seasonLabel = it },
+                                        label = stringResource(R.string.card_list_filter_season),
+                                        placeholder = stringResource(R.string.dropdown_season_placeholder),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    // Quick Season Chips under text field
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.padding(start = 4.dp)
+                                    ) {
+                                        listOf("Đông Xuân 2026", "Hè Thu 2026", "Thu Đông 2026").forEach { suggestion ->
+                                            SuggestionChip(
+                                                onClick = { seasonLabel = suggestion },
+                                                label = { Text(suggestion, style = MaterialTheme.typography.bodySmall) }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Tên thương lái/nông dân
+                                FormTextField(
+                                    value = counterpartyName,
+                                    onValueChange = { counterpartyName = it },
+                                    label = stringResource(R.string.create_card_counterparty_name_label, counterpartyLabel),
+                                    placeholder = stringResource(R.string.create_card_counterparty_name_placeholder, counterpartyLabel),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // SĐT
+                                OutlinedTextField(
+                                    value = counterpartyPhone,
+                                    onValueChange = { input ->
+                                        val filtered = input.filter { it.isDigit() || it == '+' || it == ' ' || it == '-' }
+                                        if (filtered.length <= 15) counterpartyPhone = filtered
+                                    },
+                                    label = { Text(stringResource(R.string.create_card_counterparty_phone_label, counterpartyLabel)) },
+                                    placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    trailingIcon = {
+                                        val hasPermission = ContextCompat.checkSelfPermission(
+                                            context,
+                                            android.Manifest.permission.READ_CONTACTS
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                        
+                                        IconButton(
+                                            onClick = {
+                                                if (hasPermission) {
+                                                    contactPickerLauncher.launch(null)
+                                                } else {
+                                                    permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContactPhone,
+                                                contentDescription = stringResource(R.string.create_card_contacts_select),
+                                                tint = AppColors.GreenPrimary
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = dialogTextFieldColors()
+                                )
+
+                                // CCCD
+                                OutlinedTextField(
+                                    value = cccd,
+                                    onValueChange = { input ->
+                                        val digits = input.filter { it.isDigit() }
+                                        if (digits.length <= 12) cccd = digits
+                                    },
+                                    label = { Text(stringResource(R.string.create_card_cccd_label)) },
+                                    placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                HapticUtil.tick(context)
+                                                showCccdHelp = true
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Info,
+                                                contentDescription = "Giải thích CCCD",
+                                                tint = AppColors.GreenPrimary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = dialogTextFieldColors()
+                                )
+                            }
+                        }
+                    }
+
+                    // Card 2: Giá & Thanh toán (Cam)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column {
+                            // Accent top border (Orange)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(AppColors.Orange)
                             )
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Text(
+                                    text = "Đơn giá & Khấu trừ",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.Orange
+                                )
+
+                                // Tạp chất (%) & Độ ẩm (%) xếp trên 1 hàng (2 cột)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = impurityWeightRaw,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() || it == '.' }
+                                            if (filtered.length <= 5) impurityWeightRaw = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
+                                        placeholder = { Text(stringResource(R.string.create_card_impurity_weight_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                                        trailingIcon = {
+                                            IconButton(
+                                                onClick = {
+                                                    HapticUtil.tick(context)
+                                                    showImpurityHelp = true
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Info,
+                                                    contentDescription = "Giải thích tạp chất",
+                                                    tint = AppColors.GreenPrimary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f).heightIn(min = 60.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = dialogTextFieldColors()
+                                    )
+
+                                    OutlinedTextField(
+                                        value = moistureRaw,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() || it == '.' }
+                                            if (filtered.length <= 4) moistureRaw = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.create_card_moisture_label)) },
+                                        placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                                        trailingIcon = {
+                                            IconButton(
+                                                onClick = {
+                                                    HapticUtil.tick(context)
+                                                    showMoistureHelp = true
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Info,
+                                                    contentDescription = "Giải thích độ ẩm",
+                                                    tint = AppColors.GreenPrimary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f).heightIn(min = 60.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = dialogTextFieldColors()
+                                    )
+                                }
+
+                                // Đơn giá đ/kg (Chữ to, Bold màu GreenPrimary)
+                                OutlinedTextField(
+                                    value = priceRaw,
+                                    onValueChange = { input ->
+                                        val digits = input.filter { it.isDigit() }
+                                        if (digits.length <= 7) priceRaw = digits
+                                    },
+                                    label = { Text(stringResource(R.string.create_card_price_label)) },
+                                    placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                                    visualTransformation = ThousandSeparatorTransformation(),
+                                    textStyle = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = AppColors.GreenPrimary
+                                    ),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = dialogTextFieldColors()
+                                )
+
+                                // Tiền cọc (đ)
+                                OutlinedTextField(
+                                    value = depositRaw,
+                                    onValueChange = { input ->
+                                        val digits = input.filter { it.isDigit() }
+                                        if (digits.length <= 10) depositRaw = digits
+                                    },
+                                    label = { Text(stringResource(R.string.create_card_deposit_label)) },
+                                    placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                                    visualTransformation = ThousandSeparatorTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = dialogTextFieldColors()
+                                )
+                            }
+                        }
+                    }
+
+                    // Card 3: Tính năng mở rộng (GPS)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(AppColors.TextSecondary)
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = recordLocation,
+                                    onCheckedChange = { checked ->
+                                        if (checked) {
+                                            if (hasLocationPermission(context)) {
+                                                recordLocation = true
+                                            } else {
+                                                gpsPermissionLauncher.launch(
+                                                    arrayOf(
+                                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                                    )
+                                                )
+                                            }
+                                        } else {
+                                            recordLocation = false
+                                        }
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = AppColors.GreenPrimary,
+                                        uncheckedColor = AppColors.TextSecondary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Lưu vị trí GPS ruộng",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AppColors.TextPrimary
+                                    )
+                                    Text(
+                                        text = "Ghi lại tọa độ để hiển thị trên bản đồ lúa",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.TextSecondary
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
-                // ── Buttons ──
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    color = AppColors.Divider
-                )
+                // ── Footer Buttons ──
+                HorizontalDivider(color = AppColors.Divider)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    // Cancel button
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1.5f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
                         Text(
-                            text = stringResource(R.string.action_cancel),
+                            text = stringResource(R.string.action_cancel).uppercase(),
                             color = AppColors.TextSecondary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Bold
                         )
                     }
+
+                    // Create button
                     Button(
                         onClick = {
                             HapticUtil.confirm(context)
@@ -585,10 +669,11 @@ fun CreateCardBottomSheet(
                             containerColor = AppColors.GreenPrimary,
                             disabledContainerColor = AppColors.GreenPrimary.copy(alpha = 0.5f)
                         ),
+                        modifier = Modifier.weight(2f).height(56.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.create_card_submit),
+                            text = stringResource(R.string.create_card_submit).uppercase(),
                             fontWeight = FontWeight.Bold,
                             color = AppColors.CardBg
                         )
