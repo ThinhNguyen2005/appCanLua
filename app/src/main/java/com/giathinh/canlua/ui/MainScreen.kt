@@ -124,6 +124,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         modifier = if (showTopBar) {
             Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
         } else {
@@ -208,7 +209,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             contentColor = Color.White,
                             shape = androidx.compose.foundation.shape.CircleShape,
                             modifier = Modifier
-                                .offset(y = (-18).dp)
+                                .offset(y = (-28).dp)
                                 .size(56.dp)
                         ) {
                             Icon(

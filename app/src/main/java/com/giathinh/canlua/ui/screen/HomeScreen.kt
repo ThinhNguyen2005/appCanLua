@@ -119,12 +119,13 @@ private fun HomeScreenStandard(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0.dp)
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .statusBarsPadding(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -305,12 +306,13 @@ private fun HomeScreenSimple(
     val todayTotalKg = remember(todayCards) { todayCards.sumOf { it.totalWeight } }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0.dp)
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .statusBarsPadding()
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp),
