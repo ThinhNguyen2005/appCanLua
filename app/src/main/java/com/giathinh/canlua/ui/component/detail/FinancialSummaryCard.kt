@@ -60,7 +60,14 @@ fun FinancialSummaryCard(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(AppColors.Orange)
+            )
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -237,6 +244,7 @@ fun FinancialSummaryCard(
                         uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
+            }
             }
         }
     }

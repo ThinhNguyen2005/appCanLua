@@ -82,13 +82,20 @@ fun CardInfoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .animateContentSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(AppColors.GreenPrimary)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateContentSize()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             // ── Header ─────────────────────────────────────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -166,6 +173,7 @@ fun CardInfoCard(
                 onOpenMap = onOpenMap,
                 onRefreshLocation = onRefreshLocation
             )
+            }
         }
     }
 }

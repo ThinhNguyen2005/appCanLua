@@ -73,7 +73,14 @@ fun WeightSummaryCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(AppColors.GreenPrimary)
+            )
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -220,6 +227,7 @@ fun WeightSummaryCard(
                         color = AppColors.GreenPrimary
                     )
                 }
+            }
             }
         }
     }
