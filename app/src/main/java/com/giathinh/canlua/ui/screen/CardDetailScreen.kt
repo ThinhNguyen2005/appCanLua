@@ -703,16 +703,12 @@ fun EditCardDialog(
     var riceVariety by remember { mutableStateOf(card.riceVariety) }
     var seasonLabel by remember { mutableStateOf(card.seasonLabel) }
 
-    // ── Tab 1: Trừ hao ───────────────────────────────────────────────────────
+    // ── Tab 1: Trừ hao & Tài chính ───────────────────────────────────────────
     var moisturePercent by remember { mutableStateOf(if (card.moisturePercent > 0) card.moisturePercent.toString() else "") }
     var impurityWeight by remember { mutableStateOf(if (card.impurityWeight > 0) card.impurityWeight.toString() else "") }
-
-    // ── Tab 2: Tài chính ─────────────────────────────────────────────────────
     var pricePerKg by remember { mutableStateOf(if (card.pricePerKg > 0) "%.0f".format(card.pricePerKg) else "") }
     var depositAmount by remember { mutableStateOf(if (card.depositAmount > 0) "%.0f".format(card.depositAmount) else "") }
     var paidAmount by remember { mutableStateOf(if (card.paidAmount > 0) "%.0f".format(card.paidAmount) else "") }
-
-    var selectedTab by remember { mutableIntStateOf(0) }
 
     val isValid = farmerName.isNotBlank() &&
                   traderName.isNotBlank() &&
@@ -724,13 +720,13 @@ fun EditCardDialog(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.97f)
-                .wrapContentHeight(),
+                .fillMaxWidth(0.95f)
+                .fillMaxHeight(0.85f),
             shape = RoundedCornerShape(24.dp),
             color = AppColors.CardBg,
             tonalElevation = 6.dp
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // ── Dialog header ─────────────────────────────────────────────
                 Box(
                     modifier = Modifier
@@ -755,364 +751,316 @@ fun EditCardDialog(
                     }
                 }
 
-                // ── Tab selector ──────────────────────────────────────────────
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = AppColors.CardBg,
-                    contentColor = AppColors.GreenPrimary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = AppColors.GreenPrimary
-                        )
-                    }
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = {
-                            Text(
-                                "Thông tin",
-                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        icon = {
-                            Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(16.dp))
-                        },
-                        selectedContentColor = AppColors.GreenPrimary,
-                        unselectedContentColor = AppColors.TextSecondary
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = {
-                            Text(
-                                "Trừ hao",
-                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        icon = {
-                            Icon(Icons.Outlined.Scale, contentDescription = null, modifier = Modifier.size(16.dp))
-                        },
-                        selectedContentColor = AppColors.GreenPrimary,
-                        unselectedContentColor = AppColors.TextSecondary
-                    )
-                    Tab(
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
-                        text = {
-                            Text(
-                                "Tài chính",
-                                fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        icon = {
-                            Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(16.dp))
-                        },
-                        selectedContentColor = AppColors.GreenPrimary,
-                        unselectedContentColor = AppColors.TextSecondary
-                    )
-                }
-
-                // ── Tab content ───────────────────────────────────────────────
+                // ── Form (Scrollable Content) ──────────────────────────────────
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (selectedTab == 0) {
-                        // ── Tab 0: Thông tin chung ────────────────────────────
-
-                        // Tên chủ ruộng
-                        OutlinedTextField(
-                            value = farmerName,
-                            onValueChange = { farmerName = it },
-                            label = { Text(stringResource(R.string.card_detail_farmer_name_label)) },
-                            placeholder = { Text(stringResource(R.string.card_detail_farmer_name_placeholder), color = AppColors.TextHint) },
-                            leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.GreenPrimary,
-                                unfocusedBorderColor = AppColors.Divider
+                    // Card 1: Thông tin chung (Accent Xanh lá)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(AppColors.GreenPrimary)
                             )
-                        )
-
-                        // Tên thương lái
-                        OutlinedTextField(
-                            value = traderName,
-                            onValueChange = { traderName = it },
-                            label = { Text(stringResource(R.string.card_detail_trader_name_label)) },
-                            placeholder = { Text(stringResource(R.string.card_detail_trader_name_placeholder), color = AppColors.TextHint) },
-                            leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.GreenPrimary,
-                                unfocusedBorderColor = AppColors.Divider
-                            )
-                        )
-
-                        // SĐT + CCCD (equal weight 50/50)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = traderPhone,
-                                onValueChange = { input ->
-                                    val filtered = input.filter { it.isDigit() || it == '+' }
-                                    if (filtered.length <= 15) traderPhone = filtered
-                                },
-                                label = { Text(stringResource(R.string.pdf_trader_phone)) },
-                                leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f).fillMaxHeight(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AppColors.GreenPrimary,
-                                    unfocusedBorderColor = AppColors.Divider
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "Thông tin chung",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.GreenPrimary
                                 )
-                            )
-                            OutlinedTextField(
-                                value = cccd,
-                                onValueChange = { input ->
-                                    val filtered = input.filter { it.isDigit() }
-                                    if (filtered.length <= 12) cccd = filtered
-                                },
-                                label = { Text(stringResource(R.string.create_card_cccd_label)) },
-                                placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), color = AppColors.TextHint) },
-                                leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                isError = cccd.isNotBlank() && cccd.length != 12,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f).fillMaxHeight(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AppColors.GreenPrimary,
-                                    unfocusedBorderColor = AppColors.Divider
-                                )
-                            )
-                        }
 
-                        // Giống lúa + Vụ mùa (equal weight 50/50)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                RiceVarietyDropdown(
-                                    selected = riceVariety,
-                                    onSelect = { riceVariety = it },
-                                    modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+                                // Tên chủ ruộng
+                                OutlinedTextField(
+                                    value = farmerName,
+                                    onValueChange = { farmerName = it },
+                                    label = { Text(stringResource(R.string.card_detail_farmer_name_label)) },
+                                    placeholder = { Text(stringResource(R.string.card_detail_farmer_name_placeholder), color = AppColors.TextHint) },
+                                    leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = AppColors.GreenPrimary,
-                                        unfocusedBorderColor = AppColors.Divider,
-                                        focusedLabelColor = AppColors.GreenPrimary,
-                                        unfocusedLabelColor = AppColors.TextHint
-                                    ),
-                                    fillMaxHeight = true
+                                        unfocusedBorderColor = AppColors.Divider
+                                    )
                                 )
+
+                                // Tên thương lái
+                                OutlinedTextField(
+                                    value = traderName,
+                                    onValueChange = { traderName = it },
+                                    label = { Text(stringResource(R.string.card_detail_trader_name_label)) },
+                                    placeholder = { Text(stringResource(R.string.card_detail_trader_name_placeholder), color = AppColors.TextHint) },
+                                    leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AppColors.GreenPrimary,
+                                        unfocusedBorderColor = AppColors.Divider
+                                    )
+                                )
+
+                                // SĐT & CCCD (50/50)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = traderPhone,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() || it == '+' }
+                                            if (filtered.length <= 15) traderPhone = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.pdf_trader_phone)) },
+                                        leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+                                    OutlinedTextField(
+                                        value = cccd,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() }
+                                            if (filtered.length <= 12) cccd = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.create_card_cccd_label)) },
+                                        placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), color = AppColors.TextHint) },
+                                        leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        isError = cccd.isNotBlank() && cccd.length != 12,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+                                }
+
+                                // Giống lúa & Vụ mùa (50/50)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        RiceVarietyDropdown(
+                                            selected = riceVariety,
+                                            onSelect = { riceVariety = it },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = AppColors.GreenPrimary,
+                                                unfocusedBorderColor = AppColors.Divider,
+                                                focusedLabelColor = AppColors.GreenPrimary,
+                                                unfocusedLabelColor = AppColors.TextHint
+                                            )
+                                        )
+                                    }
+                                    OutlinedTextField(
+                                        value = seasonLabel,
+                                        onValueChange = { seasonLabel = it },
+                                        label = { Text(stringResource(R.string.card_detail_season_label)) },
+                                        placeholder = { Text(stringResource(R.string.card_detail_season_placeholder), color = AppColors.TextHint) },
+                                        leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+                                }
                             }
-                            OutlinedTextField(
-                                value = seasonLabel,
-                                onValueChange = { seasonLabel = it },
-                                label = { Text(stringResource(R.string.card_detail_season_label)) },
-                                placeholder = { Text(stringResource(R.string.card_detail_season_placeholder), color = AppColors.TextHint) },
-                                leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f).fillMaxHeight(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AppColors.GreenPrimary,
-                                    unfocusedBorderColor = AppColors.Divider
-                                )
-                            )
                         }
-                        // Ghi chú: Giống lúa chỉ lưu tên để hiển thị, không ảnh hưởng tính toán
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(start = 2.dp, top = 2.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Grass,
-                                contentDescription = null,
-                                tint = AppColors.TextHint,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = "Giống lúa chỉ hiển thị, không ảnh hưởng tính toán",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = AppColors.TextHint
-                            )
-                        }
+                    }
 
-                    } else if (selectedTab == 1) {
-                        // ── Tab 1: Trừ hao ────────────────────────────────────
-
-                        // Ghi chú hướng dẫn
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = AppColors.GreenSurface,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    // Card 2: Trừ hao & Tài chính (Accent Cam)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .background(AppColors.Orange)
+                            )
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(
-                                    Icons.Outlined.Scale,
-                                    contentDescription = null,
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "Thay đổi sẽ tính lại khối lượng thực nhận",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.GreenPrimary
+                                    text = "Trừ hao & Tài chính",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.Orange
                                 )
+
+                                // Độ ẩm & Tạp chất (50/50)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = moisturePercent,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() || it == '.' }
+                                            if (filtered.length <= 4) moisturePercent = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.create_card_moisture_label)) },
+                                        placeholder = { Text("0.0", color = AppColors.TextHint) },
+                                        leadingIcon = { Icon(Icons.Outlined.WaterDrop, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        suffix = { Text("%", color = AppColors.TextSecondary) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+
+                                    OutlinedTextField(
+                                        value = impurityWeight,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() || it == '.' }
+                                            if (filtered.length <= 5) impurityWeight = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
+                                        placeholder = { Text("0.0", color = AppColors.TextHint) },
+                                        leadingIcon = { Icon(Icons.Outlined.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        suffix = { Text("kg", color = AppColors.TextSecondary) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+                                }
+
+                                // Giá/kg
+                                OutlinedTextField(
+                                    value = pricePerKg,
+                                    onValueChange = { input ->
+                                        val filtered = input.filter { it.isDigit() }
+                                        pricePerKg = filtered
+                                    },
+                                    label = { Text(stringResource(R.string.create_card_price_label)) },
+                                    leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                    suffix = { Text("đ/kg", color = AppColors.TextSecondary) },
+                                    visualTransformation = ThousandSeparatorTransformation(),
+                                    textStyle = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = AppColors.GreenPrimary
+                                    ),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AppColors.GreenPrimary,
+                                        unfocusedBorderColor = AppColors.Divider
+                                    )
+                                )
+
+                                // Đặt cọc & Đã trả (50/50)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = depositAmount,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() }
+                                            depositAmount = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.create_card_deposit_label)) },
+                                        leadingIcon = { Icon(Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        visualTransformation = ThousandSeparatorTransformation(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+                                    OutlinedTextField(
+                                        value = paidAmount,
+                                        onValueChange = { input ->
+                                            val filtered = input.filter { it.isDigit() }
+                                            paidAmount = filtered
+                                        },
+                                        label = { Text(stringResource(R.string.card_detail_paid_amount_label)) },
+                                        leadingIcon = { Icon(Icons.Outlined.Payments, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                                        visualTransformation = ThousandSeparatorTransformation(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.GreenPrimary,
+                                            unfocusedBorderColor = AppColors.Divider
+                                        )
+                                    )
+                                }
                             }
-                        }
-
-                        // Độ ẩm
-                        OutlinedTextField(
-                            value = moisturePercent,
-                            onValueChange = { input ->
-                                val filtered = input.filter { it.isDigit() || it == '.' }
-                                if (filtered.length <= 4) moisturePercent = filtered
-                            },
-                            label = { Text(stringResource(R.string.create_card_moisture_label)) },
-                            placeholder = { Text("0.0", color = AppColors.TextHint) },
-                            leadingIcon = { Icon(Icons.Outlined.WaterDrop, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                            suffix = { Text("%", color = AppColors.TextSecondary) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.GreenPrimary,
-                                unfocusedBorderColor = AppColors.Divider
-                            )
-                        )
-
-                        // Tạp chất
-                        OutlinedTextField(
-                            value = impurityWeight,
-                            onValueChange = { input ->
-                                val filtered = input.filter { it.isDigit() || it == '.' }
-                                if (filtered.length <= 5) impurityWeight = filtered
-                            },
-                            label = { Text(stringResource(R.string.create_card_impurity_weight_label)) },
-                            placeholder = { Text("0.0", color = AppColors.TextHint) },
-                            leadingIcon = { Icon(Icons.Outlined.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                            suffix = { Text("kg", color = AppColors.TextSecondary) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.GreenPrimary,
-                                unfocusedBorderColor = AppColors.Divider
-                            )
-                        )
-                    } else if (selectedTab == 2) {
-                        // ── Tab 2: Tài chính ──────────────────────────────────
-
-                        // Giá/kg
-                        OutlinedTextField(
-                            value = pricePerKg,
-                            onValueChange = { input ->
-                                val filtered = input.filter { it.isDigit() }
-                                pricePerKg = filtered
-                            },
-                            label = { Text(stringResource(R.string.create_card_price_label)) },
-                            leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                            suffix = { Text("đ/kg", color = AppColors.TextSecondary) },
-                            visualTransformation = ThousandSeparatorTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.GreenPrimary,
-                                unfocusedBorderColor = AppColors.Divider
-                            )
-                        )
-
-                        // Đặt cọc + Đã trả (equal weight)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = depositAmount,
-                                onValueChange = { input ->
-                                    val filtered = input.filter { it.isDigit() }
-                                    depositAmount = filtered
-                                },
-                                label = { Text(stringResource(R.string.create_card_deposit_label)) },
-                                leadingIcon = { Icon(Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                visualTransformation = ThousandSeparatorTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f).fillMaxHeight(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AppColors.GreenPrimary,
-                                    unfocusedBorderColor = AppColors.Divider
-                                )
-                            )
-                            OutlinedTextField(
-                                value = paidAmount,
-                                onValueChange = { input ->
-                                    val filtered = input.filter { it.isDigit() }
-                                    paidAmount = filtered
-                                },
-                                label = { Text(stringResource(R.string.card_detail_paid_amount_label)) },
-                                leadingIcon = { Icon(Icons.Outlined.Payments, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                visualTransformation = ThousandSeparatorTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f).fillMaxHeight(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AppColors.GreenPrimary,
-                                    unfocusedBorderColor = AppColors.Divider
-                                )
-                            )
                         }
                     }
                 }
 
-                // ── Action buttons ────────────────────────────────────────────
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), color = AppColors.Divider)
+                // ── Footer Buttons ────────────────────────────────────────────
+                HorizontalDivider(color = AppColors.Divider)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1.5f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_cancel).uppercase(),
+                            color = AppColors.TextSecondary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                     Button(
                         onClick = {
@@ -1133,9 +1081,14 @@ fun EditCardDialog(
                         },
                         enabled = isValid,
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                        modifier = Modifier.weight(2f).height(56.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(stringResource(R.string.card_detail_save_changes), color = Color.White)
+                        Text(
+                            text = stringResource(R.string.card_detail_save_changes).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
