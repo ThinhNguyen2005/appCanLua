@@ -394,16 +394,6 @@ fun CardListScreenContent(
                             ),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            item(key = "summary_header") {
-                                CardListSummaryCard(
-                                    cardCount = todayCards.size,
-                                    totalKg = todayTotalKg,
-                                    totalAmount = todayTotalAmount,
-                                    avgPricePerKg = todayAvgPricePerKg,
-                                    bagCount = todayBagCount
-                                )
-                            }
-
                             if (cards.isEmpty()) {
                                 val isFiltered = selectedFilter != null || selectedSeason != null || selectedPayment != null || searchQuery.isNotEmpty()
                                 item(key = "empty") {

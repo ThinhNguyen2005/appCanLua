@@ -126,8 +126,8 @@ fun ModernBottomBar(
                 .height(64.dp), // Chiều cao tối ưu tiêu chuẩn
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side items (Cân Lúa)
-            val leftItems = items.filter { it.route == BottomNavItem.SCALE.route }
+            // Left side items (Cân Lúa, Lịch sử)
+            val leftItems = items.filter { it.route == BottomNavItem.SCALE.route || it.route == BottomNavItem.HISTORY.route }
             Row(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -147,10 +147,10 @@ fun ModernBottomBar(
             // Central spacer for the FAB
             Spacer(modifier = Modifier.width(76.dp))
 
-            // Right side items (Lịch sử, Thống kê)
-            val rightItems = items.filter { it.route != BottomNavItem.SCALE.route }
+            // Right side items (Thống kê, Cài đặt)
+            val rightItems = items.filter { it.route != BottomNavItem.SCALE.route && it.route != BottomNavItem.HISTORY.route }
             Row(
-                modifier = Modifier.weight(1.2f), // slightly wider to balance 2 items vs 1 item
+                modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {

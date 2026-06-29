@@ -7,6 +7,8 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Settings
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.giathinh.canlua.R
@@ -27,7 +29,10 @@ data class BottomNavItem(
         val STATISTICS = BottomNavItem(
             "statistics", Icons.Outlined.BarChart, Icons.Filled.BarChart, R.string.nav_account
         )
+        val SETTINGS = BottomNavItem(
+            "settings", Icons.Outlined.Settings, Icons.Filled.Settings, R.string.topbar_settings
+        )
 
-        val navItems = listOf(SCALE, HISTORY, STATISTICS)
+        val navItems = listOf(SCALE, HISTORY, STATISTICS, SETTINGS)
     }
 }

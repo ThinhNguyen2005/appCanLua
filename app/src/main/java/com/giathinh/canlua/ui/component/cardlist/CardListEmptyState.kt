@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,7 +29,7 @@ import com.giathinh.canlua.ui.theme.AppColors
 @Composable
 fun CardListEmptyState(
     modifier: Modifier = Modifier,
-    icon: ImageVector = Icons.Outlined.Scale,
+    icon: ImageVector = Icons.Outlined.History,
     title: String = stringResource(R.string.card_list_empty_title),
     subtitle: String = stringResource(R.string.card_list_empty_subtitle)
 ) {

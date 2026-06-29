@@ -41,7 +41,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.giathinh.canlua.ui.component.BottomBarItemSpec
 import com.giathinh.canlua.ui.component.ModernBottomBar
-import com.giathinh.canlua.ui.component.weight.WeighOptionsSheet
 import com.giathinh.canlua.ui.navigation.AppNavHost
 import com.giathinh.canlua.ui.navigation.BottomNavItem
 import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
@@ -80,7 +79,6 @@ fun MainScreen(deeplinkCardId: String? = null) {
         derivedStateOf { navBackStackEntry.value?.destination?.route }
     }
 
-    val showWeighOptionsSheet = remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
     val cardListViewModel: CardListViewModel = hiltViewModel()
     val suggestedVarieties by cardListViewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
@@ -112,7 +110,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
     val topBarTitle = if (topBarTitleRes != null) stringResource(topBarTitleRes) else defaultScaleTitle
 
-    val showTopBar = currentRoute in navItems.map { it.route }
+    val showTopBar = currentRoute == BottomNavItem.STATISTICS.route
 
     val rawPinnedBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val rawEnterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -144,22 +142,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             )
                         }
                     },
-                    actions = {
-                        if (currentRoute == BottomNavItem.SCALE.route) {
-                            IconButton(onClick = { showWeighOptionsSheet.value = true }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Tune,
-                                    contentDescription = stringResource(com.giathinh.canlua.R.string.weigh_options_icon_content)
-                                )
-                            }
-                        }
-                        IconButton(onClick = { navController.navigate("settings") }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = stringResource(com.giathinh.canlua.R.string.topbar_settings)
-                            )
-                        }
-                    },
+
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         scrolledContainerColor = MaterialTheme.colorScheme.background,
@@ -239,11 +222,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
         }
     }
 
-    if (showWeighOptionsSheet.value) {
-        WeighOptionsSheetWrapper(
-            onDismiss = { showWeighOptionsSheet.value = false }
-        )
-    }
+
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
@@ -273,36 +252,4 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
 }
 
-@Composable
-private fun WeighOptionsSheetWrapper(
-    onDismiss: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel()
-) {
-    val weighDefaults by viewModel.weighDefaults.collectAsStateWithLifecycle()
-    val ttsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
-    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
-    WeighOptionsSheet(
-        impurityIsPercent = weighDefaults.impurityIsPercent,
-        bagMethodIsSampling = weighDefaults.bagMethodIsSampling,
-        bagSampleCount = weighDefaults.bagSampleCount,
-        bagSampleTotalWeight = weighDefaults.bagSampleTotalWeight,
-        weightInputMode = weighDefaults.weightInputMode,
-        ttsEnabled = ttsEnabled,
-        fontScale = fontScale,
-        onDismiss = onDismiss,
-        onSave = { impurityPct, bagSampling, sampleCount, sampleWeight, inputMode, tts, font ->
-            viewModel.setWeighDefaults(
-                WeighDefaults(
-                    impurityIsPercent = impurityPct,
-                    bagMethodIsSampling = bagSampling,
-                    bagSampleCount = sampleCount,
-                    bagSampleTotalWeight = sampleWeight,
-                    weightInputMode = inputMode
-                )
-            )
-            viewModel.setTtsEnabled(tts)
-            viewModel.setFontScale(font)
-            onDismiss()
-        }
-    )
-}
+

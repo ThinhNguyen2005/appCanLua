@@ -32,8 +32,8 @@
     <string name="card_list_today_card_count">%1$s: %2$d phiếu</string>
     <string name="card_list_weight_kg">%1$s kg</string>
     <string name="card_list_money_vnd">%1$s đ</string>
-    <string name="card_list_empty_title">Chưa có phiếu cân nào</string>
-    <string name="card_list_empty_subtitle">Nhấn nút + để tạo phiếu cân mới</string>
+    <string name="card_list_empty_title">Lịch sử trống</string>
+    <string name="card_list_empty_subtitle">Hãy tạo phiếu cân mới để bắt đầu ghi chép lịch sử.</string>
     <string name="card_list_filter">Bộ lọc</string>
     <string name="card_list_filter_count">Bộ lọc · %1$d</string>
     <string name="card_list_clear_named_filter">Xoá lọc %1$s</string>

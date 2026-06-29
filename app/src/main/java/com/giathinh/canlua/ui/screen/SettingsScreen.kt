@@ -38,6 +38,13 @@ import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.data.model.AppThemeMode
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
+import com.giathinh.canlua.ui.navigation.BottomNavItem
+import com.giathinh.canlua.repository.WeighDefaults
+import com.giathinh.canlua.ui.theme.lockedAwareTextFieldColors
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material.icons.outlined.Scale
 
 import com.giathinh.canlua.util.TrackScreenRender
 
@@ -55,6 +62,62 @@ fun SettingsScreen(
     val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
     val uiMode by viewModel.uiMode.collectAsStateWithLifecycle()
 
+    val weighDefaults by viewModel.weighDefaults.collectAsStateWithLifecycle()
+
+    var bagSamplingLocal by remember { mutableStateOf(weighDefaults.bagMethodIsSampling) }
+    var bagsPerKgTextLocal by remember {
+        mutableStateOf(if (!weighDefaults.bagMethodIsSampling && weighDefaults.bagSampleCount > 0) weighDefaults.bagSampleCount.toString() else "8")
+    }
+    var sampleCountTextLocal by remember {
+        mutableStateOf(if (weighDefaults.bagSampleCount > 0) weighDefaults.bagSampleCount.toString() else "8")
+    }
+    var sampleWeightTextLocal by remember {
+        mutableStateOf(if (weighDefaults.bagSampleTotalWeight > 0.0) weighDefaults.bagSampleTotalWeight.toString() else "1.0")
+    }
+    var inputModeLocal by remember { mutableStateOf(weighDefaults.weightInputMode) }
+
+    LaunchedEffect(weighDefaults) {
+        bagSamplingLocal = weighDefaults.bagMethodIsSampling
+        inputModeLocal = weighDefaults.weightInputMode
+        
+        val currentBagsPerKg = bagsPerKgTextLocal.toIntOrNull() ?: 8
+        if (!weighDefaults.bagMethodIsSampling && weighDefaults.bagSampleCount != currentBagsPerKg) {
+            bagsPerKgTextLocal = weighDefaults.bagSampleCount.toString()
+        }
+        val currentSampleCount = sampleCountTextLocal.toIntOrNull() ?: 8
+        if (weighDefaults.bagSampleCount != currentSampleCount) {
+            sampleCountTextLocal = weighDefaults.bagSampleCount.toString()
+        }
+        val currentSampleWeight = sampleWeightTextLocal.toDoubleOrNull() ?: 1.0
+        if (weighDefaults.bagSampleTotalWeight != currentSampleWeight) {
+            sampleWeightTextLocal = weighDefaults.bagSampleTotalWeight.toString()
+        }
+    }
+
+    LaunchedEffect(bagSamplingLocal, bagsPerKgTextLocal, sampleCountTextLocal, sampleWeightTextLocal, inputModeLocal) {
+        kotlinx.coroutines.delay(500L)
+        val sampleCount = if (bagSamplingLocal) {
+            sampleCountTextLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
+        } else {
+            bagsPerKgTextLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
+        }
+        val sampleWeight = if (bagSamplingLocal) {
+            sampleWeightTextLocal.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0
+        } else {
+            1.0
+        }
+        val newDefaults = WeighDefaults(
+            impurityIsPercent = weighDefaults.impurityIsPercent,
+            bagMethodIsSampling = bagSamplingLocal,
+            bagSampleCount = sampleCount,
+            bagSampleTotalWeight = sampleWeight,
+            weightInputMode = inputModeLocal
+        )
+        if (newDefaults != weighDefaults) {
+            viewModel.setWeighDefaults(newDefaults)
+        }
+    }
+
     var themeExpanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
@@ -70,12 +133,19 @@ fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.content_back),
-                            tint = AppColors.TextPrimary
-                        )
+                    val prevRoute = navController.previousBackStackEntry?.destination?.route
+                    val isFromTab = prevRoute == BottomNavItem.SCALE.route ||
+                            prevRoute == BottomNavItem.HISTORY.route ||
+                            prevRoute == BottomNavItem.STATISTICS.route ||
+                            prevRoute == "settings"
+                    if (navController.previousBackStackEntry != null && !isFromTab) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.content_back),
+                                tint = AppColors.TextPrimary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -200,7 +270,187 @@ fun SettingsScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            SectionHeader(
+                icon = Icons.Outlined.Scale,
+                label = "Cấu hình cân lúa",
+                iconBg = AppColors.GreenSurface,
+                iconTint = AppColors.GreenPrimary
+            )
+
+            // 1. Hình thức bao bì mặc định (tùy chỉnh hình thức bao bì)
+            SettingsCardBox {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Cách trừ bao bì mặc định",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = "Quy định cách trừ khối lượng bao bì khi tạo phiếu cân mới.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Option 1: Bao đơn vị
+                    Surface(
+                        onClick = { bagSamplingLocal = false },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (!bagSamplingLocal) AppColors.GreenSurface else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RadioButton(
+                                selected = !bagSamplingLocal,
+                                onClick = { bagSamplingLocal = false },
+                                colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Bao đơn vị (X bao = 1 kg)", fontWeight = FontWeight.SemiBold)
+                                Text("Ví dụ: 8 bao quy đổi ra 1 kg bì", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                            }
+                        }
+                    }
+
+                    if (!bagSamplingLocal) {
+                        OutlinedTextField(
+                            value = bagsPerKgTextLocal,
+                            onValueChange = { bagsPerKgTextLocal = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Số bao quy đổi 1 kg bì") },
+                            suffix = { Text("bao = 1 kg") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            colors = lockedAwareTextFieldColors()
+                        )
+                    }
+
+                    // Option 2: Cân mẫu
+                    Surface(
+                        onClick = { bagSamplingLocal = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (bagSamplingLocal) AppColors.GreenSurface else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RadioButton(
+                                selected = bagSamplingLocal,
+                                onClick = { bagSamplingLocal = true },
+                                colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Cân mẫu (Tùy chỉnh)", fontWeight = FontWeight.SemiBold)
+                                Text("Cân X bao mẫu ra Y kg bì", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                            }
+                        }
+                    }
+
+                    if (bagSamplingLocal) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = sampleCountTextLocal,
+                                onValueChange = { sampleCountTextLocal = it.filter { ch -> ch.isDigit() } },
+                                label = { Text("Số bao mẫu") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                                colors = lockedAwareTextFieldColors()
+                            )
+                            OutlinedTextField(
+                                value = sampleWeightTextLocal,
+                                onValueChange = {
+                                    sampleWeightTextLocal = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }
+                                        .replace(',', '.')
+                                },
+                                label = { Text("Tổng kg mẫu") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                                colors = lockedAwareTextFieldColors()
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
+
+            // 2. Bố cục bàn phím cân lúa
+            SettingsCardBox {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Bàn phím nhập cân",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = "Thay đổi cỡ chữ và phím nhập trên màn hình cân lúa.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Standard Mode
+                        Surface(
+                            onClick = { inputModeLocal = "SMALL" },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (inputModeLocal == "SMALL") AppColors.GreenSurface else Color.Transparent,
+                            border = BorderStroke(1.dp, if (inputModeLocal == "SMALL") AppColors.GreenPrimary else AppColors.Divider),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                RadioButton(
+                                    selected = inputModeLocal == "SMALL",
+                                    onClick = { inputModeLocal = "SMALL" },
+                                    colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
+                                )
+                                Text("Bàn phím nhỏ", fontWeight = FontWeight.SemiBold)
+                                Text("Phím nhỏ gọn", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                            }
+                        }
+
+                        // Large Mode
+                        Surface(
+                            onClick = { inputModeLocal = "LARGE" },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (inputModeLocal == "LARGE") AppColors.GreenSurface else Color.Transparent,
+                            border = BorderStroke(1.dp, if (inputModeLocal == "LARGE") AppColors.GreenPrimary else AppColors.Divider),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                RadioButton(
+                                    selected = inputModeLocal == "LARGE",
+                                    onClick = { inputModeLocal = "LARGE" },
+                                    colors = RadioButtonDefaults.colors(selectedColor = AppColors.GreenPrimary)
+                                )
+                                Text("Bàn phím to", fontWeight = FontWeight.SemiBold)
+                                Text("Nút bấm lớn dễ ấn", style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
