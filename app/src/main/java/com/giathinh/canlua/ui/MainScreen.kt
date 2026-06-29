@@ -57,7 +57,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.animation.AnimatedVisibility
+import com.giathinh.canlua.R
+import com.giathinh.canlua.util.HapticUtil
+import com.giathinh.canlua.ui.util.BottomBarVisibility
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -65,15 +73,6 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val navController = rememberNavController()
     var currentDeeplinkCardId by remember(deeplinkCardId) { mutableStateOf(deeplinkCardId) }
     
-    LaunchedEffect(navController) {
-        navController.addOnDestinationChangedListener { _, destination, _ ->
-            val route = destination.route
-            if (route != null) {
-                com.giathinh.canlua.util.PerformanceTracker.onScreenChanged(route)
-            }
-        }
-    }
-
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute by remember {
         derivedStateOf { navBackStackEntry.value?.destination?.route }
@@ -101,7 +100,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
     val isOnTabScreen = currentTab != null
     val isImeVisible = WindowInsets.isImeVisible
 
-    val scrollVisible by com.giathinh.canlua.ui.util.BottomBarVisibility.visible.collectAsStateWithLifecycle()
+    val scrollVisible by BottomBarVisibility.visible.collectAsStateWithLifecycle()
     val showBottomBar = isOnTabScreen && !isImeVisible && scrollVisible
 
     val defaultScaleTitle = stringResource(com.giathinh.canlua.R.string.nav_scale)
@@ -160,8 +159,8 @@ fun MainScreen(deeplinkCardId: String? = null) {
                 .fillMaxSize()
                 .padding(
                     top = paddingValues.calculateTopPadding(),
-                    start = paddingValues.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                    end = paddingValues.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
+                    start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
+                    end = paddingValues.calculateEndPadding(LayoutDirection.Ltr)
                 )
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -199,22 +198,22 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             }
                         )
 
-                        val context = androidx.compose.ui.platform.LocalContext.current
-                        androidx.compose.material3.FloatingActionButton(
+                        val context = LocalContext.current
+                        FloatingActionButton(
                             onClick = {
-                                com.giathinh.canlua.util.HapticUtil.tick(context)
+                                HapticUtil.tick(context)
                                 showCreateDialog = true
                             },
                             containerColor = AppColors.GreenPrimary,
                             contentColor = Color.White,
-                            shape = androidx.compose.foundation.shape.CircleShape,
+                            shape = CircleShape,
                             modifier = Modifier
                                 .offset(y = (-28).dp)
                                 .size(56.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Tạo phiếu mới"
+                                contentDescription = stringResource(R.string.fab_create_card_content)
                             )
                         }
                     }
@@ -227,12 +226,12 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
-            ownerName = "Nông dân",
+            ownerName = stringResource(R.string.farmer),
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 cardListViewModel.createNewCard(
-                    name = "Nông dân",
+                    name = stringResource(R.string.farmer),
                     cccd = cccd,
                     traderName = counterpartyName,
                     pricePerKg = price,

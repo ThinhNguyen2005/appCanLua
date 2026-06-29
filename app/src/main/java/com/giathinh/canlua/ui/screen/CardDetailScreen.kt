@@ -1075,7 +1075,8 @@ fun EditCardDialog(
                                 depositAmount = depositAmount.toDoubleOrNull() ?: card.depositAmount,
                                 paidAmount = paidAmount.toDoubleOrNull() ?: card.paidAmount,
                                 traderPhone = traderPhone.trim(),
-                                cccd = cccd.trim().takeIf { it.isNotEmpty() }
+                                cccd = cccd.trim().takeIf { it.isNotEmpty() },
+                                fieldAddress = card.fieldAddress
                             )
                             onConfirm(updated)
                         },

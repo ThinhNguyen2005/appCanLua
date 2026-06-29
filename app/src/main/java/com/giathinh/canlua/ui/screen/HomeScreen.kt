@@ -91,6 +91,7 @@ private fun HomeScreenStandard(
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
 
+    val farmerLabel = stringResource(R.string.farmer)
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
 
@@ -147,7 +148,7 @@ private fun HomeScreenStandard(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Phím tắt nhanh",
+                        text = stringResource(R.string.home_quick_actions),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
@@ -157,7 +158,7 @@ private fun HomeScreenStandard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         QuickActionCard(
-                            title = "Tạo phiếu mới",
+                            title = stringResource(R.string.home_action_create_card),
                             icon = Icons.Default.Add,
                             backgroundColor = AppColors.GreenSurface,
                             iconColor = AppColors.GreenPrimary,
@@ -165,7 +166,7 @@ private fun HomeScreenStandard(
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionCard(
-                            title = "Lịch sử phiếu",
+                            title = stringResource(R.string.home_action_history),
                             icon = Icons.Default.History,
                             backgroundColor = AppColors.BlueSurface,
                             iconColor = AppColors.Blue,
@@ -178,7 +179,7 @@ private fun HomeScreenStandard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         QuickActionCard(
-                            title = "Báo cáo thống kê",
+                            title = stringResource(R.string.home_action_statistics),
                             icon = Icons.Default.BarChart,
                             backgroundColor = AppColors.OrangeSurface,
                             iconColor = AppColors.Orange,
@@ -186,7 +187,7 @@ private fun HomeScreenStandard(
                             modifier = Modifier.weight(1f)
                         )
                         QuickActionCard(
-                            title = "Cài đặt hệ thống",
+                            title = stringResource(R.string.home_action_settings),
                             icon = Icons.Default.Settings,
                             backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
                             iconColor = AppColors.TextSecondary,
@@ -205,14 +206,14 @@ private fun HomeScreenStandard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Phiếu cân gần đây",
+                        text = stringResource(R.string.home_recent_cards),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                     TextButton(onClick = { navController.navigate("history") }) {
                         Text(
-                            text = "Xem tất cả",
+                            text = stringResource(R.string.home_view_all),
                             color = AppColors.GreenPrimary,
                             fontWeight = FontWeight.Bold
                         )
@@ -233,7 +234,7 @@ private fun HomeScreenStandard(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Chưa có phiếu cân nào.",
+                            text = stringResource(R.string.home_empty_state),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextSecondary
                         )
@@ -256,34 +257,12 @@ private fun HomeScreenStandard(
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
-            ownerName = "Nông dân",
+            ownerName = farmerLabel,
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 viewModel.createNewCard(
-                    name = "Nông dân",
-                    cccd = cccd,
-                    traderName = counterpartyName,
-                    pricePerKg = price,
-                    depositAmount = deposit,
-                    riceVariety = variety,
-                    moisturePercent = moisture,
-                    seasonLabel = season,
-                    traderPhone = counterpartyPhone,
-                    impurityWeight = impurityWeight,
-                    recordLocation = recordLocation,
-                    onCreated = { cardId ->
-                        navController.navigate("card_detail/$cardId")
-                        showCreateDialog = false
-                    }
-                )
-            }
-        )
-    }
-}
-
-@Composable
-private fun HomeScreenSimple(
+                    name = farmerLabel,
     navController: NavController,
     viewModel: CardListViewModel,
     cards: List<com.giathinh.canlua.data.model.Card>,
