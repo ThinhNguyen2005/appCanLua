@@ -90,6 +90,7 @@ private fun HomeScreenStandard(
 ) {
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
+    val defaultOwnerName = stringResource(R.string.home_default_owner_name)
 
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
@@ -256,12 +257,12 @@ private fun HomeScreenStandard(
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
-            ownerName = stringResource(R.string.home_default_owner_name),
+            ownerName = defaultOwnerName,
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 viewModel.createNewCard(
-                    name = stringResource(R.string.home_default_owner_name),
+                    name = defaultOwnerName,
                     cccd = cccd,
                     traderName = counterpartyName,
                     pricePerKg = price,
@@ -291,6 +292,7 @@ private fun HomeScreenSimple(
 ) {
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
+    val defaultOwnerName = stringResource(R.string.home_default_owner_name)
 
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
 
@@ -392,12 +394,12 @@ private fun HomeScreenSimple(
 
     if (showCreateDialog) {
         CreateCardBottomSheet(
-            ownerName = stringResource(R.string.home_default_owner_name),
+            ownerName = defaultOwnerName,
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 viewModel.createNewCard(
-                    name = stringResource(R.string.home_default_owner_name),
+                    name = defaultOwnerName,
                     cccd = cccd,
                     traderName = counterpartyName,
                     pricePerKg = price,
