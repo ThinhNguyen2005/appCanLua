@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material.icons.outlined.MonetizationOn
+import com.giathinh.canlua.ui.component.ThousandSeparatorTransformation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -148,285 +150,367 @@ fun WeightMetricsCard(
         "Đang trừ $impurityText kg tạp chất"
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(elevation = 3.dp, shape = CARD_SHAPE, clip = false)
-            .clip(CARD_SHAPE)
-            .background(containerColor)
-            .animateContentSize()
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        // ── Card 1: Chỉ số cân & Khấu trừ (Xanh lá) ──
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            // ── Header: title + bao count chip ──────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.Scale,
-                    contentDescription = null,
-                    tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.weight_metrics_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.weight(1f))
-                IconButton(
-                    onClick = { showFormulaInfo = true },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        Icons.Outlined.Info,
-                        contentDescription = stringResource(R.string.weight_metrics_formula_info_content),
-                        tint = AppColors.GreenPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(Modifier.width(6.dp))
-                Surface(color = AppColors.GreenSurface, shape = RoundedCornerShape(8.dp)) {
-                    AnimatedNumber(
-                        value = bagCount,
-                        formatter = { count -> "$count bao" },
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = AppColors.GreenPrimary
-                    )
-                }
-            }
-
-            // ── Tổng KG thô (display lớn) ───────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.WeightSurface)
-                    .border(1.dp, AppColors.DividerStrong, RoundedCornerShape(12.dp))
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        stringResource(R.string.weight_label_total_weight),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.TextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    AnimatedNumber(
-                        value = totalWeight,
-                        formatter = { "${"%.1f".format(it)} kg" },
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = AppColors.RemainingHighlight
-                    )
-                    Text(
-                        stringResource(R.string.weight_label_before_tare),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextHint
-                    )
-                }
-            }
-
-            // ── Dòng 1: Bao bì (Trừ bì) ─────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = !isLocked) { showBagDialog = true }
-            ) {
-                OutlinedTextField(
-                    value = bagDisplayText,
-                    onValueChange = {},
-                    readOnly = true,
-                    enabled = !isLocked,
-                    label = {
-                        Text(
-                            stringResource(R.string.weight_metrics_bag_label),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    supportingText = { Text("Đang trừ $totalBagText kg bao bì") },
-                    trailingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { showBagInfo = true }, modifier = Modifier.size(24.dp)) {
-                                Icon(
-                                    Icons.Outlined.Info,
-                                    contentDescription = stringResource(R.string.weight_metrics_bag_info_content),
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Spacer(Modifier.width(4.dp))
-                            IconButton(onClick = { if (!isLocked) showBagDialog = true }, modifier = Modifier.size(24.dp)) {
-                                Icon(
-                                    Icons.Default.Settings,
-                                    contentDescription = "Thiết lập bao bì",
-                                    tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Spacer(Modifier.width(4.dp))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = lockedAwareTextFieldColors(),
-                    interactionSource = remember { MutableInteractionSource() }
-                )
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.Transparent)
-                        .clickable(enabled = !isLocked) { showBagDialog = true }
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(AppColors.GreenPrimary)
                 )
-            }
-
-            // ── Dòng 2: Tạp chất ────────────────────────────────────
-            OutlinedTextField(
-                value = impText,
-                onValueChange = { if (!isLocked) impText = it },
-                label = {
-                    Text(
-                        stringResource(R.string.weight_metrics_impurity_label),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                trailingIcon = {
-                    IconButton(onClick = { showImpurityInfo = true }, modifier = Modifier.size(24.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Outlined.Info,
-                            contentDescription = stringResource(R.string.weight_metrics_impurity_info_content),
+                            Icons.Outlined.Scale,
+                            contentDescription = null,
                             tint = AppColors.GreenPrimary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Chỉ số cân & Khấu trừ",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.TextPrimary
+                        )
+                        Spacer(Modifier.weight(1f))
+                        IconButton(
+                            onClick = { showFormulaInfo = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Info,
+                                contentDescription = stringResource(R.string.weight_metrics_formula_info_content),
+                                tint = AppColors.GreenPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Surface(color = AppColors.GreenSurface, shape = RoundedCornerShape(8.dp)) {
+                            AnimatedNumber(
+                                value = bagCount,
+                                formatter = { count -> "$count bao" },
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = AppColors.GreenPrimary
+                            )
+                        }
+                    }
+
+                    // Tổng KG thô (display lớn)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(AppColors.WeightSurface)
+                            .border(1.dp, AppColors.DividerStrong, RoundedCornerShape(12.dp))
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                stringResource(R.string.weight_label_total_weight),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = AppColors.TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            AnimatedNumber(
+                                value = totalWeight,
+                                formatter = { "${"%.1f".format(it)} kg" },
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = AppColors.RemainingHighlight
+                            )
+                            Text(
+                                stringResource(R.string.weight_label_before_tare),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.TextHint
+                            )
+                        }
+                    }
+
+                    // Bao bì (Trừ bì)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !isLocked) { showBagDialog = true }
+                    ) {
+                        OutlinedTextField(
+                            value = bagDisplayText,
+                            onValueChange = {},
+                            readOnly = true,
+                            enabled = !isLocked,
+                            label = {
+                                Text(
+                                    stringResource(R.string.weight_metrics_bag_label),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            },
+                            supportingText = { Text("Đang trừ $totalBagText kg bao bì") },
+                            trailingIcon = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { showBagInfo = true }, modifier = Modifier.size(24.dp)) {
+                                        Icon(
+                                            Icons.Outlined.Info,
+                                            contentDescription = stringResource(R.string.weight_metrics_bag_info_content),
+                                            tint = AppColors.GreenPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.width(4.dp))
+                                    IconButton(onClick = { if (!isLocked) showBagDialog = true }, modifier = Modifier.size(24.dp)) {
+                                        Icon(
+                                            Icons.Default.Settings,
+                                            contentDescription = "Thiết lập bao bì",
+                                            tint = AppColors.GreenPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.width(4.dp))
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = lockedAwareTextFieldColors(),
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color.Transparent)
+                                .clickable(enabled = !isLocked) { showBagDialog = true }
                         )
                     }
-                },
-                enabled = !isLocked,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = {
-                        focusManager.moveFocus(FocusDirection.Next)
-                        onImpurityWeightChange(impText.toDoubleOrNull() ?: 0.0)
-                    }
-                ),
-                supportingText = { Text(impurityPreviewText) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(10.dp),
-                colors = lockedAwareTextFieldColors()
-            )
 
-            // ── Dòng 3: Độ ẩm ───────────────────────────────────────
-            OutlinedTextField(
-                value = moistureText,
-                onValueChange = { if (!isLocked) moistureText = it },
-                label = { Text(stringResource(R.string.weight_metrics_moisture_label)) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.WaterDrop,
-                        contentDescription = null,
-                        tint = AppColors.Info,
-                        modifier = Modifier.size(20.dp)
+                    // Tạp chất
+                    OutlinedTextField(
+                        value = impText,
+                        onValueChange = { if (!isLocked) impText = it },
+                        label = {
+                            Text(
+                                stringResource(R.string.weight_metrics_impurity_label),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { showImpurityInfo = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(
+                                    Icons.Outlined.Info,
+                                    contentDescription = stringResource(R.string.weight_metrics_impurity_info_content),
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        enabled = !isLocked,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = {
+                                focusManager.moveFocus(FocusDirection.Next)
+                                onImpurityWeightChange(impText.toDoubleOrNull() ?: 0.0)
+                            }
+                        ),
+                        supportingText = { Text(impurityPreviewText) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = lockedAwareTextFieldColors()
                     )
-                },
-                trailingIcon = {
-                    IconButton(onClick = { showMoistureInfo = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(
-                            Icons.Outlined.Info,
-                            contentDescription = stringResource(R.string.weight_metrics_moisture_info_content),
-                            tint = AppColors.Info,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                },
-                enabled = !isLocked,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        onMoistureChange(moistureText.toDoubleOrNull() ?: 0.0)
-                    }
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(10.dp),
-                colors = lockedAwareTextFieldColors()
-            )
 
-            // ── KL thực (sau khấu trừ) ──────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.GreenSurface)
-                    .border(1.dp, AppColors.GreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        stringResource(R.string.weight_label_net_weight),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.TextPrimary,
-                        fontWeight = FontWeight.Bold
+                    // Độ ẩm
+                    OutlinedTextField(
+                        value = moistureText,
+                        onValueChange = { if (!isLocked) moistureText = it },
+                        label = { Text(stringResource(R.string.weight_metrics_moisture_label)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.WaterDrop,
+                                contentDescription = null,
+                                tint = AppColors.Info,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { showMoistureInfo = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(
+                                    Icons.Outlined.Info,
+                                    contentDescription = stringResource(R.string.weight_metrics_moisture_info_content),
+                                    tint = AppColors.Info,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        enabled = !isLocked,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                onMoistureChange(moistureText.toDoubleOrNull() ?: 0.0)
+                            }
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = lockedAwareTextFieldColors()
                     )
-                    AnimatedNumber(
-                        value = netWeight,
-                        formatter = { "${"%.1f".format(it)} kg" },
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = AppColors.GreenPrimary
-                    )
-                    Text(
-                        stringResource(R.string.weight_metrics_net_subtitle),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.TextSecondary
-                    )
+
+                    // KL thực (sau khấu trừ)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(AppColors.GreenSurface)
+                            .border(1.dp, AppColors.GreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                stringResource(R.string.weight_label_net_weight),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = AppColors.TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            AnimatedNumber(
+                                value = netWeight,
+                                formatter = { "${"%.1f".format(it)} kg" },
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = AppColors.GreenPrimary
+                            )
+                            Text(
+                                stringResource(R.string.weight_metrics_net_subtitle),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.TextSecondary
+                            )
+                        }
+                    }
                 }
             }
+        }
 
-            // ── Thành tiền ──────────────────────────────────────────
-            HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    stringResource(R.string.weight_metrics_total_amount),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AppColors.TextPrimary,
-                    fontWeight = FontWeight.Bold
+        // ── Card 2: Đơn giá & Thanh toán (Cam) ──
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(AppColors.Orange)
                 )
-                AnimatedNumber(
-                    value = totalAmount,
-                    formatter = { MoneyFormatter.formatVndShort(it) },
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = AppColors.GreenPrimary
-                )
-            }
-            val context = LocalContext.current
-            MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
-                Text(
-                    text = words,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = AppColors.TextSecondary,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.MonetizationOn,
+                            contentDescription = null,
+                            tint = AppColors.Orange,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Đơn giá & Thanh toán",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.TextPrimary
+                        )
+                    }
+
+                    // Ô nhập Đơn giá trực tiếp
+                    OutlinedTextField(
+                        value = priceText,
+                        onValueChange = { if (!isLocked) priceText = it.filter { ch -> ch.isDigit() } },
+                        label = { Text("Đơn giá") },
+                        suffix = { Text("đ/kg", color = AppColors.TextSecondary) },
+                        visualTransformation = ThousandSeparatorTransformation(),
+                        textStyle = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.GreenPrimary
+                        ),
+                        enabled = !isLocked,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                onPriceChange(priceText.toDoubleOrNull() ?: 0.0)
+                            }
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = lockedAwareTextFieldColors()
+                    )
+
+                    HorizontalDivider(color = AppColors.DividerStrong, thickness = 1.dp)
+
+                    // Thành tiền
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            stringResource(R.string.weight_metrics_total_amount),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = AppColors.TextPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        AnimatedNumber(
+                            value = totalAmount,
+                            formatter = { MoneyFormatter.formatVndShort(it) },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AppColors.GreenPrimary
+                        )
+                    }
+
+                    // Số tiền bằng chữ
+                    val context = LocalContext.current
+                    MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
+                        Text(
+                            text = words,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = AppColors.TextSecondary,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
         }
     }
