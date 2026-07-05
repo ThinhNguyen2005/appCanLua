@@ -236,17 +236,23 @@ supabase_security_rules:
 
 ---
 
-## 7. Mô-đun Thị Trường & Cẩm Nang Offline
+## 7. Mô-đun Thị Trường & Trợ Lý AI Trực Tuyến
 
-Loại bỏ hoàn toàn chức năng Chat AI trực tuyến để tối ưu độ tin cậy và dung lượng ứng dụng. Thay vào đó, app cung cấp nguồn tin tức thị trường và cẩm nang nông học thiết thực:
+Mô-đun này cung cấp nguồn tin tức thị trường, giá lúa real-time và trợ lý AI đắc lực cho bà con nông dân và thương lái, kết hợp linh hoạt giữa cơ chế trực tuyến và lưu trữ ngoại tuyến (Offline-first):
 
-### 7.1. Bảng Giá Lúa Thị Trường Real-time (Supabase Integration)
-*   **Read-only API:** Ứng dụng Android kết nối trực tiếp đến bảng `rice_prices` của Supabase bằng tài khóa nặc danh (Anon Key) để đọc bảng giá lúa ĐBSCL mới nhất.
-*   **Write Path:** Thương lái hoặc quản trị viên cập nhật giá thông qua Google Sheets. Một đoạn script **Google Apps Script** sẽ tự động bắt sự kiện chỉnh sửa trên Sheets và đẩy dữ liệu trực tiếp về Supabase qua REST API.
+### 7.1. Trợ Lý AI Chat Trực Tuyến (Online AI Assistant)
+*   **Tích hợp OpenRouter API:** Sử dụng mô hình miễn phí thông qua cổng OpenRouter (mô hình `openrouter/free` - Gemini Flash) để trả lời các câu hỏi khuyến nông và kinh nghiệm thu mua của bà con.
+*   **Cá nhân hóa Bối cảnh (Context-Aware Prompting):** Prompt hệ thống tự động chèn thông tin từ Hồ sơ người dùng (Tên, vai trò Farmer/Trader, vùng canh tác), bảng giá lúa hôm nay và các tài liệu khuyến nông phù hợp để đưa ra câu trả lời thực tế, dễ hiểu.
+*   **Quản lý Hội thoại (Session Management):** Hỗ trợ lưu trữ lịch sử chat nhiều phiên (lưu local trong Room DB), cho phép đổi tên session, xóa session và tạo mới.
+*   **Trải nghiệm Phản hồi (Streaming & UI):** Sử dụng SSE (Server-Sent Events) để stream dữ liệu từng từ (token-by-token). Hiển thị giao diện khóa/hạn chế khi ở chế độ Khách (Guest Mode) để yêu cầu đăng nhập.
 
-### 7.2. Cẩm Nang Nông Nghiệp Ngoại Tuyến (Offline Handbook)
-*   Các bài viết hướng dẫn phòng tránh sâu bệnh, khuyến nghị mùa vụ, kỹ thuật bón phân cho từng giống lúa được lưu trữ trực tiếp dưới dạng tệp tin **JSON tĩnh** trong thư mục `assets/` của ứng dụng Android.
-*   Màn hình Cẩm Nang đọc dữ liệu JSON này, tổ chức phân loại theo Giống lúa / Vụ mùa và hiển thị bằng giao diện Compose bản địa, đảm bảo phản hồi tức thì và hoạt động 100% khi không có mạng.
+### 7.2. Bảng Giá Lúa Thị Trường & Tin Tức (Supabase Integration)
+*   **Read-only API:** Ứng dụng kết nối trực tiếp đến bảng `rice_prices` và `news_articles` của Supabase bằng Anon Key để đọc bảng giá lúa ĐBSCL mới nhất và các tin tức nông nghiệp curated.
+*   **Write Path cập nhật giá:** Quản trị viên cập nhật giá thông qua Google Sheets. Một đoạn script **Google Apps Script** sẽ tự động bắt sự kiện chỉnh sửa trên Sheets và đẩy dữ liệu trực tiếp về Supabase qua REST API.
+*   **Tin tức nông nghiệp:** Đọc từ cơ sở dữ liệu Supabase và hiển thị bằng giao diện Compose bản địa hoặc thông qua Chrome Custom Tabs để nâng cao hiệu suất và trải nghiệm đọc tin.
+
+### 7.3. Cẩm Nang Nông Nghiệp Ngoại Tuyến (Offline Handbook)
+*   Các bài viết hướng dẫn phòng tránh sâu bệnh, khuyến nghị mùa vụ, kỹ thuật bón phân cho từng giống lúa được lưu trữ trực tiếp dưới dạng tệp tin **JSON tĩnh** trong thư mục `assets/` để tra cứu offline khi không có kết nối internet.
 
 ---
 
