@@ -11,34 +11,40 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Inventory
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Wallet
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.giathinh.canlua.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.component.dashboard.KpiGrid
 import com.giathinh.canlua.ui.component.dashboard.KpiGridItem
+import com.giathinh.canlua.ui.component.dashboard.SeasonSelectorChip
+import com.giathinh.canlua.ui.component.dashboard.VarietyPieChart
+import com.giathinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
+import com.giathinh.canlua.ui.component.dashboard.TopTradersCard
+import com.giathinh.canlua.ui.component.dashboard.ChartMetric
 import com.giathinh.canlua.ui.component.profile.ProfileSectionTitle
-import com.giathinh.canlua.ui.component.profile.QuickStatsGlassGrid
 import com.giathinh.canlua.ui.component.profile.SecondaryStatsRow
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.DashboardFormatter
@@ -47,94 +53,300 @@ import com.giathinh.canlua.ui.viewmodel.DashboardViewModel
 import com.giathinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.util.Locale
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
+import com.giathinh.canlua.ui.navigation.BottomNavItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatisticsScreen(
-    navController: NavController
+    navController: NavController,
+    dashboardViewModel: DashboardViewModel = hiltViewModel()
 ) {
     TrackScreenRender("statistics_screen")
-    val dashboardViewModel: DashboardViewModel = hiltViewModel()
 
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
     val isDataReady = dash.isAggregated
 
-    if (!isDataReady) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            androidx.compose.material3.CircularProgressIndicator(color = AppColors.GreenPrimary)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.profile_season_stats_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                },
+                navigationIcon = {
+                    val prevRoute = navController.previousBackStackEntry?.destination?.route
+                    val isFromTab = prevRoute == BottomNavItem.SCALE.route ||
+                            prevRoute == BottomNavItem.HISTORY.route ||
+                            prevRoute == BottomNavItem.STATISTICS.route ||
+                            prevRoute == "settings"
+                    if (navController.previousBackStackEntry != null && !isFromTab) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.content_back),
+                                tint = AppColors.TextPrimary
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.Surface,
+                    titleContentColor = AppColors.TextPrimary
+                ),
+                windowInsets = TopAppBarDefaults.windowInsets
+            )
+        },
+        containerColor = AppColors.Surface
+    ) { paddingValues ->
+        if (!isDataReady) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = AppColors.GreenPrimary)
+            }
+        } else {
+            StatisticsScreenContent(
+                dash = dash,
+                dashboardViewModel = dashboardViewModel,
+                modifier = Modifier.padding(paddingValues)
+            )
         }
-    } else {
-        StatisticsScreenContent(
-            dash = dash,
-            dashboardViewModel = dashboardViewModel
-        )
     }
 }
 
 @Composable
 fun StatisticsScreenContent(
     dash: DashboardData,
-    dashboardViewModel: DashboardViewModel
+    dashboardViewModel: DashboardViewModel,
+    modifier: Modifier = Modifier
 ) {
-    val lifetimeStats = dash.overallStats
-    val lifetimeSeasonCount = dash.seasons.size
-    val lifetimeTotalNetWeight = lifetimeStats?.totalNetWeight ?: 0.0
-    val lifetimeTotalRevenue = lifetimeStats?.totalRevenue ?: 0.0
+    val seasonsWithAll = remember(dash.seasons) {
+        if (dash.seasons.isNotEmpty()) {
+            listOf("Tất cả các vụ") + dash.seasons
+        } else {
+            emptyList()
+        }
+    }
 
-    Box(
-        modifier = Modifier
+    val stats = dash.currentStats ?: dash.overallStats
+
+    LazyColumn(
+        modifier = modifier
             .fillMaxSize()
-            .background(AppColors.Surface)
+            .background(AppColors.Surface),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 96.dp, top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        // 1. Thanh chọn vụ mùa
+        if (seasonsWithAll.isNotEmpty()) {
             item {
-                QuickStatsGlassGrid(
-                    seasonCount = lifetimeSeasonCount,
-                    totalNetWeight = lifetimeTotalNetWeight,
-                    totalRevenue = lifetimeTotalRevenue,
-                    revenueLabel = stringResource(R.string.profile_stats_revenue)
+                SeasonSelectorChip(
+                    seasons = seasonsWithAll,
+                    selectedSeason = if (dash.selectedSeason.isNullOrBlank()) "Tất cả các vụ" else dash.selectedSeason,
+                    onSelect = { selected ->
+                        val target = if (selected == "Tất cả các vụ") "" else selected
+                        dashboardViewModel.selectSeason(target)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // 2. Hero Card: Tổng quan Doanh thu & Sản lượng
+        stats?.let { s ->
+            item {
+                HeroSummaryCard(
+                    totalNetWeight = s.totalNetWeight,
+                    totalRevenue = s.totalRevenue
+                )
+            }
+        }
+
+        // 3. Farmer KPI Grid
+        stats?.let { s ->
+            item {
+                FarmerPrimaryKpiGrid(
+                    stats = s,
+                    previous = dash.previousStats
                 )
             }
 
+            // 4. Secondary Stats Row (Độ ẩm, Tạp chất, khô/ướt)
             item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    ProfileSectionTitle(
-                        title = stringResource(R.string.profile_season_stats_title),
-                        subtitle = stringResource(R.string.profile_season_stats_subtitle)
-                    )
+                SecondaryStatsRow(
+                    avgMoisture = s.avgMoisture,
+                    totalImpurity = s.totalImpurity,
+                    dryCardCount = s.dryCardCount,
+                    wetCardCount = s.wetCardCount
+                )
+            }
+        }
+
+        // 5. Biểu đồ so sánh sản lượng
+        if (dash.seasonsComparison.isNotEmpty()) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "So sánh sản lượng các vụ",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.TextPrimary
+                        )
+                        SeasonComparisonBarChart(
+                            seasons = dash.seasonsComparison,
+                            selectedSeason = dash.selectedSeason,
+                            metric = ChartMetric.WEIGHT,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
+        }
 
-            dash.currentStats?.let { stats ->
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        FarmerPrimaryKpiGrid(
-                            stats = stats,
-                            previous = dash.previousStats
+        // 6. Biểu đồ tròn phân bổ giống lúa
+        if (dash.varieties.isNotEmpty()) {
+            item {
+                VarietyPieChart(
+                    items = dash.varieties,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // 7. Top Traders Card
+        if (dash.topTraders.isNotEmpty()) {
+            item {
+                TopTradersCard(
+                    items = dash.topTraders,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // 8. Bảng thống kê chi tiết các vụ
+        if (dash.seasonsComparison.isNotEmpty()) {
+            item {
+                SeasonSummaryCard(dash = dash)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroSummaryCard(
+    totalNetWeight: Double,
+    totalRevenue: Double
+) {
+    val gradient = Brush.linearGradient(
+        colors = listOf(
+            AppColors.GreenPrimary,
+            Color(0xFFF5B041) // Ripe golden color
+        )
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(gradient)
+                .padding(20.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Tổng sản lượng",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = DashboardFormatter.weight(totalNetWeight),
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Scale,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
 
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        SecondaryStatsRow(
-                            avgMoisture = stats.avgMoisture,
-                            totalImpurity = stats.totalImpurity,
-                            dryCardCount = stats.dryCardCount,
-                            wetCardCount = stats.wetCardCount
+                HorizontalDivider(color = Color.White.copy(alpha = 0.25f), thickness = 1.dp)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Doanh thu tạm tính",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = DashboardFormatter.money(totalRevenue),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                }
-            }
 
-            if (dash.seasonsComparison.isNotEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        SeasonSummaryCard(dash = dash)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Wallet,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
             }
@@ -147,7 +359,8 @@ private fun SeasonSummaryCard(dash: DashboardData) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
@@ -156,7 +369,7 @@ private fun SeasonSummaryCard(dash: DashboardData) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Tóm tắt vụ mùa",
+                text = "Tóm tắt các vụ mùa",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
