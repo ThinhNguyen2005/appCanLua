@@ -3,9 +3,10 @@
     <string name="role_farmer">Farmer</string>
     <string name="role_trader">Trader</string>
     <string name="nav_scale">Weigh Rice</string>
+    <string name="nav_history">History</string>
     <string name="nav_market">Market</string>
     <string name="nav_ai_chat">AI Assistant</string>
-    <string name="nav_account">Profile</string>
+    <string name="nav_account">Statistics</string>
     <string name="nav_map">Map</string>
     <string name="topbar_ai_trader">Market Expert</string>
     <string name="topbar_ai_farmer">Ag Extension Assistant</string>

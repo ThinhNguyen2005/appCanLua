@@ -275,6 +275,7 @@ fun WeightInputScreenContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         // === LAYOUT STABILITY (Performance Optimization) ===
                         // heightIn(min) thay vì height() — khoá chiều cao tối thiểu để hệ thống
                         // không phải tính lại Measure/Layout pass khi IME (bàn phím ảo) bật/tắt

@@ -35,6 +35,7 @@ import com.giathinh.canlua.data.model.Card
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.platform.LocalDensity
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CustomHeader v4
@@ -65,9 +66,10 @@ data class HeaderHeights(val expanded: Dp, val collapsed: Dp)
 
 @Composable
 fun rememberHeaderHeights(): HeaderHeights {
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     return HeaderHeights(
-        expanded  = TOPBAR_H,
-        collapsed = TOPBAR_H
+        expanded  = TOPBAR_H + statusBarHeight,
+        collapsed = TOPBAR_H + statusBarHeight
     )
 }
 
@@ -107,7 +109,7 @@ fun CustomHeader(
             .fillMaxWidth()
             .background(HeaderGreen)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
 
             // ── TopBar — LUÔN visible, không bị ảnh hưởng bởi collapseFraction ──
             Row(
