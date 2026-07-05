@@ -152,7 +152,7 @@ fun SettingsScreen(
                     containerColor = AppColors.Surface,
                     titleContentColor = AppColors.TextPrimary
                 ),
-                windowInsets = WindowInsets(0.dp)
+                windowInsets = TopAppBarDefaults.windowInsets
             )
         },
         containerColor = AppColors.Surface
@@ -212,72 +212,15 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SectionHeader(
-                icon = Icons.Outlined.Palette,
-                label = stringResource(R.string.settings_section_display),
-                iconBg = AppColors.BlueSurface,
-                iconTint = AppColors.Blue
-            )
-
-            ThemeExpandableRow(
-                isExpanded = themeExpanded,
-                onToggle = { themeExpanded = !themeExpanded },
-                selectedTheme = appThemeMode,
-                onSelect = { viewModel.setThemeMode(it); themeExpanded = false }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // --- TTS Switch ---
-            SettingsCardBox {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        IconBadge(icon = Icons.Outlined.RecordVoiceOver, bg = AppColors.OrangeSurface, tint = AppColors.Orange)
-                        Column {
-                            Text(
-                                text = stringResource(R.string.settings_tts_title),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = AppColors.TextPrimary
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_tts_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.TextHint
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isTtsEnabled,
-                        onCheckedChange = { viewModel.setTtsEnabled(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = AppColors.GreenPrimary,
-                            uncheckedThumbColor = AppColors.TextSecondary,
-                            uncheckedTrackColor = AppColors.Surface
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // ==================== CẤU HÌNH CÂN LÚA ====================
             SectionHeader(
                 icon = Icons.Outlined.Scale,
                 label = stringResource(R.string.settings_scale_config_label),
                 iconBg = AppColors.GreenSurface,
                 iconTint = AppColors.GreenPrimary
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // 1. Hình thức bao bì mặc định (tùy chỉnh hình thức bao bì)
             SettingsCardBox {
@@ -386,7 +329,7 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 2. Bố cục bàn phím cân lúa
             SettingsCardBox {
@@ -447,6 +390,69 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ==================== HIỂN THỊ & TIỆN ÍCH ====================
+            SectionHeader(
+                icon = Icons.Outlined.Palette,
+                label = stringResource(R.string.settings_section_display),
+                iconBg = AppColors.BlueSurface,
+                iconTint = AppColors.Blue
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ThemeExpandableRow(
+                isExpanded = themeExpanded,
+                onToggle = { themeExpanded = !themeExpanded },
+                selectedTheme = appThemeMode,
+                onSelect = { viewModel.setThemeMode(it); themeExpanded = false }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // --- TTS Switch ---
+            SettingsCardBox {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        IconBadge(icon = Icons.Outlined.RecordVoiceOver, bg = AppColors.OrangeSurface, tint = AppColors.Orange)
+                        Column {
+                            Text(
+                                text = stringResource(R.string.settings_tts_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = AppColors.TextPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_tts_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.TextHint
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isTtsEnabled,
+                        onCheckedChange = { viewModel.setTtsEnabled(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AppColors.GreenPrimary,
+                            uncheckedThumbColor = AppColors.TextSecondary,
+                            uncheckedTrackColor = AppColors.Surface
+                        )
+                    )
                 }
             }
 
