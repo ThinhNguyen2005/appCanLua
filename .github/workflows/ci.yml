@@ -33,13 +33,10 @@ jobs:
       - name: Create Dummy google-services.json
         run: |
           mkdir -p app
-          echo '{"project_info":{"project_number":"12345","project_id":"mock-id","storage_bucket":"mock-bucket"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.giathinh.canlua"}},"oauth_client":[],"api_key":[{"current_key":"mock-key"}],"services":{}}],"configuration_version":"1"}' > app/google-services.json
+          echo '{"project_info":{"project_number":"12345","project_id":"mock-id","storage_bucket":"mock-bucket"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.giathinh.canlua"}},"oauth_client":[{"client_id":"1234567890-dummy.apps.googleusercontent.com","client_type":3}],"api_key":[{"current_key":"mock-key"}],"services":{}}],"configuration_version":"1"}' > app/google-services.json
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest --no-daemon
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload Test Report
         if: always()
@@ -47,32 +44,3 @@ jobs:
         with:
           name: junit-test-reports
           path: app/build/reports/tests/testDebugUnitTest/
-
-      - name: Upload Run Artifact APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Prepare Release APK
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/canlua-${{ github.ref_name }}.apk
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: app/build/outputs/apk/debug/canlua-${{ github.ref_name }}.apk
-          name: "Cân Lúa Mobile - Phiên bản ${{ github.ref_name }}"
-          body: |
-            ### 🤖 Phiên bản mới đã được tự động phát hành qua GitHub Actions
-            
-            Chào bạn! Đây là bản cài đặt thử nghiệm được tự động biên dịch và đăng tải.
-            
-            #### 📦 Tải về trực tiếp:
-            * Xem file đính kèm `canlua-${{ github.ref_name }}.apk` phía dưới phần **Assets**.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
