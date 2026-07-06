@@ -108,7 +108,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
     }
     val topBarTitle = if (topBarTitleRes != null) stringResource(topBarTitleRes) else defaultScaleTitle
 
-    val showTopBar = currentRoute == BottomNavItem.STATISTICS.route
+    val showTopBar = false
 
     val rawPinnedBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val rawEnterAlwaysBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()

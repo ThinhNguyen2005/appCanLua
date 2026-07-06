@@ -72,7 +72,7 @@ fun StatisticsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.profile_season_stats_title),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )

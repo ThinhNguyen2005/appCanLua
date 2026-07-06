@@ -675,6 +675,27 @@ fun CardDetailScreenContent(
                     containerColor = AppColors.Surface
                 )
             }
+
+            if (showLocationRationale && !showEditDialog) {
+                PermissionRationaleDialog(
+                    title = stringResource(R.string.permission_location_title),
+                    message = stringResource(R.string.permission_location_rationale),
+                    confirmText = stringResource(R.string.permission_location_button),
+                    dismissText = stringResource(R.string.permission_dismiss_button),
+                    onConfirm = {
+                        showLocationRationale = false
+                        permissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    },
+                    onDismiss = {
+                        showLocationRationale = false
+                    }
+                )
+            }
         }
     }
 }

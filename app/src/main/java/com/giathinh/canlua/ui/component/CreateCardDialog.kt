@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -581,13 +582,9 @@ fun CreateCardBottomSheet(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = recordLocation,
-                                    onCheckedChange = { checked ->
-                                        if (checked) {
+                                    .clickable {
+                                        val nextChecked = !recordLocation
+                                        if (nextChecked) {
                                             if (hasLocationPermission(context)) {
                                                 recordLocation = true
                                             } else {
@@ -601,7 +598,13 @@ fun CreateCardBottomSheet(
                                         } else {
                                             recordLocation = false
                                         }
-                                    },
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = recordLocation,
+                                    onCheckedChange = null,
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = AppColors.GreenPrimary,
                                         uncheckedColor = AppColors.TextSecondary
