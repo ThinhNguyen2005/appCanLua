@@ -114,6 +114,7 @@ fun WeightInputScreenContent(
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
 
     val onBagWeightChange = remember(cardId) { { weight: Double -> viewModel.updateCardBagWeight(cardId, weight) } }
     val onBagMethodChange = remember(cardId) {
@@ -172,9 +173,11 @@ fun WeightInputScreenContent(
                         netWeight = netWeight
                     )
                 )
-            } else {
+            } else if (entryIdx == entries.size) {
                 viewModel.addWeightEntryDirectly(cardId, weight)
                 HapticUtil.tick(context)
+            } else {
+                appToast.warning("Vui lòng nhập lần lượt từ ô trống kế tiếp")
             }
         }
     }
@@ -203,7 +206,7 @@ fun WeightInputScreenContent(
             bagSampleCount = calcParams.bagSampleCount,
             bagSampleTotalWeight = calcParams.bagSampleTotalWeight,
             impurityValue = calcParams.impurityValue,
-            impurityIsPercent = false,
+            impurityIsPercent = currentCard?.impurityIsPercent ?: false,
             moisturePercent = calcParams.moisturePercent
         )
     }
@@ -373,7 +376,7 @@ fun WeightInputScreenContent(
                     onImpurityWeightChange = onImpurityWeightChange,
                     onMoistureChange = onMoistureChange,
                     onPriceChange = onPriceChange,
-                    impurityIsPercent = false,
+                    impurityIsPercent = card.impurityIsPercent,
                     bagMethodIsSampling = card.bagMethodIsSampling,
                     bagSampleCount = card.bagSampleCount,
                     bagSampleTotalWeight = card.bagSampleTotalWeight,

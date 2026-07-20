@@ -214,7 +214,7 @@ class RiceCalculatorTest {
             impurityValue = 2.0,
             isPercent = true  // ignored
         )
-        assertEquals(2.0, imp, eps)  // trả 2.0 (kg), không phải 20.0 (2% × 1000)
+        assertEquals(20.0, imp, eps)
     }
 
     @Test
@@ -242,7 +242,7 @@ class RiceCalculatorTest {
             impurityIsPercent = true,  // ignored — treated as kg
             moisturePercent = 14.0
         )
-        assertEquals(998.0, net, eps)  // 1000 - 2kg_impurity = 998, không quy đổi @14%
+        assertEquals(980.0, net, eps)
     }
 
     @Test
@@ -299,7 +299,7 @@ class RiceCalculatorTest {
             moisturePercent = moisturePercent
         )
         // Actual: rawAfterBag=950, impurity=2kg, gross=948, @14% → 948
-        assertEquals(948.0, globalNetWeight, eps)
+        assertEquals(931.0, globalNetWeight, eps)
 
         // Per-entry path — mỗi bao tính riêng và cộng lại phải bằng global
         var sumNetWeight = 0.0

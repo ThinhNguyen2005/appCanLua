@@ -214,7 +214,7 @@ class CardRepository @Inject constructor(
             val totalImpurity = RiceCalculator.calcTotalImpurity(
                 rawAfterBag = rawAfterBag,
                 impurityValue = card.impurityWeight,
-                isPercent = false
+                isPercent = card.impurityIsPercent
             )
             val singleImpurityWeight = totalImpurity / validBagCount
 
@@ -260,7 +260,7 @@ class CardRepository @Inject constructor(
             bagSampleCount = card.bagSampleCount,
             bagSampleTotalWeight = card.bagSampleTotalWeight,
             impurityValue = card.impurityWeight,
-            impurityIsPercent = false,
+            impurityIsPercent = card.impurityIsPercent,
             moisturePercent = card.moisturePercent
         ).coerceAtLeast(0.0)
 
@@ -285,7 +285,6 @@ class CardRepository @Inject constructor(
             depositAmount = calculation.totalDeposit,
             totalAmount = totalAmount,
             remainingAmount = remainingAmount,
-            impurityIsPercent = false,
             lastModifiedMs = now
         )
 

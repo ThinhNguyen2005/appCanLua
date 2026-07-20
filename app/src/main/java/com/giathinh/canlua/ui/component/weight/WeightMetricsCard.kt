@@ -141,11 +141,12 @@ fun WeightMetricsCard(
         (totalWeight - totalBagWeight).coerceAtLeast(0.0)
     }
 
-    val impurityKg = impurityWeight.coerceAtLeast(0.0)
+    val impurityValue = impurityWeight.coerceAtLeast(0.0)
 
-    val impurityPreviewText = remember(impurityKg) {
-        val impurityText = "%.1f".format(java.util.Locale.US, impurityKg).replace(".", ",")
-        "Đang trừ $impurityText kg tạp chất"
+    val impurityPreviewText = remember(impurityValue, impurityIsPercent) {
+        val impurityText = "%.1f".format(java.util.Locale.US, impurityValue).replace(".", ",")
+        if (impurityIsPercent) "Đang trừ $impurityText% tạp chất sau bao bì"
+        else "Đang trừ $impurityText kg tạp chất"
     }
 
     Box(
@@ -296,6 +297,7 @@ fun WeightMetricsCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 },
+                suffix = { Text(if (impurityIsPercent) "%" else "kg") },
                 trailingIcon = {
                     IconButton(onClick = { showImpurityInfo = true }, modifier = Modifier.size(24.dp)) {
                         Icon(

@@ -36,7 +36,7 @@ class RiceCalculatorEdgeCaseTest {
         // Implementation: impurityValue.coerceAtLeast(0.0) = 2.0, bất kể isPercent
         assertEquals(
             "isPercent bị bỏ qua trong v17+ — luôn trả impurityValue trực tiếp",
-            2.0, imp, eps
+            20.0, imp, eps
         )
     }
 
@@ -85,7 +85,7 @@ class RiceCalculatorEdgeCaseTest {
         // Actual: 1000 - 0 (bag) - 2 (impurity treated as kg) = 998 @14% = 998
         assertEquals(
             "isPercent bị bỏ qua: impurity = 2kg không phải 2% = 20kg",
-            998.0, net, eps
+            980.0, net, eps
         )
     }
 

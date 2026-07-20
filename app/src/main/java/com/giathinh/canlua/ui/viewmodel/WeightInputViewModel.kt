@@ -58,38 +58,6 @@ class WeightInputViewModel @Inject constructor(
     val weighDefaults = settingsRepository.weighDefaults
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.getWeighDefaults())
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            settingsRepository.weighDefaults.collect { defaults ->
-                val card = _currentCard.value ?: return@collect
-                val computedBagWeight = if (defaults.bagMethodIsSampling && defaults.bagSampleCount > 0) {
-                    defaults.bagSampleTotalWeight / defaults.bagSampleCount
-                } else if (defaults.bagSampleCount > 0) {
-                    1.0 / defaults.bagSampleCount
-                } else {
-                    1.0 / 8.0
-                }
-                if (card.weightInputMode != defaults.weightInputMode ||
-                    card.bagMethodIsSampling != defaults.bagMethodIsSampling ||
-                    card.bagSampleCount != defaults.bagSampleCount ||
-                    card.bagSampleTotalWeight != defaults.bagSampleTotalWeight ||
-                    card.bagWeight != computedBagWeight
-                ) {
-                    val updated = card.copy(
-                        weightInputMode = defaults.weightInputMode,
-                        bagMethodIsSampling = defaults.bagMethodIsSampling,
-                        bagSampleCount = defaults.bagSampleCount,
-                        bagSampleTotalWeight = defaults.bagSampleTotalWeight,
-                        bagWeight = computedBagWeight
-                    )
-                    repository.updateCard(updated)
-                    repository.updateCardCalculations(card.id)
-                    _currentCard.value = repository.getCardById(card.id)
-                }
-            }
-        }
-    }
-
     fun loadCardById(cardId: Long) {
         android.util.Log.d("DEBUG_CANLUA", "loadCardById được gọi với ID: $cardId")
         weightEntriesJob?.cancel()
@@ -97,13 +65,7 @@ class WeightInputViewModel @Inject constructor(
             _isLoading.value = true
             _manualTableCount.value = 0
 
-            var card = repository.getCardById(cardId)
-            val defaults = settingsRepository.getWeighDefaults()
-            if (card != null && card.weightInputMode != defaults.weightInputMode) {
-                val updated = card.copy(weightInputMode = defaults.weightInputMode)
-                repository.updateCard(updated)
-                card = repository.getCardById(cardId)
-            }
+            val card = repository.getCardById(cardId)
             _currentCard.value = card
             syncMoistureToInputState(card)
 

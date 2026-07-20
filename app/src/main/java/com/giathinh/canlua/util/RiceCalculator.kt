@@ -71,7 +71,10 @@ object RiceCalculator {
         rawAfterBag: Double,
         impurityValue: Double,
         isPercent: Boolean
-    ): Double = impurityValue.coerceAtLeast(0.0)
+    ): Double {
+        val value = impurityValue.coerceAtLeast(0.0)
+        return if (isPercent) rawAfterBag.coerceAtLeast(0.0) * value / 100.0 else value
+    }
 
     /**
      * Tính KL thực có ý thức về mode — wrapper bao trùm cả 2 quyết định mode
@@ -96,7 +99,7 @@ object RiceCalculator {
             sampleTotalWeight = bagSampleTotalWeight
         )
         val rawAfterBag = (totalRaw - totalBag).coerceAtLeast(0.0)
-        val totalImpurity = calcTotalImpurity(rawAfterBag, impurityValue, false)
+        val totalImpurity = calcTotalImpurity(rawAfterBag, impurityValue, impurityIsPercent)
         val gross = (rawAfterBag - totalImpurity).coerceAtLeast(0.0)
         val net = calcStandardWeight(gross, moisturePercent)
         return (Math.round(net * 10.0) / 10.0).coerceAtLeast(0.0)

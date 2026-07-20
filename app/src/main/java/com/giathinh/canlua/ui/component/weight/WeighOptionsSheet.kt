@@ -94,6 +94,7 @@ fun WeighOptionsSheet(
         mutableStateOf(if (bagSampleTotalWeight > 0.0) bagSampleTotalWeight.toString() else "")
     }
     var inputMode by remember { mutableStateOf(weightInputMode.ifBlank { "SMALL" }) }
+    var impurityPercent by remember { mutableStateOf(impurityIsPercent) }
     var ttsLocal by remember { mutableStateOf(ttsEnabled) }
 
     val fontOptions = listOf(FontScale.SMALL, FontScale.NORMAL, FontScale.LARGE, FontScale.XLARGE)
@@ -184,6 +185,29 @@ fun WeighOptionsSheet(
                     }
 
                     HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.3f), thickness = 0.5.dp)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Tạp chất", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.weight(1f))
+                        listOf(false to "kg", true to "%").forEach { (isPercent, label) ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (impurityPercent == isPercent) AppColors.GreenPrimary else AppColors.SurfaceContainer,
+                                modifier = Modifier.clickable { impurityPercent = isPercent }
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (impurityPercent == isPercent) Color.White else AppColors.TextSecondary,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
 
                     // Row 2: Cỡ chữ hiển thị
                     Column(
@@ -511,7 +535,7 @@ fun WeighOptionsSheet(
                     } else {
                         0.0
                     }
-                    onSave(false, bagSampling, n, w, inputMode, ttsLocal, currentFontScale)
+                    onSave(impurityPercent, bagSampling, n, w, inputMode, ttsLocal, currentFontScale)
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),

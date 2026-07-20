@@ -63,7 +63,11 @@ fun WeightSummaryCard(
         val count = bagSampleCount.takeIf { it > 0 } ?: bagWeight.takeIf { it > 0.0 }?.let { (1.0 / it).toInt() } ?: 8
         "$bagCount bao · $count bao = 1 kg"
     }
-    val impurityNote = "Nhập trực tiếp kg tạp chất"
+    val impurityNote = if (impurityIsPercent) {
+        "Tạp chất = % khối lượng sau khi trừ bao bì"
+    } else {
+        "Nhập trực tiếp kg tạp chất"
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),

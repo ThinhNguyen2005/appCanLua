@@ -164,7 +164,9 @@ object PdfExporter {
             }
 
             ensureSpace(22f)
-            y = drawWeightTableTotal(canvas, y, entries, boldPaint, borderPaint, fillPaint, labels, showTareImpurity)
+            y = drawWeightTableTotal(
+                canvas, y, entries, card.netWeight, boldPaint, borderPaint, fillPaint, labels, showTareImpurity
+            )
         } else {
             ensureSpace(48f)
             canvas.drawText(labels.bagDetails, MARGIN, y, sectionPaint)
@@ -404,6 +406,7 @@ object PdfExporter {
         canvas: android.graphics.Canvas,
         y: Float,
         entries: List<WeightEntry>,
+        officialNetWeight: Double,
         boldPaint: Paint,
         borderPaint: Paint,
         fillPaint: Paint,
@@ -418,7 +421,7 @@ object PdfExporter {
             canvas.drawLine(cols[i], y, cols[i], rowBottom, borderPaint)
         }
         val sumGross = entries.sumOf { it.weight }
-        val sumNet = entries.sumOf { it.netWeight }
+        val sumNet = officialNetWeight
         val values = if (showTareImpurity) listOf(
             pdfLabels.tableTotal,
             formatKg(sumGross),
