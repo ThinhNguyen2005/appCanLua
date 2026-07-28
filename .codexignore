@@ -1,0 +1,21 @@
+# Build outputs and Android generated files
+.gradle/
+build/
+app/build/
+.idea/
+.kotlin/
+.vscode/
+*.apk
+*.aab
+*.dex
+*.class
+
+# Sensitive files & credentials
+google-services.json
+canluaSupport.json
+local.properties
+
+# Logs and temporary files
+*.log
+tmp/
+.DS_Store

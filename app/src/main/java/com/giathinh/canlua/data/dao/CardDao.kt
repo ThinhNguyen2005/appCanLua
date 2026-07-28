@@ -15,10 +15,10 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface CardDao {
-    @Query("SELECT * FROM cards WHERE ownerUid = :uid ORDER BY date DESC")
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND isDeleted = 0 ORDER BY date DESC")
     fun getAllCards(uid: String): Flow<List<Card>>
 
-    @Query("SELECT * FROM cards WHERE id = :id AND ownerUid = :uid")
+    @Query("SELECT * FROM cards WHERE id = :id AND ownerUid = :uid AND isDeleted = 0")
     suspend fun getCardById(id: Long, uid: String): Card?
 
     @Insert
@@ -27,11 +27,25 @@ interface CardDao {
     @Update
     suspend fun updateCard(card: Card)
 
-    @Delete
-    suspend fun deleteCard(card: Card)
+    @Query("UPDATE cards SET isDeleted = 1, deletedAt = :deletedAt, lastModifiedMs = :modifiedAt WHERE id = :id AND ownerUid = :uid AND isDeleted = 0")
+    suspend fun markDeleted(id: Long, uid: String, deletedAt: Long, modifiedAt: Long): Int
 
-    @Query("DELETE FROM cards WHERE id = :id AND ownerUid = :uid")
-    suspend fun deleteCardById(id: Long, uid: String)
+    @Query("UPDATE cards SET isDeleted = 0, deletedAt = NULL, lastModifiedMs = :modifiedAt WHERE id = :id AND ownerUid = :uid AND isDeleted = 1")
+    suspend fun markRestored(id: Long, uid: String, modifiedAt: Long): Int
+
+    @Query("DELETE FROM cards WHERE id = :id AND ownerUid = :uid AND isDeleted = 1")
+    suspend fun purgeDeletedCard(id: Long, uid: String): Int
+
+    @Transaction
+    suspend fun softDelete(id: Long, uid: String, deletedAt: Long, modifiedAt: Long): Boolean =
+        markDeleted(id, uid, deletedAt, modifiedAt) == 1
+
+    @Transaction
+    suspend fun restore(id: Long, uid: String, modifiedAt: Long): Boolean =
+        markRestored(id, uid, modifiedAt) == 1
+
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND isDeleted = 1 ORDER BY deletedAt DESC")
+    fun observeDeletedCards(uid: String): Flow<List<Card>>
 
 
     @Query("UPDATE cards SET isLocked = 1, lockedByTraderId = :traderId WHERE id = :cardId")
@@ -39,15 +53,15 @@ interface CardDao {
 
     // === Phase 1: Filter & search ===
 
-    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND riceVariety = :variety ORDER BY date DESC")
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND isDeleted = 0 AND riceVariety = :variety ORDER BY date DESC")
     fun getCardsByRiceVariety(variety: String, uid: String): Flow<List<Card>>
 
-    @Query("SELECT DISTINCT riceVariety FROM cards WHERE ownerUid = :uid AND riceVariety != '' ORDER BY riceVariety")
+    @Query("SELECT DISTINCT riceVariety FROM cards WHERE ownerUid = :uid AND isDeleted = 0 AND riceVariety != '' ORDER BY riceVariety")
     fun getDistinctRiceVarieties(uid: String): Flow<List<String>>
 
     @Query("""
         SELECT riceVariety FROM cards
-        WHERE ownerUid = :uid AND riceVariety != ''
+        WHERE ownerUid = :uid AND isDeleted = 0 AND riceVariety != ''
         GROUP BY riceVariety
         ORDER BY MAX(date) DESC, COUNT(*) DESC
         LIMIT 5
@@ -59,7 +73,7 @@ interface CardDao {
     /** Lấy danh sách các vụ đã có dữ liệu, sort theo ngày card mới nhất trong vụ đó. */
     @Query("""
         SELECT seasonLabel FROM cards
-        WHERE ownerUid = :uid AND seasonLabel != ''
+        WHERE ownerUid = :uid AND isDeleted = 0 AND seasonLabel != ''
         GROUP BY seasonLabel
         ORDER BY MAX(date) DESC
     """)
@@ -83,7 +97,7 @@ interface CardDao {
             SUM(netWeight) as weight,
             COUNT(*) as count
         FROM cards
-        WHERE ownerUid = :uid AND seasonLabel = :season AND riceVariety != ''
+        WHERE ownerUid = :uid AND isDeleted = 0 AND seasonLabel = :season AND riceVariety != ''
         GROUP BY riceVariety
         ORDER BY weight DESC
     """)
@@ -96,7 +110,7 @@ interface CardDao {
             SUM(totalAmount) as revenue,
             COUNT(*) as deals
         FROM cards
-        WHERE ownerUid = :uid AND seasonLabel = :season AND traderName != ''
+        WHERE ownerUid = :uid AND isDeleted = 0 AND seasonLabel = :season AND traderName != ''
         GROUP BY traderName
         ORDER BY revenue DESC
         LIMIT 5
@@ -121,7 +135,7 @@ interface CardDao {
             SUM(netWeight) as totalWeight,
             MAX(date) as lastDealDate
         FROM cards
-        WHERE ownerUid = :uid AND traderName != ''
+        WHERE ownerUid = :uid AND isDeleted = 0 AND traderName != ''
         GROUP BY traderName, traderPhone
         ORDER BY lastDealDate DESC
     """)
@@ -148,7 +162,7 @@ interface CardDao {
     // === Phase 4: Cross-device sync (v13) ===
 
     /** Tìm card local theo Firestore id — dùng dedup khi pull về máy mới. */
-    @Query("SELECT * FROM cards WHERE firestoreId = :fsId LIMIT 1")
+    @Query("SELECT * FROM cards WHERE firestoreId = :fsId AND isDeleted = 0 LIMIT 1")
     suspend fun getByFirestoreId(fsId: String): Card?
 
     /** Stamp Firestore doc id sau khi push thành công. */
@@ -156,7 +170,7 @@ interface CardDao {
     suspend fun updateFirestoreId(localId: Long, fsId: String)
 
     /** Tất cả cards của user hiện tại — dùng để loop push lên cloud. */
-    @Query("SELECT * FROM cards WHERE ownerUid = :uid")
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND isDeleted = 0")
     suspend fun getAllCardsForOwnerSync(uid: String): List<Card>
 
     /**
@@ -164,7 +178,7 @@ interface CardDao {
      * Premium gate "tối đa N phiếu/ngày cho free user". `sinceMs` thường là
      * 00:00 hôm nay theo timezone local.
      */
-    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND date >= :sinceMs")
+    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND isDeleted = 0 AND date >= :sinceMs")
     suspend fun countCardsSince(uid: String, sinceMs: Long): Int
 
     /**
@@ -176,7 +190,7 @@ interface CardDao {
      */
     @Query("""
         SELECT * FROM cards
-        WHERE ownerUid = :uid
+        WHERE ownerUid = :uid AND isDeleted = 0
           AND firestoreId IS NULL
           AND date = :date
           AND name = :name
@@ -191,10 +205,10 @@ interface CardDao {
     ): Card?
 
     /** Cards của user chưa từng sync lên Firestore — dùng cho backfill push. */
-    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND firestoreId IS NULL")
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid AND isDeleted = 0 AND firestoreId IS NULL")
     suspend fun getUnsyncedCards(uid: String): List<Card>
 
-    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND firestoreId IS NULL")
+    @Query("SELECT COUNT(*) FROM cards WHERE ownerUid = :uid AND isDeleted = 0 AND firestoreId IS NULL")
     suspend fun countUnsyncedCards(uid: String): Int
 
     companion object {
@@ -218,7 +232,7 @@ interface CardDao {
                 SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
                 SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
             FROM cards 
-            WHERE ownerUid = :uid AND seasonLabel = :season
+            WHERE ownerUid = :uid AND isDeleted = 0 AND seasonLabel = :season
         """
         
         const val QUERY_OVERALL_STATS = """
@@ -241,7 +255,7 @@ interface CardDao {
                 SUM(CASE WHEN moisturePercent > 14.0 THEN 1 ELSE 0 END) as wetCardCount,
                 SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount
             FROM cards 
-            WHERE ownerUid = :uid
+            WHERE ownerUid = :uid AND isDeleted = 0
         """
 
         const val QUERY_SEASON_COMPARISON = """
@@ -266,7 +280,7 @@ interface CardDao {
                 SUM(CASE WHEN moisturePercent <= 14.0 AND moisturePercent > 0.0 THEN 1 ELSE 0 END) as dryCardCount,
                 MAX(date) as lastDate 
             FROM cards 
-            WHERE ownerUid = :uid AND seasonLabel != '' 
+            WHERE ownerUid = :uid AND isDeleted = 0 AND seasonLabel != ''
             GROUP BY seasonLabel 
             ORDER BY lastDate DESC 
             LIMIT 6

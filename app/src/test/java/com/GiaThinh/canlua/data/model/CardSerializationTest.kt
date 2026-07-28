@@ -116,6 +116,19 @@ class CardSerializationTest {
     }
 
     @Test
+    fun `roundtrip preserves JSON control characters`() {
+        val original = sampleCard().copy(
+            name = "Farmer\nNew season",
+            fieldAddress = "Hamlet 1\tCommune A\r\nDistrict B"
+        )
+
+        val restored = deserializeCard(original.serialize())!!
+
+        assertEquals(original.name, restored.name)
+        assertEquals(original.fieldAddress, restored.fieldAddress)
+    }
+
+    @Test
     fun `roundtrip preserves boolean false - deserialize must not coerce to true`() {
         // Bug potential: as? Boolean ?: false — nếu field null trong JSON thì mất giá trị.
         val original = sampleCard().copy(

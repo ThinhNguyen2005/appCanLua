@@ -16,6 +16,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.isUnspecified
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.ui.util.LocalFontScaleFactor
 
@@ -116,11 +117,13 @@ private val DarkOledColorSchemeNoDynamic = darkColorScheme(
 )
 
 internal val LocalAppThemeMode = staticCompositionLocalOf { AppThemeMode.AUTO }
+internal val LocalAppUiMode = staticCompositionLocalOf { AppUiMode.STANDARD }
 
 @Composable
 fun CanLuaTheme(
     appThemeMode: AppThemeMode = AppThemeMode.AUTO,
     fontScale: FontScale = FontScale.NORMAL,
+    uiMode: AppUiMode = AppUiMode.STANDARD,
     content: @Composable () -> Unit
 ) {
     val systemDark = isSystemInDarkTheme()
@@ -157,6 +160,7 @@ fun CanLuaTheme(
     CompositionLocalProvider(
         LocalFontScaleFactor provides fontScale.scale,
         LocalAppThemeMode provides appThemeMode,
+        LocalAppUiMode provides uiMode,
     ) {
         MaterialTheme(
             colorScheme = baseColorScheme,

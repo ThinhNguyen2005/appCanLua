@@ -4,39 +4,39 @@ import org.json.JSONObject
 import java.util.Date
 
 fun Card.serialize(): String {
-    val sb = StringBuilder("{")
-    sb.append("\"name\":${jsonString(name)},")
-    sb.append("\"cccd\":${jsonNullable(cccd)},")
-    sb.append("\"traderName\":${jsonString(traderName)},")
-    sb.append("\"date\":${date.time},")
-    sb.append("\"totalWeight\":${totalWeight},")
-    sb.append("\"bagWeight\":${bagWeight},")
-    sb.append("\"impurityWeight\":${impurityWeight},")
-    sb.append("\"netWeight\":${netWeight},")
-    sb.append("\"depositAmount\":${depositAmount},")
-    sb.append("\"pricePerKg\":${pricePerKg},")
-    sb.append("\"totalAmount\":${totalAmount},")
-    sb.append("\"paidAmount\":${paidAmount},")
-    sb.append("\"remainingAmount\":${remainingAmount},")
-    sb.append("\"bagCount\":${bagCount},")
-    sb.append("\"isLocked\":${isLocked},")
-    sb.append("\"isPaid\":${isPaid},")
-    sb.append("\"riceVariety\":${jsonString(riceVariety)},")
-    sb.append("\"moisturePercent\":${moisturePercent},")
-    sb.append("\"seasonLabel\":${jsonString(seasonLabel)},")
-    sb.append("\"qrToken\":${jsonNullable(qrToken)},")
-    sb.append("\"lockedByTraderId\":${jsonNullable(lockedByTraderId)},")
-    sb.append("\"latitude\":${latitude ?: "null"},")
-    sb.append("\"longitude\":${longitude ?: "null"},")
-    sb.append("\"traderPhone\":${jsonString(traderPhone)},")
-    sb.append("\"fieldAddress\":${jsonString(fieldAddress)},")
-    sb.append("\"impurityIsPercent\":${impurityIsPercent},")
-    sb.append("\"bagMethodIsSampling\":${bagMethodIsSampling},")
-    sb.append("\"bagSampleCount\":${bagSampleCount},")
-    sb.append("\"bagSampleTotalWeight\":${bagSampleTotalWeight},")
-    sb.append("\"weightInputMode\":${jsonString(weightInputMode)}")
-    sb.append("}")
-    return sb.toString()
+    return JSONObject().apply {
+        put("schemaVersion", 1)
+        put("name", name)
+        put("cccd", cccd ?: JSONObject.NULL)
+        put("traderName", traderName)
+        put("date", date.time)
+        put("totalWeight", totalWeight)
+        put("bagWeight", bagWeight)
+        put("impurityWeight", impurityWeight)
+        put("netWeight", netWeight)
+        put("depositAmount", depositAmount)
+        put("pricePerKg", pricePerKg)
+        put("totalAmount", totalAmount)
+        put("paidAmount", paidAmount)
+        put("remainingAmount", remainingAmount)
+        put("bagCount", bagCount)
+        put("isLocked", isLocked)
+        put("isPaid", isPaid)
+        put("riceVariety", riceVariety)
+        put("moisturePercent", moisturePercent)
+        put("seasonLabel", seasonLabel)
+        put("qrToken", qrToken ?: JSONObject.NULL)
+        put("lockedByTraderId", lockedByTraderId ?: JSONObject.NULL)
+        put("latitude", latitude ?: JSONObject.NULL)
+        put("longitude", longitude ?: JSONObject.NULL)
+        put("traderPhone", traderPhone)
+        put("fieldAddress", fieldAddress)
+        put("impurityIsPercent", impurityIsPercent)
+        put("bagMethodIsSampling", bagMethodIsSampling)
+        put("bagSampleCount", bagSampleCount)
+        put("bagSampleTotalWeight", bagSampleTotalWeight)
+        put("weightInputMode", weightInputMode)
+    }.toString()
 }
 
 fun deserializeCard(json: String): Card? = runCatching {
@@ -75,12 +75,6 @@ fun deserializeCard(json: String): Card? = runCatching {
         weightInputMode = map["weightInputMode"]?.toString().takeIf { !it.isNullOrBlank() } ?: "SMALL"
     )
 }.getOrNull()
-
-private fun jsonString(s: String): String =
-    "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-
-private fun jsonNullable(s: String?): String =
-    if (s == null) "null" else jsonString(s)
 
 private fun parseSimpleJson(json: String): Map<String, Any?> {
     val obj = JSONObject(json)

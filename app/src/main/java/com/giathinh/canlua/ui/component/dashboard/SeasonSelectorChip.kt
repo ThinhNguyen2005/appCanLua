@@ -7,7 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -37,18 +39,20 @@ fun SeasonSelectorChip(
     seasons: List<String>,
     selectedSeason: String?,
     onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    simpleMode: Boolean = false
 ) {
     LazyRow(
         modifier = modifier.wrapContentHeight(),
         contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items(seasons, key = { it }) { season ->
             ChipItem(
                 label = season,
                 selected = season == selectedSeason,
-                onClick = { onSelect(season) }
+                onClick = { onSelect(season) },
+                simpleMode = simpleMode
             )
         }
     }
@@ -58,7 +62,8 @@ fun SeasonSelectorChip(
 private fun ChipItem(
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    simpleMode: Boolean = false
 ) {
     val greenPrimary = AppColors.GreenPrimary
     val cardBg = AppColors.CardBg
@@ -73,33 +78,40 @@ private fun ChipItem(
         label = "chip_content"
     )
 
+    val minHeight = if (simpleMode) 56.dp else 48.dp
+    val textStyle = if (simpleMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium
+
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .defaultMinSize(minHeight = minHeight)
+            .clip(RoundedCornerShape(24.dp))
             .background(bgColor)
             .border(
-                width = if (selected) 0.dp else 1.dp,
-                color = if (selected) Color.Transparent else greenPrimary.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(20.dp)
+                width = if (selected) 0.dp else 1.5.dp,
+                color = if (selected) Color.Transparent else greenPrimary.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(24.dp)
             )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .clickable(
+                onClick = onClick,
+                onClickLabel = "Chọn $label"
+            )
+            .padding(horizontal = if (simpleMode) 18.dp else 16.dp, vertical = if (simpleMode) 12.dp else 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (selected) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.padding(end = 0.dp)
+                modifier = Modifier.size(if (simpleMode) 22.dp else 18.dp)
             )
         }
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = textStyle.copy(
                 color = contentColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold
             )
         )
     }

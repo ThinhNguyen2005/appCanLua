@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Whitelist các CDN ảnh báo VN chỉ phục vụ HTTP (không có cert HTTPS hợp lệ).
+  Các domain khác mặc định vẫn bị cấm cleartext theo Android 9+ — an toàn hơn
+  `usesCleartextTraffic="true"` (mở toàn bộ traffic).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Dân Việt -->
+        <domain includeSubdomains="true">danviet.mediacdn.vn</domain>
+        <domain includeSubdomains="true">danviet.vn</domain>
+        <!-- Nông nghiệp Việt Nam -->
+        <domain includeSubdomains="true">nongnghiep.vn</domain>
+        <domain includeSubdomains="true">nongnghiepmedia.vn</domain>
+        <!-- VnExpress / Vneconomy -->
+        <domain includeSubdomains="true">vcdn.vnecdn.net</domain>
+        <domain includeSubdomains="true">i1-vnexpress.vnecdn.net</domain>
+        <domain includeSubdomains="true">vneconomy.mediacdn.vn</domain>
+        <!-- CafeF / Soha / Kenh14 -->
+        <domain includeSubdomains="true">cafefcdn.com</domain>
+        <domain includeSubdomains="true">cafebizcdn.vn</domain>
+        <domain includeSubdomains="true">sohanews.sohacdn.com</domain>
+        <domain includeSubdomains="true">kenh14cdn.com</domain>
+        <!-- Tuổi Trẻ / Thanh Niên / Báo Mới -->
+        <domain includeSubdomains="true">cdn.tuoitre.vn</domain>
+        <domain includeSubdomains="true">image.thanhnien.vn</domain>
+        <domain includeSubdomains="true">img.baomoi.com</domain>
+        <!-- Nông nghiệp và Môi trường -->
+        <domain includeSubdomains="true">nongnghiepmoitruong.vn</domain>
+        <domain includeSubdomains="true">ex-cdn.com</domain>
+        <!-- Báo điện tử khác hay xuất hiện -->
+        <domain includeSubdomains="true">images1.cafef.vn</domain>
+        <domain includeSubdomains="true">cdnimg.vietnamplus.vn</domain>
+        <domain includeSubdomains="true">media.vietq.vn</domain>
+        <domain includeSubdomains="true">znews-photo.zingcdn.me</domain>
+        <domain includeSubdomains="true">photo-cms-baophapluat.epicdn.me</domain>
+    </domain-config>
+</network-security-config>

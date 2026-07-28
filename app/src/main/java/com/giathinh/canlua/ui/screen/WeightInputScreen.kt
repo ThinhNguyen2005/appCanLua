@@ -28,6 +28,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import com.giathinh.canlua.R
 import androidx.compose.foundation.clickable
@@ -55,7 +57,6 @@ import com.giathinh.canlua.ui.component.weight.WeightMetricsCard
 import com.giathinh.canlua.ui.component.pressableScale
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.WeightInputViewModel
-import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.PersistentList
@@ -114,7 +115,7 @@ fun WeightInputScreenContent(
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
+    val haptic = LocalHapticFeedback.current
 
     val onBagWeightChange = remember(cardId) { { weight: Double -> viewModel.updateCardBagWeight(cardId, weight) } }
     val onBagMethodChange = remember(cardId) {
@@ -131,6 +132,12 @@ fun WeightInputScreenContent(
     var showLockConfirmDialog by remember { mutableStateOf(false) }
 
     val tables by viewModel.tables.collectAsStateWithLifecycle()
+
+    val scope = rememberCoroutineScope()
+    val focusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
+    val getFocusRequester = remember(focusRequesters) {
+        { idx: Int -> focusRequesters.getOrPut(idx) { FocusRequester() } }
+    }
 
     // === STABLE STATE REFS (rememberUpdatedState) ===
     // Cho phép lambda onCellWeightEntered được tạo một lần duy nhất (remember {})
@@ -173,11 +180,9 @@ fun WeightInputScreenContent(
                         netWeight = netWeight
                     )
                 )
-            } else if (entryIdx == entries.size) {
-                viewModel.addWeightEntryDirectly(cardId, weight)
-                HapticUtil.tick(context)
             } else {
-                appToast.warning("Vui lòng nhập lần lượt từ ô trống kế tiếp")
+                viewModel.addWeightEntryDirectly(cardId, weight)
+                haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
             }
         }
     }
@@ -206,7 +211,7 @@ fun WeightInputScreenContent(
             bagSampleCount = calcParams.bagSampleCount,
             bagSampleTotalWeight = calcParams.bagSampleTotalWeight,
             impurityValue = calcParams.impurityValue,
-            impurityIsPercent = currentCard?.impurityIsPercent ?: false,
+            impurityIsPercent = false,
             moisturePercent = calcParams.moisturePercent
         )
     }
@@ -252,6 +257,24 @@ fun WeightInputScreenContent(
         if (isAnimationFinished) viewModel.startTts()
     }
 
+    val onLastCellFilled = remember(stableTables) {
+        { pageIdx: Int ->
+            val nextPageIndex = pageIdx + 1
+            if (nextPageIndex >= stableTables.size) {
+                viewModel.incrementManualTableCount()
+            }
+            scope.launch {
+                delay(100L)
+                lazyListState.animateScrollToItem(nextPageIndex + 2)
+                delay(250L)
+                runCatching {
+                    getFocusRequester(nextPageIndex * 25).requestFocus()
+                }
+            }
+            Unit
+        }
+    }
+
     // === CHECK NULL DỮ LIỆU (Đặt SAU khi các state remember đã được đăng ký) ===
     val card = currentCard
     if (card == null) {
@@ -278,6 +301,7 @@ fun WeightInputScreenContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         // === LAYOUT STABILITY (Performance Optimization) ===
                         // heightIn(min) thay vì height() — khoá chiều cao tối thiểu để hệ thống
                         // không phải tính lại Measure/Layout pass khi IME (bàn phím ảo) bật/tắt
@@ -333,7 +357,7 @@ fun WeightInputScreenContent(
                         onClick = {
                             if (card.isLocked) {
                                 viewModel.toggleCardLock(card.id)
-                                HapticUtil.confirm(context)
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                             } else {
                                 showLockConfirmDialog = true
                             }
@@ -376,7 +400,7 @@ fun WeightInputScreenContent(
                     onImpurityWeightChange = onImpurityWeightChange,
                     onMoistureChange = onMoistureChange,
                     onPriceChange = onPriceChange,
-                    impurityIsPercent = card.impurityIsPercent,
+                    impurityIsPercent = false,
                     bagMethodIsSampling = card.bagMethodIsSampling,
                     bagSampleCount = card.bagSampleCount,
                     bagSampleTotalWeight = card.bagSampleTotalWeight,
@@ -403,8 +427,17 @@ fun WeightInputScreenContent(
                         if (!card.isLocked) {
                             FilledTonalButton(
                                 onClick = {
+                                    val currentTablesCount = stableTables.size
                                     viewModel.incrementManualTableCount()
-                                    HapticUtil.confirm(context)
+                                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                    scope.launch {
+                                        delay(100L)
+                                        lazyListState.animateScrollToItem(currentTablesCount + 2)
+                                        delay(250L)
+                                        runCatching {
+                                            getFocusRequester(currentTablesCount * 25).requestFocus()
+                                        }
+                                    }
                                 },
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = AppColors.GreenPrimary,
@@ -426,14 +459,14 @@ fun WeightInputScreenContent(
             if (isAnimationFinished) {
                 stableTables.forEachIndexed { pageIndex, stableTable ->
                     item(key = "weight_table_$pageIndex") {
-                        val onNeedNextTable = remember { { viewModel.incrementManualTableCount() } }
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             WeightTableCard(
                                 tableIndex = pageIndex + 1,
                                 stableTableData = stableTable,
                                 tableIndexInList = pageIndex,
-                                onNeedNextTable = onNeedNextTable,
+                                onLastCellFilled = onLastCellFilled,
                                 onWeightEntered = onCellWeightEntered,
+                                getFocusRequester = getFocusRequester,
                                 isLocked = card.isLocked,
                                 weightInputMode = card.weightInputMode
                             )
@@ -494,7 +527,7 @@ fun WeightInputScreenContent(
                 TextButton(
                     onClick = {
                         viewModel.toggleCardLock(card.id)
-                        HapticUtil.confirm(context)
+                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                         showLockConfirmDialog = false
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
@@ -522,15 +555,15 @@ private fun WeightTableCard(
     tableIndex: Int,
     stableTableData: ImmutableTableData,
     tableIndexInList: Int,
-    onNeedNextTable: () -> Unit,
+    onLastCellFilled: (Int) -> Unit,
     onWeightEntered: (Int, Double) -> Unit,
+    getFocusRequester: (Int) -> FocusRequester,
     isLocked: Boolean,
     weightInputMode: String = "SMALL"
 ) {
     val tableData = stableTableData.data
     // remember(stableTableData) → tableTotal chỉ tính lại khi nội dung bảng này thay đổi
     val tableTotal = remember(stableTableData) { tableData.flatten().filterNotNull().sum() }
-    val focusRequesters = remember { List(5) { List(5) { FocusRequester() } } }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -578,14 +611,16 @@ private fun WeightTableCard(
                             val onCellWeightEntered = remember(entryIdx, onWeightEntered) {
                                 { weight: Double -> onWeightEntered(entryIdx, weight) }
                             }
-                            val onCellNextFocus = remember(rowIdx, colIdx, onNeedNextTable) {
+                            val onCellNextFocus = remember(entryIdx, onLastCellFilled) {
                                 {
-                                    if (rowIdx < 4) {
-                                        focusRequesters[rowIdx + 1][colIdx].requestFocus()
-                                    } else if (colIdx < 4) {
-                                        focusRequesters[0][colIdx + 1].requestFocus()
+                                    val nextIdx = entryIdx + 1
+                                    val isTableEnd = (entryIdx % 25 == 24)
+                                    if (isTableEnd) {
+                                        onLastCellFilled(tableIndexInList)
                                     } else {
-                                        onNeedNextTable()
+                                        runCatching {
+                                            getFocusRequester(nextIdx).requestFocus()
+                                        }
                                     }
                                     Unit
                                 }
@@ -595,7 +630,7 @@ private fun WeightTableCard(
                                 value = weightVal,
                                 onValueEntered = onCellWeightEntered,
                                 onNextFocus = onCellNextFocus,
-                                focusRequester = focusRequesters[rowIdx][colIdx],
+                                focusRequester = getFocusRequester(entryIdx),
                                 isLocked = isLocked,
                                 weightInputMode = weightInputMode,
                                 modifier = Modifier.weight(1f)
@@ -633,6 +668,7 @@ private fun GridCell(
     var text by remember(value) { mutableStateOf(displayValue) }
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
 
     // Auto-lift: khi cell focus, kéo cell lên trên bàn phím để không bị che.
@@ -679,7 +715,7 @@ private fun GridCell(
                 onValueChange = { input ->
                     val maxLen = maxInputDigits(weightInputMode)
                     if (input.all { it.isDigit() } && input.length <= maxLen) {
-                        if (input.length > text.length) HapticUtil.textHandleMove(context)
+                        if (input.length > text.length) haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
                         text = input
                         if (input.length == maxLen) {
                             parseWeightInput(input)?.let {

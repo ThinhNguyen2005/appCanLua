@@ -9,7 +9,6 @@ import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.data.model.Transaction
 import com.giathinh.canlua.data.model.TransactionType
 import com.giathinh.canlua.util.CccdCrypto
-import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,10 +28,10 @@ class CardRepositoryTest {
     private val weightEntryDao = mockk<WeightEntryDao>(relaxed = true)
     private val transactionDao = mockk<TransactionDao>(relaxed = true)
     private val deletedCardDao = mockk<DeletedCardDao>(relaxed = true)
-    private val authManager = mockk<AuthManager>(relaxed = true)
+    private val cccdCrypto = mockk<CccdCrypto>()
 
-    private val firebaseUser = mockk<FirebaseUser> {
-        every { uid } returns "user-123"
+    init {
+        every { cccdCrypto.encrypt(any()) } answers { firstArg<String?>()?.let { "encrypted:$it" } }
     }
 
     private val repository = CardRepository(
@@ -40,13 +39,11 @@ class CardRepositoryTest {
         weightEntryDao = weightEntryDao,
         transactionDao = transactionDao,
         deletedCardDao = deletedCardDao,
-        authManager = authManager
+        cccdCrypto = cccdCrypto
     )
 
     @Test
     fun `insertCard should stamp ownerUid, lastModifiedMs and encrypt cccd`() = runTest {
-        every { authManager.currentUser } returns firebaseUser
-        
         val inputCard = Card(
             id = 0L,
             name = "Farmer A",
@@ -64,23 +61,21 @@ class CardRepositoryTest {
         assertEquals(42L, resultId)
         assertTrue(cardSlot.isCaptured)
         val captured = cardSlot.captured
-        assertEquals("user-123", captured.ownerUid)
+        assertEquals("", captured.ownerUid)
         assertTrue(captured.lastModifiedMs > 0L)
         // Verify CCCD is encrypted
-        assertEquals(CccdCrypto.encrypt("123456789"), captured.cccd)
+        assertEquals("encrypted:123456789", captured.cccd)
     }
 
     @Test
     fun `updateCard should update lastModifiedMs, encrypt cccd and preserve original transaction date`() = runTest {
-        every { authManager.currentUser } returns firebaseUser
-        
         val originalDate = Date(50000L)
         val inputCard = Card(
             id = 100L,
             name = "Farmer A",
             cccd = "123456789",
             date = originalDate,
-            ownerUid = "user-123",
+            ownerUid = "",
             lastModifiedMs = 10L
         )
 
@@ -95,20 +90,18 @@ class CardRepositoryTest {
         // Verify original date is preserved and NOT overwritten with System.currentTimeMillis()
         assertEquals(originalDate.time, captured.date.time)
         assertTrue(captured.lastModifiedMs > 10L)
-        assertEquals(CccdCrypto.encrypt("123456789"), captured.cccd)
+        assertEquals("encrypted:123456789", captured.cccd)
     }
 
     @Test
     fun `updateCardCalculations should update aggregates and preserve original transaction date`() = runTest {
-        every { authManager.currentUser } returns firebaseUser
-
         val originalDate = Date(70000L)
         val originalCard = Card(
             id = 200L,
             name = "Farmer B",
             cccd = "987654321",
             date = originalDate,
-            ownerUid = "user-123",
+            ownerUid = "",
             lastModifiedMs = 10L,
             pricePerKg = 8000.0,
             moisturePercent = 15.0,
@@ -116,7 +109,7 @@ class CardRepositoryTest {
         )
 
         // Mock database operations
-        coEvery { cardDao.getCardById(200L, "user-123") } returns originalCard
+        coEvery { cardDao.getCardById(200L, "") } returns originalCard
         
         // Mock weight entries
         val weightEntries = listOf(

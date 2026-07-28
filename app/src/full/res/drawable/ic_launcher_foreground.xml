@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Foreground adaptive icon — wrap PNG @drawable/ic_launcher_subject với inset 22%.
+  Adaptive icon safe zone là 66dp/108dp (~61% inner). Inset 22% mỗi cạnh →
+  chủ thể chiếm ~56% viewport, lọt gọn trong safe zone với khoảng thở vừa đủ,
+  không sát viền dù mask tròn/squircle/teardrop.
+  Gravity center + filter true để giữ aspect + làm mượt khi scale.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:inset="22%">
+    <bitmap
+        android:src="@drawable/ic_launcher_subject"
+        android:gravity="center"
+        android:filter="true" />
+</inset>

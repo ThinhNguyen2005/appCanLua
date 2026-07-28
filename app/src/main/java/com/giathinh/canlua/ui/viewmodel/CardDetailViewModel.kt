@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
-import com.giathinh.canlua.repository.SyncableCardRepository
+import com.giathinh.canlua.repository.CardRepository
 import com.giathinh.canlua.data.location.LocationProvider
+import com.giathinh.canlua.di.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CardDetailViewModel @Inject constructor(
-    private val repository: SyncableCardRepository,
-    private val locationProvider: LocationProvider
+    private val repository: CardRepository,
+    private val locationProvider: LocationProvider,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val _currentCard = MutableStateFlow<Card?>(null)
@@ -34,7 +36,7 @@ class CardDetailViewModel @Inject constructor(
 
     fun loadCardById(cardId: Long) {
         weightEntriesJob?.cancel()
-        weightEntriesJob = viewModelScope.launch(Dispatchers.IO) {
+        weightEntriesJob = viewModelScope.launch(ioDispatcher) {
             _isLoading.value = true
             val card = repository.getCardById(cardId)
             _currentCard.value = card
@@ -55,7 +57,7 @@ class CardDetailViewModel @Inject constructor(
         if (current != null && current.id == card.id) {
             _currentCard.value = card
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val oldCard = repository.getCardById(card.id)
             repository.updateCard(card)
 
@@ -105,13 +107,13 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun deleteCard(card: Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteCard(card)
         }
     }
 
     fun updateCardName(cardId: Long, name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             if (name.isBlank()) return@launch
             val card = repository.getCardById(cardId)
             card?.let {
@@ -121,7 +123,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardBagWeight(cardId: Long, bagWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(bagWeight = bagWeight)
@@ -133,7 +135,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardImpurityWeight(cardId: Long, impurityWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(impurityWeight = impurityWeight)
@@ -145,7 +147,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardPricePerKg(cardId: Long, pricePerKg: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(pricePerKg = pricePerKg)
@@ -157,7 +159,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardMoisture(cardId: Long, moisturePercent: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(moisturePercent = moisturePercent)
@@ -169,7 +171,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardRiceVariety(cardId: Long, variety: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(riceVariety = variety))
@@ -179,7 +181,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardSeasonLabel(cardId: Long, seasonLabel: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(seasonLabel = seasonLabel))
@@ -189,7 +191,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardTraderPhone(cardId: Long, phone: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(traderPhone = phone.trim()))
@@ -199,7 +201,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardFieldAddress(cardId: Long, address: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 repository.updateCard(it.copy(fieldAddress = address.trim()))
@@ -209,7 +211,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun refreshFieldLocation(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val geo = runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull() ?: return@launch
             val address = runCatching { locationProvider.reverseGeocode(geo.lat, geo.lon) }.getOrNull().orEmpty()
             val card = repository.getCardById(cardId) ?: return@launch
@@ -225,7 +227,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun addPayment(cardId: Long, amount: Double, description: String? = null) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repository.insertTransaction(
                 com.giathinh.canlua.data.model.Transaction(
                     cardId = cardId,
@@ -239,7 +241,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun toggleCardLock(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(isLocked = !it.isLocked)
@@ -257,7 +259,7 @@ class CardDetailViewModel @Inject constructor(
         bagSampleTotalWeight: Double,
         weightInputMode: String
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId) ?: return@launch
             val updated = card.copy(
                 impurityIsPercent = impurityIsPercent,
@@ -273,7 +275,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateWeightEntry(entry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repository.updateWeightEntry(entry)
             repository.updateCardCalculations(entry.cardId)
             loadCardById(entry.cardId)
@@ -281,7 +283,7 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun deleteWeightEntry(entry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteWeightEntry(entry)
             repository.updateCardCalculations(entry.cardId)
             loadCardById(entry.cardId)

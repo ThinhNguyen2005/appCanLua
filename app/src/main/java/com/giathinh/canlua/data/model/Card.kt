@@ -14,7 +14,8 @@ import java.util.Date
         // H-02: Composite index để tăng tốc getAllCards (ORDER BY date DESC per user)
         androidx.room.Index(value = ["ownerUid", "date"]),
         // H-02: Index cho getCardsByRiceVariety + getSuggestedRiceVarieties
-        androidx.room.Index(value = ["ownerUid", "riceVariety"])
+        androidx.room.Index(value = ["ownerUid", "riceVariety"]),
+        androidx.room.Index(value = ["ownerUid", "isDeleted", "deletedAt"])
     ]
 )
 data class Card(
@@ -75,6 +76,8 @@ data class Card(
      */
     val lastModifiedMs: Long = 0L,
     val isPaid: Boolean = false,
+    val isDeleted: Boolean = false,
+    val deletedAt: Long? = null,
 
     // === PHASE 6 (v17): Per-card weigh modes ===
     /**

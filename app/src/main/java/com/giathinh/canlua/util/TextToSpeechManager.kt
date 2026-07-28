@@ -3,15 +3,18 @@ package com.giathinh.canlua.util
 import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TextToSpeechManager @Inject constructor(
-    private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private var tts: TextToSpeech? = null
     private var isEnabled = false
@@ -54,12 +57,8 @@ class TextToSpeechManager @Inject constructor(
                 }
             }
             
-            override fun onError(utteranceId: String?) {}
-            
             @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?, errorCode: Int) {
-                super.onError(utteranceId, errorCode)
-            }
+            override fun onError(utteranceId: String?) {}
         })
     }
 
@@ -68,6 +67,10 @@ class TextToSpeechManager @Inject constructor(
         try {
             val toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
             toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 150)
+            Handler(Looper.getMainLooper()).postDelayed(
+                { toneGenerator.release() },
+                250L
+            )
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -171,6 +174,7 @@ class TextToSpeechManager @Inject constructor(
         tts?.shutdown()
         tts = null
         isInitialized = false
+        isInitializing = false
     }
 }
 

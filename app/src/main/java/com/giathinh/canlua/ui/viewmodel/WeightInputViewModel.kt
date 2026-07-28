@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
-import com.giathinh.canlua.repository.SyncableCardRepository
+import com.giathinh.canlua.repository.CardRepository
 import com.giathinh.canlua.repository.SettingsRepository
+import com.giathinh.canlua.repository.WeighDefaults
+import com.giathinh.canlua.di.IoDispatcher
 import com.giathinh.canlua.util.RiceCalculator
 import com.giathinh.canlua.util.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,9 +26,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WeightInputViewModel @Inject constructor(
-    private val repository: SyncableCardRepository,
+    private val repository: CardRepository,
     private val ttsManager: TextToSpeechManager,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val _currentCard = MutableStateFlow<Card?>(null)
@@ -53,19 +57,57 @@ class WeightInputViewModel @Inject constructor(
     private var weightEntriesJob: Job? = null
 
     private val ttsEnabledState: StateFlow<Boolean> = settingsRepository.ttsEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.isTtsEnabled())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     val weighDefaults = settingsRepository.weighDefaults
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.getWeighDefaults())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WeighDefaults())
+
+    init {
+        viewModelScope.launch(ioDispatcher) {
+            settingsRepository.weighDefaults.collect { defaults ->
+                val card = _currentCard.value ?: return@collect
+                val computedBagWeight = if (defaults.bagMethodIsSampling && defaults.bagSampleCount > 0) {
+                    defaults.bagSampleTotalWeight / defaults.bagSampleCount
+                } else if (defaults.bagSampleCount > 0) {
+                    1.0 / defaults.bagSampleCount
+                } else {
+                    1.0 / 8.0
+                }
+                if (card.weightInputMode != defaults.weightInputMode ||
+                    card.bagMethodIsSampling != defaults.bagMethodIsSampling ||
+                    card.bagSampleCount != defaults.bagSampleCount ||
+                    card.bagSampleTotalWeight != defaults.bagSampleTotalWeight ||
+                    card.bagWeight != computedBagWeight
+                ) {
+                    val updated = card.copy(
+                        weightInputMode = defaults.weightInputMode,
+                        bagMethodIsSampling = defaults.bagMethodIsSampling,
+                        bagSampleCount = defaults.bagSampleCount,
+                        bagSampleTotalWeight = defaults.bagSampleTotalWeight,
+                        bagWeight = computedBagWeight
+                    )
+                    repository.updateCard(updated)
+                    repository.updateCardCalculations(card.id)
+                    _currentCard.value = repository.getCardById(card.id)
+                }
+            }
+        }
+    }
 
     fun loadCardById(cardId: Long) {
         android.util.Log.d("DEBUG_CANLUA", "loadCardById được gọi với ID: $cardId")
         weightEntriesJob?.cancel()
-        weightEntriesJob = viewModelScope.launch(Dispatchers.IO) {
+        weightEntriesJob = viewModelScope.launch(ioDispatcher) {
             _isLoading.value = true
             _manualTableCount.value = 0
 
-            val card = repository.getCardById(cardId)
+            var card = repository.getCardById(cardId)
+            val defaults = settingsRepository.getWeighDefaults()
+            if (card != null && card.weightInputMode != defaults.weightInputMode) {
+                val updated = card.copy(weightInputMode = defaults.weightInputMode)
+                repository.updateCard(updated)
+                card = repository.getCardById(cardId)
+            }
             _currentCard.value = card
             syncMoistureToInputState(card)
 
@@ -96,7 +138,7 @@ class WeightInputViewModel @Inject constructor(
         bagWeight: Double = 0.0,
         impurityWeight: Double = 0.0
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             val moisture = card?.moisturePercent ?: 0.0
 
@@ -132,7 +174,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun addWeightEntryDirectly(cardId: Long, weight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val netWeight = RiceCalculator.calcNetWeight(
@@ -167,7 +209,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateWeightEntry(weightEntry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repository.updateWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
             _currentCard.value = repository.getCardById(weightEntry.cardId)
@@ -175,7 +217,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun deleteWeightEntry(weightEntry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repository.deleteWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
             _currentCard.value = repository.getCardById(weightEntry.cardId)
@@ -234,7 +276,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateCardBagWeight(cardId: Long, bagWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(bagWeight = bagWeight)
@@ -246,7 +288,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateCardBagMethod(cardId: Long, isSampling: Boolean, sampleCount: Int, sampleTotalWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val computedBagWeight = if (isSampling && sampleCount > 0) {
@@ -270,7 +312,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateCardImpurityWeight(cardId: Long, impurityWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(impurityWeight = impurityWeight)
@@ -282,7 +324,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateCardPricePerKg(cardId: Long, pricePerKg: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(pricePerKg = pricePerKg)
@@ -294,7 +336,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateCardMoisture(cardId: Long, moisturePercent: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(moisturePercent = moisturePercent)
@@ -308,7 +350,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun toggleCardLock(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val card = repository.getCardById(cardId)
             card?.let {
                 val updatedCard = it.copy(isLocked = !it.isLocked)

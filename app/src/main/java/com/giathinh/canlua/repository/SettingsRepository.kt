@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.data.model.FontScale
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ class SettingsRepository @Inject constructor(
     private val KEY_THEME_MODE = "theme_mode"
     private val KEY_SYNC_ONLY_WIFI = "sync_only_wifi"
     private val KEY_GUEST_MODE = "guest_mode"
+    private val KEY_UI_MODE = "ui_mode"
 
     // Weigh-options defaults (v17): áp dụng cho phiếu mới tạo. Phiếu cũ giữ mode đã lưu.
     private val KEY_IMPURITY_IS_PERCENT = "weigh_impurity_is_percent"
@@ -55,6 +57,9 @@ class SettingsRepository @Inject constructor(
     val ttsEnabled: Flow<Boolean> = _ttsEnabled.asStateFlow()
 
     private val _guestMode = MutableStateFlow(prefs.getBoolean(KEY_GUEST_MODE, false))
+
+    private val _uiMode = MutableStateFlow(readUiMode())
+    val uiMode: Flow<AppUiMode> = _uiMode.asStateFlow()
     val guestMode: Flow<Boolean> = _guestMode.asStateFlow()
 
     init {
@@ -166,6 +171,15 @@ class SettingsRepository @Inject constructor(
         val name = prefs.getString(KEY_THEME_MODE, AppThemeMode.LIGHT.name)
         return AppThemeMode.fromName(name)
     }
+
+    fun setUiMode(mode: AppUiMode) {
+        prefs.edit().putString(KEY_UI_MODE, mode.name).apply()
+        _uiMode.value = mode
+    }
+
+    private fun readUiMode(): AppUiMode = runCatching {
+        AppUiMode.valueOf(prefs.getString(KEY_UI_MODE, AppUiMode.STANDARD.name) ?: AppUiMode.STANDARD.name)
+    }.getOrDefault(AppUiMode.STANDARD)
 
     fun isGuestMode(): Boolean {
         return prefs.getBoolean(KEY_GUEST_MODE, false)

@@ -35,10 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -71,14 +70,14 @@ fun CardItem(
     onDelete: (CardModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val displayBagWeight = totalDisplayBagWeight(card)
 
     @Suppress("DEPRECATION")
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked && card.isPaid) {
-                HapticUtil.error(context)
+                haptic.performHapticFeedback(HapticFeedbackType.Reject)
                 onDelete(card)
                 false
             } else {
@@ -95,7 +94,7 @@ fun CardItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    HapticUtil.tick(context)
+                    haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     onClick(card.id)
                 },
             shape = RoundedCornerShape(16.dp),

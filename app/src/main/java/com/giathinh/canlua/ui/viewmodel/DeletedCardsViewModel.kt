@@ -2,8 +2,7 @@ package com.giathinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.giathinh.canlua.data.model.DeletedCard
-import com.giathinh.canlua.repository.AuthManager
+import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.repository.CardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,16 +24,14 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DeletedCardsViewModel @Inject constructor(
-    private val cardRepository: CardRepository,
-    private val authManager: AuthManager
+    private val cardRepository: CardRepository
 ) : ViewModel() {
 
-    private val uidFlow = MutableStateFlow(authManager.currentUser?.uid.orEmpty())
+    private val uidFlow = MutableStateFlow("")
 
-    val items: StateFlow<List<DeletedCard>> = uidFlow
+    val items: StateFlow<List<Card>> = uidFlow
         .flatMapLatest { uid ->
-            if (uid.isBlank()) flowOf(emptyList())
-            else cardRepository.getDeletedCards(uid)
+            cardRepository.getDeletedCards(uid)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -43,12 +40,7 @@ class DeletedCardsViewModel @Inject constructor(
     val restored: StateFlow<Long?> = _restored.asStateFlow()
 
     init {
-        // Refresh uid flow khi auth state đổi (login khác user).
-        viewModelScope.launch {
-            authManager.authStateFlow.collect { user ->
-                uidFlow.value = user?.uid.orEmpty()
-            }
-        }
+        // No-op for offline mode
     }
 
     fun restore(tombstoneId: Long) {

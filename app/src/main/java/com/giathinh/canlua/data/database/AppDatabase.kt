@@ -1,25 +1,28 @@
 package com.giathinh.canlua.data.database
 
+import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import android.content.Context
+import com.giathinh.canlua.data.converter.DateConverter
 import com.giathinh.canlua.data.dao.CardDao
+import com.giathinh.canlua.data.dao.DeletedCardDao
 import com.giathinh.canlua.data.dao.NewsArticleDao
+import com.giathinh.canlua.data.dao.ProfileDao
 import com.giathinh.canlua.data.dao.RicePriceDao
 import com.giathinh.canlua.data.dao.TransactionDao
 import com.giathinh.canlua.data.dao.WeightEntryDao
 import com.giathinh.canlua.data.model.Card
+import com.giathinh.canlua.data.model.DeletedCard
 import com.giathinh.canlua.data.model.NewsArticle
 import com.giathinh.canlua.data.model.PricePoint
+import com.giathinh.canlua.data.model.Profile
 import com.giathinh.canlua.data.model.RicePrice
 import com.giathinh.canlua.data.model.Transaction
 import com.giathinh.canlua.data.model.WeightEntry
-import com.giathinh.canlua.data.model.Profile
-import com.giathinh.canlua.data.converter.DateConverter
 
 @Database(
     entities = [
@@ -27,12 +30,12 @@ import com.giathinh.canlua.data.converter.DateConverter
         WeightEntry::class,
         Transaction::class,
         Profile::class,
+        DeletedCard::class,
         RicePrice::class,
         PricePoint::class,
-        NewsArticle::class,
-        com.giathinh.canlua.data.model.DeletedCard::class
+        NewsArticle::class
     ],
-    version = 18,
+    version = 20,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -40,10 +43,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun cardDao(): CardDao
     abstract fun weightEntryDao(): WeightEntryDao
     abstract fun transactionDao(): TransactionDao
-    abstract fun profileDao(): com.giathinh.canlua.data.dao.ProfileDao
+    abstract fun profileDao(): ProfileDao
+    abstract fun deletedCardDao(): DeletedCardDao
     abstract fun ricePriceDao(): RicePriceDao
     abstract fun newsArticleDao(): NewsArticleDao
-    abstract fun deletedCardDao(): com.giathinh.canlua.data.dao.DeletedCardDao
 
     companion object {
         @Volatile
@@ -64,6 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_6_7,
                     MIGRATION_7_8,
                     MIGRATION_8_9,
+
                     MIGRATION_9_10,
                     MIGRATION_10_11,
                     MIGRATION_11_12,
@@ -72,7 +76,9 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_14_15,
                     MIGRATION_15_16,
                     MIGRATION_16_17,
-                    MIGRATION_17_18
+                    MIGRATION_17_18,
+                    MIGRATION_18_19,
+                    MIGRATION_19_20
                 ).setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 INSTANCE = instance
@@ -380,6 +386,75 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE rice_prices ADD COLUMN riceType TEXT NOT NULL DEFAULT 'lúa Khô'")
+            }
+        }
+
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `rice_prices`")
+                db.execSQL("DROP TABLE IF EXISTS `price_history`")
+                db.execSQL("DROP TABLE IF EXISTS `news_articles`")
+                db.execSQL("DROP TABLE IF EXISTS `weather_cache`")
+            }
+        }
+
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cards ADD COLUMN deletedAt INTEGER")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_cards_ownerUid_isDeleted_deletedAt` " +
+                        "ON `cards` (`ownerUid`, `isDeleted`, `deletedAt`)"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `rice_prices` (
+                        `id` TEXT NOT NULL,
+                        `variety` TEXT NOT NULL,
+                        `priceMin` REAL NOT NULL,
+                        `priceMax` REAL NOT NULL,
+                        `priceAvg7d` REAL NOT NULL,
+                        `region` TEXT NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `traderId` TEXT,
+                        `traderName` TEXT,
+                        `trend` TEXT NOT NULL DEFAULT 'STABLE',
+                        `riceType` TEXT NOT NULL DEFAULT 'lúa Khô',
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `price_history` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `variety` TEXT NOT NULL,
+                        `date` INTEGER NOT NULL,
+                        `priceMin` REAL NOT NULL,
+                        `priceMax` REAL NOT NULL,
+                        `priceAvg` REAL NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `news_articles` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `link` TEXT NOT NULL,
+                        `source` TEXT NOT NULL,
+                        `thumbnail` TEXT,
+                        `publishedAt` INTEGER NOT NULL,
+                        `topic` TEXT NOT NULL,
+                        `cachedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `idx_news_topic_published` ON `news_articles` (`topic`, `publishedAt`)"
+                )
             }
         }
     }

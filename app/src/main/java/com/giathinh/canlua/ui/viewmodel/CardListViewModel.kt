@@ -3,7 +3,7 @@ package com.giathinh.canlua.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
-import com.giathinh.canlua.repository.SyncableCardRepository
+import com.giathinh.canlua.repository.CardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,15 +19,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.giathinh.canlua.data.location.LocationProvider
 import com.giathinh.canlua.repository.SettingsRepository
-import com.giathinh.canlua.repository.FirestoreRepository
+import com.giathinh.canlua.di.IoDispatcher
+import com.giathinh.canlua.di.MainDispatcher
 import java.util.Date
 
 @HiltViewModel
 class CardListViewModel @Inject constructor(
-    private val repository: SyncableCardRepository,
+    private val repository: CardRepository,
     private val settingsRepository: SettingsRepository,
     private val locationProvider: LocationProvider,
-    private val firestoreRepository: FirestoreRepository
+    @param:IoDispatcher private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+    @param:MainDispatcher private val mainDispatcher: kotlinx.coroutines.CoroutineDispatcher
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)
@@ -42,14 +44,24 @@ class CardListViewModel @Inject constructor(
     private val _selectedSeasonFilter = MutableStateFlow<String?>(null)
     val selectedSeasonFilter: StateFlow<String?> = _selectedSeasonFilter.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _selectedPaymentFilter = MutableStateFlow<Boolean?>(null) // null = all, true = paid, false = unpaid
+    val selectedPaymentFilter: StateFlow<Boolean?> = _selectedPaymentFilter.asStateFlow()
+
     val cards: StateFlow<List<Card>> = combine(
         repository.getAllCards(),
         _selectedVarietyFilter,
-        _selectedSeasonFilter
-    ) { all, variety, season ->
+        _selectedSeasonFilter,
+        _searchQuery,
+        _selectedPaymentFilter
+    ) { all, variety, season, query, payment ->
         all.filter { card ->
-            (variety == null || card.riceVariety == variety) &&
-                    (season == null || card.seasonLabel == season)
+            (variety == null || card.riceVariety.equals(variety, ignoreCase = true)) &&
+            (season == null || card.seasonLabel.equals(season, ignoreCase = true)) &&
+            (query.isBlank() || card.traderName.contains(query, ignoreCase = true) || card.riceVariety.contains(query, ignoreCase = true)) &&
+            (payment == null || card.isPaid == payment)
         }
     }.onEach { _isLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -67,6 +79,14 @@ class CardListViewModel @Inject constructor(
         _isLoading.value = false
     }
 
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setPaymentFilter(payment: Boolean?) {
+        _selectedPaymentFilter.value = payment
+    }
+
     fun setVarietyFilter(variety: String?) {
         _selectedVarietyFilter.value = variety
     }
@@ -78,6 +98,8 @@ class CardListViewModel @Inject constructor(
     fun clearFilters() {
         _selectedVarietyFilter.value = null
         _selectedSeasonFilter.value = null
+        _searchQuery.value = ""
+        _selectedPaymentFilter.value = null
     }
 
     fun createNewCard(
@@ -91,9 +113,10 @@ class CardListViewModel @Inject constructor(
         seasonLabel: String = "",
         traderPhone: String = "",
         impurityWeight: Double = 0.0,
-        recordLocation: Boolean = false
+        recordLocation: Boolean = false,
+        onCreated: ((Long) -> Unit)? = null
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) return@launch
 
@@ -148,11 +171,17 @@ class CardListViewModel @Inject constructor(
                 )
                 repository.updateCardCalculations(cardId)
             }
+
+            if (onCreated != null) {
+                kotlinx.coroutines.withContext(mainDispatcher) {
+                    onCreated(cardId)
+                }
+            }
         }
     }
 
     fun deleteCard(card: Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val event = runCatching {
                 repository.deleteCard(card)
             }.fold(

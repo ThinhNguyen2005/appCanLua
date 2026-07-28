@@ -7,23 +7,24 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
-    alias(libs.plugins.firebase.perf)
 }
 
-// Load API keys từ local.properties (không commit). Fallback empty string nếu chưa cấu hình.
-val localProps = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
+// Offline Only
+
+val localProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) {
+        localFile.inputStream().use { load(it) }
+    }
 }
-val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY", "")
-val appHandshakeToken: String = localProps.getProperty("APP_HANDSHAKE_TOKEN", "")
-val openRouterApiKey: String = localProps.getProperty("OPENROUTER_API_KEY", "")
-val telegramBotToken: String = localProps.getProperty("TELEGRAM_BOT_TOKEN", "")
-val telegramAdminChatId: String = localProps.getProperty("TELEGRAM_ADMIN_CHAT_ID", "")
-val supabaseUrl: String = localProps.getProperty("SUPABASE_URL", "")
-val supabaseAnonKey: String = localProps.getProperty("SUPABASE_ANON_KEY", "")
+val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: ""
+val appHandshakeToken: String = localProperties.getProperty("APP_HANDSHAKE_TOKEN") ?: ""
+val openRouterApiKey: String = localProperties.getProperty("OPENROUTER_API_KEY") ?: ""
+val telegramBotToken: String = localProperties.getProperty("TELEGRAM_BOT_TOKEN") ?: ""
+val telegramAdminChatId: String = localProperties.getProperty("TELEGRAM_ADMIN_CHAT_ID") ?: ""
+val supabaseUrl: String = localProperties.getProperty("SUPABASE_URL") ?: ""
+val supabaseAnonKey: String = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
+val defaultWebClientId: String = localProperties.getProperty("DEFAULT_WEB_CLIENT_ID") ?: "mock-web-client-id"
 
 fun encodeBase64(value: String): String {
     return Base64.getEncoder().encodeToString(value.toByteArray())
@@ -47,18 +48,46 @@ android {
         versionName = "1.0.$gitCommitCount"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appName"] = "Cân Lúa"
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
 
         buildConfigField("String", "MAPS_API_KEY", "\"${encodeBase64(mapsApiKey)}\"")
         buildConfigField("String", "APP_HANDSHAKE_TOKEN", "\"${encodeBase64(appHandshakeToken)}\"")
         buildConfigField("String", "OPENROUTER_API_KEY", "\"${encodeBase64(openRouterApiKey)}\"")
         buildConfigField("String", "TELEGRAM_BOT_TOKEN", "\"${encodeBase64(telegramBotToken)}\"")
         buildConfigField("String", "TELEGRAM_ADMIN_CHAT_ID", "\"${encodeBase64(telegramAdminChatId)}\"")
-        // Supabase — anon key is public (RLS enforced server-side), no need to base64 encode
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        resValue("string", "default_web_client_id", defaultWebClientId)
+    }
 
-        // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
-        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+    flavorDimensions += "edition"
+
+    productFlavors {
+        create("lite") {
+            dimension = "edition"
+            applicationIdSuffix = ".lite"
+            versionNameSuffix = "-lite"
+            manifestPlaceholders["appName"] = "Cân Lúa Lite"
+            resValue("string", "app_name", "Cân Lúa Lite")
+        }
+        create("full") {
+            dimension = "edition"
+            applicationId = "com.giathinh.canlua"
+            manifestPlaceholders["appName"] = "Cân Lúa Full"
+            resValue("string", "app_name", "Cân Lúa Full")
+        }
+    }
+
+    sourceSets {
+        getByName("full") {
+            java.srcDirs("src/full/java")
+            res.srcDirs("src/full/res")
+            assets.srcDirs("src/full/assets")
+        }
+        getByName("testFull") {
+            java.srcDirs("src/test-full/java")
+        }
     }
 
     buildTypes {
@@ -89,6 +118,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
 }
 
@@ -156,8 +186,6 @@ dependencies {
     // Chart library (Vico - Jetpack Compose native)
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
-
-
 
     // Location (GPS for weather + map)
     implementation(libs.play.services.location)

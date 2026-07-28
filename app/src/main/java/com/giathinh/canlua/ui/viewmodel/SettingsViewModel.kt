@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.AppUiMode
 import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.repository.SettingsRepository
 import com.giathinh.canlua.repository.WeighDefaults
@@ -17,50 +18,56 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val cardRepository: com.giathinh.canlua.repository.CardRepository,
-    private val authManager: com.giathinh.canlua.repository.AuthManager
+    private val cardRepository: com.giathinh.canlua.repository.CardRepository
 ) : ViewModel() {
     
     val isTtsEnabled: StateFlow<Boolean> = settingsRepository.ttsEnabled
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.isTtsEnabled()
+            initialValue = true
         )
 
     val isAutoSyncEnabled: StateFlow<Boolean> = settingsRepository.autoSyncEnabled
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.isAutoSyncEnabled()
+            initialValue = false
         )
 
     val fontScale: StateFlow<FontScale> = settingsRepository.fontScale
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.getFontScale()
+            initialValue = FontScale.NORMAL
         )
 
     val language: StateFlow<AppLanguage> = settingsRepository.language
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.getLanguage()
+            initialValue = AppLanguage.VIETNAMESE
         )
 
     val appThemeMode: StateFlow<AppThemeMode> = settingsRepository.appThemeMode
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.getThemeMode()
+            initialValue = AppThemeMode.LIGHT
+        )
+
+    val uiMode: StateFlow<AppUiMode> = settingsRepository.uiMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = AppUiMode.STANDARD
         )
 
     val weighDefaults: StateFlow<WeighDefaults> = settingsRepository.weighDefaults
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.getWeighDefaults()
+            initialValue = WeighDefaults()
         )
 
     fun setWeighDefaults(d: WeighDefaults) {
@@ -97,11 +104,17 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setUiMode(mode: AppUiMode) {
+        viewModelScope.launch {
+            settingsRepository.setUiMode(mode)
+        }
+    }
+
     val isGuestMode: StateFlow<Boolean> = settingsRepository.guestMode
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = settingsRepository.isGuestMode()
+            initialValue = false
         )
 
     fun setGuestMode(enabled: Boolean) {
@@ -110,28 +123,5 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun exportBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            val uid = authManager.currentUser?.uid ?: "GUEST"
-            val result = com.giathinh.canlua.util.BackupManager.exportData(context, uri, uid, cardRepository)
-            if (result.isSuccess) {
-                onSuccess()
-            } else {
-                onError(result.exceptionOrNull()?.message ?: "Lỗi xuất dữ liệu")
-            }
-        }
-    }
-
-    fun importBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            val uid = authManager.currentUser?.uid ?: "GUEST"
-            val result = com.giathinh.canlua.util.BackupManager.importData(context, uri, uid, cardRepository)
-            if (result.isSuccess) {
-                onSuccess(result.getOrNull() ?: 0)
-            } else {
-                onError(result.exceptionOrNull()?.message ?: "Lỗi nhập dữ liệu")
-            }
-        }
-    }
 }
 

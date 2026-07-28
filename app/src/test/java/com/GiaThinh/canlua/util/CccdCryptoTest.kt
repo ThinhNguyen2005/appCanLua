@@ -1,39 +1,48 @@
 package com.giathinh.canlua.util
 
+import javax.crypto.spec.SecretKeySpec
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class CccdCryptoTest {
-
-    @Test
-    fun `encrypt should securely obfuscate plain text and decrypt should recover it`() {
-        val originalCccd = "037092123456"
-        
-        val encrypted = CccdCrypto.encrypt(originalCccd)
-        assertNotEquals(originalCccd, encrypted)
-        
-        val decrypted = CccdCrypto.decrypt(encrypted)
-        assertEquals(originalCccd, decrypted)
+    private val cipher = AesGcmCccdCipher {
+        SecretKeySpec(ByteArray(32) { it.toByte() }, "AES")
     }
 
     @Test
-    fun `encrypt and decrypt should return null or blank as-is`() {
-        assertNull(CccdCrypto.encrypt(null))
-        assertEquals("", CccdCrypto.encrypt(""))
-        assertEquals("   ", CccdCrypto.encrypt("   "))
+    fun `AES GCM roundtrip uses a random IV`() {
+        val first = cipher.encrypt("037092123456")
+        val second = cipher.encrypt("037092123456")
 
-        assertNull(CccdCrypto.decrypt(null))
-        assertEquals("", CccdCrypto.decrypt(""))
-        assertEquals("   ", CccdCrypto.decrypt("   "))
+        assertNotEquals(first, second)
+        assertEquals("037092123456", cipher.decrypt(first))
+        assertEquals("037092123456", cipher.decrypt(second))
     }
 
     @Test
-    fun `decrypt should return original text on failure for backward compatibility`() {
-        // Một số CCCD cũ lưu dạng thô (không mã hóa) thì khi decrypt lỗi sẽ tự động trả về giá trị thô ban đầu
-        val legacyRawCccd = "037092000123"
-        val decrypted = CccdCrypto.decrypt(legacyRawCccd)
-        assertEquals(legacyRawCccd, decrypted)
+    fun `AES GCM rejects modified ciphertext`() {
+        val encrypted = cipher.encrypt("037092123456")
+        val tampered = encrypted.dropLast(1) + if (encrypted.last() == 'A') "B" else "A"
+
+        assertThrows(Exception::class.java) { cipher.decrypt(tampered) }
+    }
+
+    @Test
+    fun `legacy AES CBC remains readable`() {
+        val encrypted = LegacyCccdCipher.encrypt("037092000123")
+
+        assertEquals("037092000123", LegacyCccdCipher.decryptOrNull(encrypted))
+    }
+
+    @Test
+    fun `blank values do not initialize Android Keystore`() {
+        val crypto = CccdCrypto()
+
+        assertNull(crypto.encrypt(null))
+        assertEquals("", crypto.encrypt(""))
+        assertEquals("   ", crypto.decrypt("   "))
     }
 }

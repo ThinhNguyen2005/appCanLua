@@ -50,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.giathinh.canlua.data.model.DeletedCard
+import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.DeletedCardsViewModel
 import com.giathinh.canlua.util.TrackScreenRender
@@ -96,7 +96,7 @@ fun DeletedCardsScreenContent(
 ) {
     val items by viewModel.items.collectAsStateWithLifecycle()
     val restored by viewModel.restored.collectAsStateWithLifecycle()
-    var pendingPurge by remember { mutableStateOf<DeletedCard?>(null) }
+    var pendingPurge by remember { mutableStateOf<Card?>(null) }
 
     // Sau khi restore thành công → navigate vào card detail.
     LaunchedEffect(restored) {
@@ -209,7 +209,7 @@ fun DeletedCardsScreenContent(
 
 @Composable
 private fun DeletedCardRow(
-    tomb: DeletedCard,
+    tomb: Card,
     onRestore: () -> Unit,
     onPurge: () -> Unit
 ) {
@@ -251,7 +251,7 @@ private fun DeletedCardRow(
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = "Phiếu ngày ${dateFmt.format(Date(tomb.cardDate))}" +
+                        text = "Phiếu ngày ${dateFmt.format(tomb.date)}" +
                             if (tomb.seasonLabel.isNotBlank()) " · ${tomb.seasonLabel}" else "",
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextHint
@@ -277,7 +277,7 @@ private fun DeletedCardRow(
             }
 
             Text(
-                text = "Đã xoá lúc ${dateFmt.format(Date(tomb.deletedAt))}",
+                text = "Đã xoá lúc ${tomb.deletedAt?.let { dateFmt.format(Date(it)) }.orEmpty()}",
                 style = MaterialTheme.typography.labelSmall,
                 color = AppColors.TextHint
             )

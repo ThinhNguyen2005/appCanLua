@@ -36,17 +36,24 @@ class CardRepository @Inject constructor(
     private val weightEntryDao: WeightEntryDao,
     private val transactionDao: TransactionDao,
     private val deletedCardDao: com.giathinh.canlua.data.dao.DeletedCardDao,
-    private val authManager: AuthManager
+    private val cccdCrypto: CccdCrypto
 ) {
-    /** Empty string khi chưa sign-in → DAO query trả empty (không match row nào). */
-    private fun uid(): String = authManager.currentUser?.uid.orEmpty()
+    /**
+     * OFFLINE-ONLY BRANCH: Auth đã bị loại bỏ. Tất cả dữ liệu thuộc về 1 "user" duy nhất
+     * trên thiết bị. uid="" hoạt động đúng vì DAO query WHERE ownerUid='' sẽ match
+     * tất cả card được tạo trên branch này (ownerUid cũng được stamp là "").
+     *
+     * ⚠️ Nếu cần merge lại với branch multi-user, thay thế hàm này bằng:
+     *    private fun uid() = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+     */
+    private fun uid(): String = ""
 
     fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid()).map { list ->
-        list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
+        list.map { it.copy(cccd = cccdCrypto.decrypt(it.cccd)) }
     }
 
     suspend fun getCardById(id: Long): Card? = cardDao.getCardById(id, uid())?.let {
-        it.copy(cccd = CccdCrypto.decrypt(it.cccd))
+        it.copy(cccd = cccdCrypto.decrypt(it.cccd))
     }
 
     /**
@@ -58,7 +65,7 @@ class CardRepository @Inject constructor(
         val owned = card.copy(
             ownerUid = if (card.ownerUid.isBlank()) uid() else card.ownerUid,
             lastModifiedMs = if (card.lastModifiedMs == 0L) now else card.lastModifiedMs,
-            cccd = CccdCrypto.encrypt(card.cccd)
+            cccd = cccdCrypto.encrypt(card.cccd)
         )
         return cardDao.insertCard(owned)
     }
@@ -71,7 +78,7 @@ class CardRepository @Inject constructor(
         val now = System.currentTimeMillis()
         cardDao.updateCard(card.copy(
             lastModifiedMs = now,
-            cccd = CccdCrypto.encrypt(card.cccd)
+            cccd = cccdCrypto.encrypt(card.cccd)
         ))
     }
 
@@ -93,7 +100,7 @@ class CardRepository @Inject constructor(
                     ownerUid = ownerUid,
                     firestoreId = card.firestoreId,
                     localId = card.id,
-                    cardJson = card.serialize(),
+                    cardJson = card.copy(cccd = cccdCrypto.encrypt(card.cccd)).serialize(),
                     name = card.name,
                     traderName = card.traderName,
                     totalWeight = card.totalWeight,
@@ -107,7 +114,12 @@ class CardRepository @Inject constructor(
             )
         }
         // 2. Xoá Room — FK CASCADE tự xoá weight_entries + transactions con.
-        cardDao.deleteCard(card)
+        cardDao.softDelete(
+            id = card.id,
+            uid = ownerUid,
+            deletedAt = System.currentTimeMillis(),
+            modifiedAt = System.currentTimeMillis()
+        )
     }
 
     /**
@@ -116,8 +128,10 @@ class CardRepository @Inject constructor(
      * Sau khôi phục thành công, purge tombstone.
      */
     suspend fun restoreFromTombstone(tombstoneId: Long): Long? {
+        if (cardDao.restore(tombstoneId, uid(), System.currentTimeMillis())) return tombstoneId
         val tombstone = deletedCardDao.getById(tombstoneId) ?: return null
         val card = deserializeCard(tombstone.cardJson) ?: return null
+        val encryptedCccd = cccdCrypto.encrypt(cccdCrypto.decrypt(card.cccd))
         // Insert card mới — Room auto generate id mới (id cũ có thể đã collide).
         // Reset firestoreId để push tạo doc mới (doc cũ đã bị delete sync).
         val now = System.currentTimeMillis()
@@ -126,14 +140,15 @@ class CardRepository @Inject constructor(
                 id = 0L,
                 firestoreId = null,
                 lastModifiedMs = now,
-                ownerUid = tombstone.ownerUid
+                ownerUid = tombstone.ownerUid,
+                cccd = encryptedCccd
             )
         )
         deletedCardDao.purge(tombstoneId)
         return newId
     }
 
-    fun getDeletedCards(uid: String) = deletedCardDao.observe(uid)
+    fun getDeletedCards(uid: String) = cardDao.observeDeletedCards(uid)
 
     suspend fun isCardTombstoned(uid: String, firestoreId: String): Boolean =
         deletedCardDao.isTombstoned(uid, firestoreId)
@@ -143,7 +158,9 @@ class CardRepository @Inject constructor(
 
     suspend fun markTombstoneCloudDeleted(id: Long) = deletedCardDao.markCloudDeleted(id)
 
-    suspend fun purgeTombstone(id: Long) = deletedCardDao.purge(id)
+    suspend fun purgeTombstone(id: Long) {
+        cardDao.purgeDeletedCard(id, uid())
+    }
 
     // Weight Entry operations — không cần filter uid vì FK CASCADE qua cardId,
     // và caller chỉ truy cập sau khi đã có cardId từ getAllCards (đã filter).
@@ -214,7 +231,7 @@ class CardRepository @Inject constructor(
             val totalImpurity = RiceCalculator.calcTotalImpurity(
                 rawAfterBag = rawAfterBag,
                 impurityValue = card.impurityWeight,
-                isPercent = card.impurityIsPercent
+                isPercent = false
             )
             val singleImpurityWeight = totalImpurity / validBagCount
 
@@ -260,7 +277,7 @@ class CardRepository @Inject constructor(
             bagSampleCount = card.bagSampleCount,
             bagSampleTotalWeight = card.bagSampleTotalWeight,
             impurityValue = card.impurityWeight,
-            impurityIsPercent = card.impurityIsPercent,
+            impurityIsPercent = false,
             moisturePercent = card.moisturePercent
         ).coerceAtLeast(0.0)
 
@@ -285,6 +302,7 @@ class CardRepository @Inject constructor(
             depositAmount = calculation.totalDeposit,
             totalAmount = totalAmount,
             remainingAmount = remainingAmount,
+            impurityIsPercent = false,
             lastModifiedMs = now
         )
 
@@ -298,7 +316,7 @@ class CardRepository @Inject constructor(
 
     fun getCardsByRiceVariety(variety: String): Flow<List<Card>> =
         cardDao.getCardsByRiceVariety(variety, uid()).map { list ->
-            list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
+            list.map { it.copy(cccd = cccdCrypto.decrypt(it.cccd)) }
         }
 
     fun getDistinctRiceVarieties(): Flow<List<String>> =
