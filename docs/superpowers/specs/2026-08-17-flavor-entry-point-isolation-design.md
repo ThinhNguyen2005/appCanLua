@@ -8,9 +8,9 @@ their dependencies and manifests are separated.
 
 ## Scope
 
-Phase 2.1 covers Gradle dependency scoping, manifest separation, and the app
-entry point. It deliberately does not refactor `CanLuaApplication` or cloud
-service DI; those belong to Phase 2.2.
+Phase 2.1 covers Gradle dependency scoping, manifest separation, and
+flavor-owned Android entry points. It does not introduce the `AppInitializer`
+interface or refactor cloud services behind DI; those belong to Phase 2.2.
 
 ## Architecture
 
@@ -19,9 +19,9 @@ service DI; those belong to Phase 2.2.
 providers. It must not reference Firebase-only classes, online permissions, or
 the Full authentication flow.
 
-Each flavor owns its own `MainActivity` using the same fully qualified class
-name. Android's variant source-set precedence selects exactly one activity at
-compile time:
+Each flavor owns its own `MainActivity` and `CanLuaApplication` using the same
+fully qualified class names. Android's variant source-set precedence selects
+exactly one implementation at compile time:
 
 - `src/lite/.../MainActivity.kt` waits for `InitViewModel` to warm Room, then
   renders `MainScreen` directly. It contains no permission requests,
@@ -29,6 +29,11 @@ compile time:
 - `src/full/.../MainActivity.kt` owns the current runtime permission launcher
   and the `login -> profile_setup -> main` gate. Its matching manifest retains
   network, contacts, microphone, location, Maps key, and app-link declarations.
+- `src/full/.../CanLuaApplication.kt` retains the existing Firebase and
+  WorkManager configuration so Full behavior is unchanged.
+- `src/lite/.../CanLuaApplication.kt` is a minimal `@HiltAndroidApp`
+  application and contains no Firebase, cloud synchronization, or WorkManager
+  configuration.
 
 The main manifest only retains `VIBRATE` and shared application/provider
 declarations. Runtime permissions declared only in `full` are requested only by
