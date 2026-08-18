@@ -24,6 +24,8 @@ import com.giathinh.canlua.ui.screen.market.MarketScreen
 import com.giathinh.canlua.ui.screen.profile.FeedbackScreen
 import com.giathinh.canlua.ui.screen.profile.PremiumScreen
 
+import com.giathinh.canlua.ui.screen.trader.TraderTransactionsScreen
+
 @Composable
 fun AppNavHost(
     navController: NavHostController,
@@ -47,55 +49,93 @@ fun AppNavHost(
         popEnterTransition = FadeScalePopEnter,
         popExitTransition = FadeScalePopExit
     ) {
+        // === Tab 1: Cân Lúa (Danh sách phiếu cân thực địa) ===
         composable(BottomNavItem.SCALE.route) {
-            HomeScreen(navController = navController)
-        }
-
-        composable(BottomNavItem.HISTORY.route) {
             CardListScreen(navController = navController)
         }
 
+        // === Tab 2: Thị Trường ===
+        composable(BottomNavItem.MARKET.route) {
+            MarketScreen()
+        }
         composable("market") {
             MarketScreen()
         }
 
+        // === Tab 3: Hỏi đáp AI ===
+        composable(BottomNavItem.AI_CHAT.route) {
+            AiChatScreen()
+        }
+        composable("ai_chat") {
+            AiChatScreen()
+        }
         composable("aichat") {
             AiChatScreen()
         }
 
+        // === Tab 4 (Farmer): Tài khoản / Cá nhân ===
+        composable(BottomNavItem.ACCOUNT.route) {
+            ProfileScreen(navController = navController)
+        }
+        composable("account") {
+            ProfileScreen(navController = navController)
+        }
         composable("profile") {
             ProfileScreen(navController = navController)
         }
 
-        composable(BottomNavItem.ACCOUNT.route) {
-            ProfileScreen(navController = navController)
-        }
-
+        // === Tab 4 (Trader): Bản đồ ===
         composable(BottomNavItem.TRADER_MAP.route) {
             RiceMapScreen(navController = navController)
         }
-
-        composable(BottomNavItem.TRADER_PROFILE.route) {
-            ProfileScreen(navController = navController)
+        composable("trader_map") {
+            RiceMapScreen(navController = navController)
         }
-
-        composable("auth") {
-            AuthScreen(
-                onSuccess = { navController.popBackStack() },
-                onSkipLogin = { navController.popBackStack() }
-            )
-        }
-
-        composable("profile_setup") {
-            ProfileSetupScreen(navController = navController)
-        }
-
         composable("rice_map") {
             RiceMapScreen(navController = navController)
         }
 
+        // === Tab 5 (Trader): Hồ sơ Thương lái ===
+        composable(BottomNavItem.TRADER_PROFILE.route) {
+            ProfileScreen(navController = navController)
+        }
+        composable("trader_profile") {
+            ProfileScreen(navController = navController)
+        }
+
+        // === Tab cho bản Lite ===
+        composable(BottomNavItem.HISTORY.route) {
+            DeletedCardsScreen(navController = navController)
+        }
+        composable("history") {
+            DeletedCardsScreen(navController = navController)
+        }
+
+        composable(BottomNavItem.STATISTICS.route) {
+            StatisticsScreen(navController = navController)
+        }
+        composable("statistics") {
+            StatisticsScreen(navController = navController)
+        }
+
+        composable(BottomNavItem.SETTINGS.route) {
+            SettingsScreen(navController = navController)
+        }
+        composable("settings") {
+            SettingsScreen(navController = navController)
+        }
+
+        // === Các Sub-screens ===
+        composable("trader_transactions") {
+            TraderTransactionsScreen(navController = navController)
+        }
+
         composable("trader_history") {
             TraderHistoryScreen(navController = navController)
+        }
+
+        composable("deleted_cards") {
+            DeletedCardsScreen(navController = navController)
         }
 
         composable("sync_status") {
@@ -126,16 +166,15 @@ fun AppNavHost(
             )
         }
 
-        composable("settings") {
-            SettingsScreen(navController = navController)
+        composable("auth") {
+            AuthScreen(
+                onSuccess = { navController.popBackStack() },
+                onSkipLogin = { navController.popBackStack() }
+            )
         }
 
-        composable(BottomNavItem.STATISTICS.route) {
-            StatisticsScreen(navController = navController)
-        }
-
-        composable("deleted_cards") {
-            DeletedCardsScreen(navController = navController)
+        composable("profile_setup") {
+            ProfileSetupScreen(navController = navController)
         }
     }
 }

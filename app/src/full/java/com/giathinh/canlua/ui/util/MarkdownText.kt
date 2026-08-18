@@ -33,9 +33,17 @@ fun AiMarkdownText(
 ) {
     val context = LocalContext.current
     val markwon = remember(context) {
-        Markwon.builder(context)
-            .usePlugin(TablePlugin.create(context))
-            .build()
+        try {
+            Markwon.builder(context)
+                .usePlugin(TablePlugin.create(context))
+                .build()
+        } catch (t: Throwable) {
+            try {
+                Markwon.builder(context).build()
+            } catch (t2: Throwable) {
+                null
+            }
+        }
     }
 
     AndroidView(
@@ -57,7 +65,11 @@ fun AiMarkdownText(
             // (R8 minify thiếu rule, plugin reflection fail, markdown lỗi format) →
             // fallback text thuần để chat bubble vẫn hiển thị được thay vì crash app.
             try {
-                markwon.setMarkdown(view, markdown)
+                if (markwon != null) {
+                    markwon.setMarkdown(view, markdown)
+                } else {
+                    view.text = markdown
+                }
             } catch (t: Throwable) {
                 view.text = markdown
             }

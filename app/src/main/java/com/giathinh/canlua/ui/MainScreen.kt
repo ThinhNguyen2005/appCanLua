@@ -4,69 +4,64 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.FabPosition
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.derivedStateOf
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.giathinh.canlua.BuildConfig
+import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.navigation.AppNavHost
 import com.giathinh.canlua.ui.navigation.BottomNavItem
-import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
-import com.giathinh.canlua.ui.viewmodel.CardListViewModel
-import com.giathinh.canlua.ui.component.CreateCardBottomSheet
-import com.giathinh.canlua.ui.component.CreateCardMode
 import com.giathinh.canlua.ui.theme.AppColors
-import com.giathinh.canlua.repository.WeighDefaults
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.Add
+import com.giathinh.canlua.ui.viewmodel.CardListViewModel
+import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MainScreen(deeplinkCardId: String? = null) {
     val navController = rememberNavController()
     var currentDeeplinkCardId by remember(deeplinkCardId) { mutableStateOf(deeplinkCardId) }
-    
+
     LaunchedEffect(navController) {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             val route = destination.route
@@ -84,13 +79,13 @@ fun MainScreen(deeplinkCardId: String? = null) {
     var showCreateDialog by remember { mutableStateOf(false) }
     val cardListViewModel: CardListViewModel = hiltViewModel()
     val suggestedVarieties by cardListViewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
-    val profileViewModel: com.giathinh.canlua.ui.viewmodel.ProfileViewModel = hiltViewModel()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
 
-    val navItems = if (profile?.role.equals("TRADER", ignoreCase = true)) {
-        BottomNavItem.traderNavItems
-    } else {
-        BottomNavItem.farmerNavItems
+    val navItems = when {
+        BuildConfig.FLAVOR == "lite" -> BottomNavItem.liteNavItems
+        profile?.role.equals("TRADER", ignoreCase = true) -> BottomNavItem.traderNavItems
+        else -> BottomNavItem.farmerNavItems
     }
 
     val currentTab = navItems.find { it.route == currentRoute }
@@ -115,13 +110,19 @@ fun MainScreen(deeplinkCardId: String? = null) {
         BottomNavItem.HISTORY.route,
         BottomNavItem.MARKET.route,
         BottomNavItem.AI_CHAT.route,
+        BottomNavItem.ACCOUNT.route,
         BottomNavItem.PROFILE.route,
-        BottomNavItem.STATISTICS.route
+        BottomNavItem.STATISTICS.route,
+        BottomNavItem.SETTINGS.route,
+        BottomNavItem.TRADER_MAP.route,
+        BottomNavItem.TRADER_PROFILE.route
     )
 
     val scrollBehavior = remember(currentRoute) {
         if (currentRoute in pinnedRoutes) rawPinnedBehavior else rawEnterAlwaysBehavior
     }
+
+    val isScaleTab = currentRoute == BottomNavItem.SCALE.route || currentRoute == null
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -143,7 +144,6 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             )
                         }
                     },
-
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         scrolledContainerColor = MaterialTheme.colorScheme.background,
@@ -207,14 +207,14 @@ fun MainScreen(deeplinkCardId: String? = null) {
             }
         },
         floatingActionButton = {
-            if (isOnTabScreen) {
+            if (isScaleTab) {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showBottomBar,
                     enter = fadeIn() + scaleIn(),
                     exit = fadeOut() + scaleOut()
                 ) {
                     val haptic = LocalHapticFeedback.current
-                    androidx.compose.material3.FloatingActionButton(
+                    FloatingActionButton(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                             showCreateDialog = true
@@ -250,16 +250,15 @@ fun MainScreen(deeplinkCardId: String? = null) {
         }
     }
 
-
-
     if (showCreateDialog) {
+        val currentOwnerName = profile?.name?.takeIf { it.isNotBlank() } ?: "Nông dân"
         CreateCardBottomSheet(
-            ownerName = "Nông dân",
+            ownerName = currentOwnerName,
             suggestedVarieties = suggestedVarieties,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
                 cardListViewModel.createNewCard(
-                    name = "Nông dân",
+                    name = currentOwnerName,
                     cccd = cccd,
                     traderName = counterpartyName,
                     pricePerKg = price,
@@ -279,5 +278,3 @@ fun MainScreen(deeplinkCardId: String? = null) {
         )
     }
 }
-
-

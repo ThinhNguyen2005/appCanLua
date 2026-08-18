@@ -35,17 +35,12 @@ class MainActivity : ComponentActivity() {
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { _ -> }
 
-    // Tạo InitViewModel trước setContent để dùng với setKeepOnScreenCondition.
-    // @AndroidEntryPoint đã override defaultViewModelProviderFactory → Hilt factory.
     private lateinit var initViewModel: InitViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // installSplashScreen() PHẢI gọi trước super.onCreate().
         val splashScreen = installSplashScreen()
-
         super.onCreate(savedInstanceState)
 
-        // Request all runtime permissions at once on app launch
         requestPermissionLauncher.launch(
             arrayOf(
                 Manifest.permission.READ_CONTACTS,
@@ -55,11 +50,7 @@ class MainActivity : ComponentActivity() {
             )
         )
 
-        // Khởi tạo InitViewModel sau super() (Hilt đã inject xong).
         initViewModel = ViewModelProvider(this)[InitViewModel::class.java]
-
-        // Giữ native splash cho đến khi Room DB đã warm-up xong.
-        // Condition được kiểm tra mỗi frame — trả false → splash exit.
         splashScreen.setKeepOnScreenCondition { !initViewModel.isDataReady.value }
 
         enableEdgeToEdge()
@@ -73,8 +64,6 @@ class MainActivity : ComponentActivity() {
             val language by settingsViewModel.language.collectAsStateWithLifecycle()
             val authState by authViewModel.uiState.collectAsStateWithLifecycle()
             val isGuestMode by settingsViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
-            // isDataReady đã true khi native splash exit; subscribe ở đây để trigger
-            // LaunchedEffect khi trạng thái thay đổi (edge case: auth nhanh hơn DB).
             val isDataReady by initViewModel.isDataReady.collectAsStateWithLifecycle()
             LocaleUtil.applyLanguage(this, language)
 
@@ -82,7 +71,6 @@ class MainActivity : ComponentActivity() {
                 com.giathinh.canlua.ui.feedback.AppToastHost {
                     val rootNavController = rememberNavController()
 
-                    // startDest chờ cả hai: auth state xác định + DB đã warm-up.
                     val startDest = when {
                         isGuestMode -> "main?cardId={cardId}"
                         !authState.isSignedIn -> "login"
@@ -91,14 +79,13 @@ class MainActivity : ComponentActivity() {
                         else -> "main?cardId={cardId}"
                     }
 
-                    // Khi bất kỳ điều kiện nào thay đổi, điều hướng đến đúng màn.
                     LaunchedEffect(authState.isSignedIn, authState.needsProfileSetup, isDataReady, isGuestMode) {
                         val currentRoute = rootNavController.currentDestination?.route
 
                         val target = when {
                             isGuestMode -> "main?cardId={cardId}"
                             !authState.isSignedIn -> "login"
-                            authState.needsProfileSetup == null || !isDataReady -> null // chờ
+                            authState.needsProfileSetup == null || !isDataReady -> null
                             authState.needsProfileSetup == true -> "profile_setup"
                             else -> "main?cardId={cardId}"
                         } ?: return@LaunchedEffect
@@ -117,8 +104,6 @@ class MainActivity : ComponentActivity() {
                         startDestination = startDest
                     ) {
                         composable("splash") {
-                            // Màn hình chờ có thương hiệu — hiển thị trong khoảng thời gian
-                            // auth đang xác định HOẶC Room chưa warm-up xong (thường < 300ms).
                             AppSplashScreen()
                         }
 

@@ -80,13 +80,8 @@ android {
     }
 
     sourceSets {
-        getByName("full") {
-            java.srcDirs("src/full/java")
-            res.srcDirs("src/full/res")
-            assets.srcDirs("src/full/assets")
-        }
         getByName("testFull") {
-            java.srcDirs("src/test-full/java")
+            java.srcDir("src/test-full/java")
         }
     }
 
@@ -159,27 +154,6 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.perf)
-    implementation(libs.firebase.storage)
-    implementation(libs.firebase.remoteconfig)
-    implementation(libs.firebase.appcheck.debug)
-    implementation(libs.firebase.appcheck.playintegrity)
-    implementation(libs.play.services.auth)
-
-    // Credentials & Identity
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
-
-    // Coroutines
-    implementation(libs.kotlinx.coroutines.play.services)
-
     // WorkManager (auto sync)
     implementation(libs.androidx.work.runtime.ktx)
 
@@ -187,37 +161,58 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
 
-    // Location (GPS for weather + map)
-    implementation(libs.play.services.location)
-
-    // Google Maps Compose + Clustering utils
-    implementation(libs.maps.compose)
-    implementation(libs.maps.compose.utils)
-    implementation(libs.play.services.maps)
-
-    // Accompanist Permissions
-    implementation(libs.accompanist.permissions)
-
-    // Networking (OpenRouter AI API)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
+    // Security & DataStore & Utilities
     implementation(libs.gson)
-
-    // Markdown renderer for AI responses, including tables
-    implementation(libs.markwon.core)
-    implementation(libs.markwon.ext.tables)
-
-    // Coil — load thumbnail bài báo trong NewsSection
-    implementation(libs.coil.compose)
-
-    // AndroidX Browser — Chrome Custom Tab cho mở bài báo external
-    implementation(libs.androidx.browser)
-
-    // Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện
-    // natively là Stable (không cần @Immutable annotation) → WeightTableCard Skippable hoàn toàn
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore)
+
+    // ─── FULL ONLY DEPENDENCIES ───
+    // Firebase
+    "fullImplementation"(platform(libs.firebase.bom))
+    "fullImplementation"(libs.firebase.firestore)
+    "fullImplementation"(libs.firebase.auth)
+    "fullImplementation"(libs.firebase.analytics)
+    "fullImplementation"(libs.firebase.crashlytics)
+    "fullImplementation"(libs.firebase.perf)
+    "fullImplementation"(libs.firebase.storage)
+    "fullImplementation"(libs.firebase.remoteconfig)
+    "fullImplementation"(libs.firebase.appcheck.debug)
+    "fullImplementation"(libs.firebase.appcheck.playintegrity)
+    "fullImplementation"(libs.play.services.auth)
+
+    // Credentials & Identity
+    "fullImplementation"(libs.androidx.credentials)
+    "fullImplementation"(libs.androidx.credentials.play.services.auth)
+    "fullImplementation"(libs.googleid)
+
+    // Coroutines
+    "fullImplementation"(libs.kotlinx.coroutines.play.services)
+
+    // Location (GPS for weather + map)
+    "fullImplementation"(libs.play.services.location)
+
+    // Google Maps Compose + Clustering utils
+    "fullImplementation"(libs.maps.compose)
+    "fullImplementation"(libs.maps.compose.utils)
+    "fullImplementation"(libs.play.services.maps)
+
+    // Accompanist Permissions
+    "fullImplementation"(libs.accompanist.permissions)
+
+    // Networking (OpenRouter AI API)
+    "fullImplementation"(libs.okhttp)
+    "fullImplementation"(libs.okhttp.logging.interceptor)
+
+    // Markdown renderer for AI responses, including tables
+    "fullImplementation"(libs.markwon.core)
+    "fullImplementation"(libs.markwon.ext.tables)
+
+    // Coil — load thumbnail bài báo trong NewsSection
+    "fullImplementation"(libs.coil.compose)
+
+    // AndroidX Browser — Chrome Custom Tab cho mở bài báo external
+    "fullImplementation"(libs.androidx.browser)
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

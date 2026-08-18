@@ -14,10 +14,18 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "=== assembleFullDebug SUCCESSFUL ==="
 
-Write-Host "=== STEP 3: Test Debug Unit Test ==="
-.\gradlew.bat :app:testDebugUnitTest
+Write-Host "=== STEP 3: Test Lite Debug Unit Test ==="
+.\gradlew.bat :app:testLiteDebugUnitTest
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "testDebugUnitTest FAILED with code $LASTEXITCODE"
+    Write-Error "testLiteDebugUnitTest FAILED with code $LASTEXITCODE"
     exit $LASTEXITCODE
 }
-Write-Host "=== testDebugUnitTest SUCCESSFUL ==="
+Write-Host "=== testLiteDebugUnitTest SUCCESSFUL ==="
+
+Write-Host "=== STEP 4: Test Full Debug Unit Test ==="
+.\gradlew.bat :app:testFullDebugUnitTest
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "testFullDebugUnitTest FAILED with code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+Write-Host "=== testFullDebugUnitTest SUCCESSFUL ==="

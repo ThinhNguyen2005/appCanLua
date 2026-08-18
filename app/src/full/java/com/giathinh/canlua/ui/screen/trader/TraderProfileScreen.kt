@@ -81,7 +81,13 @@ fun TraderProfileScreen(
     val isDataReady = profile != null && dash.isAggregated && !txState.isLoading
     val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
-    val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
+    val firebaseUser = remember {
+        try {
+            FirebaseAuth.getInstance().currentUser
+        } catch (t: Throwable) {
+            null
+        }
+    }
     val isGoogleLoggedIn = remember(firebaseUser) {
         firebaseUser?.providerData?.any { it.providerId == "google.com" } == true
     }
