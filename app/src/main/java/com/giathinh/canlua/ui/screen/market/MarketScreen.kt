@@ -76,11 +76,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.giathinh.canlua.data.firestore.FirestoreRicePrice
-import com.giathinh.canlua.ui.component.MarketSkeleton
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
+import com.giathinh.canlua.ui.component.market.MarketSkeleton
 import com.giathinh.canlua.ui.component.market.BidEditorSheet
 import com.giathinh.canlua.ui.component.market.MarketSkeletonList
-import com.giathinh.canlua.ui.component.market.NativeAdPlaceholder
+import com.giathinh.canlua.ads.NativeAdUiState
+import com.giathinh.canlua.ui.component.market.NativeAdCard
 import com.giathinh.canlua.ui.component.market.NewsSection
 import com.giathinh.canlua.ui.component.market.PriceTrendChart
 import com.giathinh.canlua.ui.component.market.RicePriceCard
@@ -106,12 +106,11 @@ fun MarketScreen() {
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val prices by viewModel.prices.collectAsStateWithLifecycle()
     val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
-    val isDataReady = !isLoading || prices.isNotEmpty() || newsArticles.isNotEmpty()
+    val showSkeleton = isLoading && prices.isEmpty() && newsArticles.isEmpty()
 
-    TransitionSafeWrapper(
-        isDataReady = isDataReady,
-        skeletonContent = { MarketSkeleton() }
-    ) {
+    if (showSkeleton) {
+        MarketSkeleton()
+    } else {
         MarketScreenContent(
             viewModel = viewModel,
             newsViewModel = newsViewModel,
@@ -153,6 +152,7 @@ fun MarketScreenContent(
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val isTrader = profile?.role == "TRADER"
     val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
+    val nativeAdState by viewModel.nativeAdState.collectAsStateWithLifecycle()
     val myBids: List<Nothing> = emptyList()
     val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -290,6 +290,7 @@ fun MarketScreenContent(
                         isRefreshing = newsUi.isRefreshing,
                         errorMessage = newsUi.errorMessage,
                         isPremium = isPremium,
+                        nativeAdState = nativeAdState,
                         bottomPadding = bottomContentPadding,
                         onSelectTopic = onSelectTopic,
                         onRefresh = onRefreshNewsPage,
@@ -416,6 +417,7 @@ private fun NewsPage(
     isRefreshing: Boolean,
     errorMessage: String?,
     isPremium: Boolean,
+    nativeAdState: NativeAdUiState,
     bottomPadding: androidx.compose.ui.unit.Dp,
     onSelectTopic: (com.giathinh.canlua.data.model.NewsTopic?) -> Unit,
     onRefresh: () -> Unit,
@@ -440,14 +442,10 @@ private fun NewsPage(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(key = "native_ad") {
-                AnimatedVisibility(
-                    visible = !isPremium,
-                    enter = fadeIn(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    NativeAdPlaceholder(
-                        onClick = {},
+            if (!isPremium && nativeAdState is NativeAdUiState.Success) {
+                item(key = "native_ad") {
+                    NativeAdCard(
+                        nativeAd = nativeAdState.nativeAd,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }

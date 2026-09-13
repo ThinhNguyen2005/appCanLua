@@ -1,12 +1,10 @@
 package com.giathinh.canlua.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -72,7 +70,7 @@ import com.giathinh.canlua.repository.SyncStatus
 import com.giathinh.canlua.ui.component.CardItem
 import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.component.CreateCardMode
-import com.giathinh.canlua.ui.component.CardListSkeleton
+import com.giathinh.canlua.ui.component.cardlist.CardListSkeleton
 import com.giathinh.canlua.ui.component.cardlist.CardListEmptyState
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterBar
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterSheet
@@ -95,7 +93,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
 import com.giathinh.canlua.ui.feedback.LocalAppToast
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,22 +105,12 @@ fun CardListScreen(
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val syncViewModel: SyncViewModel = hiltViewModel()
 
-    // Kích hoạt flow Room DB query ngay lập tức để isLoading chuyển sang false khi có data.
-    val cards by viewModel.cards.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val isDataReady = !isLoading
-
-    TransitionSafeWrapper(
-        isDataReady = isDataReady,
-        skeletonContent = { CardListSkeleton() }
-    ) {
-        CardListScreenContent(
-            navController = navController,
-            viewModel = viewModel,
-            profileViewModel = profileViewModel,
-            syncViewModel = syncViewModel
-        )
-    }
+    CardListScreenContent(
+        navController = navController,
+        viewModel = viewModel,
+        profileViewModel = profileViewModel,
+        syncViewModel = syncViewModel
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,11 +123,9 @@ fun CardListScreenContent(
 ) {
     val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    // Skeleton hiện đến khi Room thực sự emit data (không min duration cứng).
-    // Vì InitViewModel đã warm Room page cache ở splash → isLoading flip false
-    // gần như tức thì; nếu DB chậm bất thường (thiết bị yếu, lần đầu), skeleton
-    // sẽ tự giữ lâu hơn — đúng tinh thần "đến khi load xong".
-    val showSkeleton = isLoading
+    // Skeleton chỉ hiện ở lần load đầu tiên khi chưa có dữ liệu (không min duration cứng).
+    // Khi refresh mà đã có data cũ, giữ content và hiển thị indicator xoay của PullToRefreshBox.
+    val showSkeleton = isLoading && cards.isEmpty()
     val selectedFilter by viewModel.selectedVarietyFilter.collectAsStateWithLifecycle()
     val availableVarieties by viewModel.availableVarieties.collectAsStateWithLifecycle()
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
@@ -245,14 +230,9 @@ fun CardListScreenContent(
             // được bảo toàn khi skeleton → content (sau khi InitViewModel warm cache).
             // C-05: pullState khai báo NGOÀI Crossfade → không bị reset khi transition.
             val pullState = rememberPullToRefreshState()
-            Crossfade(
-                targetState = showSkeleton,
-                animationSpec = tween(durationMillis = 300),
-                label = "card_list_crossfade"
-            ) { skeleton ->
-                if (skeleton) {
-                    CardListSkeleton(count = 3, listState = listState)
-                } else {
+            if (showSkeleton) {
+                CardListSkeleton(count = 3, listState = listState)
+            } else {
                     PullToRefreshBox(
                         isRefreshing = manualRefreshing,
                         onRefresh = {
@@ -375,7 +355,6 @@ fun CardListScreenContent(
                         }
                     }
                 }
-            }
         }
 
         // FAB — auto-hide khi scroll xuống đọc danh sách; bottom bar cũng tự ẩn theo

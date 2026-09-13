@@ -1,36 +1,32 @@
 package com.giathinh.canlua.ui.component.dashboard
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.ui.theme.AppColors
 
 /**
- * Horizontal scroll chips để chọn vụ.
- * Selected → GreenPrimary background + check icon.
- * Unselected → outline với border GreenPrimary.
+ * Horizontal scroll chips để chọn vụ mùa (filter dashboard theo vụ).
+ * Sử dụng Material3 [FilterChip] chuẩn accessibility và touch target,
+ * kết hợp branding của ứng dụng:
+ *  - Selected: container [AppColors.GreenPrimary], content [MaterialTheme.colorScheme.onPrimary], icon check thanh mảnh.
+ *  - Unselected: container [AppColors.CardBg], border [AppColors.GreenPrimary] (alpha 0.4f), shape bo tròn 20dp.
  */
 @Composable
 fun SeasonSelectorChip(
@@ -39,15 +35,18 @@ fun SeasonSelectorChip(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val uniqueSeasons = remember(seasons) { seasons.distinct() }
+
     LazyRow(
-        modifier = modifier.wrapContentHeight(),
+        modifier = modifier,
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(seasons, key = { it }) { season ->
-            ChipItem(
+        items(uniqueSeasons, key = { it }) { season ->
+            val selected = season == selectedSeason
+            SeasonFilterChip(
                 label = season,
-                selected = season == selectedSeason,
+                selected = selected,
                 onClick = { onSelect(season) }
             )
         }
@@ -55,52 +54,50 @@ fun SeasonSelectorChip(
 }
 
 @Composable
-private fun ChipItem(
+private fun SeasonFilterChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val greenPrimary = AppColors.GreenPrimary
-    val cardBg = AppColors.CardBg
-    val textPrimary = AppColors.TextPrimary
+    val chipShape = RoundedCornerShape(20.dp)
 
-    val bgColor by animateColorAsState(
-        if (selected) greenPrimary else cardBg,
-        label = "chip_bg"
-    )
-    val contentColor by animateColorAsState(
-        if (selected) Color.White else textPrimary,
-        label = "chip_content"
-    )
-
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(bgColor)
-            .border(
-                width = if (selected) 0.dp else 1.dp,
-                color = if (selected) Color.Transparent else greenPrimary.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(20.dp)
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                )
             )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        if (selected) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.padding(end = 0.dp)
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = contentColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-            )
+        },
+        leadingIcon = if (selected) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        } else null,
+        shape = chipShape,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = AppColors.CardBg,
+            labelColor = AppColors.TextPrimary,
+            iconColor = AppColors.TextSecondary,
+            selectedContainerColor = AppColors.GreenPrimary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = AppColors.GreenPrimary.copy(alpha = 0.4f),
+            selectedBorderColor = Color.Transparent,
+            borderWidth = 1.dp,
+            selectedBorderWidth = 0.dp
         )
-    }
+    )
 }
+

@@ -19,7 +19,10 @@ data class KpiGridItem(
     val accentColor: Color,
     val deltaPercent: Double? = null,
     val deltaLabel: String? = null,
-    val highlight: Boolean = false
+    val highlight: Boolean = false,
+    val isPositiveGood: Boolean = true,
+    val sentiment: TrendSentiment = if (isPositiveGood) TrendSentiment.POSITIVE_IS_GOOD else TrendSentiment.NEGATIVE_IS_GOOD,
+    val reserveDeltaSpace: Boolean = false
 )
 
 @Composable
@@ -49,7 +52,10 @@ fun KpiGrid(
                         accentColor = item.accentColor,
                         deltaPercent = item.deltaPercent,
                         deltaLabel = item.deltaLabel,
-                        highlight = item.highlight
+                        highlight = item.highlight,
+                        isPositiveGood = item.isPositiveGood,
+                        sentiment = item.sentiment,
+                        reserveDeltaSpace = item.reserveDeltaSpace
                     )
                 }
                 if (rowItems.size == 1) {

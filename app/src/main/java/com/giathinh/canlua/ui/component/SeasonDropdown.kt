@@ -1,8 +1,6 @@
 package com.giathinh.canlua.ui.component
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,26 +17,33 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
-import com.giathinh.canlua.data.model.SeasonHelper
+import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.util.SeasonOption
+import com.giathinh.canlua.util.SeasonUtil
+import java.util.Date
 
 /**
- * Dropdown chọn vụ mùa — chuẩn hóa label thành "Đông Xuân YYYY" / "Hè Thu YYYY" / "Thu Đông YYYY".
- *
- * Mặc định show 3 options theo lịch nông vụ miền Tây tự suggest theo ngày hiện tại.
- * Cho phép tự nhập (free text) khi user cần năm khác hoặc vụ tùy biến.
+ * Dropdown chọn vụ mùa — hỗ trợ gợi ý theo lịch nông vụ miền Tây
+ * và cho phép nhập tùy biến (PrimaryEditable).
+ * Hỗ trợ đa ngôn ngữ qua [SeasonOption.nameRes].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeasonDropdown(
     selected: String,
     onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    date: Date = remember { Date() },
+    options: List<SeasonOption> = remember(date.time / 86400000L) {
+        SeasonUtil.currentSeasonOptions(date)
+    },
+    shape: Shape = RoundedCornerShape(14.dp)
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val options = remember { SeasonHelper.currentSeasonOptions() }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -47,36 +52,41 @@ fun SeasonDropdown(
     ) {
         OutlinedTextField(
             value = selected,
-            onValueChange = { onSelect(it) },
+            onValueChange = {
+                onSelect(it)
+                expanded = true
+            },
             label = { Text(stringResource(R.string.weight_lot_season_label)) },
             placeholder = { Text(stringResource(R.string.dropdown_season_placeholder)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth()
-                .heightIn(min = 60.dp),
-            shape = RoundedCornerShape(14.dp),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                .fillMaxWidth(),
+            shape = shape,
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyLarge,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                focusedBorderColor = AppColors.GreenPrimary,
+                unfocusedBorderColor = AppColors.Divider,
+                focusedLabelColor = AppColors.GreenPrimary,
+                unfocusedLabelColor = AppColors.TextSecondary,
+                cursorColor = AppColors.GreenPrimary,
+                focusedTrailingIconColor = AppColors.GreenPrimary,
+                unfocusedTrailingIconColor = AppColors.TextSecondary
             )
         )
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            options.forEach { season ->
+            options.forEach { seasonOption ->
+                val seasonLabel = "${stringResource(seasonOption.nameRes)} ${seasonOption.year}"
                 DropdownMenuItem(
-                    text = { Text(season, style = MaterialTheme.typography.bodyLarge) },
+                    text = { Text(seasonLabel, style = MaterialTheme.typography.bodyLarge) },
                     onClick = {
-                        onSelect(season)
+                        onSelect(seasonLabel)
                         expanded = false
-                    },
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                    }
                 )
             }
         }

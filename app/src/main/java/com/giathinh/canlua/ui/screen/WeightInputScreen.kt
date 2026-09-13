@@ -32,27 +32,19 @@ import androidx.compose.ui.res.stringResource
 import com.giathinh.canlua.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.giathinh.canlua.data.model.WeightEntry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.giathinh.canlua.util.RiceCalculator
 import com.giathinh.canlua.ui.component.weight.WeightMetricsCard
-import com.giathinh.canlua.ui.component.pressableScale
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.WeightInputViewModel
 import com.giathinh.canlua.util.HapticUtil
@@ -60,9 +52,6 @@ import com.giathinh.canlua.util.TrackScreenRender
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.toPersistentList
-
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
-import com.giathinh.canlua.ui.component.WeightInputSkeleton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

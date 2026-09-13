@@ -3,10 +3,9 @@ package com.giathinh.canlua.ui.component.detail
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
@@ -27,8 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Scale
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,9 +36,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,12 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,32 +62,32 @@ import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.ui.theme.AppColors
 import java.text.NumberFormat
 
+private fun formatWeight(weight: Double, numberFormat: NumberFormat? = null): String {
+    return numberFormat?.format(weight) ?: "%.1f".format(weight)
+}
+
 /**
  * Card hiển thị danh sách bao cân đã nhập, paginated theo bảng 5×5.
  *
- * Trước đây nằm chung trong `CardDetailScreen.kt` (~330 dòng) — tách ra để
- * file màn chính ngắn lại và composable này dễ test/preview riêng.
- *
  * @param bagCountTotal tổng số bao đã cân (hiển thị badge)
  * @param tables danh sách bảng — mỗi bảng tối đa 25 entries
- * @param pagerState state cho HorizontalPager swipe giữa các bảng
- * @param activeTableIndex index bảng đang chọn (sync với pagerState)
- * @param isLocked phiếu đã chốt → không cho long-press để xoá
- * @param onTableSelected user tap chip "Bảng N"
- * @param onAddFirstBag CTA khi `bagCountTotal == 0` → mở WeightInputScreen
- * @param onEntryLongPress long-press 1 ô trong grid (chỉ khi unlocked)
+ * @param pagerState state cho HorizontalPager swipe giữa các bảng (single source of truth)
+ * @param isLocked phiếu đã chốt → read-only, không cho click/xoá, ẩn nút thêm bao
+ * @param onTableSelected user tap tab "Bảng N"
+ * @param onAddFirstBag CTA khi `bagCountTotal == 0` và `!isLocked` → mở WeightInputScreen
+ * @param onEntryClick tap 1 ô trong grid (chỉ khi unlocked)
+ * @param numberFormat định dạng khối lượng hiển thị thống nhất
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BagEntriesCard(
     bagCountTotal: Int,
     tables: List<List<WeightEntry>>,
     pagerState: PagerState,
-    activeTableIndex: Int,
     isLocked: Boolean,
     onTableSelected: (Int) -> Unit,
     onAddFirstBag: () -> Unit,
-    onEntryLongPress: (WeightEntry, Int) -> Unit
+    onEntryClick: (WeightEntry, Int) -> Unit,
+    numberFormat: NumberFormat? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -150,45 +146,61 @@ fun BagEntriesCard(
                         color = AppColors.TextHint,
                         textAlign = TextAlign.Center
                     )
-                    OutlinedButton(
-                        onClick = onAddFirstBag,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.5.dp, AppColors.GreenPrimary),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary)
-                    ) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.detail_bag_entries_add_first), fontWeight = FontWeight.SemiBold)
+                    // Read-only khi isLocked: không hiện CTA thêm bao
+                    if (!isLocked) {
+                        OutlinedButton(
+                            onClick = onAddFirstBag,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.5.dp, AppColors.GreenPrimary),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary)
+                        ) {
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.detail_bag_entries_add_first), fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             } else {
-                // Selector chips
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Table selector tabs (pagerState.currentPage là single source of truth)
+                val currentPage = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
+                SecondaryScrollableTabRow(
+                    selectedTabIndex = currentPage,
+                    edgePadding = 0.dp,
+                    containerColor = Color.Transparent,
+                    divider = {},
+                    indicator = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
                 ) {
-                    items(tables.size, key = { it }) { index ->
-                        val isActive = index == activeTableIndex
+                    tables.indices.forEach { index ->
+                        val isActive = index == currentPage
                         val borderWidth by animateDpAsState(
                             targetValue = if (isActive) 1.5.dp else 0.dp,
                             animationSpec = tween(180),
-                            label = "chip_border"
+                            label = "tab_border"
                         )
-                        Surface(
+                        Tab(
+                            selected = isActive,
                             onClick = { onTableSelected(index) },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isActive) AppColors.GreenSurface else AppColors.SurfaceContainer,
-                            border = if (isActive) BorderStroke(borderWidth, AppColors.GreenPrimary) else null,
-                            modifier = Modifier.padding(horizontal = 2.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.detail_bag_entries_table, index + 1),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Normal,
-                                color = if (isActive) AppColors.GreenPrimary else AppColors.TextSecondary,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                            )
-                        }
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isActive) AppColors.GreenSurface else AppColors.SurfaceContainer)
+                                .border(
+                                    if (isActive) BorderStroke(borderWidth, AppColors.GreenPrimary) else BorderStroke(0.dp, Color.Transparent),
+                                    RoundedCornerShape(10.dp)
+                                ),
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.detail_bag_entries_table, index + 1),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Normal,
+                                    color = if (isActive) AppColors.GreenPrimary else AppColors.TextSecondary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        )
                     }
                 }
 
@@ -202,15 +214,14 @@ fun BagEntriesCard(
                     pageSize = PageSize.Fill,
                     modifier = Modifier.fillMaxWidth()
                 ) { pageIndex ->
-                    if (pageIndex < tables.size) {
-                        val tableEntries = tables[pageIndex]
-                        BagGrid(
-                            entries = tableEntries,
-                            globalOffset = pageIndex * 25,
-                            isLocked = isLocked,
-                            onEntryLongPress = onEntryLongPress
-                        )
-                    }
+                    val tableEntries = tables.getOrNull(pageIndex) ?: return@HorizontalPager
+                    BagGrid(
+                        entries = tableEntries,
+                        globalOffset = pageIndex * 25,
+                        isLocked = isLocked,
+                        onEntryClick = onEntryClick,
+                        numberFormat = numberFormat
+                    )
                 }
             }
         }
@@ -226,7 +237,8 @@ private fun BagGrid(
     entries: List<WeightEntry>,
     globalOffset: Int,
     isLocked: Boolean,
-    onEntryLongPress: (WeightEntry, Int) -> Unit
+    onEntryClick: (WeightEntry, Int) -> Unit,
+    numberFormat: NumberFormat? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         for (r in 0 until 5) {
@@ -243,11 +255,16 @@ private fun BagGrid(
                             indexLabel = "#$globalIndex",
                             weight = entry.weight,
                             isLocked = isLocked,
-                            onLongPress = { onEntryLongPress(entry, globalIndex) },
+                            onClick = { onEntryClick(entry, globalIndex) },
+                            numberFormat = numberFormat,
                             modifier = Modifier.weight(1f)
                         )
                     } else {
-                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 48.dp)
+                        )
                     }
                 }
             }
@@ -255,17 +272,16 @@ private fun BagGrid(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BagCell(
     indexLabel: String,
     weight: Double,
     isLocked: Boolean,
-    onLongPress: () -> Unit,
+    onClick: () -> Unit,
+    numberFormat: NumberFormat? = null,
     modifier: Modifier = Modifier
 ) {
-    val haptic = LocalHapticFeedback.current
-    val weightText = "%.1f".format(weight)
+    val weightText = formatWeight(weight, numberFormat)
     val cellContentDescription = stringResource(
         R.string.detail_bag_entries_semantics,
         indexLabel,
@@ -275,28 +291,29 @@ private fun BagCell(
     } else {
         ""
     }
+
+    val interactiveModifier = if (!isLocked) {
+        Modifier.clickable(
+            role = Role.Button,
+            onClickLabel = stringResource(R.string.detail_bag_entries_delete_action),
+            onClick = onClick
+        )
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = modifier
             // Đảm bảo touch target ≥48dp (chuẩn Material/A11y) ngay cả khi grid
-            // 5 cột chia đều màn nhỏ. Compose không tự enforce — phải khai báo
-            // explicit minimumInteractiveComponentSize hoặc heightIn.
+            // 5 cột chia đều màn nhỏ.
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(AppColors.GreenSurface)
             .border(1.dp, AppColors.GreenPrimary.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
             .semantics(mergeDescendants = true) {
-                role = if (isLocked) Role.Image else Role.Button
                 contentDescription = cellContentDescription
             }
-            .combinedClickable(
-                onClick = { /* reserved for future quick edit */ },
-                onLongClick = if (!isLocked) {
-                    {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onLongPress()
-                    }
-                } else null
-            )
+            .then(interactiveModifier)
             .padding(vertical = 8.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -318,19 +335,21 @@ private fun BagCell(
 }
 
 /**
- * Long-press trên bag cell → mở bottom sheet với option Xoá. Trước đây
- * delete trực tiếp dễ nhấn nhầm — sheet thêm 1 confirmation dialog nữa.
+ * Action sheet cho bag cell → hiển thị thông tin và tuỳ chọn Xoá.
+ * Bao gồm xác nhận xóa trực quan ngay trong sheet để phòng tránh mất dữ liệu
+ * khi hệ thống chưa hỗ trợ cơ chế Undo rollback.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BagEntryActionSheet(
     entry: WeightEntry,
     globalIndex: Int,
-    numberFormat: NumberFormat,
+    numberFormat: NumberFormat? = null,
     onDismiss: () -> Unit,
     onDelete: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
+    val formattedWeight = formatWeight(entry.weight, numberFormat)
     var confirmDelete by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
@@ -372,7 +391,7 @@ fun BagEntryActionSheet(
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        stringResource(R.string.weight_format_kg_lower, "%.1f".format(entry.weight)),
+                        stringResource(R.string.weight_format_kg_lower, formattedWeight),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextSecondary
                     )
@@ -381,59 +400,77 @@ fun BagEntryActionSheet(
 
             HorizontalDivider(color = AppColors.Divider)
 
-            // Action: Delete
-            Surface(
-                onClick = { confirmDelete = true },
-                shape = RoundedCornerShape(12.dp),
-                color = Color.Transparent
-            ) {
-                Row(
+            if (!confirmDelete) {
+                // Action: Delete trigger
+                Surface(
+                    onClick = { confirmDelete = true },
+                    shape = RoundedCornerShape(12.dp),
+                    color = AppColors.Error.copy(alpha = 0.08f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Delete,
+                            contentDescription = null,
+                            tint = AppColors.Error
+                        )
+                        Text(
+                            stringResource(R.string.detail_bag_entries_delete_action),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.Error
+                        )
+                    }
+                }
+            } else {
+                // Inline confirmation: Giữ xác nhận rõ ràng vì hệ thống không có Undo rollback
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .background(AppColors.SurfaceContainer, RoundedCornerShape(12.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        Icons.Outlined.Delete,
-                        contentDescription = null,
-                        tint = AppColors.Error
-                    )
                     Text(
-                        stringResource(R.string.detail_bag_entries_delete_action),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppColors.Error
+                        text = stringResource(
+                            R.string.detail_bag_entries_delete_message,
+                            formattedWeight
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextPrimary
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { confirmDelete = false },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
+                        Button(
+                            onClick = onDelete,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Error),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.card_detail_delete_confirm),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
 
             Spacer(Modifier.height(8.dp))
         }
-    }
-
-    if (confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.detail_bag_entries_delete_title, globalIndex)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.detail_bag_entries_delete_message,
-                        "%.1f".format(entry.weight)
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    onDelete()
-                }) { Text(stringResource(R.string.card_detail_delete_confirm), color = AppColors.Error, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
-            containerColor = AppColors.CardBg
-        )
     }
 }

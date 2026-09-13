@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.util.RiceCalculator
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Card 1/3 (DetailScreen): Khối lượng.
@@ -47,6 +49,7 @@ fun WeightSummaryCard(
     bagSampleTotalWeight: Double = 0.0,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val totalBagWeight = RiceCalculator.calcTotalBagWeight(
         bagCount = bagCount,
         bagWeight = bagWeight,
@@ -58,15 +61,15 @@ fun WeightSummaryCard(
     val bagRatioText = if (bagMethodIsSampling) {
         val count = bagSampleCount.takeIf { it > 0 } ?: 8
         val kg = formatCompactKg(bagSampleTotalWeight.takeIf { it > 0.0 } ?: 1.0)
-        "$bagCount bao · $count bao = $kg kg"
+        stringResource(R.string.weight_summary_bag_ratio_sample, bagCount, count, kg)
     } else {
         val count = bagSampleCount.takeIf { it > 0 } ?: bagWeight.takeIf { it > 0.0 }?.let { (1.0 / it).toInt() } ?: 8
-        "$bagCount bao · $count bao = 1 kg"
+        stringResource(R.string.weight_summary_bag_ratio_fixed, bagCount, count)
     }
     val impurityNote = if (impurityIsPercent) {
-        "Tạp chất = % khối lượng sau khi trừ bao bì"
+        stringResource(R.string.weight_summary_impurity_percent_note)
     } else {
-        "Nhập trực tiếp kg tạp chất"
+        stringResource(R.string.weight_summary_impurity_direct_note)
     }
 
     Card(
@@ -115,7 +118,7 @@ fun WeightSummaryCard(
                     Spacer(Modifier.height(2.dp))
                     AnimatedNumber(
                         value = totalWeight,
-                        formatter = { "${numberFormat.format(it)} KG" },
+                        formatter = { context.getString(R.string.weight_format_kg_upper, numberFormat.format(it)) },
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = AppColors.RemainingHighlight
@@ -135,7 +138,7 @@ fun WeightSummaryCard(
                 trailing = {
                     AnimatedNumber(
                         value = bagCount,
-                        formatter = { count -> "$count bao" },
+                        formatter = { count -> context.getString(R.string.weight_format_bag_count, count) },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary
@@ -149,7 +152,7 @@ fun WeightSummaryCard(
                 trailing = {
                     AnimatedNumber(
                         value = totalBagWeight,
-                        formatter = { "${numberFormat.format(it)} KG" },
+                        formatter = { context.getString(R.string.weight_format_kg_upper, numberFormat.format(it)) },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary
@@ -163,7 +166,7 @@ fun WeightSummaryCard(
                 trailing = {
                     AnimatedNumber(
                         value = impurityKg,
-                        formatter = { "${numberFormat.format(it)} KG" },
+                        formatter = { context.getString(R.string.weight_format_kg_upper, numberFormat.format(it)) },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary
@@ -218,7 +221,7 @@ fun WeightSummaryCard(
                     }
                     AnimatedNumber(
                         value = netWeight,
-                        formatter = { "${numberFormat.format(it)} KG" },
+                        formatter = { context.getString(R.string.weight_format_kg_upper, numberFormat.format(it)) },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = AppColors.GreenPrimary
@@ -265,7 +268,7 @@ internal fun FluentStatRow(
 }
 
 private fun formatCompactKg(value: Double): String {
-    val rounded = Math.round(value * 10.0) / 10.0
+    val rounded = (value * 10.0).roundToInt() / 10.0
     return if (rounded % 1.0 == 0.0) {
         rounded.toInt().toString()
     } else {

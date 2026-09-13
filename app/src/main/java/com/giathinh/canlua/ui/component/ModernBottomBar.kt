@@ -1,39 +1,52 @@
 package com.giathinh.canlua.ui.component
 
-import androidx.compose.animation.AnimatedContent
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,24 +54,16 @@ import androidx.compose.ui.unit.sp
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.util.HapticUtil
 
-
 /**
- * Bottom Navigation Bar — icon + label LUÔN hiện, indicator pill bao icon khi active.
+ * Bottom Navigation Bar dạng Floating Capsule hiện đại chuẩn Material 3.
  *
- * ## Thiết kế (v2 — 2026-05-26)
- * Trước đây: chỉ tab active mới hiện label (pill expand ngang) → tab idle khó nhận biết.
- * Giờ: tất cả tab hiện label dưới icon (M3 NavigationBar pattern) → trực quan + đều.
- *
- * Layout per item:
- *  - Indicator pill (rounded 16dp) wrap icon khi selected, background GreenPrimary.
- *  - Label dưới icon, font weight đổi Medium → Bold khi selected.
- *  - Item dùng `weight(1f)` chia đều → fit 4 hoặc 5 tab trên màn hình nhỏ.
- *
- * Tương thích màn hình nhỏ:
- *  - Padding ngang outer 10dp (giảm từ 16dp) → fit thiết bị 320dp width.
- *  - Item padding 4dp horizontal, indicator 16dp wide.
- *  - Label `fontSize=11sp, maxLines=1, ellipsis` → không overflow ngay cả "Tài khoản".
- *  - Tổng height 72dp (icon 24 + indicator pad + label 14 + spacing).
+ * Tính năng nâng cấp:
+ * - Thiết kế Floating Pill (viên con nhộng lơ lửng) bo tròn hoàn toàn [CircleShape], có đổ bóng nhẹ chuẩn M3.
+ * - Con trượt động (Sliding Animated Pill Indicator) lướt mượt mà giữa các tab qua spring physics.
+ * - Icon & Text biến đổi màu sắc và tỉ lệ thu phóng (scale) mượt mà khi kích hoạt.
+ * - Phản hồi rung xúc giác tinh tế ([HapticUtil.tick] và [HapticFeedbackType.TextHandleMove]).
+ * - Không sử dụng hiệu ứng kính lỏng (liquid glass), giữ trọn vẹn phong cách thanh lịch, tốc độ cao của Material 3.
+ * - Tương thích hoàn toàn 100% với cả Dark Mode và AMOLED.
  */
 @Composable
 fun ModernBottomBar(
@@ -67,162 +72,179 @@ fun ModernBottomBar(
     onItemClick: (BottomBarItemSpec) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(0.dp), // Phẳng hoàn toàn, không bo góc
-        color = AppColors.CardBg, // Sử dụng CardBg (trắng tinh ở Light mode, xám đậm ở Dark mode) để tạo độ tương phản cực tốt với nền xanh nhạt
-        tonalElevation = 8.dp // Tạo độ nổi khối chuẩn Material 3
+    if (items.isEmpty()) return
+
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+
+    val selectedIndex = remember(currentRoute, items) {
+        val idx = items.indexOfFirst { it.route == currentRoute }
+        if (idx >= 0) idx else 0
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .navigationBarsPadding(),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = CircleShape
+                ),
+            shape = CircleShape,
+            color = AppColors.CardBg,
+            border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.55f)),
+            shadowElevation = 6.dp,
+            tonalElevation = 2.dp
         ) {
-            // Thanh phân cách phía trên có độ tương phản cao, tách biệt rõ ràng với phần nội dung app
-            androidx.compose.material3.HorizontalDivider(
-                thickness = 1.dp,
-                color = AppColors.DividerStrong
-            )
-            
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding() // Đệm hệ thống dưới nút điều hướng ảo
-                    .height(64.dp), // Chiều cao tối ưu tiêu chuẩn
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
-                items.forEach { item ->
-                    val selected = currentRoute == item.route
-                    LabeledNavItem(
-                        item = item,
-                        selected = selected,
-                        onClick = { onItemClick(item) },
-                        modifier = Modifier.weight(1f)
+                val tabCount = items.size
+                val tabWidthPx = constraints.maxWidth.toFloat() / tabCount
+                val tabWidth = with(density) { tabWidthPx.toDp() }
+
+                val indicatorOffset = remember {
+                    Animatable(selectedIndex * tabWidthPx)
+                }
+
+                LaunchedEffect(selectedIndex, tabWidthPx) {
+                    val targetOffset = selectedIndex * tabWidthPx
+                    indicatorOffset.animateTo(
+                        targetValue = targetOffset,
+                        animationSpec = spring(
+                            dampingRatio = 0.82f,
+                            stiffness = 380f
+                        )
                     )
+                }
+
+                // Con trượt động (Sliding Indicator Pill) lướt êm ái dưới tab đang chọn
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(tabWidth)
+                        .graphicsLayer {
+                            translationX = indicatorOffset.value
+                        }
+                        .padding(horizontal = 2.dp, vertical = 2.dp)
+                        .background(
+                            color = AppColors.GreenPrimary.copy(alpha = 0.14f),
+                            shape = CircleShape
+                        )
+                )
+
+                // Hàng chứa các tab điều hướng
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items.forEachIndexed { index, item ->
+                        val isSelected = index == selectedIndex
+                        val labelText = stringResource(item.labelRes)
+
+                        ModernBottomTabItem(
+                            item = item,
+                            label = labelText,
+                            isSelected = isSelected,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            onClick = {
+                                HapticUtil.tick(context)
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onItemClick(item)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-/**
- * Item: indicator pill bao icon + label luôn hiện dưới.
- *
- * Animations:
- *  - Indicator width animate dp (0 → 36dp khi selected) — không dùng AnimatedVisibility
- *    để label/icon không nhảy vị trí.
- *  - Icon swap outlined ↔ filled bằng AnimatedContent crossfade.
- *  - Content color animate sang green khi selected.
- */
 @Composable
-private fun LabeledNavItem(
+private fun ModernBottomTabItem(
     item: BottomBarItemSpec,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    label: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val labelText = item.labelRes?.let { androidx.compose.ui.res.stringResource(it) } ?: item.label
-    val interactionSource = remember { MutableInteractionSource() }
-
-    val activeColor = AppColors.GreenPrimary
-    val onActiveColor = AppColors.CardBg
-    val idleColor = AppColors.TextSecondary
-
-    val iconTint by animateColorAsState(
-        targetValue = if (selected) onActiveColor else idleColor,
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "nav_icon_tint"
-    )
-    val labelColor by animateColorAsState(
-        targetValue = if (selected) activeColor else idleColor,
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "nav_label_tint"
-    )
-    val indicatorAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0f,
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "nav_indicator_alpha"
-    )
-    val indicatorScaleX by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.5f,
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "nav_indicator_scale_x"
+    val selectionProgress by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = 0.85f,
+            stiffness = 380f
+        ),
+        label = "tabSelectionProgress"
     )
 
-    Column(
+    val activeColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.GreenPrimary else AppColors.TextSecondary,
+        animationSpec = tween(220),
+        label = "tabActiveColor"
+    )
+
+    Box(
         modifier = modifier
+            .clip(CircleShape)
             .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) {
-                HapticUtil.tick(context)
-                onClick()
-            }
-            .padding(horizontal = 2.dp, vertical = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Indicator pill bao icon — width/alpha animate, height cố định.
-        Box(
-            modifier = Modifier
-                .height(28.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Background pill — nằm dưới icon, dùng graphicsLayer để không bị méo hình
-            if (indicatorAlpha > 0f) {
-                Surface(
-                    color = activeColor,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .size(width = 40.dp, height = 28.dp)
-                        .graphicsLayer {
-                            alpha = indicatorAlpha
-                            scaleX = indicatorScaleX
-                        }
-                ) {}
-            }
-            // Icon ở trên indicator — crossfade outlined ↔ filled khi đổi state.
-            AnimatedContent(
-                targetState = selected,
-                transitionSpec = {
-                    (fadeIn(tween(220, easing = FastOutSlowInEasing)) togetherWith
-                        fadeOut(tween(160, easing = FastOutSlowInEasing)))
-                },
-                label = "nav_icon_swap"
-            ) { isSelected ->
-                Icon(
-                    imageVector = if (isSelected) item.selectedIcon else item.icon,
-                    contentDescription = labelText,
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(2.dp))
-
-        // Label — luôn hiện, đậm hơn khi selected, ellipsis cho thiết bị nhỏ.
-        Text(
-            text = labelText,
-            color = labelColor,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelSmall.copy(
-                lineHeight = 13.sp
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = true, radius = 28.dp),
+                role = Role.Tab,
+                onClick = onClick
             )
-        )
+            .semantics { selected = isSelected },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.graphicsLayer {
+                val scale = 0.94f + (0.06f * selectionProgress)
+                scaleX = scale
+                scaleY = scale
+            },
+            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = if (isSelected) item.selectedIcon else item.icon,
+                contentDescription = label,
+                tint = activeColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.5.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                ),
+                color = activeColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
 /**
- * Spec data class — adapter giữa domain BottomNavItem và component.
- * Tránh component coupling trực tiếp với navigation package.
+ * Spec data class đại diện cho từng tab trong BottomBar.
+ * Tách biệt domain navigation khỏi giao diện hiển thị.
  */
 data class BottomBarItemSpec(
     val route: String,
     val icon: ImageVector,
     val selectedIcon: ImageVector,
-    val label: String = "",
-    val labelRes: Int? = null
+    @param:StringRes val labelRes: Int,
+    @Deprecated("Dùng labelRes để đảm bảo đa ngôn ngữ") val label: String = ""
 )

@@ -60,7 +60,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
 import com.giathinh.canlua.ui.component.DefaultSkeleton
 
 @Composable
@@ -70,12 +69,11 @@ fun TraderTransactionsScreen(
     TrackScreenRender("trader_transactions")
     val viewModel: TraderTransactionsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val isDataReady = !state.isLoading
+    val showSkeleton = state.isLoading && state.items.isEmpty()
 
-    TransitionSafeWrapper(
-        isDataReady = isDataReady,
-        skeletonContent = { DefaultSkeleton() }
-    ) {
+    if (showSkeleton) {
+        DefaultSkeleton()
+    } else {
         TraderTransactionsScreenContent(
             navController = navController,
             viewModel = viewModel

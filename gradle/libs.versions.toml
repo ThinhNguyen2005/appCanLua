@@ -65,6 +65,8 @@ datastore = "1.2.1"
 # Test-only, không ảnh hưởng production APK.
 orgJson = "20260522"
 mockk = "1.14.11"
+adsMobileSdk = "1.3.1"
+userMessagingPlatform = "3.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -150,6 +152,8 @@ androidx-datastore = { group = "androidx.datastore", name = "datastore-preferenc
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesPlayServices" }
+ads-mobile-sdk = { group = "com.google.android.libraries.ads.mobile.sdk", name = "ads-mobile-sdk", version.ref = "adsMobileSdk" }
+user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "userMessagingPlatform" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

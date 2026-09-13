@@ -28,20 +28,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.firestore.FirestoreRicePrice
 import com.giathinh.canlua.ui.component.RiceVarietyDropdown
 import com.giathinh.canlua.ui.component.ThousandSeparatorTransformation
 import com.giathinh.canlua.ui.theme.AppColors
 
+private data class RiceTypeOption(val key: String, val labelRes: Int)
+
 private val RICE_TYPES = listOf(
-    "lúa ướt" to "Lúa ướt",
-    "lúa Khô" to "Lúa khô",
-    "gạo" to "Gạo",
-    "tấm" to "Tấm",
-    "nếp" to "Nếp"
+    RiceTypeOption("lúa ướt", R.string.market_rice_type_wet),
+    RiceTypeOption("lúa Khô", R.string.market_rice_type_dry),
+    RiceTypeOption("gạo", R.string.market_rice_type_milled),
+    RiceTypeOption("tấm", R.string.market_rice_type_broken),
+    RiceTypeOption("nếp", R.string.market_rice_type_glutinous)
 )
 
 /**
@@ -92,14 +96,18 @@ fun BidEditorSheet(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(
-            text = if (existing == null) "Đăng giá thu mua mới" else "Cập nhật giá",
+            text = if (existing == null) {
+                stringResource(R.string.market_bid_sheet_title_create)
+            } else {
+                stringResource(R.string.market_bid_sheet_title_edit)
+            },
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = AppColors.GreenPrimary,
             modifier = Modifier.padding(top = 8.dp)
         )
         Text(
-            text = "Giá sản phẩm của bạn sẽ hiện công khai ở Bảng giá thị trường cho nông dân tham khảo.",
+            text = stringResource(R.string.market_bid_sheet_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextHint
         )
@@ -113,7 +121,7 @@ fun BidEditorSheet(
 
         // Loại sản phẩm
         Text(
-            text = "LOẠI SẢN PHẨM",
+            text = stringResource(R.string.market_bid_section_product_type),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = AppColors.TextSecondary
@@ -122,10 +130,10 @@ fun BidEditorSheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(RICE_TYPES.size) { idx ->
-                val (key, label) = RICE_TYPES[idx]
+                val typeOption = RICE_TYPES[idx]
                 TypeChip(
-                    key = key,
-                    label = label,
+                    key = typeOption.key,
+                    label = stringResource(typeOption.labelRes),
                     selected = riceType,
                     onSelect = { riceType = it }
                 )
@@ -143,8 +151,8 @@ fun BidEditorSheet(
                     val digits = input.filter { it.isDigit() }
                     if (digits.length <= 7) priceMinRaw = digits
                 },
-                label = { Text("Giá thấp (đ/kg)") },
-                placeholder = { Text("VD: 8.000", style = MaterialTheme.typography.bodySmall) },
+                label = { Text(stringResource(R.string.market_bid_price_min_label)) },
+                placeholder = { Text(stringResource(R.string.market_bid_price_min_placeholder), style = MaterialTheme.typography.bodySmall) },
                 visualTransformation = ThousandSeparatorTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
@@ -158,8 +166,8 @@ fun BidEditorSheet(
                     val digits = input.filter { it.isDigit() }
                     if (digits.length <= 7) priceMaxRaw = digits
                 },
-                label = { Text("Giá cao (đ/kg)") },
-                placeholder = { Text("VD: 8.500", style = MaterialTheme.typography.bodySmall) },
+                label = { Text(stringResource(R.string.market_bid_price_max_label)) },
+                placeholder = { Text(stringResource(R.string.market_bid_price_max_placeholder), style = MaterialTheme.typography.bodySmall) },
                 visualTransformation = ThousandSeparatorTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
@@ -172,8 +180,8 @@ fun BidEditorSheet(
         OutlinedTextField(
             value = region,
             onValueChange = { region = it },
-            label = { Text("Khu vực thu mua") },
-            placeholder = { Text("VD: Cần Thơ, Tiền Giang...", style = MaterialTheme.typography.bodySmall) },
+            label = { Text(stringResource(R.string.market_bid_region_label)) },
+            placeholder = { Text(stringResource(R.string.market_bid_region_placeholder), style = MaterialTheme.typography.bodySmall) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
             shape = RoundedCornerShape(14.dp),
@@ -182,22 +190,22 @@ fun BidEditorSheet(
 
         // Xu hướng
         Text(
-            text = "XU HƯỚNG GIÁ",
+            text = stringResource(R.string.market_bid_trend_section),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = AppColors.TextSecondary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TrendChip("UP", "Đang tăng", AppColors.Success, trend) { trend = it }
-            TrendChip("STABLE", "Ổn định", AppColors.Info, trend) { trend = it }
-            TrendChip("DOWN", "Đang giảm", AppColors.Error, trend) { trend = it }
+            TrendChip("UP", stringResource(R.string.market_bid_trend_up), AppColors.Success, trend) { trend = it }
+            TrendChip("STABLE", stringResource(R.string.market_bid_trend_stable), AppColors.Info, trend) { trend = it }
+            TrendChip("DOWN", stringResource(R.string.market_bid_trend_down), AppColors.Error, trend) { trend = it }
         }
 
         OutlinedTextField(
             value = note,
             onValueChange = { if (it.length <= 200) note = it },
-            label = { Text("Ghi chú (tuỳ chọn)") },
-            placeholder = { Text("VD: Mua tại ruộng, ưu tiên lúa khô...", style = MaterialTheme.typography.bodySmall) },
+            label = { Text(stringResource(R.string.market_bid_note_label)) },
+            placeholder = { Text(stringResource(R.string.market_bid_note_placeholder), style = MaterialTheme.typography.bodySmall) },
             modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
             shape = RoundedCornerShape(14.dp),
             colors = sheetTextFieldColors()
@@ -211,7 +219,7 @@ fun BidEditorSheet(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onDismiss) {
-                Text("Huỷ", color = AppColors.TextSecondary, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary, fontWeight = FontWeight.Medium)
             }
             Button(
                 onClick = {
@@ -234,7 +242,13 @@ fun BidEditorSheet(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = if (isSaving) "Đang lưu..." else if (existing == null) "Đăng giá" else "Cập nhật",
+                    text = if (isSaving) {
+                        stringResource(R.string.market_bid_saving)
+                    } else if (existing == null) {
+                        stringResource(R.string.market_bid_submit_create)
+                    } else {
+                        stringResource(R.string.market_bid_submit_update)
+                    },
                     fontWeight = FontWeight.Bold,
                     color = AppColors.CardBg
                 )

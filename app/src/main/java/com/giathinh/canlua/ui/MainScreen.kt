@@ -7,6 +7,9 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -318,8 +321,14 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showBottomBar,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = fadeIn(animationSpec = tween(220)) + slideInVertically(
+                        animationSpec = tween(280),
+                        initialOffsetY = { it / 2 }
+                    ),
+                    exit = fadeOut(animationSpec = tween(180)) + slideOutVertically(
+                        animationSpec = tween(220),
+                        targetOffsetY = { it / 2 }
+                    ),
                     modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     ModernBottomBar(

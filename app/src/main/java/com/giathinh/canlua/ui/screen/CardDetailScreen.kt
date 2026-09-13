@@ -81,8 +81,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
-import com.giathinh.canlua.ui.component.CardDetailSkeleton
 
 private val DETAIL_DATE_FMT: SimpleDateFormat =
     SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -135,10 +133,7 @@ fun CardDetailScreenContent(
     val scrollState = rememberLazyListState()
     val density = LocalDensity.current
 
-    // Tính 1 lần mỗi khi weightEntries đổi — dùng cho cả header lẫn nội dung bên trong.
-    val lastEntryTimeForHeader = remember(currentCard, weightEntries) {
-        if (currentCard == null) null else weightEntries.maxOfOrNull { it.timestamp }
-    }
+
 
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -288,8 +283,6 @@ fun CardDetailScreenContent(
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // === Content layer ===
-            val activeTableIndex = pagerState.currentPage.coerceIn(0, (tables.size - 1).coerceAtLeast(0))
-
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = {
@@ -447,7 +440,6 @@ fun CardDetailScreenContent(
                                     bagCountTotal = weightEntries.size,
                                     tables = tables,
                                     pagerState = pagerState,
-                                    activeTableIndex = activeTableIndex,
                                     isLocked = card.isLocked,
                                     onTableSelected = { index ->
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -463,15 +455,15 @@ fun CardDetailScreenContent(
                                             navController.navigate("weight_input/${cardId}")
                                         }
                                     },
-                                    onEntryLongPress = { entry, globalIdx ->
+                                    onEntryClick = { entry, globalIdx ->
                                         if (card.isLocked) {
                                             appToast.warning(context.getString(R.string.card_detail_card_locked))
                                         } else {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             entryActionGlobalIndex = globalIdx
                                             entryActionTarget = entry
                                         }
-                                    }
+                                    },
+                                    numberFormat = numberFormat
                                 )
                             }
                         }
@@ -551,19 +543,8 @@ fun CardDetailScreenContent(
             // chỉ Text bên trong recompose (rẻ), view tree không tear down/rebuild.
             CustomHeader(
                 card = card,
-                collapseFraction = collapseFraction,
-                lastEntryTime = lastEntryTimeForHeader,
                 modifier = Modifier.height(headerHeight),
                 onBack = { navController.popBackStack() },
-                onAdd = {
-                    if (isLoading) return@CustomHeader
-                    if (card.isLocked) {
-                        appToast.warning(context.getString(R.string.card_detail_unlock_table_first))
-                    } else {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate("weight_input/${cardId}")
-                    }
-                },
                 showOverflow = showOverflow,
                 onOverflowChange = { if (!isLoading) showOverflow = it },
                 onEditCard = {
@@ -929,8 +910,7 @@ fun EditCardDialog(
                                         unfocusedBorderColor = AppColors.Divider,
                                         focusedLabelColor = AppColors.GreenPrimary,
                                         unfocusedLabelColor = AppColors.TextHint
-                                    ),
-                                    fillMaxHeight = true
+                                    )
                                 )
                             }
                             OutlinedTextField(

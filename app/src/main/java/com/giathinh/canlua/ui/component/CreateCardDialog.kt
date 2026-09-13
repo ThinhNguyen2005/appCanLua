@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,7 +37,6 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,16 +52,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
@@ -301,12 +294,10 @@ fun CreateCardBottomSheet(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Vụ mùa (Manual)
-                    FormTextField(
-                        value = seasonLabel,
-                        onValueChange = { seasonLabel = it },
-                        label = stringResource(R.string.card_list_filter_season),
-                        placeholder = stringResource(R.string.dropdown_season_placeholder),
+                    // Vụ mùa ▼
+                    SeasonDropdown(
+                        selected = seasonLabel,
+                        onSelect = { seasonLabel = it },
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -333,7 +324,7 @@ fun CreateCardBottomSheet(
                         trailingIcon = {
                             val hasPermission = ContextCompat.checkSelfPermission(
                                 context,
-                                android.Manifest.permission.READ_CONTACTS
+                                Manifest.permission.READ_CONTACTS
                             ) == PackageManager.PERMISSION_GRANTED
                             
                             IconButton(
@@ -341,7 +332,7 @@ fun CreateCardBottomSheet(
                                     if (hasPermission) {
                                         contactPickerLauncher.launch(null)
                                     } else {
-                                        permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
+                                        permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                                     }
                                 }
                             ) {
@@ -596,15 +587,15 @@ fun CreateCardBottomSheet(
                 }
             }
 
-        // Help Popovers (rendered inside Dialog window so they show on top of it)
-        ExplainingPopover(
+        // Help Dialogs (rendered inside Dialog window so they show on top of it)
+        ExplainingDialog(
             visible = showCccdHelp,
             title = stringResource(R.string.create_card_cccd_help_title),
             description = stringResource(R.string.create_card_cccd_help_description),
             onDismiss = { showCccdHelp = false }
         )
 
-        ExplainingPopover(
+        ExplainingDialog(
             visible = showImpurityHelp,
             title = stringResource(R.string.create_card_impurity_help_title),
             description = stringResource(R.string.create_card_impurity_help_description),
@@ -612,7 +603,7 @@ fun CreateCardBottomSheet(
         )
 
 
-        ExplainingPopover(
+        ExplainingDialog(
             visible = showMoistureHelp,
             title = stringResource(R.string.create_card_moisture_help_title),
             description = stringResource(R.string.create_card_moisture_help_description),
@@ -714,12 +705,12 @@ private fun dialogTextFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 private fun hasLocationPermission(context: android.content.Context): Boolean {
-    return androidx.core.content.ContextCompat.checkSelfPermission(
+    return ContextCompat.checkSelfPermission(
         context,
-        android.Manifest.permission.ACCESS_FINE_LOCATION
-    ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
-    androidx.core.content.ContextCompat.checkSelfPermission(
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED ||
+    ContextCompat.checkSelfPermission(
         context,
-        android.Manifest.permission.ACCESS_COARSE_LOCATION
-    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
 }

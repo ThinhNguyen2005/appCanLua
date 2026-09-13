@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.AiMarkdownText
-import com.giathinh.canlua.ui.util.parseInlineMarkdown
 import com.giathinh.canlua.ui.viewmodel.AiAnalysisState
 
 /**
@@ -70,7 +69,6 @@ fun AiInsightsCard(
     modifier: Modifier = Modifier
 ) {
     val purple = Color(0xFF6750A4)
-    val indigo = Color(0xFF3F51B5)
 
     Card(
         modifier = modifier,
@@ -102,7 +100,6 @@ fun AiInsightsCard(
                 when (state) {
                     is AiAnalysisState.Idle -> IdleContent(
                         accentColor = purple,
-                        accentColor2 = indigo,
                         onAnalyze = onAnalyze
                     )
                     is AiAnalysisState.Loading -> LoadingContent(accentColor = purple)
@@ -186,7 +183,6 @@ private fun HeaderRow(
 @Composable
 private fun IdleContent(
     accentColor: Color,
-    accentColor2: Color,
     onAnalyze: () -> Unit
 ) {
     Column {
@@ -291,71 +287,6 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.ai_insights_retry), style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-/**
- * Mini block-level markdown renderer.
- * Hỗ trợ:
- *  - `## Heading 2` → bold + accent color + spacing
- *  - `- bullet` → bullet với indent
- *  - paragraph thường → body text
- *
- * Inline (bold/italic/code) delegate cho `parseInlineMarkdown`.
- */
-@Composable
-private fun MarkdownBlocks(markdown: String) {
-    markdown.lines().forEach { line ->
-        when {
-            line.isBlank() -> Unit
-            line.startsWith("## ") -> {
-                Text(
-                    text = parseInlineMarkdown(line.removePrefix("## ").trim()),
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.GreenPrimary
-                    ),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            line.startsWith("# ") -> {
-                Text(
-                    text = parseInlineMarkdown(line.removePrefix("# ").trim()),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = AppColors.GreenPrimary
-                    )
-                )
-            }
-            line.startsWith("- ") || line.startsWith("• ") -> {
-                val text = line.removePrefix("- ").removePrefix("• ").trim()
-                Row(
-                    modifier = Modifier.padding(start = 4.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = AppColors.GreenPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = parseInlineMarkdown(text),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextPrimary
-                    )
-                }
-            }
-            else -> {
-                Text(
-                    text = parseInlineMarkdown(line.trim()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.TextPrimary
-                )
-            }
         }
     }
 }

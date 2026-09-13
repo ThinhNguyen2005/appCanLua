@@ -81,8 +81,9 @@
     <string name="auth_register">Đăng ký</string>
     <string name="auth_login">Đăng nhập</string>
     <string name="auth_continue_google">Tiếp tục với Google</string>
+    <string name="auth_error_no_network">Không có kết nối Internet. Vui lòng bật Wi-Fi hoặc 4G/5G và thử lại.</string>
     <string name="auth_google_missing_id_token">Không lấy được Google ID Token.</string>
-    <string name="auth_google_no_account">Thiết bị chưa có tài khoản Google nào. Hãy thêm tài khoản trong Cài đặt.</string>
+    <string name="auth_google_no_account">Không thể xác thực tài khoản Google. Vui lòng kiểm tra tài khoản trên máy hoặc kết nối mạng.</string>
     <string name="auth_google_invalid_token">Token Google không hợp lệ.</string>
     <string name="auth_google_failed">Đăng nhập Google thất bại.</string>
     <string name="auth_google_developer_error">Cấu hình Google Sign-In sai (SHA-1 / package). Kiểm tra Firebase Console.</string>
@@ -293,6 +294,9 @@
 
     <string name="dropdown_rice_variety_placeholder">VD: ST25...</string>
     <string name="dropdown_season_placeholder">VD: Đông Xuân 2026</string>
+    <string name="season_dong_xuan">Đông Xuân</string>
+    <string name="season_he_thu">Hè Thu</string>
+    <string name="season_thu_dong">Thu Đông</string>
     <string name="offline_content_description">Offline</string>
     <string name="offline_banner_message">Đang offline — dữ liệu lưu tại máy, tự đồng bộ khi có mạng</string>
 
@@ -306,6 +310,7 @@
     <string name="ai_insights_analyze_action">Phân tích vụ này bằng AI</string>
     <string name="ai_insights_retry">Thử lại</string>
 
+    <string name="popover_close">Đóng</string>
     <string name="popover_tap_to_close">Chạm để đóng</string>
     <string name="sync_status_syncing">Đang đồng bộ</string>
     <string name="sync_status_success">Đã đồng bộ</string>
@@ -372,6 +377,7 @@
     <string name="profile_no_transactions">Chưa có giao dịch nào</string>
     <string name="profile_trader_partner_count">%1$d đối tác đã từng giao dịch</string>
     <string name="profile_delta_vs">so với</string>
+    <string name="dashboard_delta_with_label">%1$s %2$s</string>
     <string name="profile_user_role">Vai trò người dùng</string>
     <string name="profile_user_role_subtitle">Chọn vai trò bạn muốn sử dụng trong ứng dụng</string>
     <string name="profile_premium_upsell_subtitle">Mở giới hạn AI, bỏ quảng cáo và xem bản đồ giá vùng</string>
@@ -563,5 +569,43 @@
     <string name="settings_restart_text">Vui lòng khởi động lại ứng dụng để cập nhật vai trò và giao diện mới.</string>
     <string name="settings_restart_confirm">Khởi động lại ngay</string>
     <string name="settings_restart_dismiss">Để sau</string>
+
+    <!-- Weight Summary Card i18n -->
+    <string name="weight_summary_bag_ratio_sample">%1$d bao · %2$d bao = %3$s kg</string>
+    <string name="weight_summary_bag_ratio_fixed">%1$d bao · %2$d bao = 1 kg</string>
+    <string name="weight_summary_impurity_percent_note" formatted="false">Tạp chất = % khối lượng sau khi trừ bao bì</string>
+    <string name="weight_summary_impurity_direct_note">Nhập trực tiếp kg tạp chất</string>
+
+    <!-- Market Bid Editor Sheet i18n -->
+    <string name="market_bid_sheet_title_create">Đăng giá thu mua mới</string>
+    <string name="market_bid_sheet_title_edit">Cập nhật giá</string>
+    <string name="market_bid_sheet_subtitle">Giá sản phẩm của bạn sẽ hiện công khai ở Bảng giá thị trường cho nông dân tham khảo.</string>
+    <string name="market_bid_section_product_type">LOẠI SẢN PHẨM</string>
+    <string name="market_rice_type_wet">Lúa ướt</string>
+    <string name="market_rice_type_dry">Lúa khô</string>
+    <string name="market_rice_type_milled">Gạo</string>
+    <string name="market_rice_type_broken">Tấm</string>
+    <string name="market_rice_type_glutinous">Nếp</string>
+    <string name="market_bid_price_min_label">Giá thấp (đ/kg)</string>
+    <string name="market_bid_price_min_placeholder">VD: 8.000</string>
+    <string name="market_bid_price_max_label">Giá cao (đ/kg)</string>
+    <string name="market_bid_price_max_placeholder">VD: 8.500</string>
+    <string name="market_bid_region_label">Khu vực thu mua</string>
+    <string name="market_bid_region_placeholder">VD: Cần Thơ, Tiền Giang...</string>
+    <string name="market_bid_trend_section">XU HƯỚNG GIÁ</string>
+    <string name="market_bid_trend_up">Đang tăng</string>
+    <string name="market_bid_trend_stable">Ổn định</string>
+    <string name="market_bid_trend_down">Đang giảm</string>
+    <string name="market_bid_note_label">Ghi chú (tuỳ chọn)</string>
+    <string name="market_bid_note_placeholder">VD: Mua tại ruộng, ưu tiên lúa khô...</string>
+    <string name="market_bid_saving">Đang lưu...</string>
+    <string name="market_bid_submit_create">Đăng giá</string>
+    <string name="market_bid_submit_update">Cập nhật</string>
+
+    <!-- AdMob & Privacy -->
+    <string name="ad_attribution">Quảng cáo</string>
+    <string name="ad_sponsored">Tài trợ</string>
+    <string name="settings_privacy_options">Tùy chọn quyền riêng tư &amp; quảng cáo</string>
+    <string name="settings_privacy_options_subtitle">Quản lý tùy chọn đồng thuận quyền riêng tư và quảng cáo</string>
 </resources>
 

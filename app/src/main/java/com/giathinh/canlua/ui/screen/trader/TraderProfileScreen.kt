@@ -64,8 +64,6 @@ import com.giathinh.canlua.util.TrackScreenRender
  *  7. Variety Pie Chart (cơ cấu giống lúa thu mua) + Sổ giao dịch
  *  8. Account Operations
  */
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
-
 @Composable
 fun TraderProfileScreen(
     navController: NavController
@@ -78,7 +76,7 @@ fun TraderProfileScreen(
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
     val txState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
-    val isDataReady = profile != null && dash.isAggregated && !txState.isLoading
+    val showSkeleton = profile == null || !dash.isAggregated
     val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
     val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
@@ -89,10 +87,9 @@ fun TraderProfileScreen(
         firebaseUser?.photoUrl?.toString()
     }
 
-    TransitionSafeWrapper(
-        isDataReady = isDataReady,
-        skeletonContent = { TraderProfileSkeleton() }
-    ) {
+    if (showSkeleton) {
+        TraderProfileSkeleton()
+    } else {
         TraderProfileScreenContent(
             navController = navController,
             profileViewModel = profileViewModel,

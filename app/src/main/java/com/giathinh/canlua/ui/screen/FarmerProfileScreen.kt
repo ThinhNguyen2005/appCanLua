@@ -74,8 +74,6 @@ import java.util.Locale
  * DashboardViewModel.combine() gom TẤT CẢ data thành 1 atomic emission,
  * chống Flow Avalanche — chỉ 1 recomposition thay vì 5-7.
  */
-import com.giathinh.canlua.ui.component.TransitionSafeWrapper
-
 @Composable
 fun FarmerProfileScreen(
     navController: NavController
@@ -86,7 +84,7 @@ fun FarmerProfileScreen(
 
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
-    val isDataReady = profile != null && dash.isAggregated
+    val showSkeleton = profile == null || !dash.isAggregated
     val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
     val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }
@@ -97,10 +95,9 @@ fun FarmerProfileScreen(
         firebaseUser?.photoUrl?.toString()
     }
 
-    TransitionSafeWrapper(
-        isDataReady = isDataReady,
-        skeletonContent = { FarmerProfileSkeleton() }
-    ) {
+    if (showSkeleton) {
+        FarmerProfileSkeleton()
+    } else {
         FarmerProfileScreenContent(
             navController = navController,
             profile = profile,

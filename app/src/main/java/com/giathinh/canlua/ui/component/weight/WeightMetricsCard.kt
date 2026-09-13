@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.ui.component.AnimatedNumber
-import com.giathinh.canlua.ui.component.ExplainingPopover
+import com.giathinh.canlua.ui.component.ExplainingDialog
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.lockedAwareTextFieldColors
 import com.giathinh.canlua.util.MoneyFormatter
@@ -433,26 +433,26 @@ fun WeightMetricsCard(
         }
     }
 
-    // ── Popovers giải thích ─────────────────────────────────────────
-    ExplainingPopover(
+    // ── Hộp thoại giải thích ─────────────────────────────────────────
+    ExplainingDialog(
         visible = showBagInfo,
         title = stringResource(R.string.weight_metrics_bag_info_title),
         description = stringResource(R.string.weight_metrics_bag_info_description),
         onDismiss = { showBagInfo = false }
     )
-    ExplainingPopover(
+    ExplainingDialog(
         visible = showImpurityInfo,
         title = stringResource(R.string.weight_metrics_impurity_info_title),
         description = stringResource(R.string.weight_metrics_impurity_info_description),
         onDismiss = { showImpurityInfo = false }
     )
-    ExplainingPopover(
+    ExplainingDialog(
         visible = showMoistureInfo,
         title = stringResource(R.string.weight_metrics_moisture_info_title),
         description = stringResource(R.string.weight_metrics_moisture_info_description),
         onDismiss = { showMoistureInfo = false }
     )
-    ExplainingPopover(
+    ExplainingDialog(
         visible = showFormulaInfo,
         title = stringResource(R.string.weight_metrics_formula_info_title),
         description = stringResource(R.string.weight_metrics_formula_info_description),

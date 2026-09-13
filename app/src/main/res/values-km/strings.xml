@@ -75,8 +75,9 @@
     <string name="auth_register">ចុះឈ្មោះ</string>
     <string name="auth_login">ចូល</string>
     <string name="auth_continue_google">បន្តជាមួយ Google</string>
+    <string name="auth_error_no_network">គ្មានការតភ្ជាប់អ៊ីនធឺណិតទេ។ សូមពិនិត្យមើល Wi-Fi ឬទិន្នន័យទូរសព្ទ ហើយព្យាយាមម្តងទៀត។</string>
     <string name="auth_google_missing_id_token">មិនអាចទទួលបាន Google ID Token ទេ។</string>
-    <string name="auth_google_no_account">មិនរកឃើញគណនី Google នៅលើឧបករណ៍នេះទេ។ សូមបន្ថែមគណនីនៅក្នុងការកំណត់។</string>
+    <string name="auth_google_no_account">មិនអាចផ្ទៀងផ្ទាត់គណនី Google បានទេ។ សូមពិនិត្យមើលគណនី ឬការតភ្ជាប់បណ្តាញ។</string>
     <string name="auth_google_invalid_token">ថូខឹន Google មិនត្រឹមត្រូវ។</string>
     <string name="auth_google_failed">ការចូលជាមួយ Google បានបរាជ័យ។</string>
     <string name="auth_google_developer_error">ការកំណត់រចនាសម្ព័ន្ធ Google Sign-In មិនត្រឹមត្រូវ (SHA-1 / package)។ សូមពិនិត្យមើល Firebase Console។</string>
@@ -258,6 +259,9 @@
     <string name="header_export_pdf">នាំចេញ PDF សំបុត្រថ្លឹង</string>
     <string name="dropdown_rice_variety_placeholder">ឧទាហរណ៍៖ ST25...</string>
     <string name="dropdown_season_placeholder">ឧទាហរណ៍៖ រដូវប្រាំង 2026</string>
+    <string name="season_dong_xuan">រដូវរងា-និទាឃរដូវ</string>
+    <string name="season_he_thu">រដូវក្តៅ-រដូវស្លឹកឈើជ្រុះ</string>
+    <string name="season_thu_dong">រដូវស្លឹកឈើជ្រុះ-រដូវរងា</string>
     <string name="offline_content_description">គ្មានអ៊ីនធឺណិត</string>
     <string name="offline_banner_message">កំពុងគ្មានអ៊ីនធឺណិត — ទិន្នន័យរក្សាទុកលើឧបករណ៍ ហើយនឹងធ្វើសមកាលកម្មពេលមានបណ្ដាញ</string>
     <string name="ai_insights_title">ការវិភាគដោយ AI</string>
@@ -269,6 +273,7 @@
     <string name="ai_insights_idle_body">អនុញ្ញាតឱ្យ AI អានទិន្នន័យរដូវកាលនេះ ដើម្បីផ្តល់ព័ត៌មានលម្អិតអំពីទិន្នផល ប្រាក់ចំណូល ពូជស្រូវដែលមានប្រសិទ្ធភាព និងអនុសាសន៍សម្រាប់រដូវកាលក្រោយ។</string>
     <string name="ai_insights_analyze_action">វិភាគរដូវកាលនេះជាមួយ AI</string>
     <string name="ai_insights_retry">ព្យាយាមម្តងទៀត</string>
+    <string name="popover_close">បិទ</string>
     <string name="popover_tap_to_close">ប៉ះដើម្បីបិទ</string>
     <string name="sync_status_syncing">កំពុងសមកាលកម្ម</string>
     <string name="sync_status_success">បានសមកាលកម្ម</string>
@@ -388,6 +393,7 @@
     <string name="profile_no_transactions">មិនទាន់មានប្រតិបត្តិការ</string>
     <string name="profile_trader_partner_count">ធ្លាប់ធ្វើប្រតិបត្តិការជាមួយដៃគូ %1$d នាក់</string>
     <string name="profile_delta_vs">ធៀបនឹង</string>
+    <string name="dashboard_delta_with_label">%1$s %2$s</string>
     <string name="profile_user_role">តួនាទីអ្នកប្រើ</string>
     <string name="profile_user_role_subtitle">ជ្រើសតួនាទីដែលអ្នកចង់ប្រើក្នុងកម្មវិធី</string>
     <string name="profile_premium_upsell_subtitle">បើកដែនកំណត់ AI បន្ថែម លុបពាណិជ្ជកម្ម និងមើលផែនទីតម្លៃតំបន់</string>
@@ -525,4 +531,42 @@
     <string name="settings_restart_text">សូមចាប់ផ្តើមកម្មវិធីឡើងវិញដើម្បីអនុវត្តតួនាទី និងចំណុចប្រទាក់ថ្មី។</string>
     <string name="settings_restart_confirm">ចាប់ផ្តើមឡើងវិញឥឡូវនេះ</string>
     <string name="settings_restart_dismiss">ទុកពេលក្រោយ</string>
+
+    <!-- Weight Summary Card i18n -->
+    <string name="weight_summary_bag_ratio_sample">%1$d ការ៉ុង · %2$d ការ៉ុង = %3$s គីឡូក្រាម</string>
+    <string name="weight_summary_bag_ratio_fixed">%1$d ការ៉ុង · %2$d ការ៉ុង = 1 គីឡូក្រាម</string>
+    <string name="weight_summary_impurity_percent_note" formatted="false">កាកសំណល់ = % ទម្ងន់បន្ទាប់ពីដកការ៉ុងចេញ</string>
+    <string name="weight_summary_impurity_direct_note">បញ្ចូលគីឡូក្រាមកាកសំណល់ដោយផ្ទាល់</string>
+
+    <!-- Market Bid Editor Sheet i18n -->
+    <string name="market_bid_sheet_title_create">ប្រកាសតម្លៃទិញថ្មី</string>
+    <string name="market_bid_sheet_title_edit">ធ្វើបច្ចុប្បន្នភាពតម្លៃ</string>
+    <string name="market_bid_sheet_subtitle">តម្លៃផលិតផលរបស់អ្នកនឹងត្រូវបានបង្ហាញជាសាធារណៈនៅលើតារាងតម្លៃទីផ្សារសម្រាប់កសិករពិគ្រោះ។</string>
+    <string name="market_bid_section_product_type">ប្រភេទផលិតផល</string>
+    <string name="market_rice_type_wet">ស្រូវសើម</string>
+    <string name="market_rice_type_dry">ស្រូវស្ងួត</string>
+    <string name="market_rice_type_milled">អង្ករ</string>
+    <string name="market_rice_type_broken">ចុងអង្ករ</string>
+    <string name="market_rice_type_glutinous">អង្ករដំណើប</string>
+    <string name="market_bid_price_min_label">តម្លៃទាប (đ/kg)</string>
+    <string name="market_bid_price_min_placeholder">ឧទាហរណ៍៖ 8,000</string>
+    <string name="market_bid_price_max_label">តម្លៃខ្ពស់ (đ/kg)</string>
+    <string name="market_bid_price_max_placeholder">ឧទាហរណ៍៖ 8,500</string>
+    <string name="market_bid_region_label">តំបន់ទិញ</string>
+    <string name="market_bid_region_placeholder">ឧទាហរណ៍៖ Cần Thơ, Tiền Giang...</string>
+    <string name="market_bid_trend_section">និន្នាការតម្លៃ</string>
+    <string name="market_bid_trend_up">កំពុងកើនឡើង</string>
+    <string name="market_bid_trend_stable">មានស្ថេរភាព</string>
+    <string name="market_bid_trend_down">កំពុងធ្លាក់ចុះ</string>
+    <string name="market_bid_note_label">ចំណាំ (ស្រេចចិត្ត)</string>
+    <string name="market_bid_note_placeholder">ឧទាហរណ៍៖ ទិញនៅស្រែ ផ្តល់អាទិភាពដល់ស្រូវស្ងួត...</string>
+    <string name="market_bid_saving">កំពុងរក្សាទុក...</string>
+    <string name="market_bid_submit_create">ប្រកាសតម្លៃ</string>
+    <string name="market_bid_submit_update">ធ្វើបច្ចុប្បន្នភាព</string>
+
+    <!-- Ads & Privacy -->
+    <string name="ad_attribution">ការផ្សាយពាណិជ្ជកម្ម</string>
+    <string name="ad_sponsored">ឧបត្ថម្ភ</string>
+    <string name="settings_privacy_options">ជម្រើសឯកជនភាព និង​ការផ្សាយពាណិជ្ជកម្ម</string>
+    <string name="settings_privacy_options_subtitle">គ្រប់គ្រងជម្រើសការយល់ព្រមអំពីឯកជនភាព និងការផ្សាយពាណិជ្ជកម្ម</string>
 </resources>

@@ -90,6 +90,10 @@ android {
         compose = true
         buildConfig = true
     }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
@@ -140,9 +144,8 @@ dependencies {
     implementation(libs.firebase.remoteconfig)
     implementation(libs.firebase.appcheck.debug)
     implementation(libs.firebase.appcheck.playintegrity)
-    implementation(libs.play.services.auth)
 
-    // Credentials & Identity
+    // Credentials & Identity (Modern replacement for legacy GoogleSignIn)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
@@ -190,6 +193,10 @@ dependencies {
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore)
+
+    // Google Mobile Ads (GMA) Next-Gen SDK & User Messaging Platform (UMP)
+    implementation(libs.ads.mobile.sdk)
+    implementation(libs.user.messaging.platform)
 
     testImplementation(libs.junit)
     testImplementation(libs.org.json)

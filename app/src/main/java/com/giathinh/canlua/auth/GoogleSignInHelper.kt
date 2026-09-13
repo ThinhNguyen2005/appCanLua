@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.content.ContextWrapper
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.credentials.CreatePasswordRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -12,6 +15,7 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.giathinh.canlua.R
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -29,23 +33,8 @@ data class GoogleAccount(
 )
 
 /**
- * Wrapper Credential Manager + Sign in with Google — modern API thay cho `GoogleSignIn` deprecated.
- *
- * **Quyết định thiết kế:** chỉ dùng explicit `GetSignInWithGoogleOption` flow (bottom sheet),
- * không gọi silent `GetGoogleIdOption(filterByAuthorizedAccounts=true)` trước. Lý do:
- * - Silent step đôi khi throw `GetCredentialCancellationException` ("Account reauth failed [16]")
- *   ngay sau khi user pick account → gây ra "Bạn đã huỷ đăng nhập" dù user đã chọn.
- * - Explicit flow show bottom sheet rõ ràng — UX nhất quán cho mọi trường hợp.
- *
- * Usage:
- * ```
- * val helper = GoogleSignInHelper(context)
- * helper.signIn(
- *     onSuccess = { account -> viewModel.signInWithGoogle(account) },
- *     onCancel = { /* user dismissed picker — không show error */ },
- *     onError = { msg -> showSnackbar(msg) }
- * )
- * ```
+ * Modern Credential Manager + Google Identity API (thay thế hoàn toàn GoogleSignIn legacy).
+ * Tự động kiểm tra kết nối mạng trước khi gọi API, tránh báo lỗi sai nguyên nhân.
  */
 class GoogleSignInHelper(private val context: Context) {
 
@@ -57,29 +46,101 @@ class GoogleSignInHelper(private val context: Context) {
         onCancel: () -> Unit,
         onError: (message: String) -> Unit
     ) {
+        // Kiểm tra mạng trước khi mở picker
+        if (!isNetworkAvailable(context)) {
+            Log.w(TAG, "Cannot sign in: no internet connection")
+            onError(context.getString(R.string.auth_error_no_network))
+            return
+        }
+
+        val targetContext = findActivity(context) ?: context
         try {
-            val option = GetSignInWithGoogleOption.Builder(webClientId).build()
+            // Ưu tiên GetSignInWithGoogleOption cho hành động click nút "Tiếp tục với Google"
+            val signInOption = GetSignInWithGoogleOption.Builder(webClientId).build()
             val request = GetCredentialRequest.Builder()
-                .addCredentialOption(option)
+                .addCredentialOption(signInOption)
                 .build()
-            val response = credentialManager.getCredential(context, request)
+
+            val response = credentialManager.getCredential(targetContext, request)
             val account = extractAccount(response.credential)
-            if (account != null) onSuccess(account)
-            else onError(context.getString(R.string.auth_google_missing_id_token))
+            if (account != null) {
+                onSuccess(account)
+            } else {
+                onError(context.getString(R.string.auth_google_missing_id_token))
+            }
         } catch (e: NoCredentialException) {
-            onError(context.getString(R.string.auth_google_no_account))
+            Log.w(TAG, "No credential available with GetSignInWithGoogleOption", e)
+            if (!isNetworkAvailable(context)) {
+                onError(context.getString(R.string.auth_error_no_network))
+            } else {
+                // Thử fallback sang GetGoogleIdOption (filterByAuthorizedAccounts = false)
+                tryFallbackGoogleId(targetContext, onSuccess, onCancel, onError)
+            }
         } catch (e: GetCredentialCancellationException) {
             Log.i(TAG, "User cancelled Google sign-in: ${e.message}")
             onCancel()
         } catch (e: GetCredentialException) {
-            Log.e(TAG, "GetCredential failed", e)
-            onError(humanizeError(e))
+            Log.e(TAG, "GetCredential failed [type=${e.type}]: ${e.message}", e)
+            if (!isNetworkAvailable(context)) {
+                onError(context.getString(R.string.auth_error_no_network))
+            } else {
+                onError(humanizeError(e))
+            }
         } catch (e: GoogleIdTokenParsingException) {
             Log.e(TAG, "Parse ID token failed", e)
             onError(context.getString(R.string.auth_google_invalid_token))
         } catch (e: Exception) {
-            Log.e(TAG, "Unknown error", e)
-            onError(e.message ?: context.getString(R.string.auth_google_failed))
+            Log.e(TAG, "Unknown error during Google sign-in", e)
+            if (!isNetworkAvailable(context)) {
+                onError(context.getString(R.string.auth_error_no_network))
+            } else {
+                onError(e.message ?: context.getString(R.string.auth_google_failed))
+            }
+        }
+    }
+
+    private suspend fun tryFallbackGoogleId(
+        targetContext: Context,
+        onSuccess: (GoogleAccount) -> Unit,
+        onCancel: () -> Unit,
+        onError: (message: String) -> Unit
+    ) {
+        try {
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(false)
+                .build()
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
+            val response = credentialManager.getCredential(targetContext, request)
+            val account = extractAccount(response.credential)
+            if (account != null) {
+                onSuccess(account)
+            } else {
+                onError(context.getString(R.string.auth_google_missing_id_token))
+            }
+        } catch (e: NoCredentialException) {
+            Log.w(TAG, "Fallback NoCredentialException", e)
+            if (!isNetworkAvailable(context)) {
+                onError(context.getString(R.string.auth_error_no_network))
+            } else {
+                onError(context.getString(R.string.auth_google_no_account))
+            }
+        } catch (e: GetCredentialCancellationException) {
+            Log.i(TAG, "User cancelled fallback: ${e.message}")
+            onCancel()
+        } catch (e: Exception) {
+            Log.e(TAG, "Fallback failed", e)
+            if (!isNetworkAvailable(context)) {
+                onError(context.getString(R.string.auth_error_no_network))
+            } else {
+                val msg = (e as? GetCredentialException)?.let { humanizeError(it) }
+                    ?: e.message
+                    ?: context.getString(R.string.auth_google_failed)
+                onError(msg)
+            }
         }
     }
 
@@ -102,10 +163,34 @@ class GoogleSignInHelper(private val context: Context) {
     private fun humanizeError(e: GetCredentialException): String {
         val msg = e.message.orEmpty()
         return when {
-            msg.contains("DEVELOPER_ERROR", ignoreCase = true) ->
+            msg.contains("ERR_INTERNET_DISCONNECTED", ignoreCase = true) ||
+            msg.contains("NETWORK_ERROR", ignoreCase = true) ||
+            msg.contains("NetworkException", ignoreCase = true) ->
+                context.getString(R.string.auth_error_no_network)
+            msg.contains("DEVELOPER_ERROR", ignoreCase = true) || msg.contains("10:", ignoreCase = true) ->
                 context.getString(R.string.auth_google_developer_error)
             else -> msg.ifBlank { context.getString(R.string.auth_google_failed) }
         }
+    }
+
+    private fun isNetworkAvailable(ctx: Context): Boolean {
+        return try {
+            val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun findActivity(ctx: Context): Activity? {
+        var c = ctx
+        while (c is ContextWrapper) {
+            if (c is Activity) return c
+            c = c.baseContext
+        }
+        return null
     }
 
     companion object {

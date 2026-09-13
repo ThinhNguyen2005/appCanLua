@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/native_ad_view"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_native_ad_card"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top Row: Icon + Header Column -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="top">
+
+            <!-- Ad App Icon -->
+            <ImageView
+                android:id="@+id/ad_app_icon"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:scaleType="centerCrop"
+                android:contentDescription="Ad Icon"
+                tools:srcCompat="@android:drawable/sym_def_app_icon" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <!-- Top Sub-row: Attribution Badge + Advertiser / Room for AdChoices -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <!-- Badge "Quảng cáo" -->
+                    <TextView
+                        android:id="@+id/ad_attribution_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ad_attribution"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#E65100"
+                        android:background="@drawable/bg_ad_badge"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:paddingTop="2dp"
+                        android:paddingBottom="2dp" />
+
+                    <TextView
+                        android:id="@+id/ad_advertiser"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#2E7D32"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        tools:text="Nhà tài trợ" />
+
+                </LinearLayout>
+
+                <!-- Headline -->
+                <TextView
+                    android:id="@+id/ad_headline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    tools:text="Tiêu đề quảng cáo hấp dẫn cho nông nghiệp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- MediaView for rich native ad media / image / video -->
+        <com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
+            android:id="@+id/ad_media"
+            android:layout_width="match_parent"
+            android:layout_height="140dp"
+            android:layout_marginTop="10dp"
+            android:visibility="gone" />
+
+        <!-- Body text -->
+        <TextView
+            android:id="@+id/ad_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="13sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:maxLines="3"
+            android:ellipsize="end"
+            tools:text="Mô tả chi tiết nội dung quảng cáo cung cấp thông tin sản phẩm và giải pháp canh tác hiệu quả." />
+
+        <!-- Bottom Row: Price / Store / Call to Action Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/ad_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#E65100"
+                android:visibility="gone"
+                tools:text="Miễn phí" />
+
+            <TextView
+                android:id="@+id/ad_store"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="12sp"
+                android:textColor="#757575"
+                android:visibility="gone"
+                tools:text="Google Play" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/ad_call_to_action"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bg_ad_cta_btn"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                tools:text="Xem thêm" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView>

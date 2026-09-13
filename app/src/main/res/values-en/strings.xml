@@ -74,8 +74,9 @@
     <string name="auth_register">Register</string>
     <string name="auth_login">Log In</string>
     <string name="auth_continue_google">Continue with Google</string>
+    <string name="auth_error_no_network">No internet connection. Please check your Wi-Fi or cellular data and try again.</string>
     <string name="auth_google_missing_id_token">Failed to retrieve Google ID Token.</string>
-    <string name="auth_google_no_account">No Google account found on this device. Please add one in Settings.</string>
+    <string name="auth_google_no_account">Unable to authenticate Google account. Please check your account on device or network connection.</string>
     <string name="auth_google_invalid_token">Invalid Google token.</string>
     <string name="auth_google_failed">Google sign-in failed.</string>
     <string name="auth_google_developer_error">Google Sign-In configuration error (SHA-1 / package name). Please check Firebase Console.</string>
@@ -257,6 +258,9 @@
     <string name="header_export_pdf">Export PDF</string>
     <string name="dropdown_rice_variety_placeholder">e.g., ST25...</string>
     <string name="dropdown_season_placeholder">e.g., Winter-Spring 2026</string>
+    <string name="season_dong_xuan">Winter-Spring</string>
+    <string name="season_he_thu">Summer-Autumn</string>
+    <string name="season_thu_dong">Autumn-Winter</string>
     <string name="offline_content_description">Offline</string>
     <string name="offline_banner_message">You are offline — data saved locally, will auto-sync when connected</string>
     <string name="ai_insights_title">AI Insights</string>
@@ -268,6 +272,7 @@
     <string name="ai_insights_idle_body">Let AI read this crop\'s data to generate insights on yield, revenue, the most effective rice variety, and custom recommendations for the next season.</string>
     <string name="ai_insights_analyze_action">Analyze this harvest with AI</string>
     <string name="ai_insights_retry">Retry</string>
+    <string name="popover_close">Close</string>
     <string name="popover_tap_to_close">Tap to close</string>
     <string name="sync_status_syncing">Syncing</string>
     <string name="sync_status_success">Synced</string>
@@ -351,6 +356,7 @@
     <string name="profile_no_transactions">No transactions yet</string>
     <string name="profile_trader_partner_count">%1$d partners traded before</string>
     <string name="profile_delta_vs">vs</string>
+    <string name="dashboard_delta_with_label">%1$s %2$s</string>
     <string name="profile_user_role">User role</string>
     <string name="profile_user_role_subtitle">Choose the role you want to use in the app</string>
     <string name="profile_premium_upsell_subtitle">Unlock higher AI limits, remove ads, and view regional price maps</string>
@@ -530,5 +536,43 @@
     <string name="settings_restart_text">Please restart the application to apply the new role and interface.</string>
     <string name="settings_restart_confirm">Restart now</string>
     <string name="settings_restart_dismiss">Later</string>
+
+    <!-- Weight Summary Card i18n -->
+    <string name="weight_summary_bag_ratio_sample">%1$d bags · %2$d bags = %3$s kg</string>
+    <string name="weight_summary_bag_ratio_fixed">%1$d bags · %2$d bags = 1 kg</string>
+    <string name="weight_summary_impurity_percent_note" formatted="false">Impurity = % weight after tare deduction</string>
+    <string name="weight_summary_impurity_direct_note">Direct input of impurity kg</string>
+
+    <!-- Market Bid Editor Sheet i18n -->
+    <string name="market_bid_sheet_title_create">Post new purchase price</string>
+    <string name="market_bid_sheet_title_edit">Update price</string>
+    <string name="market_bid_sheet_subtitle">Your price will be displayed publicly on the Market Price board for farmers to reference.</string>
+    <string name="market_bid_section_product_type">PRODUCT TYPE</string>
+    <string name="market_rice_type_wet">Wet paddy</string>
+    <string name="market_rice_type_dry">Dry paddy</string>
+    <string name="market_rice_type_milled">Milled rice</string>
+    <string name="market_rice_type_broken">Broken rice</string>
+    <string name="market_rice_type_glutinous">Glutinous rice</string>
+    <string name="market_bid_price_min_label">Min price (đ/kg)</string>
+    <string name="market_bid_price_min_placeholder">E.g. 8,000</string>
+    <string name="market_bid_price_max_label">Max price (đ/kg)</string>
+    <string name="market_bid_price_max_placeholder">E.g. 8,500</string>
+    <string name="market_bid_region_label">Purchase region</string>
+    <string name="market_bid_region_placeholder">E.g. Can Tho, Tien Giang...</string>
+    <string name="market_bid_trend_section">PRICE TREND</string>
+    <string name="market_bid_trend_up">Increasing</string>
+    <string name="market_bid_trend_stable">Stable</string>
+    <string name="market_bid_trend_down">Decreasing</string>
+    <string name="market_bid_note_label">Notes (optional)</string>
+    <string name="market_bid_note_placeholder">E.g. Farm gate purchase, prefer dry paddy...</string>
+    <string name="market_bid_saving">Saving...</string>
+    <string name="market_bid_submit_create">Post price</string>
+    <string name="market_bid_submit_update">Update</string>
+
+    <!-- AdMob & Privacy -->
+    <string name="ad_attribution">Ad</string>
+    <string name="ad_sponsored">Sponsored</string>
+    <string name="settings_privacy_options">Privacy &amp; Ads Settings</string>
+    <string name="settings_privacy_options_subtitle">Manage privacy consent preferences and ads</string>
 </resources>
 

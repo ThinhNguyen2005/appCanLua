@@ -143,8 +143,4 @@ class CanLuaApplication : Application(), Configuration.Provider {
             // Bỏ qua nếu WorkManager chưa được khởi tạo
         }
     }
-
-    private fun schedulePeriodicSync() {
-        // No-op
-    }
 }

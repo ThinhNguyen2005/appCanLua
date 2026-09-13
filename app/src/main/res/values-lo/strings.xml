@@ -75,8 +75,9 @@
     <string name="auth_register">ລົງທະບຽນ</string>
     <string name="auth_login">ເຂົ້າສູ່ລະບົບ</string>
     <string name="auth_continue_google">ສືບຕໍ່ດ້ວຍ Google</string>
+    <string name="auth_error_no_network">ບໍ່ມີການເຊື່ອມຕໍ່ອິນເຕີເນັດ. ກະລຸນາກວດສອບ Wi-Fi ຫຼື ຂໍ້ມູນມືຖື ແລ້ວລອງໃໝ່ອີກຄັ້ງ.</string>
     <string name="auth_google_missing_id_token">ບໍ່ສາມາດຮັບ Google ID Token ໄດ້.</string>
-    <string name="auth_google_no_account">ບໍ່ພົບບັນຊີ Google ໃນອຸປະກອນນີ້. ກະລຸນາເພີ່ມບັນຊີໃນການຕັ້ງຄ່າ.</string>
+    <string name="auth_google_no_account">ບໍ່ສາມາດຢືນຢັນບັນຊີ Google ໄດ້. ກະລຸນາກວດສອບບັນຊີ ຫຼື ການເຊື່ອມຕໍ່ເຄືອຂ່າຍ.</string>
     <string name="auth_google_invalid_token">Token Google ບໍ່ຖືກຕ້ອງ.</string>
     <string name="auth_google_failed">ການເຂົ້າສູ່ລະບົບ Google ຫຼົ້ມເຫຼວ.</string>
     <string name="auth_google_developer_error">ການຕັ້ງຄ່າ Google Sign-In ບໍ່ຖືກຕ້ອງ (SHA-1 / package). ກະລຸນາກວດສອບ Firebase Console.</string>
@@ -258,6 +259,9 @@
     <string name="header_export_pdf">ສົ່ງອອກ PDF ໃບຊັ່ງ</string>
     <string name="dropdown_rice_variety_placeholder">ຕົວຢ່າງ: ST25...</string>
     <string name="dropdown_season_placeholder">ຕົວຢ່າງ: ລະດູແລ້ງ 2026</string>
+    <string name="season_dong_xuan">ລະດູໜາວ-ລະດູບານໃໝ່</string>
+    <string name="season_he_thu">ລະດູຮ້ອນ-ລະດູໃບໄມ້ຫຼົ່ນ</string>
+    <string name="season_thu_dong">ລະດູໃບໄມ້ຫຼົ່ນ-ລະດູໜາວ</string>
     <string name="offline_content_description">ອອບລາຍ</string>
     <string name="offline_banner_message">ກຳລັງອອບລາຍ — ຂໍ້ມູນຖືກບັນທຶກໃນເຄື່ອງ ແລະຈະຊິງຄ໌ເມື່ອມີເນັດ</string>
     <string name="ai_insights_title">ການວິເຄາະ AI</string>
@@ -269,6 +273,7 @@
     <string name="ai_insights_idle_body">ໃຫ້ AI ອ່ານຂໍ້ມູນລະດູການນີ້ເພື່ອໃຫ້ຂໍ້ມູນເຈາະເລິກກ່ຽວກັບຜົນຜະລິດ, ລາຍໄດ້, ແນວພັນເຂົ້າທີ່ມີປະສິດທិພາບ ແລະ ຄຳແນະນຳຕົວຈິງສຳລັບລະດູການໜ້າ.</string>
     <string name="ai_insights_analyze_action">ວິເຄາະລະດູການນີ້ດ້ວຍ AI</string>
     <string name="ai_insights_retry">ລອງໃໝ່</string>
+    <string name="popover_close">ປິດ</string>
     <string name="popover_tap_to_close">ແຕະເພື່ອປິດ</string>
     <string name="sync_status_syncing">ກຳລັງຊິງຄ໌</string>
     <string name="sync_status_success">ຊິງຄ໌ແລ້ວ</string>
@@ -348,6 +353,7 @@
     <string name="profile_no_transactions">ຍັງບໍ່ມີທຸລະກຳ</string>
     <string name="profile_trader_partner_count">ເຄີຍທຸລະກຳກັບຄູ່ຄ້າ %1$d ຄົນ</string>
     <string name="profile_delta_vs">ທຽບກັບ</string>
+    <string name="dashboard_delta_with_label">%1$s %2$s</string>
     <string name="profile_user_role">ບົດບາດຜູ້ໃຊ້</string>
     <string name="profile_user_role_subtitle">ເລືອກບົດບາດທີ່ຕ້ອງການໃຊ້ໃນແອັບ</string>
     <string name="profile_premium_upsell_subtitle">ເປີດຂີດຈຳກັດ AI ເພີ່ມ, ລຶບໂຄສະນາ ແລະ ເບິ່ງແຜນທີ່ລາຄາພາກພື້ນ</string>
@@ -523,4 +529,42 @@
     <string name="settings_restart_text">ກະລຸນາເລີ່ມແອັບພລິເຄຊັນໃໝ່ເພື່ອໃຊ້ບົດບາດ ແລະການໂຕ້ຕອບໃໝ່.</string>
     <string name="settings_restart_confirm">ເລີ່ມໃໝ່ດຽວນີ້</string>
     <string name="settings_restart_dismiss">ໄວ້ກ່ອນ</string>
+
+    <!-- Weight Summary Card i18n -->
+    <string name="weight_summary_bag_ratio_sample">%1$d ເປົາ · %2$d ເປົາ = %3$s kg</string>
+    <string name="weight_summary_bag_ratio_fixed">%1$d ເປົາ · %2$d ເປົາ = 1 kg</string>
+    <string name="weight_summary_impurity_percent_note" formatted="false">ສິ່ງເຈືອປົນ = % ນ້ຳໜັກຫຼັງຈາກຫັກເປົາ</string>
+    <string name="weight_summary_impurity_direct_note">ປ້ອນນ້ຳໜັກສິ່ງເຈືອປົນ (kg) ໂດຍກົງ</string>
+
+    <!-- Market Bid Editor Sheet i18n -->
+    <string name="market_bid_sheet_title_create">ປະກາດລາຄາຮັບຊື້ໃໝ່</string>
+    <string name="market_bid_sheet_title_edit">ອັບເດດລາຄາ</string>
+    <string name="market_bid_sheet_subtitle">ລາຄາສິນຄ້າຂອງທ່ານຈະຖືກສະແດງຕໍ່ສາທາລະນະໃນຕາຕະລາງລາຄາຕະຫຼາດເພື່ອໃຫ້ຊາວນາອ້າງອີງ.</string>
+    <string name="market_bid_section_product_type">ປະເພດສິນຄ້າ</string>
+    <string name="market_rice_type_wet">ເຂົ້າປຽກ</string>
+    <string name="market_rice_type_dry">ເຂົ້າແຫ້ງ</string>
+    <string name="market_rice_type_milled">ເຂົ້າສານ</string>
+    <string name="market_rice_type_broken">ເຂົ້າຮັກ</string>
+    <string name="market_rice_type_glutinous">ເຂົ້າໜຽວ</string>
+    <string name="market_bid_price_min_label">ລາຄາຕ່ຳ (đ/kg)</string>
+    <string name="market_bid_price_min_placeholder">ຕົວຢ່າງ: 8,000</string>
+    <string name="market_bid_price_max_label">ລາຄາສູງ (đ/kg)</string>
+    <string name="market_bid_price_max_placeholder">ຕົວຢ່າງ: 8,500</string>
+    <string name="market_bid_region_label">ເຂດຮັບຊື້</string>
+    <string name="market_bid_region_placeholder">ຕົວຢ່າງ: Cần Thơ, Tiền Giang...</string>
+    <string name="market_bid_trend_section">ທ່າອ່ຽງລາຄາ</string>
+    <string name="market_bid_trend_up">ກຳລັງເພີ່ມຂຶ້ນ</string>
+    <string name="market_bid_trend_stable">ຄົງທີ່</string>
+    <string name="market_bid_trend_down">ກຳລັງຫຼຸດລົງ</string>
+    <string name="market_bid_note_label">ໝາຍເຫດ (ເລືອກໄດ້)</string>
+    <string name="market_bid_note_placeholder">ຕົວຢ່າງ: ຊື້ຢູ່ໄຮ່ນາ, ບຸລິມະສິດເຂົ້າແຫ້ງ...</string>
+    <string name="market_bid_saving">ກຳລັງບັນທຶກ...</string>
+    <string name="market_bid_submit_create">ປະກາດລາຄາ</string>
+    <string name="market_bid_submit_update">ອັບເດດ</string>
+
+    <!-- AdMob & Privacy -->
+    <string name="ad_attribution">ໂຄສະນາ</string>
+    <string name="ad_sponsored">ສະໜັບສະໜູນ</string>
+    <string name="settings_privacy_options">ຕົວເລືອກຄວາມເປັນສ່ວນຕົວ ແລະ ໂຄສະນາ</string>
+    <string name="settings_privacy_options_subtitle">ຈັດການຕົວເລືອກການຍິນຍອມຄວາມເປັນສ່ວນຕົວ ແລະ ໂຄສະນາ</string>
 </resources>

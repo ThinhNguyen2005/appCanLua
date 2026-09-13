@@ -18,6 +18,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.giathinh.canlua.ads.AdConsentManager
+import com.giathinh.canlua.ads.NativeAdLoaderManager
+import com.giathinh.canlua.ads.NativeAdUiState
+import com.giathinh.canlua.util.PremiumState
+
 data class MarketFilter(
     val variety: String? = null,    // null = tất cả
     val region: String? = null,
@@ -27,8 +32,11 @@ data class MarketFilter(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MarketViewModel @Inject constructor(
-    private val marketRepository: MarketRepository
+    private val marketRepository: MarketRepository,
+    private val nativeAdLoaderManager: NativeAdLoaderManager
 ) : ViewModel() {
+
+    val nativeAdState: StateFlow<NativeAdUiState> = nativeAdLoaderManager.adState
 
     private val _selectedVariety = MutableStateFlow<String?>(null)
     private val _timeRangeDays = MutableStateFlow(7)
@@ -80,6 +88,29 @@ class MarketViewModel @Inject constructor(
 
     init {
         seedIfNeededDeferred()
+        observeAdRequirements()
+    }
+
+    private fun observeAdRequirements() {
+        // Tự động hủy quảng cáo nếu người dùng nâng cấp Premium
+        viewModelScope.launch {
+            PremiumState.isPremium.collect { isPremium ->
+                if (isPremium) {
+                    nativeAdLoaderManager.destroyAd()
+                } else if (AdConsentManager.canRequestAds.value) {
+                    nativeAdLoaderManager.loadAd()
+                }
+            }
+        }
+
+        // Tự động tải quảng cáo khi nhận được sự đồng thuận từ UMP
+        viewModelScope.launch {
+            AdConsentManager.canRequestAds.collect { canRequest ->
+                if (canRequest && !PremiumState.isPremium.value) {
+                    nativeAdLoaderManager.loadAd()
+                }
+            }
+        }
     }
 
     fun seedIfNeededDeferred() {
@@ -141,5 +172,14 @@ class MarketViewModel @Inject constructor(
 
     fun clearFilters() {
         _filter.value = MarketFilter()
+    }
+
+    fun loadNativeAd(forceReload: Boolean = false) {
+        nativeAdLoaderManager.loadAd(forceReload)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        nativeAdLoaderManager.destroyAd()
     }
 }

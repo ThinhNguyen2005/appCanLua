@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.ui.component.RiceVarietyDropdown
-import com.giathinh.canlua.ui.component.ExplainingPopover
+import com.giathinh.canlua.ui.component.ExplainingDialog
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.lockedAwareTextFieldColors
 
@@ -142,15 +142,15 @@ fun LotInfoCard(
         }
     }
 
-    // Explaining popovers
-    ExplainingPopover(
+    // Explaining dialogs
+    ExplainingDialog(
         visible = showVarietyInfo,
         title = stringResource(R.string.weight_lot_variety_info_title),
         description = stringResource(R.string.weight_lot_variety_info_description),
         onDismiss = { showVarietyInfo = false }
     )
 
-    ExplainingPopover(
+    ExplainingDialog(
         visible = showMoistureInfo,
         title = stringResource(R.string.weight_lot_moisture_info_title),
         description = stringResource(R.string.weight_lot_moisture_info_description),

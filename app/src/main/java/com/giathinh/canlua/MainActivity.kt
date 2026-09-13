@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         com.giathinh.canlua.util.PerformanceTracker.setActivity(this)
+        com.giathinh.canlua.ads.AdConsentManager.gatherConsent(this)
 
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()

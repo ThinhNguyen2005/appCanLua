@@ -293,6 +293,24 @@ fun SettingsScreen(
                 }
             )
 
+            val isPrivacyOptionsRequired by com.giathinh.canlua.ads.AdConsentManager.isPrivacyOptionsRequired.collectAsStateWithLifecycle()
+            if (isPrivacyOptionsRequired) {
+                Spacer(modifier = Modifier.height(12.dp))
+                ClickableSettingsRow(
+                    icon = Icons.Outlined.Security,
+                    iconBg = AppColors.BlueSurface,
+                    iconTint = AppColors.Info,
+                    title = stringResource(R.string.settings_privacy_options),
+                    subtitle = stringResource(R.string.settings_privacy_options_subtitle),
+                    onClick = {
+                        val activity = context as? android.app.Activity
+                        if (activity != null) {
+                            com.giathinh.canlua.ads.AdConsentManager.showPrivacyOptionsForm(activity)
+                        }
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             SettingsFooter()

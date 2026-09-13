@@ -75,8 +75,9 @@
     <string name="auth_register">注册</string>
     <string name="auth_login">登录</string>
     <string name="auth_continue_google">使用 Google 继续</string>
+    <string name="auth_error_no_network">无网络连接。请检查 Wi-Fi 或移动数据后重试。</string>
     <string name="auth_google_missing_id_token">无法获取 Google ID Token。</string>
-    <string name="auth_google_no_account">设备上未找到 Google 账户。请在“设置”中添加账户。</string>
+    <string name="auth_google_no_account">无法验证 Google 账户。请检查设备上的账户或网络连接。</string>
     <string name="auth_google_invalid_token">Google 凭证无效。</string>
     <string name="auth_google_failed">Google 登录失败。</string>
     <string name="auth_google_developer_error">Google 登录配置错误（SHA-1 / 包名）。请检查 Firebase 控制台。</string>
@@ -258,6 +259,9 @@
     <string name="header_export_pdf">导出 PDF 称重单</string>
     <string name="dropdown_rice_variety_placeholder">例：ST25...</string>
     <string name="dropdown_season_placeholder">例：2026年早稻</string>
+    <string name="season_dong_xuan">冬春</string>
+    <string name="season_he_thu">夏秋</string>
+    <string name="season_thu_dong">秋冬</string>
     <string name="offline_content_description">Offline</string>
     <string name="offline_banner_message">当前处于离线状态 — 数据已保存在本地，连接网络后将自动同步</string>
     <string name="ai_insights_title">AI 决策分析</string>
@@ -269,6 +273,7 @@
     <string name="ai_insights_idle_body">利用 AI 读取本茬收成数据，多维度洞察产量、收益、品种成效，并智能生成下一季的农技管理建议。</string>
     <string name="ai_insights_analyze_action">使用 AI 深度剖析本季</string>
     <string name="ai_insights_retry">重试</string>
+    <string name="popover_close">关闭</string>
     <string name="popover_tap_to_close">点击关闭</string>
     <string name="sync_status_syncing">正在同步</string>
     <string name="sync_status_success">已同步</string>
@@ -348,6 +353,7 @@
     <string name="profile_no_transactions">暂无交易</string>
     <string name="profile_trader_partner_count">曾与 %1$d 个伙伴交易</string>
     <string name="profile_delta_vs">相比</string>
+    <string name="dashboard_delta_with_label">%2$s %1$s</string>
     <string name="profile_user_role">用户角色</string>
     <string name="profile_user_role_subtitle">选择你想在应用中使用的角色</string>
     <string name="profile_premium_upsell_subtitle">提高 AI 使用额度，去除广告，并查看区域价格地图</string>
@@ -526,4 +532,42 @@
     <string name="settings_restart_text">请重新启动应用程序以应用新的角色和界面。</string>
     <string name="settings_restart_confirm">立即重启</string>
     <string name="settings_restart_dismiss">稍后</string>
+
+    <!-- Weight Summary Card i18n -->
+    <string name="weight_summary_bag_ratio_sample">%1$d 袋 · %2$d 袋 = %3$s 公斤</string>
+    <string name="weight_summary_bag_ratio_fixed">%1$d 袋 · %2$d 袋 = 1 公斤</string>
+    <string name="weight_summary_impurity_percent_note" formatted="false">杂质 = 扣除包装后的重量百分比</string>
+    <string name="weight_summary_impurity_direct_note">直接输入杂质公斤数</string>
+
+    <!-- Market Bid Editor Sheet i18n -->
+    <string name="market_bid_sheet_title_create">发布新收购价格</string>
+    <string name="market_bid_sheet_title_edit">更新价格</string>
+    <string name="market_bid_sheet_subtitle">您的产品价格将公开显示在市场价格表中供农民参考。</string>
+    <string name="market_bid_section_product_type">产品类型</string>
+    <string name="market_rice_type_wet">湿稻谷</string>
+    <string name="market_rice_type_dry">干稻谷</string>
+    <string name="market_rice_type_milled">大米</string>
+    <string name="market_rice_type_broken">碎米</string>
+    <string name="market_rice_type_glutinous">糯米</string>
+    <string name="market_bid_price_min_label">最低价 (đ/kg)</string>
+    <string name="market_bid_price_min_placeholder">例如：8,000</string>
+    <string name="market_bid_price_max_label">最高价 (đ/kg)</string>
+    <string name="market_bid_price_max_placeholder">例如：8,500</string>
+    <string name="market_bid_region_label">收购地区</string>
+    <string name="market_bid_region_placeholder">例如：芹苴、前江……</string>
+    <string name="market_bid_trend_section">价格趋势</string>
+    <string name="market_bid_trend_up">上涨中</string>
+    <string name="market_bid_trend_stable">稳定</string>
+    <string name="market_bid_trend_down">下跌中</string>
+    <string name="market_bid_note_label">备注 (可选)</string>
+    <string name="market_bid_note_placeholder">例如：田间收购，优先干稻谷……</string>
+    <string name="market_bid_saving">保存中...</string>
+    <string name="market_bid_submit_create">发布价格</string>
+    <string name="market_bid_submit_update">更新</string>
+
+    <!-- AdMob & Privacy -->
+    <string name="ad_attribution">广告</string>
+    <string name="ad_sponsored">赞助</string>
+    <string name="settings_privacy_options">隐私和广告设置</string>
+    <string name="settings_privacy_options_subtitle">管理隐私偏好和广告设置</string>
 </resources>
