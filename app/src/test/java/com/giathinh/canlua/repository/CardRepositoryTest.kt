@@ -170,19 +170,50 @@ class CardRepositoryTest {
         // totalWeight = tổng thô = 200.0 kg
         assertEquals(200.0, captured.totalWeight, 0.01)
 
-        // RiceSettlement:
-        //   raw = [1005, 995] units, totalRaw = 2000
-        //   bag = 10 units tổng (2 × 5), chia [5, 5]
-        //   gross = [1000, 990] units, totalGross = 1990
-        //   moisture 15% → factor = 85/86 → totalNet = round(1990 × 85/86) = 1967
-        //   netWeight = 196.7 kg
-        assertEquals(196.7, captured.netWeight, 0.01)
+        // RiceSettlement (UNIT = 100.0):
+        //   raw = [10050, 9950] units, totalRaw = 20000
+        //   bag = 100 units tổng (2 × 50), chia [50, 50]
+        //   gross = [10000, 9900] units, totalGross = 19900
+        //   moisture 15% → factor = 85/86 → totalNet = round(19900 × 85/86) = 19669
+        //   netWeight = 196.69 kg
+        assertEquals(196.69, captured.netWeight, 0.001)
         assertEquals(2, captured.bagCount)
 
-        // amount = 1967 × 8000 / 10 = 1_573_600
-        // remaining = 1_573_600 - 50_000 - 10_000 = 1_513_600
-        assertEquals(1_573_600.0, captured.totalAmount, 1.0)
-        assertEquals(1_513_600.0, captured.remainingAmount, 1.0)
+        // amount = 19669 × 8000 / 100 = 1_573_520
+        // remaining = 1_573_520 - 50_000 - 10_000 = 1_513_520
+        assertEquals(1_573_520.0, captured.totalAmount, 1.0)
+        assertEquals(1_513_520.0, captured.remainingAmount, 1.0)
         assertEquals(0.0, captured.overpaidAmount, 0.01)
+    }
+
+    @Test
+    fun `addWeightEntryAndRecalc should return null and not insert when card is locked`() = runTest {
+        every { authManager.currentUser } returns firebaseUser
+        val lockedCard = Card(id = 300L, name = "Locked Farmer", date = Date(0L), ownerUid = "user-123", isLocked = true)
+        coEvery { cardDao.getCardById(300L, "user-123") } returns lockedCard
+
+        val count = repository.addWeightEntryAndRecalc(300L, 50.0)
+
+        assertEquals(null, count)
+        coVerify(exactly = 0) { weightEntryDao.insertWeightEntry(any()) }
+    }
+
+    @Test
+    fun `addWeightEntryAndRecalc should insert entry, recalculate and return valid count`() = runTest {
+        every { authManager.currentUser } returns firebaseUser
+        val unlockedCard = Card(id = 400L, name = "Active Farmer", date = Date(0L), ownerUid = "user-123", isLocked = false, pricePerKg = 7000.0)
+        coEvery { cardDao.getCardById(400L, "user-123") } returns unlockedCard
+        coEvery { weightEntryDao.insertWeightEntry(any()) } returns 1L
+        coEvery { weightEntryDao.getWeightEntriesByCardIdSync(400L) } returns listOf(
+            WeightEntry(id = 1L, cardId = 400L, weight = 50.25)
+        )
+        coEvery { transactionDao.getTotalPaidAmountByCardId(400L) } returns 0.0
+        coEvery { transactionDao.getTotalDepositAmountByCardId(400L) } returns 0.0
+        coEvery { cardDao.updateCard(any()) } returns Unit
+
+        val count = repository.addWeightEntryAndRecalc(400L, 50.25)
+
+        assertEquals(1, count)
+        coVerify(exactly = 1) { weightEntryDao.insertWeightEntry(any()) }
     }
 }

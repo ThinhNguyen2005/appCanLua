@@ -34,6 +34,7 @@ fun CardListFilterBar(
     onOpenFilter: () -> Unit,
     onClearSeason: () -> Unit,
     onClearVariety: () -> Unit,
+    onClearAll: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val activeCount = (if (selectedSeason != null) 1 else 0) +
@@ -78,6 +79,12 @@ fun CardListFilterBar(
         }
         selectedVariety?.let { variety ->
             ActiveFilterChip(label = variety, onClear = onClearVariety)
+        }
+        if (activeCount > 1 && onClearAll != null) {
+            ActiveFilterChip(
+                label = stringResource(R.string.action_clear_filter),
+                onClear = onClearAll
+            )
         }
     }
 }

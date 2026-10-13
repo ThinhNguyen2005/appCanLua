@@ -56,42 +56,40 @@ class CardDetailViewModel @Inject constructor(
             _currentCard.value = card
         }
         viewModelScope.launch(Dispatchers.IO) {
-            val oldCard = repository.getCardById(card.id)
+            val oldCard = repository.getCardById(card.id) ?: return@launch
             repository.updateCard(card)
 
             var needRecalc = false
-            if (oldCard != null) {
-                val depositDiff = card.depositAmount - oldCard.depositAmount
-                if (depositDiff != 0.0) {
-                    repository.insertTransaction(
-                        com.giathinh.canlua.data.model.Transaction(
-                            cardId = card.id,
-                            amount = depositDiff,
-                            type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT,
-                            description = "Cập nhật tiền cọc"
-                        )
+            val depositDiff = card.depositAmount - oldCard.depositAmount
+            if (depositDiff != 0.0) {
+                repository.insertTransaction(
+                    com.giathinh.canlua.data.model.Transaction(
+                        cardId = card.id,
+                        amount = depositDiff,
+                        type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT,
+                        description = "Cập nhật tiền cọc"
                     )
-                    needRecalc = true
-                }
+                )
+                needRecalc = true
+            }
 
-                val paidDiff = card.paidAmount - oldCard.paidAmount
-                if (paidDiff != 0.0) {
-                    repository.insertTransaction(
-                        com.giathinh.canlua.data.model.Transaction(
-                            cardId = card.id,
-                            amount = paidDiff,
-                            type = com.giathinh.canlua.data.model.TransactionType.PAYMENT,
-                            description = "Cập nhật đã trả"
-                        )
+            val paidDiff = card.paidAmount - oldCard.paidAmount
+            if (paidDiff != 0.0) {
+                repository.insertTransaction(
+                    com.giathinh.canlua.data.model.Transaction(
+                        cardId = card.id,
+                        amount = paidDiff,
+                        type = com.giathinh.canlua.data.model.TransactionType.PAYMENT,
+                        description = "Cập nhật đã trả"
                     )
-                    needRecalc = true
-                }
+                )
+                needRecalc = true
             }
 
             if (needRecalc || 
-                oldCard?.pricePerKg != card.pricePerKg ||
-                oldCard?.impurityWeight != card.impurityWeight ||
-                oldCard?.moisturePercent != card.moisturePercent
+                oldCard.pricePerKg != card.pricePerKg ||
+                oldCard.impurityWeight != card.impurityWeight ||
+                oldCard.moisturePercent != card.moisturePercent
             ) {
                 repository.updateCardCalculations(card.id)
                 loadCardById(card.id)
@@ -226,15 +224,18 @@ class CardDetailViewModel @Inject constructor(
 
     fun addPayment(cardId: Long, amount: Double, description: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
+            val card = repository.getCardById(cardId) ?: return@launch
+            if (card.isLocked) return@launch
             repository.insertTransaction(
                 com.giathinh.canlua.data.model.Transaction(
                     cardId = cardId,
                     amount = amount,
                     type = com.giathinh.canlua.data.model.TransactionType.PAYMENT,
-                    description = description
+                    description = description ?: "Thanh toán thêm"
                 )
             )
             repository.updateCardCalculations(cardId)
+            loadCardById(cardId)
         }
     }
 
@@ -289,7 +290,6 @@ class CardDetailViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         weightEntriesJob?.cancel()
     }
 }

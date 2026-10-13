@@ -206,6 +206,10 @@ fun CardDetailScreenContent(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showUnlockConfirm by remember { mutableStateOf(false) }
+    var showEditEntryDialog by remember { mutableStateOf(false) }
+    var entryToEdit by remember { mutableStateOf<WeightEntry?>(null) }
+    var entryToEditIndex by remember { mutableIntStateOf(0) }
+    var showAddPaymentDialog by remember { mutableStateOf(false) }
 
     val card = currentCard
     if (!viewModelLoading && card == null) {
@@ -499,7 +503,10 @@ fun CardDetailScreenContent(
                                     isPaid = card.isPaid,
                                     onPaidChange = { viewModel.updateCard(card.copy(isPaid = it)) },
                                     isLocked = card.isLocked,
-                                    numberFormat = numberFormat
+                                    numberFormat = numberFormat,
+                                    onAddPayment = {
+                                        showAddPaymentDialog = true
+                                    }
                                 )
                             }
                         }
@@ -602,11 +609,51 @@ fun CardDetailScreenContent(
                         globalIndex = entryActionGlobalIndex,
                         numberFormat = numberFormat,
                         onDismiss = { entryActionTarget = null },
+                        onEdit = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            entryToEdit = entry
+                            entryToEditIndex = entryActionGlobalIndex
+                            showEditEntryDialog = true
+                            entryActionTarget = null
+                        },
                         onDelete = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.deleteWeightEntry(entry)
                             entryActionTarget = null
                             appToast.success(context.getString(R.string.card_detail_deleted_bag, entryActionGlobalIndex))
+                        }
+                    )
+                }
+
+                if (showEditEntryDialog && entryToEdit != null) {
+                    val targetEntry = entryToEdit!!
+                    EditWeightEntryDialog(
+                        entry = targetEntry,
+                        bagIndex = entryToEditIndex,
+                        onDismiss = {
+                            showEditEntryDialog = false
+                            entryToEdit = null
+                        },
+                        onConfirm = { newWeight ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.updateWeightEntry(targetEntry.copy(weight = newWeight))
+                            appToast.success("Đã cập nhật bao #$entryToEditIndex: ${numberFormat.format(newWeight)} kg")
+                            showEditEntryDialog = false
+                            entryToEdit = null
+                        }
+                    )
+                }
+
+                if (showAddPaymentDialog) {
+                    AddPaymentDialog(
+                        remainingAmount = card.remainingAmount,
+                        numberFormat = numberFormat,
+                        onDismiss = { showAddPaymentDialog = false },
+                        onConfirm = { amount, description ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.addPayment(card.id, amount, description)
+                            appToast.success("Đã ghi nhận thanh toán ${numberFormat.format(amount)} đ")
+                            showAddPaymentDialog = false
                         }
                     )
                 }
@@ -1221,4 +1268,223 @@ private fun hasLocationPermission(context: android.content.Context): Boolean {
         context,
         android.Manifest.permission.ACCESS_COARSE_LOCATION
     ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+}
+
+@Composable
+fun EditWeightEntryDialog(
+    entry: WeightEntry,
+    bagIndex: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    var weightText by remember {
+        mutableStateOf(
+            if (entry.weight % 1.0 == 0.0) {
+                entry.weight.toInt().toString()
+            } else {
+                entry.weight.toString().replace('.', ',')
+            }
+        )
+    }
+    val parsedWeight = remember(weightText) {
+        weightText.replace(',', '.').toDoubleOrNull()
+    }
+    val isValid = parsedWeight != null && parsedWeight in 0.1..200.0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Scale,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Sửa số ký bao #$bagIndex",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Nhập lại số ký thực tế cho bao này (0,1 kg - 200 kg):",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextSecondary
+                )
+                OutlinedTextField(
+                    value = weightText,
+                    onValueChange = { input ->
+                        val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }
+                        if (filtered.count { it == '.' || it == ',' } <= 1) {
+                            weightText = filtered
+                        }
+                    },
+                    label = { Text("Số ký bao (kg)") },
+                    suffix = { Text("kg", fontWeight = FontWeight.Bold) },
+                    singleLine = true,
+                    isError = weightText.isNotBlank() && !isValid,
+                    supportingText = {
+                        if (weightText.isNotBlank() && !isValid) {
+                            Text("Số ký phải từ 0,1 đến 200 kg", color = AppColors.Error)
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppColors.GreenPrimary,
+                        unfocusedBorderColor = AppColors.Divider
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    parsedWeight?.let(onConfirm)
+                },
+                enabled = isValid,
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(stringResource(R.string.card_detail_save_changes), color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+            }
+        },
+        containerColor = AppColors.CardBg,
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+@Composable
+fun AddPaymentDialog(
+    remainingAmount: Double,
+    numberFormat: NumberFormat,
+    onDismiss: () -> Unit,
+    onConfirm: (amount: Double, description: String) -> Unit
+) {
+    var amountText by remember {
+        mutableStateOf(if (remainingAmount > 0) remainingAmount.toLong().toString() else "")
+    }
+    var descriptionText by remember { mutableStateOf("") }
+
+    val rawAmount = remember(amountText) {
+        amountText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
+    }
+    val isValid = rawAmount > 0.0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Payments,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Thanh toán thêm đợt này",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (remainingAmount > 0) {
+                    Surface(
+                        color = AppColors.GoldLight,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Còn lại cần trả:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.GoldDark,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                "${numberFormat.format(remainingAmount)} đ",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = AppColors.GoldDark,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { input ->
+                        amountText = input.filter { it.isDigit() }
+                    },
+                    label = { Text("Số tiền thanh toán (VNĐ)") },
+                    suffix = { Text("đ", fontWeight = FontWeight.Bold) },
+                    visualTransformation = ThousandSeparatorTransformation(),
+                    singleLine = true,
+                    isError = amountText.isNotBlank() && !isValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppColors.GreenPrimary,
+                        unfocusedBorderColor = AppColors.Divider
+                    )
+                )
+
+                OutlinedTextField(
+                    value = descriptionText,
+                    onValueChange = { descriptionText = it },
+                    label = { Text("Ghi chú / Phương thức") },
+                    placeholder = { Text("Ví dụ: Tiền mặt, Chuyển khoản...", color = AppColors.TextSecondary) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppColors.GreenPrimary,
+                        unfocusedBorderColor = AppColors.Divider
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val desc = descriptionText.trim().ifBlank { "Thanh toán thêm" }
+                    onConfirm(rawAmount, desc)
+                },
+                enabled = isValid,
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Xác nhận trả", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+            }
+        },
+        containerColor = AppColors.CardBg,
+        shape = RoundedCornerShape(20.dp)
+    )
 }

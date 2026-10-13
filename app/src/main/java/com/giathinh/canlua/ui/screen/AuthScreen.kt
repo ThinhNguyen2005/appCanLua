@@ -186,13 +186,23 @@ fun AuthScreen(
                     TextButton(
                         onClick = {
                             HapticUtil.tick(context)
+                            viewModel.signInAnonymously()
                             onSkipLogin()
                         },
+                        enabled = !uiState.loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp),
                         colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
                     ) {
+                        if (uiState.loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = AppColors.GreenPrimary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Text(
                             text = stringResource(R.string.auth_skip_login),
                             style = MaterialTheme.typography.bodyMedium,

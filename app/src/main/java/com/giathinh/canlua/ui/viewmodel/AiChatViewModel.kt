@@ -19,11 +19,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Tin nhắn hiển thị trên UI.
@@ -184,7 +184,7 @@ class AiChatViewModel @Inject constructor(
             _state.value = _state.value.copy(rateLimitSeconds = cooldownSec.coerceAtLeast(1))
             viewModelScope.launch {
                 repeat(cooldownSec.coerceAtLeast(1)) { i ->
-                    delay(1_000)
+                    delay(1_000.milliseconds)
                     _state.value = _state.value.copy(rateLimitSeconds = cooldownSec - i - 1)
                 }
                 _state.value = _state.value.copy(rateLimitSeconds = 0)

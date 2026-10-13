@@ -22,9 +22,9 @@ class RiceSettlementTest {
     fun knownExample_matchesHandCalculation() {
         // 1000 kg thô, bì 2 × 10 = 20 kg, tạp chất 10 kg, ẩm 18% → chuẩn 14%
         // gross = 1000 - 20 - 10 = 970 kg
-        // net   = 970 × (100-18)/(100-14) = 970 × 82/86 ≈ 924.9 kg → 9249 units
-        // amount = 9249 × 7000 / 10 = 6_474_300 đ
-        // remaining = 6_474_300 - 5_000_000 = 1_474_300 đ
+        // net   = 970 × (100-18)/(100-14) = 970 × 82/86 ≈ 924.8837... kg → 92488 units (0.01 kg)
+        // amount = 92488 × 7000 / 100 = 6_474_160 đ
+        // remaining = 6_474_160 - 5_000_000 = 1_474_160 đ
         val s = RiceSettlement.compute(
             Input(
                 entryWeightsKg = listOf(500.0, 500.0),
@@ -35,10 +35,29 @@ class RiceSettlementTest {
                 paidVnd        = 5_000_000L
             )
         )
-        assertEquals("totalNetUnits", 9249L, s.totalNetUnits)
-        assertEquals("totalAmountVnd", 6_474_300L, s.totalAmountVnd)
-        assertEquals("remainingVnd", 1_474_300L, s.remainingVnd)
+        assertEquals("totalNetUnits", 92488L, s.totalNetUnits)
+        assertEquals("totalAmountVnd", 6_474_160L, s.totalAmountVnd)
+        assertEquals("remainingVnd", 1_474_160L, s.remainingVnd)
         assertEquals("overpaidVnd", 0L, s.overpaidVnd)
+        assertEquals("verify", emptyList<String>(), s.verify())
+    }
+
+    @Test
+    fun twoDecimalPlaces_precisionPreservedWithoutLoss() {
+        // 2 dòng có 2 chữ số thập phân: 50.25 kg + 49.75 kg = 100.00 kg
+        // UNIT = 100.0: rawUnits = [5025, 4975], totalRawUnits = 10000
+        val s = RiceSettlement.compute(
+            Input(
+                entryWeightsKg = listOf(50.25, 49.75),
+                pricePerKg = 8000.0
+            )
+        )
+        assertEquals("rawUnits[0]", 5025L, s.rawUnits[0])
+        assertEquals("rawUnits[1]", 4975L, s.rawUnits[1])
+        assertEquals("totalRawUnits", 10000L, s.totalRawUnits)
+        assertEquals("kg[0]", 50.25, s.kg(s.rawUnits[0]), 0.001)
+        assertEquals("kg[1]", 49.75, s.kg(s.rawUnits[1]), 0.001)
+        assertEquals("totalAmountVnd", 800_000L, s.totalAmountVnd)
         assertEquals("verify", emptyList<String>(), s.verify())
     }
 
@@ -47,12 +66,12 @@ class RiceSettlementTest {
     @Test
     fun rowsSumToTotal_whereOldLogicDrifted() {
         // 3 dòng × 33.3 kg, ẩm 18%.
-        // Logic CŨ: mỗi dòng 31.8 → cộng lại 95.4 kg; phiếu 95.3 kg → lệch 0.1 kg.
-        // Logic MỚI: Σ dòng == tổng phiếu tuyệt đối.
+        // 33.3 × 3 = 99.9 kg → 9990 units.
+        // factor = 82/86 → 9990 × 82/86 = 9525.3488... → 9525 units.
         val s = RiceSettlement.compute(
             Input(entryWeightsKg = listOf(33.3, 33.3, 33.3), moisturePercent = 18.0, pricePerKg = 7000.0)
         )
-        assertEquals("totalNetUnits", 953L, s.totalNetUnits)
+        assertEquals("totalNetUnits", 9525L, s.totalNetUnits)
         assertEquals("Σ netUnits == totalNetUnits", s.totalNetUnits, s.netUnits.sum())
         assertEquals("verify", emptyList<String>(), s.verify())
     }
@@ -113,10 +132,10 @@ class RiceSettlementTest {
 
     @Test
     fun negativeWeightEntries_areFiltered() {
-        // Dòng âm bị lọc; chỉ dòng 100.0 được tính
+        // Dòng âm bị lọc; chỉ dòng 100.0 được tính (100.00 kg = 10000 units)
         val s = RiceSettlement.compute(Input(entryWeightsKg = listOf(-5.0, 0.0, 100.0)))
         assertEquals("rawUnits count", 1, s.rawUnits.size)
-        assertEquals("totalRawUnits", 1000L, s.totalRawUnits)
+        assertEquals("totalRawUnits", 10000L, s.totalRawUnits)
         assertEquals("verify", emptyList<String>(), s.verify())
     }
 
@@ -124,7 +143,7 @@ class RiceSettlementTest {
 
     @Test
     fun bagSamplingMethod_computesCorrectly() {
-        // 5 bao mẫu cân ra 7.5 kg → đơn vị 1.5 kg/bao × 10 bao = 15 kg bì
+        // 5 bao mẫu cân ra 7.5 kg → đơn vị 1.5 kg/bao × 10 bao = 15 kg bì (1500 units)
         val s = RiceSettlement.compute(
             Input(
                 entryWeightsKg          = List(10) { 50.0 },  // 10 dòng × 50 kg = 500 kg
@@ -134,7 +153,7 @@ class RiceSettlementTest {
                 moisturePercent         = 14.0  // chuẩn → factor = 1
             )
         )
-        assertEquals("totalBagUnits", 150L, s.totalBagUnits)  // 15 kg × 10 = 150 units
+        assertEquals("totalBagUnits", 1500L, s.totalBagUnits)  // 15 kg × 100 = 1500 units
         assertEquals("verify", emptyList<String>(), s.verify())
     }
 
@@ -151,8 +170,8 @@ class RiceSettlementTest {
                 moisturePercent = 14.0
             )
         )
-        assertEquals("totalImpurityUnits", 50L, s.totalImpurityUnits)  // 5 kg × 10
-        assertEquals("totalNetUnits", 950L, s.totalNetUnits)             // 95 kg × 10
+        assertEquals("totalImpurityUnits", 500L, s.totalImpurityUnits)  // 5 kg × 100
+        assertEquals("totalNetUnits", 9500L, s.totalNetUnits)             // 95 kg × 100
         assertEquals("verify", emptyList<String>(), s.verify())
     }
 

@@ -38,6 +38,10 @@ fun CardListFilterSheet(
     selectedVariety: String?,
     onSelectSeason: (String?) -> Unit,
     onSelectVariety: (String?) -> Unit,
+    onClearFilters: () -> Unit = {
+        onSelectSeason(null)
+        onSelectVariety(null)
+    },
     onDismiss: () -> Unit
 ) {
     val filterSheetState = rememberModalBottomSheetState()
@@ -65,10 +69,7 @@ fun CardListFilterSheet(
                     color = AppColors.TextPrimary
                 )
                 if (selectedSeason != null || selectedVariety != null) {
-                    TextButton(onClick = {
-                        onSelectSeason(null)
-                        onSelectVariety(null)
-                    }) {
+                    TextButton(onClick = onClearFilters) {
                         Text(stringResource(R.string.action_clear_filter), color = AppColors.Error)
                     }
                 }

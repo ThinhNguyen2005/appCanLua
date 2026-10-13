@@ -7,7 +7,7 @@ import kotlin.math.roundToLong
 
 /**
  * Tính toán phiếu cân "không rơi rớt":
- *  - Khối lượng nội bộ tính bằng Long, 1 unit = 0,1 kg  → không lệch dấu phẩy động.
+ *  - Khối lượng nội bộ tính bằng Long, 1 unit = 0,01 kg  → không lệch dấu phẩy động.
  *  - Bì / tạp chất / KL thực của từng dòng được CHIA từ tổng bằng phương pháp
  *    phần dư lớn nhất → Σ dòng == tổng phiếu tuyệt đối.
  *  - Tiền tính bằng Long VND, làm tròn đúng 1 lần ở "thành tiền".
@@ -18,7 +18,7 @@ import kotlin.math.roundToLong
  */
 object RiceSettlement {
 
-    private const val UNIT = 10.0 // 1 kg = 10 unit
+    private const val UNIT = 100.0 // 1 kg = 100 unit (0.01 kg)
 
     data class Input(
         val entryWeightsKg: List<Double>,
@@ -88,7 +88,7 @@ object RiceSettlement {
 
     fun compute(i: Input): Settlement {
         val warnings = mutableListOf<String>()
-        fun fmtKg(u: Long) = "%.1f".format(u / UNIT)
+        fun fmtKg(u: Long) = "%.2f".format(u / UNIT)
 
         // ── 1. Thô ──────────────────────────────────────────────────────────
         val raw = i.entryWeightsKg.filter { it > 0.0 }.map { toUnits(it) }
@@ -157,7 +157,7 @@ object RiceSettlement {
         // ── 5. Tiền (Long VND, làm tròn 1 lần) ─────────────────────────────
         val amount = BigDecimal(totalNet)
             .multiply(BigDecimal.valueOf(i.pricePerKg.coerceAtLeast(0.0)))
-            .divide(BigDecimal.TEN, 0, RoundingMode.HALF_UP)
+            .divide(BigDecimal.valueOf(100L), 0, RoundingMode.HALF_UP)
             .toLong()
         val diff = amount - i.paidVnd - i.depositVnd
         val remaining = if (diff > 0) diff else 0L

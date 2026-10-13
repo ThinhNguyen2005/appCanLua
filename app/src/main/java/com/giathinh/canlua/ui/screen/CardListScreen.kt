@@ -303,6 +303,7 @@ fun CardListScreenContent(
                                         onOpenFilter = { showFilterSheet = true },
                                         onClearSeason = { viewModel.setSeasonFilter(null) },
                                         onClearVariety = { viewModel.setVarietyFilter(null) },
+                                        onClearAll = viewModel::clearFilters,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
@@ -318,10 +319,7 @@ fun CardListScreenContent(
                                             subtitle = stringResource(com.giathinh.canlua.R.string.card_list_empty_filter_subtitle),
                                             onSyncClick = null,
                                             actionButtonText = stringResource(com.giathinh.canlua.R.string.card_list_clear_filter_action),
-                                            onActionClick = {
-                                                viewModel.setSeasonFilter(null)
-                                                viewModel.setVarietyFilter(null)
-                                            }
+                                            onActionClick = viewModel::clearFilters
                                         )
                                     } else {
                                         CardListEmptyState(
@@ -495,6 +493,7 @@ fun CardListScreenContent(
             selectedVariety = selectedFilter,
             onSelectSeason = viewModel::setSeasonFilter,
             onSelectVariety = viewModel::setVarietyFilter,
+            onClearFilters = viewModel::clearFilters,
             onDismiss = { showFilterSheet = false }
         )
     }

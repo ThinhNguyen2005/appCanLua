@@ -73,6 +73,11 @@ class CardRepository @Inject constructor(
      * bản local mới hơn cloud (cloud sẽ chỉ overwrite local nếu cloud mới hơn).
      */
     suspend fun updateCard(card: Card) {
+        val existing = cardDao.getCardById(card.id, uid())
+        if (existing?.isLocked == true && card.isLocked) {
+            // Phiếu đã chốt và không phải là thao tác mở khoá -> chặn chỉnh sửa
+            return
+        }
         val now = System.currentTimeMillis()
         cardDao.updateCard(card.copy(
             lastModifiedMs = now,
@@ -164,14 +169,40 @@ class CardRepository @Inject constructor(
     fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>> =
         weightEntryDao.getWeightEntriesByCardId(cardId)
 
-    suspend fun insertWeightEntry(weightEntry: WeightEntry): Long =
-        weightEntryDao.insertWeightEntry(weightEntry)
+    /**
+     * Thêm dòng cân thô và tự động tính toán lại toàn bộ phiếu trong 1 transaction atomic.
+     * Trả về số lượng dòng cân hợp lệ hiện tại (weight > 0) để UI/TTS xử lý,
+     * hoặc null nếu card không tồn tại hoặc đã bị khoá.
+     */
+    suspend fun addWeightEntryAndRecalc(cardId: Long, weight: Double): Int? = db.withTransaction {
+        val card = cardDao.getCardById(cardId, uid()) ?: return@withTransaction null
+        if (card.isLocked) return@withTransaction null
+        weightEntryDao.insertWeightEntry(WeightEntry(cardId = cardId, weight = weight))
+        updateCardCalculations(cardId)
+        weightEntryDao.getWeightEntriesByCardIdSync(cardId).count { it.weight > 0.0 }
+    }
 
-    suspend fun updateWeightEntry(weightEntry: WeightEntry) =
+    suspend fun insertWeightEntry(weightEntry: WeightEntry): Long = db.withTransaction {
+        val card = cardDao.getCardById(weightEntry.cardId, uid()) ?: return@withTransaction -1L
+        if (card.isLocked) return@withTransaction -1L
+        val id = weightEntryDao.insertWeightEntry(weightEntry)
+        updateCardCalculations(weightEntry.cardId)
+        id
+    }
+
+    suspend fun updateWeightEntry(weightEntry: WeightEntry) = db.withTransaction {
+        val card = cardDao.getCardById(weightEntry.cardId, uid()) ?: return@withTransaction
+        if (card.isLocked) return@withTransaction
         weightEntryDao.updateWeightEntry(weightEntry)
+        updateCardCalculations(weightEntry.cardId)
+    }
 
-    suspend fun deleteWeightEntry(weightEntry: WeightEntry) =
+    suspend fun deleteWeightEntry(weightEntry: WeightEntry) = db.withTransaction {
+        val card = cardDao.getCardById(weightEntry.cardId, uid()) ?: return@withTransaction
+        if (card.isLocked) return@withTransaction
         weightEntryDao.deleteWeightEntry(weightEntry)
+        updateCardCalculations(weightEntry.cardId)
+    }
 
     // Transaction operations
     fun getTransactionsByCardId(cardId: Long): Flow<List<Transaction>> =
@@ -248,9 +279,9 @@ class CardRepository @Inject constructor(
             if (entry.weight > 0.0) {
                 val i = validIdx++
                 entry.copy(
-                    bagWeight      = s.bagUnits[i]       / 10.0,
-                    impurityWeight = s.impurityUnits[i]  / 10.0,
-                    netWeight      = s.netUnits[i]       / 10.0
+                    bagWeight      = s.kg(s.bagUnits[i]),
+                    impurityWeight = s.kg(s.impurityUnits[i]),
+                    netWeight      = s.kg(s.netUnits[i])
                 )
             } else {
                 entry.copy(bagWeight = 0.0, impurityWeight = 0.0, netWeight = 0.0)
@@ -266,7 +297,7 @@ class CardRepository @Inject constructor(
         // ── Cập nhật Card ────────────────────────────────────────────────────
         cardDao.updateCard(
             card.copy(
-                totalWeight     = s.totalRawUnits / 10.0,
+                totalWeight     = s.kg(s.totalRawUnits),
                 netWeight       = s.totalNetKg,
                 bagCount        = s.rawUnits.size,   // khớp số bao đã trừ bì
                 paidAmount      = paidVnd.toDouble(),

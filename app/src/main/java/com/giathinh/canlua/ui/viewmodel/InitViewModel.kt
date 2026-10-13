@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * ViewModel khởi tạo — chạy song song với native SplashScreen.
@@ -42,7 +43,7 @@ class InitViewModel @Inject constructor(
         viewModelScope.launch {
             // 15s safety net — chỉ hit khi DB corrupt / lỗi nghiêm trọng.
             // Bình thường awaitAll xong trong vài chục → vài trăm ms.
-            withTimeoutOrNull(15_000L) {
+            withTimeoutOrNull(15_000L.milliseconds) {
                 withContext(Dispatchers.IO) {
                     awaitAll(
                         async { runCatching { cardRepository.get().getAllCards().first() } },

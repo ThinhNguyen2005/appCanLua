@@ -60,6 +60,10 @@ class SyncableCardRepository @Inject constructor(
     fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>> =
         cardRepository.getWeightEntriesByCardId(cardId)
 
+    suspend fun addWeightEntryAndRecalc(cardId: Long, weight: Double): Int? {
+        return cardRepository.addWeightEntryAndRecalc(cardId, weight)
+    }
+
     suspend fun insertWeightEntry(weightEntry: WeightEntry): Long {
         return cardRepository.insertWeightEntry(weightEntry)
     }

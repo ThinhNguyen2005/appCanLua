@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -81,7 +82,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun incrementManualTableCount() {
-        _manualTableCount.value = _manualTableCount.value + 1
+        _manualTableCount.update { it + 1 }
     }
 
     fun startTts() {
@@ -90,78 +91,23 @@ class WeightInputViewModel @Inject constructor(
         }
     }
 
-    fun addWeightEntry(
-        cardId: Long,
-        weight: Double,
-        bagWeight: Double = 0.0,
-        impurityWeight: Double = 0.0
-    ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            val moisture = card?.moisturePercent ?: 0.0
-
-            val netWeight = RiceCalculator.calcNetWeight(
-                rawWeight = weight,
-                bagWeight = bagWeight,
-                impurityWeight = 0.0,
-                moisturePercent = moisture
-            )
-
-            val weightEntry = WeightEntry(
-                cardId = cardId,
-                weight = weight,
-                bagWeight = bagWeight,
-                impurityWeight = 0.0,
-                netWeight = netWeight
-            )
-            val currentSize = _weightEntries.value.size
-            val isColumnCompleted = (currentSize % 5 == 4)
-
-            repository.insertWeightEntry(weightEntry)
-            repository.updateCardCalculations(cardId)
-            _currentCard.value = repository.getCardById(cardId)
-
-            val ttsEnabled = ttsEnabledState.value
-            ttsManager.setEnabled(ttsEnabled)
-            if (ttsEnabled && ttsManager.isEnabled()) {
-                ttsManager.speakNumber(weight, completesColumn = isColumnCompleted)
-            } else if (isColumnCompleted) {
-                ttsManager.triggerColumnCompleteFeedback()
-            }
-        }
+    private companion object {
+        const val MAX_BAG_KG = 200.0
     }
 
     fun addWeightEntryDirectly(cardId: Long, weight: Double) {
+        if (!weight.isFinite() || weight <= 0.0 || weight > MAX_BAG_KG) return
         viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                val netWeight = RiceCalculator.calcNetWeight(
-                    rawWeight = weight,
-                    bagWeight = it.bagWeight,
-                    impurityWeight = 0.0,
-                    moisturePercent = it.moisturePercent
-                )
-                val weightEntry = WeightEntry(
-                    cardId = cardId,
-                    weight = weight,
-                    bagWeight = it.bagWeight,
-                    impurityWeight = 0.0,
-                    netWeight = netWeight
-                )
-                val currentSize = _weightEntries.value.size
-                val isColumnCompleted = (currentSize % 5 == 4)
+            val count = repository.addWeightEntryAndRecalc(cardId, weight) ?: return@launch
+            _currentCard.value = repository.getCardById(cardId)
 
-                repository.insertWeightEntry(weightEntry)
-                repository.updateCardCalculations(cardId)
-                _currentCard.value = repository.getCardById(cardId)
-
-                val ttsEnabled = ttsEnabledState.value
-                ttsManager.setEnabled(ttsEnabled)
-                if (ttsEnabled && ttsManager.isEnabled()) {
-                    ttsManager.speakNumber(weight, completesColumn = isColumnCompleted)
-                } else if (isColumnCompleted) {
-                    ttsManager.triggerColumnCompleteFeedback()
-                }
+            val completes = (count % 5 == 0)
+            val ttsEnabled = ttsEnabledState.value
+            ttsManager.setEnabled(ttsEnabled)
+            if (ttsEnabled && ttsManager.isEnabled()) {
+                ttsManager.speakNumber(weight, completesColumn = completes)
+            } else if (completes) {
+                ttsManager.triggerColumnCompleteFeedback()
             }
         }
     }
@@ -249,18 +195,10 @@ class WeightInputViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val card = repository.getCardById(cardId)
             card?.let {
-                val computedBagWeight = if (isSampling && sampleCount > 0) {
-                    sampleTotalWeight / sampleCount
-                } else if (sampleCount > 0) {
-                    1.0 / sampleCount
-                } else {
-                    1.0 / 8.0
-                }
                 val updatedCard = it.copy(
                     bagMethodIsSampling = isSampling,
                     bagSampleCount = sampleCount,
-                    bagSampleTotalWeight = sampleTotalWeight,
-                    bagWeight = computedBagWeight
+                    bagSampleTotalWeight = sampleTotalWeight
                 )
                 repository.updateCard(updatedCard)
                 repository.updateCardCalculations(cardId)
@@ -319,9 +257,8 @@ class WeightInputViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         weightEntriesJob?.cancel()
-        ttsManager.shutdown()
+        ttsManager.stop()
     }
 
     /** Giữ [moisturePercent] trong [_weightInputState] đồng bộ với card hiện tại. */

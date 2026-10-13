@@ -19,15 +19,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.giathinh.canlua.data.location.LocationProvider
 import com.giathinh.canlua.repository.SettingsRepository
-import com.giathinh.canlua.repository.FirestoreRepository
 import java.util.Date
 
 @HiltViewModel
 class CardListViewModel @Inject constructor(
     private val repository: SyncableCardRepository,
     private val settingsRepository: SettingsRepository,
-    private val locationProvider: LocationProvider,
-    private val firestoreRepository: FirestoreRepository
+    private val locationProvider: LocationProvider
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)

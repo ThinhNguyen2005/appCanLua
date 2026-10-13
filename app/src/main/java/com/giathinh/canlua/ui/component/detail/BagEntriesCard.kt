@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -348,6 +349,7 @@ fun BagEntryActionSheet(
     globalIndex: Int,
     numberFormat: NumberFormat? = null,
     onDismiss: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     onDelete: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -403,6 +405,34 @@ fun BagEntryActionSheet(
             HorizontalDivider(color = AppColors.Divider)
 
             if (!confirmDelete) {
+                if (onEdit != null) {
+                    Surface(
+                        onClick = onEdit,
+                        shape = RoundedCornerShape(12.dp),
+                        color = AppColors.GreenSurface
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 14.dp, horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null,
+                                tint = AppColors.GreenPrimary
+                            )
+                            Text(
+                                "Sửa số ký bao này",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.GreenPrimary
+                            )
+                        }
+                    }
+                }
+
                 // Action: Delete trigger
                 Surface(
                     onClick = { confirmDelete = true },

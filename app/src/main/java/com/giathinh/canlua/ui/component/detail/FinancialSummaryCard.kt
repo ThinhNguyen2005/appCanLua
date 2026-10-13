@@ -2,6 +2,7 @@ package com.giathinh.canlua.ui.component.detail
 
 import com.giathinh.canlua.R
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.MonetizationOn
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,6 +47,7 @@ fun FinancialSummaryCard(
     onPaidChange: (Boolean) -> Unit,
     isLocked: Boolean,
     numberFormat: NumberFormat,
+    onAddPayment: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
@@ -193,6 +196,31 @@ fun FinancialSummaryCard(
                         color = AppColors.GoldDark,
                         textAlign = TextAlign.End,
                         modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            if (!isLocked && onAddPayment != null && remainingAmount > 0) {
+                OutlinedButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onAddPayment()
+                    },
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary),
+                    border = BorderStroke(1.dp, AppColors.GreenPrimary)
+                ) {
+                    Icon(
+                        Icons.Outlined.Payments,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Thanh toán thêm tiền đợt này",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
