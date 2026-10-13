@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -152,7 +153,8 @@ fun BagEntriesCard(
                             onClick = onAddFirstBag,
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.5.dp, AppColors.GreenPrimary),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary),
+                            modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                         ) {
                             Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))

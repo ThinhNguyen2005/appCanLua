@@ -171,6 +171,10 @@
     <string name="weight_input_lock_dialog_title">确认交易（锁定单据）？</string>
     <string name="weight_input_lock_dialog_message">警告：单据一旦锁定，将无法再编辑重量或单价，以确保交易数据安全，防止擅自修改。您确定所有输入都正确无误吗？</string>
     <string name="weight_input_lock_confirm">同意锁定</string>
+    <string name="weight_input_card_not_found">未找到称重单</string>
+    <string name="weight_input_card_not_found_desc">该称重单不存在或已被删除。</string>
+    <string name="card_list_create_card_action">创建称重单</string>
+    <string name="card_list_clear_filter_action">清除筛选</string>
     <string name="card_detail_weigh_action">开始称稻</string>
     <string name="card_detail_unlock_card_first">请先解锁单据再称重</string>
     <string name="card_detail_unlock_table_first">请先解锁表格再编辑</string>
@@ -570,4 +574,39 @@
     <string name="ad_sponsored">赞助</string>
     <string name="settings_privacy_options">隐私和广告设置</string>
     <string name="settings_privacy_options_subtitle">管理隐私偏好和广告设置</string>
+
+    <!-- Card List Summary & Items -->
+    <string name="card_list_summary_title">今日概览</string>
+    <string name="card_list_summary_subtitle">快速追踪称重单、产量及现金流</string>
+    <string name="card_list_summary_yield">产量</string>
+    <string name="card_list_summary_avg_price">均价</string>
+    <string name="card_list_summary_bag_count">袋数</string>
+    <string name="card_list_summary_yield_per_cong">预估单产</string>
+    <string name="card_item_view_detail">查看详情</string>
+    <string name="detail_info_moisture">水分</string>
+    <string name="detail_info_bag_weight">皮重</string>
+    <string name="detail_info_impurity">杂质率</string>
+
+    <!-- News Section & Market Tabs -->
+    <string name="market_tab_news">新闻</string>
+    <string name="market_tab_prices">稻谷与大米价格</string>
+    <string name="news_topic_all">全部</string>
+    <string name="news_topic_rice">稻谷</string>
+    <string name="news_topic_grain">大米</string>
+    <string name="news_topic_market">市场</string>
+    <string name="news_topic_default">新闻</string>
+    <string name="news_empty_title">暂无新闻</string>
+    <string name="news_empty_subtitle">下拉刷新，或检查网络连接</string>
+    <string name="news_refresh_action">刷新新闻</string>
+    <string name="news_error_cached">更新失败 — 正在使用缓存数据</string>
+    <string name="news_close_action">关闭</string>
+    <string name="news_expand_more">查看更多文章 (还有 %1$d 篇)</string>
+    <string name="news_collapse">收起</string>
+    <string name="news_time_just_now">刚刚</string>
+    <string name="news_time_minutes_ago">%1$d 分钟前</string>
+    <string name="news_time_hours_ago">%1$d 小时前</string>
+    <string name="news_time_days_ago">%1$d 天前</string>
+    <string name="news_time_weeks_ago">%1$d 周前</string>
+    <string name="news_time_months_ago">%1$d 个月前</string>
+    <string name="market_post_bid_fab">发布新报价</string>
 </resources>

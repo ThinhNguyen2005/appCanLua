@@ -2,7 +2,15 @@ package com.giathinh.canlua.ui.component.market
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,12 +32,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import com.giathinh.canlua.R
+import com.giathinh.canlua.util.HapticUtil
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +94,7 @@ fun NewsSection(
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var isExpanded by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
@@ -97,8 +112,14 @@ fun NewsSection(
 
         Spacer(Modifier.height(16.dp))
 
-        // Error banner — hiển thị bên dưới dải bộ lọc trong Card tổng
-        AnimatedVisibility(visible = errorMessage != null) {
+        // Error banner — hiển thị bên dưới dải bộ lọc trong Card tổng với animation lò xo mượt mà
+        AnimatedVisibility(
+            visible = errorMessage != null,
+            enter = fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
+                    slideInVertically(spring(stiffness = Spring.StiffnessMediumLow)) { -it / 2 },
+            exit = fadeOut(spring(stiffness = Spring.StiffnessMediumLow)) +
+                    slideOutVertically(spring(stiffness = Spring.StiffnessMediumLow)) { -it / 2 }
+        ) {
             ErrorBanner(message = errorMessage.orEmpty(), onDismiss = onDismissError)
         }
 
@@ -124,7 +145,7 @@ fun NewsSection(
                 }
             } else {
                 if (articles.isEmpty()) {
-                    EmptyState()
+                    EmptyState(onRefresh = onRefresh)
                 } else {
                     Column {
                         val displayCount = if (isExpanded) 20 else 10
@@ -149,12 +170,19 @@ fun NewsSection(
                                     .padding(horizontal = 16.dp)
                                     .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
                                     .background(AppColors.SurfaceContainer)
-                                    .clickable { isExpanded = !isExpanded }
+                                    .clickable {
+                                        HapticUtil.tick(context)
+                                        isExpanded = !isExpanded
+                                    }
                                     .padding(vertical = 12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = if (isExpanded) "Thu gọn" else "Xem thêm bài viết (${articles.size - 10} bài khác)",
+                                    text = if (isExpanded) {
+                                        stringResource(R.string.news_collapse)
+                                    } else {
+                                        stringResource(R.string.news_expand_more, articles.size - 10)
+                                    },
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.GreenPrimary
@@ -170,14 +198,23 @@ fun NewsSection(
 
 @Composable
 private fun RefreshButton(isRefreshing: Boolean, onClick: () -> Unit) {
+    val context = LocalContext.current
     val rotation by animateFloatAsState(
         targetValue = if (isRefreshing) 360f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "refreshRotation"
     )
-    IconButton(onClick = onClick, enabled = !isRefreshing) {
+    IconButton(
+        onClick = {
+            HapticUtil.tick(context)
+            onClick()
+        },
+        enabled = !isRefreshing,
+        modifier = Modifier.size(48.dp)
+    ) {
         Icon(
             imageVector = Icons.Default.Refresh,
-            contentDescription = "Làm mới",
+            contentDescription = stringResource(R.string.news_refresh_action),
             tint = AppColors.TextSecondary,
             modifier = Modifier.rotate(rotation)
         )
@@ -189,12 +226,12 @@ private fun TopicFilterRow(
     selected: NewsTopic?,
     onSelect: (NewsTopic?) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
-    val items = listOf<Pair<NewsTopic?, String>>(
-        null to "Tất cả",
-        NewsTopic.RICE to "Lúa",
-        NewsTopic.GRAIN to "Gạo",
-        NewsTopic.MARKET to "Thị trường"
+    val context = LocalContext.current
+    val items = listOf(
+        null to stringResource(R.string.news_topic_all),
+        NewsTopic.RICE to stringResource(R.string.news_topic_rice),
+        NewsTopic.GRAIN to stringResource(R.string.news_topic_grain),
+        NewsTopic.MARKET to stringResource(R.string.news_topic_market)
     )
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -202,25 +239,33 @@ private fun TopicFilterRow(
     ) {
         items(items, key = { it.first?.name ?: "_all" }) { (topic, label) ->
             val isSelected = selected == topic
+            val bgColor by animateColorAsState(
+                targetValue = if (isSelected) AppColors.GreenPrimary else AppColors.SurfaceContainer,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "topic_chip_bg"
+            )
+            val textColor by animateColorAsState(
+                targetValue = if (isSelected) Color.White else AppColors.TextSecondary,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "topic_chip_text"
+            )
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
+                    .heightIn(min = 40.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        if (isSelected) AppColors.GreenPrimary
-                        else AppColors.SurfaceContainer
-                    )
+                    .background(bgColor)
                     .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        HapticUtil.tick(context)
                         onSelect(topic)
                     }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isSelected) Color.White else AppColors.TextSecondary
+                    color = textColor
                 )
             }
         }
@@ -252,6 +297,7 @@ private fun NewsCard(article: NewsArticle) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
+                HapticUtil.tick(context)
                 CustomTabsLauncher.open(
                     context = context,
                     url = article.link,
@@ -336,12 +382,13 @@ private fun NewsCard(article: NewsArticle) {
     }
 }
 
+@Composable
 private fun getTopicDisplayName(topic: String): String {
     return when (topic) {
-        NewsTopic.RICE.name -> "Lúa"
-        NewsTopic.GRAIN.name -> "Gạo"
-        NewsTopic.MARKET.name -> "Thị trường"
-        else -> "Tin tức"
+        NewsTopic.RICE.name -> stringResource(R.string.news_topic_rice)
+        NewsTopic.GRAIN.name -> stringResource(R.string.news_topic_grain)
+        NewsTopic.MARKET.name -> stringResource(R.string.news_topic_market)
+        else -> stringResource(R.string.news_topic_default)
     }
 }
 
@@ -356,7 +403,8 @@ private fun getTopicColor(topic: String): Color {
 }
 
 @Composable
-private fun EmptyState() {
+private fun EmptyState(onRefresh: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -367,25 +415,53 @@ private fun EmptyState() {
             imageVector = Icons.AutoMirrored.Filled.Article,
             contentDescription = null,
             tint = AppColors.TextHint,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(48.dp)
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
         Text(
-            text = "Chưa có tin tức",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = AppColors.TextSecondary
+            text = stringResource(R.string.news_empty_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.TextPrimary
         )
+        Spacer(Modifier.height(4.dp))
         Text(
-            text = "Kéo xuống để cập nhật, hoặc kiểm tra mạng",
+            text = stringResource(R.string.news_empty_subtitle),
             style = MaterialTheme.typography.bodySmall,
-            color = AppColors.TextHint
+            color = AppColors.TextSecondary,
+            textAlign = TextAlign.Center
         )
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = {
+                HapticUtil.tick(context)
+                onRefresh()
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AppColors.GreenPrimary,
+                contentColor = Color.White
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.heightIn(min = 48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.news_refresh_action),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
 
 @Composable
 private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -393,29 +469,35 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
             .padding(bottom = 8.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(AppColors.OfflineBg)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.WifiOff,
             contentDescription = null,
             tint = AppColors.OfflineText,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(18.dp)
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "Không cập nhật được — đang dùng dữ liệu cũ",
+            text = stringResource(R.string.news_error_cached),
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.OfflineText,
             modifier = Modifier.weight(1f),
             maxLines = 2
         )
-        IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+        IconButton(
+            onClick = {
+                HapticUtil.tick(context)
+                onDismiss()
+            },
+            modifier = Modifier.size(48.dp)
+        ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Đóng",
-                tint = AppColors.OfflineText.copy(alpha = 0.6f),
-                modifier = Modifier.size(16.dp)
+                contentDescription = stringResource(R.string.news_close_action),
+                tint = AppColors.OfflineText.copy(alpha = 0.8f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -468,19 +550,20 @@ private fun NewsCardSkeleton() {
     }
 }
 
+@Composable
 private fun formatRelativeTime(timestampMs: Long): String {
     val diff = System.currentTimeMillis() - timestampMs
-    if (diff < 0) return "vừa xong"
+    if (diff < 0) return stringResource(R.string.news_time_just_now)
     val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
     val hours = TimeUnit.MILLISECONDS.toHours(diff)
     val days = TimeUnit.MILLISECONDS.toDays(diff)
     return when {
-        minutes < 1 -> "vừa xong"
-        minutes < 60 -> "$minutes phút trước"
-        hours < 24 -> "$hours giờ trước"
-        days < 7 -> "$days ngày trước"
-        days < 30 -> "${days / 7} tuần trước"
-        else -> "${days / 30} tháng trước"
+        minutes < 1 -> stringResource(R.string.news_time_just_now)
+        minutes < 60 -> stringResource(R.string.news_time_minutes_ago, minutes)
+        hours < 24 -> stringResource(R.string.news_time_hours_ago, hours)
+        days < 7 -> stringResource(R.string.news_time_days_ago, days)
+        days < 30 -> stringResource(R.string.news_time_weeks_ago, days / 7)
+        else -> stringResource(R.string.news_time_months_ago, days / 30)
     }
 }
 

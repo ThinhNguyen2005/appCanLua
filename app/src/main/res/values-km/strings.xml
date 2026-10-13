@@ -171,6 +171,10 @@
     <string name="weight_input_lock_dialog_title">បញ្ជាក់ប្រតិបត្តិការ (ចាក់សោវិក្កយបត្រ)?</string>
     <string name="weight_input_lock_dialog_message">ការព្រមាន៖ វិក្កយបត្រថ្លឹងដែលបានចាក់សោ នឹងមិនអាចកែសម្រួលទម្ងន់ ឬតម្លៃឯកតាបានទៀតទេ ដើម្បីសុវត្ថិភាពទិន្នន័យ។ តើអ្នកប្រាកដថាព័ត៌មានទាំងអស់ត្រឹមត្រូវហើយឬនៅ?</string>
     <string name="weight_input_lock_confirm">យល់ព្រមចាក់សោ</string>
+    <string name="weight_input_card_not_found">រកមិនឃើញវិក្កយបត្រថ្លឹងទេ</string>
+    <string name="weight_input_card_not_found_desc">វិក្កយបត្រថ្លឹងនេះមិនមាន ឬត្រូវបានលុបចេញហើយ។</string>
+    <string name="card_list_create_card_action">បង្កើតវិក្កយបត្រថ្លឹង</string>
+    <string name="card_list_clear_filter_action">សម្អាតតម្រង</string>
     <string name="card_detail_weigh_action">ថ្លឹងស្រូវ</string>
     <string name="card_detail_unlock_card_first">សូមដោះសោវិក្កយបត្រមុនពេលថ្លឹង</string>
     <string name="card_detail_unlock_table_first">សូមដោះសោតារាងមុនពេលកែសម្រួល</string>
@@ -569,4 +573,39 @@
     <string name="ad_sponsored">ឧបត្ថម្ភ</string>
     <string name="settings_privacy_options">ជម្រើសឯកជនភាព និង​ការផ្សាយពាណិជ្ជកម្ម</string>
     <string name="settings_privacy_options_subtitle">គ្រប់គ្រងជម្រើសការយល់ព្រមអំពីឯកជនភាព និងការផ្សាយពាណិជ្ជកម្ម</string>
+
+    <!-- Card List Summary & Items -->
+    <string name="card_list_summary_title">ទិដ្ឋភាពទូទៅថ្ងៃនេះ</string>
+    <string name="card_list_summary_subtitle">តាមដានវិក្កយបត្រ ទិន្នផល និងលំហូរសាច់ប្រាក់យ៉ាងរហ័ស</string>
+    <string name="card_list_summary_yield">ទិន្នផល</string>
+    <string name="card_list_summary_avg_price">តម្លៃមធ្យម</string>
+    <string name="card_list_summary_bag_count">ចំនួនបាវ</string>
+    <string name="card_list_summary_yield_per_cong">ទិន្នផលប៉ាន់ស្មាន</string>
+    <string name="card_item_view_detail">មើលព័ត៌មានលម្អិត</string>
+    <string name="detail_info_moisture">សំណើម</string>
+    <string name="detail_info_bag_weight">ទម្ងន់សំបកបាវ</string>
+    <string name="detail_info_impurity">កម្រិតមិនបរិសុទ្ធ</string>
+
+    <!-- News Section & Market Tabs -->
+    <string name="market_tab_news">ព័ត៌មាន</string>
+    <string name="market_tab_prices">តម្លៃស្រូវ និងអង្ករ</string>
+    <string name="news_topic_all">ទាំងអស់</string>
+    <string name="news_topic_rice">ស្រូវ</string>
+    <string name="news_topic_grain">អង្ករ</string>
+    <string name="news_topic_market">ទីផ្សារ</string>
+    <string name="news_topic_default">ព័ត៌មាន</string>
+    <string name="news_empty_title">មិនមានព័ត៌មានទេ</string>
+    <string name="news_empty_subtitle">ទាញចុះក្រោមដើម្បីផ្ទុកឡើងវិញ ឬពិនិត្យមើលបណ្តាញ</string>
+    <string name="news_refresh_action">ផ្ទុកព័ត៌មានឡើងវិញ</string>
+    <string name="news_error_cached">មិនអាចផ្ទុកឡើងវិញបានទេ — កំពុងប្រើទិន្នន័យចាស់</string>
+    <string name="news_close_action">បិទ</string>
+    <string name="news_expand_more">មើលអត្ថបទបន្ថែម (%1$d ទៀត)</string>
+    <string name="news_collapse">បង្រួម</string>
+    <string name="news_time_just_now">ទើបតែឥឡូវនេះ</string>
+    <string name="news_time_minutes_ago">%1$d នាទីមុន</string>
+    <string name="news_time_hours_ago">%1$d ម៉ោងមុន</string>
+    <string name="news_time_days_ago">%1$d ថ្ងៃមុន</string>
+    <string name="news_time_weeks_ago">%1$d សប្តាហ៍មុន</string>
+    <string name="news_time_months_ago">%1$d ខែមុន</string>
+    <string name="market_post_bid_fab">ប្រកាសតម្លៃថ្មី</string>
 </resources>

@@ -9,7 +9,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import com.giathinh.canlua.util.HapticUtil
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -231,7 +234,10 @@ fun MainScreen(deeplinkCardId: String? = null) {
                     },
                     navigationIcon = {
                         when (currentRoute) {
-                            "trader_transactions" -> IconButton(onClick = { navController.popBackStack() }) {
+                            "trader_transactions" -> IconButton(onClick = {
+                                HapticUtil.tick(context)
+                                navController.popBackStack()
+                            }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(com.giathinh.canlua.R.string.content_back)
@@ -241,6 +247,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                             BottomNavItem.SCALE.route
                                 // Trang Cân Lúa: nút Trợ giúp & Hướng dẫn ở trái.
                                 -> IconButton(onClick = {
+                                HapticUtil.tick(context)
                                 showHelpSheet.value = true
                             }) {
                                 Box {
@@ -264,7 +271,10 @@ fun MainScreen(deeplinkCardId: String? = null) {
                         // Tab Cân Lúa: nút Tune chỉnh default 3 mode cân (kg/%, A/B, SMALL/LARGE)
                         // áp cho mọi phiếu mới tạo.
                         if (currentRoute == BottomNavItem.SCALE.route) {
-                            IconButton(onClick = { showWeighOptionsSheet.value = true }) {
+                            IconButton(onClick = {
+                                HapticUtil.tick(context)
+                                showWeighOptionsSheet.value = true
+                            }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Tune,
                                     contentDescription = stringResource(com.giathinh.canlua.R.string.weigh_options_icon_content)
@@ -276,6 +286,7 @@ fun MainScreen(deeplinkCardId: String? = null) {
                                 currentRoute == BottomNavItem.TRADER_PROFILE.route
                         if (isProfileTab) {
                             IconButton(onClick = {
+                                HapticUtil.tick(context)
                                 navController.navigate("settings")
                             }) {
                                 Icon(
@@ -321,12 +332,18 @@ fun MainScreen(deeplinkCardId: String? = null) {
 
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showBottomBar,
-                    enter = fadeIn(animationSpec = tween(220)) + slideInVertically(
-                        animationSpec = tween(280),
+                    enter = fadeIn(animationSpec = tween(200)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = 0.88f,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
                         initialOffsetY = { it / 2 }
                     ),
-                    exit = fadeOut(animationSpec = tween(180)) + slideOutVertically(
-                        animationSpec = tween(220),
+                    exit = fadeOut(animationSpec = tween(150)) + slideOutVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        ),
                         targetOffsetY = { it / 2 }
                     ),
                     modifier = Modifier.align(Alignment.BottomCenter)

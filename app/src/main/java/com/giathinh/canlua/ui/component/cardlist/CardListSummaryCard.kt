@@ -85,13 +85,13 @@ fun CardListSummaryCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Tổng quan hôm nay",
+                            text = stringResource(R.string.card_list_summary_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.TextPrimary
                         )
                         Text(
-                            text = "Theo dõi nhanh số phiếu, sản lượng và dòng tiền",
+                            text = stringResource(R.string.card_list_summary_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.TextSecondary,
                             maxLines = 1,
@@ -118,7 +118,7 @@ fun CardListSummaryCard(
                         modifier = Modifier.weight(1f)
                     )
                     SummaryMetric(
-                        label = "Sản lượng",
+                        label = stringResource(R.string.card_list_summary_yield),
                         value = "${numberFormat.format(totalKg)} kg",
                         icon = Icons.Outlined.Scale,
                         tint = AppColors.GoldAccent,
@@ -142,21 +142,21 @@ fun CardListSummaryCard(
                     ) {
                         if (avgPricePerKg != null) {
                             SecondaryMetric(
-                                label = "Đơn giá TB",
+                                label = stringResource(R.string.card_list_summary_avg_price),
                                 value = "${numberFormat.format(avgPricePerKg.toLong())} đ/kg",
                                 modifier = Modifier.weight(1f)
                             )
                         }
                         if (bagCount != null) {
                             SecondaryMetric(
-                                label = "Số bao",
+                                label = stringResource(R.string.card_list_summary_bag_count),
                                 value = numberFormat.format(bagCount),
                                 modifier = Modifier.weight(1f)
                             )
                         }
                         if (estimatedYieldKgPerCong != null) {
                             SecondaryMetric(
-                                label = "Năng suất ước tính",
+                                label = stringResource(R.string.card_list_summary_yield_per_cong),
                                 value = "${numberFormat.format(estimatedYieldKgPerCong.toLong())} kg/công",
                                 modifier = Modifier.weight(1.4f)
                             )

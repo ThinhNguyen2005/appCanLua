@@ -197,6 +197,10 @@
     <string name="weight_input_lock_dialog_title">Chốt giao dịch (Khóa phiếu)?</string>
     <string name="weight_input_lock_dialog_message">CẢNH BÁO: Phiếu cân sau khi khóa sẽ KHÔNG thể chỉnh sửa khối lượng hay đơn giá nữa để bảo mật giao dịch, chống sửa lén số liệu lúa. Bạn có chắc chắn toàn bộ thông số đã chính xác?</string>
     <string name="weight_input_lock_confirm">Đồng ý Khóa</string>
+    <string name="weight_input_card_not_found">Không tìm thấy phiếu cân</string>
+    <string name="weight_input_card_not_found_desc">Phiếu cân này không tồn tại hoặc đã bị xóa.</string>
+    <string name="card_list_create_card_action">Tạo phiếu cân</string>
+    <string name="card_list_clear_filter_action">Xóa bộ lọc</string>
 
     <string name="card_detail_weigh_action">Cân lúa</string>
     <string name="card_detail_unlock_card_first">Vui lòng mở khóa phiếu trước khi cân</string>
@@ -607,5 +611,40 @@
     <string name="ad_sponsored">Tài trợ</string>
     <string name="settings_privacy_options">Tùy chọn quyền riêng tư &amp; quảng cáo</string>
     <string name="settings_privacy_options_subtitle">Quản lý tùy chọn đồng thuận quyền riêng tư và quảng cáo</string>
+
+    <!-- Card List Summary & Items -->
+    <string name="card_list_summary_title">Tổng quan hôm nay</string>
+    <string name="card_list_summary_subtitle">Theo dõi nhanh số phiếu, sản lượng và dòng tiền</string>
+    <string name="card_list_summary_yield">Sản lượng</string>
+    <string name="card_list_summary_avg_price">Đơn giá TB</string>
+    <string name="card_list_summary_bag_count">Số bao</string>
+    <string name="card_list_summary_yield_per_cong">Năng suất ước tính</string>
+    <string name="card_item_view_detail">Xem chi tiết</string>
+    <string name="detail_info_moisture">Độ ẩm</string>
+    <string name="detail_info_bag_weight">Trọng lượng bao bì</string>
+    <string name="detail_info_impurity">Tỷ lệ tạp chất</string>
+
+    <!-- News Section & Market Tabs -->
+    <string name="market_tab_news">Tin tức</string>
+    <string name="market_tab_prices">Bảng giá lúa, gạo</string>
+    <string name="news_topic_all">Tất cả</string>
+    <string name="news_topic_rice">Lúa</string>
+    <string name="news_topic_grain">Gạo</string>
+    <string name="news_topic_market">Thị trường</string>
+    <string name="news_topic_default">Tin tức</string>
+    <string name="news_empty_title">Chưa có tin tức</string>
+    <string name="news_empty_subtitle">Kéo xuống để cập nhật, hoặc kiểm tra kết nối mạng</string>
+    <string name="news_refresh_action">Làm mới tin tức</string>
+    <string name="news_error_cached">Không cập nhật được — đang dùng dữ liệu cũ</string>
+    <string name="news_close_action">Đóng</string>
+    <string name="news_expand_more">Xem thêm bài viết (%1$d bài khác)</string>
+    <string name="news_collapse">Thu gọn</string>
+    <string name="news_time_just_now">vừa xong</string>
+    <string name="news_time_minutes_ago">%1$d phút trước</string>
+    <string name="news_time_hours_ago">%1$d giờ trước</string>
+    <string name="news_time_days_ago">%1$d ngày trước</string>
+    <string name="news_time_weeks_ago">%1$d tuần trước</string>
+    <string name="news_time_months_ago">%1$d tháng trước</string>
+    <string name="market_post_bid_fab">Đăng giá mới</string>
 </resources>
 

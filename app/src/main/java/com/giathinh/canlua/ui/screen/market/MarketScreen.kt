@@ -1,6 +1,8 @@
 package com.giathinh.canlua.ui.screen.market
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -69,10 +71,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.giathinh.canlua.R
+import com.giathinh.canlua.util.HapticUtil
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.giathinh.canlua.data.firestore.FirestoreRicePrice
@@ -224,21 +230,25 @@ fun MarketScreenContent(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (isTrader && pagerState.currentPage == 1) {
+                val context = LocalContext.current
                 AnimatedVisibility(
                     visible = fabVisible,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+                    enter = fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
+                            slideInVertically(spring(stiffness = Spring.StiffnessMediumLow)) { it / 2 },
+                    exit = fadeOut(spring(stiffness = Spring.StiffnessMediumLow)) +
+                            slideOutVertically(spring(stiffness = Spring.StiffnessMediumLow)) { it / 2 }
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = {
+                            HapticUtil.tick(context)
                             editingBid = null
                             showEditor = true
                         },
                         expanded = fabExpanded,
                         icon = {
-                            Icon(Icons.Filled.Add, contentDescription = "Đăng giá mới")
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.market_post_bid_fab))
                         },
-                        text = { Text("Đăng giá mới", fontWeight = FontWeight.SemiBold) },
+                        text = { Text(stringResource(R.string.market_post_bid_fab), fontWeight = FontWeight.SemiBold) },
                         containerColor = AppColors.GreenPrimary,
                         contentColor = AppColors.CardBg,
                         modifier = Modifier.padding(bottom = bottomFabPadding),
@@ -561,6 +571,7 @@ private fun MarketTabRow(
     selectedTab: Int,
     onSelect: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     PrimaryTabRow(
         selectedTabIndex = selectedTab,
         containerColor = AppColors.Surface,
@@ -577,7 +588,10 @@ private fun MarketTabRow(
     ) {
         Tab(
             selected = selectedTab == 0,
-            onClick = { onSelect(0) },
+            onClick = {
+                HapticUtil.tick(context)
+                onSelect(0)
+            },
             selectedContentColor = AppColors.GreenPrimary,
             unselectedContentColor = AppColors.TextSecondary
         ) {
@@ -593,7 +607,7 @@ private fun MarketTabRow(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Tin tức",
+                    text = stringResource(R.string.market_tab_news),
                     fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium,
                     style = MaterialTheme.typography.titleSmall
                 )
@@ -601,7 +615,10 @@ private fun MarketTabRow(
         }
         Tab(
             selected = selectedTab == 1,
-            onClick = { onSelect(1) },
+            onClick = {
+                HapticUtil.tick(context)
+                onSelect(1)
+            },
             selectedContentColor = AppColors.GreenPrimary,
             unselectedContentColor = AppColors.TextSecondary
         ) {
@@ -617,7 +634,7 @@ private fun MarketTabRow(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Bảng giá lúa, gạo",
+                    text = stringResource(R.string.market_tab_prices),
                     fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,

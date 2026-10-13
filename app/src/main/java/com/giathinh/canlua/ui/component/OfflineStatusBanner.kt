@@ -1,6 +1,8 @@
 package com.giathinh.canlua.ui.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -27,14 +29,26 @@ import com.giathinh.canlua.ui.theme.AppColors
 
 /**
  * Banner hiển thị ở trên cùng khi thiết bị mất kết nối mạng.
- * Animate in/out mượt mà.
+ * Animate in/out mượt mà theo physics lò xo nhẹ.
  */
 @Composable
 fun OfflineStatusBanner(isOffline: Boolean) {
     AnimatedVisibility(
         visible = isOffline,
-        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+        enter = slideInVertically(
+            animationSpec = spring(
+                dampingRatio = 0.85f,
+                stiffness = Spring.StiffnessMediumLow
+            ),
+            initialOffsetY = { -it }
+        ) + fadeIn(),
+        exit = slideOutVertically(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMedium
+            ),
+            targetOffsetY = { -it }
+        ) + fadeOut()
     ) {
         Surface(
             color = AppColors.OfflineBg,

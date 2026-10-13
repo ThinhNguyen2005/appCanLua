@@ -170,6 +170,10 @@
     <string name="weight_input_lock_dialog_title">Finalize Transaction (Lock Slip)?</string>
     <string name="weight_input_lock_dialog_message">WARNING: Once locked, the weighing slip CANNOT be edited (weights or unit price) to secure transaction data and prevent tampering. Are you sure all parameters are correct?</string>
     <string name="weight_input_lock_confirm">Yes, Lock</string>
+    <string name="weight_input_card_not_found">Weighing slip not found</string>
+    <string name="weight_input_card_not_found_desc">This weighing slip does not exist or has been deleted.</string>
+    <string name="card_list_create_card_action">Create weighing slip</string>
+    <string name="card_list_clear_filter_action">Clear filters</string>
     <string name="card_detail_weigh_action">Weigh Rice</string>
     <string name="card_detail_unlock_card_first">Please unlock the slip before weighing</string>
     <string name="card_detail_unlock_table_first">Please unlock the table before editing</string>
@@ -574,5 +578,40 @@
     <string name="ad_sponsored">Sponsored</string>
     <string name="settings_privacy_options">Privacy &amp; Ads Settings</string>
     <string name="settings_privacy_options_subtitle">Manage privacy consent preferences and ads</string>
+
+    <!-- Card List Summary & Items -->
+    <string name="card_list_summary_title">Today\'s Overview</string>
+    <string name="card_list_summary_subtitle">Quickly track slips, yield, and cash flow</string>
+    <string name="card_list_summary_yield">Yield</string>
+    <string name="card_list_summary_avg_price">Avg Price</string>
+    <string name="card_list_summary_bag_count">Bags</string>
+    <string name="card_list_summary_yield_per_cong">Est. Yield</string>
+    <string name="card_item_view_detail">View details</string>
+    <string name="detail_info_moisture">Moisture</string>
+    <string name="detail_info_bag_weight">Tare weight</string>
+    <string name="detail_info_impurity">Impurity rate</string>
+
+    <!-- News Section & Market Tabs -->
+    <string name="market_tab_news">News</string>
+    <string name="market_tab_prices">Rice &amp; Paddy Prices</string>
+    <string name="news_topic_all">All</string>
+    <string name="news_topic_rice">Paddy</string>
+    <string name="news_topic_grain">Milled Rice</string>
+    <string name="news_topic_market">Market</string>
+    <string name="news_topic_default">News</string>
+    <string name="news_empty_title">No news available</string>
+    <string name="news_empty_subtitle">Pull down to refresh or check your internet connection</string>
+    <string name="news_refresh_action">Refresh news</string>
+    <string name="news_error_cached">Unable to refresh — using cached data</string>
+    <string name="news_close_action">Close</string>
+    <string name="news_expand_more">Show more articles (%1$d more)</string>
+    <string name="news_collapse">Collapse</string>
+    <string name="news_time_just_now">just now</string>
+    <string name="news_time_minutes_ago">%1$d minutes ago</string>
+    <string name="news_time_hours_ago">%1$d hours ago</string>
+    <string name="news_time_days_ago">%1$d days ago</string>
+    <string name="news_time_weeks_ago">%1$d weeks ago</string>
+    <string name="news_time_months_ago">%1$d months ago</string>
+    <string name="market_post_bid_fab">Post new bid</string>
 </resources>
 

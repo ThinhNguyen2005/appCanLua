@@ -171,6 +171,10 @@
     <string name="weight_input_lock_dialog_title">ຢືນຢັນການເຮັດທຸລະກຳ (ລັອກໃບຊັ່ງ)?</string>
     <string name="weight_input_lock_dialog_message">ຄຳເຕືອນ: ໃບຊັ່ງທີ່ລັອກແລ້ວຈະບໍ່ສາມາດແກ້ໄຂນ້ຳໜັກ ຫຼື ລາຄາຕໍ່ໜ່ວຍໄດ້ອີກ ເພື່ອຄວາມປອດໄພຂອງຂໍ້ມູນ. ເຈົ້າແນ່ໃຈບໍ່ວ່າຂໍ້ມູນທັງໝົດຖືກຕ້ອງ?</string>
     <string name="weight_input_lock_confirm">ຕົກລົງລັອກ</string>
+    <string name="weight_input_card_not_found">ບໍ່ພົບໃບຊັ່ງ</string>
+    <string name="weight_input_card_not_found_desc">ໃບຊັ່ງນີ້ບໍ່ມີຢູ່ ຫຼື ຖືກລຶບໄປແລ້ວ.</string>
+    <string name="card_list_create_card_action">ສ້າງໃບຊັ່ງ</string>
+    <string name="card_list_clear_filter_action">ລຶບຕົວກອງ</string>
     <string name="card_detail_weigh_action">ຊັ່ງເຂົ້າ</string>
     <string name="card_detail_unlock_card_first">ກະລຸນາປົດລັອກໃບຊັ່ງກ່ອນການຊັ່ງ</string>
     <string name="card_detail_unlock_table_first">ກະລຸນາປົດລັອກຕາຕະລາງກ່ອນການແກ້ໄຂ</string>
@@ -567,4 +571,39 @@
     <string name="ad_sponsored">ສະໜັບສະໜູນ</string>
     <string name="settings_privacy_options">ຕົວເລືອກຄວາມເປັນສ່ວນຕົວ ແລະ ໂຄສະນາ</string>
     <string name="settings_privacy_options_subtitle">ຈັດການຕົວເລືອກການຍິນຍອມຄວາມເປັນສ່ວນຕົວ ແລະ ໂຄສະນາ</string>
+
+    <!-- Card List Summary & Items -->
+    <string name="card_list_summary_title">ພາບລວມມື້ນີ້</string>
+    <string name="card_list_summary_subtitle">ຕິດຕາມໃບຊັ່ງ ຜົນຜະລິດ ແລະ ກະແສເງິນສົດຢ່າງວ່ອງໄວ</string>
+    <string name="card_list_summary_yield">ຜົນຜະລິດ</string>
+    <string name="card_list_summary_avg_price">ລາຄາສະເລ່ຍ</string>
+    <string name="card_list_summary_bag_count">ຈຳນວນເປົາ</string>
+    <string name="card_list_summary_yield_per_cong">ຜົນຜະລິດປະມານ</string>
+    <string name="card_item_view_detail">ເບິ່ງລາຍລະອຽດ</string>
+    <string name="detail_info_moisture">ຄວາມຊຸ່ມ</string>
+    <string name="detail_info_bag_weight">ນ້ຳໜັກເປົາ</string>
+    <string name="detail_info_impurity">ສິ່ງເຈືອປົນ</string>
+
+    <!-- News Section & Market Tabs -->
+    <string name="market_tab_news">ຂ່າວສານ</string>
+    <string name="market_tab_prices">ລາຄາເຂົ້າເປືອກ ແລະ ເຂົ້າສານ</string>
+    <string name="news_topic_all">ທັງໝົດ</string>
+    <string name="news_topic_rice">ເຂົ້າເປືອກ</string>
+    <string name="news_topic_grain">ເຂົ້າສານ</string>
+    <string name="news_topic_market">ຕະຫຼາດ</string>
+    <string name="news_topic_default">ຂ່າວສານ</string>
+    <string name="news_empty_title">ບໍ່ມີຂ່າວສານ</string>
+    <string name="news_empty_subtitle">ດຶງລົງເພື່ອໂຫຼດຄືນໃໝ່ ຫຼື ກວດເບິ່ງການເຊື່ອມຕໍ່ອິນເຕີເນັດ</string>
+    <string name="news_refresh_action">ໂຫຼດຂ່າວຄືນໃໝ່</string>
+    <string name="news_error_cached">ບໍ່ສາມາດອັບເດດໄດ້ — ກຳລັງໃຊ້ຂໍ້ມູນເກົ່າ</string>
+    <string name="news_close_action">ປິດ</string>
+    <string name="news_expand_more">ເບິ່ງບົດຄວາມເພີ່ມເຕີມ (%1$d ບົດອື່ນໆ)</string>
+    <string name="news_collapse">ຫຍໍ້ເຂົ້າ</string>
+    <string name="news_time_just_now">ຫາເປີດນີ້</string>
+    <string name="news_time_minutes_ago">%1$d ນາທີກ່ອນ</string>
+    <string name="news_time_hours_ago">%1$d ຊົ່ວໂມງກ່ອນ</string>
+    <string name="news_time_days_ago">%1$d ມື້ກ່ອນ</string>
+    <string name="news_time_weeks_ago">%1$d ອາທິດກ່ອນ</string>
+    <string name="news_time_months_ago">%1$d ເດືອນກ່ອນ</string>
+    <string name="market_post_bid_fab">ປະກາດລາຄາໃໝ່</string>
 </resources>

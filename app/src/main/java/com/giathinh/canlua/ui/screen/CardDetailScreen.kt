@@ -8,10 +8,16 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.ui.text.style.TextAlign
+import com.giathinh.canlua.ui.theme.AppDimensions
 import com.giathinh.canlua.ui.component.PermissionRationaleDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -201,6 +207,62 @@ fun CardDetailScreenContent(
     var showEditDialog by remember { mutableStateOf(false) }
     var showUnlockConfirm by remember { mutableStateOf(false) }
 
+    val card = currentCard
+    if (!viewModelLoading && card == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(AppColors.Surface)
+                .navigationBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(AppDimensions.SpacingLg)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = AppColors.TextSecondary
+                )
+                Spacer(modifier = Modifier.height(AppDimensions.SpacingMd))
+                Text(
+                    text = stringResource(R.string.weight_input_card_not_found),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = AppColors.TextPrimary,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(AppDimensions.SpacingSm))
+                Text(
+                    text = stringResource(R.string.weight_input_card_not_found_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(AppDimensions.SpacingLg))
+                Button(
+                    onClick = { navController.popBackStack() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.GreenPrimary,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
+                    modifier = Modifier
+                        .defaultMinSize(minHeight = 48.dp)
+                        .padding(horizontal = AppDimensions.SpacingMd)
+                ) {
+                    Text(
+                        text = stringResource(R.string.weight_input_back_content),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+            }
+        }
+        return
+    }
+
     Scaffold(
         containerColor = AppColors.Surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -213,8 +275,19 @@ fun CardDetailScreenContent(
                 }
                 AnimatedVisibility(
                     visible = fabVisible,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+                    enter = fadeIn(animationSpec = tween(200)) +
+                            slideInVertically(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                initialOffsetY = { it / 2 }
+                            ),
+                    exit = fadeOut(animationSpec = tween(150)) +
+                            slideOutVertically(
+                                animationSpec = tween(150),
+                                targetOffsetY = { it / 2 }
+                            )
                 ) {
                     ExtendedFloatingActionButton(
                         onClick = {

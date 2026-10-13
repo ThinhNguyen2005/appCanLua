@@ -145,7 +145,7 @@ fun CardItem(
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = "Xem chi tiết",
+                            contentDescription = stringResource(R.string.card_item_view_detail),
                             tint = AppColors.TextHint,
                             modifier = Modifier.size(18.dp)
                         )
@@ -181,7 +181,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.WaterDrop,
-                                    contentDescription = "Độ ẩm",
+                                    contentDescription = stringResource(R.string.detail_info_moisture),
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.Info
                                 )
@@ -200,7 +200,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Inventory2,
-                                    contentDescription = "Trọng lượng bao bì",
+                                    contentDescription = stringResource(R.string.detail_info_bag_weight),
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.TextSecondary
                                 )
@@ -219,7 +219,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Scale,
-                                    contentDescription = "Tỷ lệ tạp chất",
+                                    contentDescription = stringResource(R.string.detail_info_impurity),
                                     modifier = Modifier.size(14.dp),
                                     tint = AppColors.TextSecondary
                                 )

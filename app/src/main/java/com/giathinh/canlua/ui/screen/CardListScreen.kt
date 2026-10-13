@@ -1,10 +1,13 @@
 package com.giathinh.canlua.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import com.giathinh.canlua.util.HapticUtil
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -313,7 +316,12 @@ fun CardListScreenContent(
                                             icon = Icons.Default.Info,
                                             title = stringResource(com.giathinh.canlua.R.string.card_list_empty_filter_title),
                                             subtitle = stringResource(com.giathinh.canlua.R.string.card_list_empty_filter_subtitle),
-                                            onSyncClick = null
+                                            onSyncClick = null,
+                                            actionButtonText = stringResource(com.giathinh.canlua.R.string.card_list_clear_filter_action),
+                                            onActionClick = {
+                                                viewModel.setSeasonFilter(null)
+                                                viewModel.setVarietyFilter(null)
+                                            }
                                         )
                                     } else {
                                         CardListEmptyState(
@@ -322,7 +330,16 @@ fun CardListScreenContent(
                                             } else {
                                                 null
                                             },
-                                            syncing = syncStatus is SyncStatus.Syncing
+                                            syncing = syncStatus is SyncStatus.Syncing,
+                                            actionButtonText = stringResource(com.giathinh.canlua.R.string.card_list_create_card_action),
+                                            onActionClick = {
+                                                if (!isPremium && cardsToday >= com.giathinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY) {
+                                                    showPremiumGate = true
+                                                    com.giathinh.canlua.util.AnalyticsHelper.premiumGateShown(cardsToday)
+                                                } else {
+                                                    showCreateDialog = true
+                                                }
+                                            }
                                         )
                                     }
                                 }
@@ -363,8 +380,16 @@ fun CardListScreenContent(
         // tránh alloc PaddingValues object mỗi recomposition khi scroll danh sách.
         AnimatedVisibility(
             visible = fabVisible,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+            enter = fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)) +
+                    slideInVertically(
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+                        initialOffsetY = { it / 2 }
+                    ),
+            exit = fadeOut(animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)) +
+                   slideOutVertically(
+                       animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+                       targetOffsetY = { it / 2 }
+                   ),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
@@ -372,6 +397,7 @@ fun CardListScreenContent(
         ) {
             ExtendedFloatingActionButton(
                 onClick = {
+                    HapticUtil.tick(context)
                     // Premium gate: free user tối đa FREE_CARDS_PER_DAY phiếu/ngày.
                     // Đếm reactive từ cardsToday → nếu vượt mở dialog upsell thay vì tạo.
                     if (!isPremium && cardsToday >= com.giathinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY) {
@@ -386,7 +412,7 @@ fun CardListScreenContent(
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = {
                     Text(
-                        text = "Tạo phiếu cân",
+                        text = stringResource(com.giathinh.canlua.R.string.card_list_create_card_action),
                         fontWeight = FontWeight.Bold
                     )
                 }

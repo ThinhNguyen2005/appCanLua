@@ -22,9 +22,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.giathinh.canlua.R
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.theme.AppDimensions
 
 @Composable
 fun CardListEmptyState(
@@ -33,7 +42,9 @@ fun CardListEmptyState(
     title: String = stringResource(R.string.card_list_empty_title),
     subtitle: String = stringResource(R.string.card_list_empty_subtitle),
     onSyncClick: (() -> Unit)? = null,
-    syncing: Boolean = false
+    syncing: Boolean = false,
+    actionButtonText: String? = null,
+    onActionClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -69,6 +80,26 @@ fun CardListEmptyState(
             color = AppColors.TextHint,
             textAlign = TextAlign.Center
         )
+
+        if (actionButtonText != null && onActionClick != null) {
+            Spacer(Modifier.height(AppDimensions.SpacingLg))
+            Button(
+                onClick = onActionClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
+                modifier = Modifier
+                    .defaultMinSize(minHeight = 48.dp)
+                    .padding(horizontal = AppDimensions.SpacingMd)
+            ) {
+                Text(
+                    text = actionButtonText,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        }
         
         /*
         if (onSyncClick != null) {

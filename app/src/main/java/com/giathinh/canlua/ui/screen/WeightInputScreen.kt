@@ -44,8 +44,10 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.giathinh.canlua.util.RiceCalculator
+import androidx.compose.material.icons.outlined.Info
 import com.giathinh.canlua.ui.component.weight.WeightMetricsCard
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.theme.AppDimensions
 import com.giathinh.canlua.ui.viewmodel.WeightInputViewModel
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
@@ -102,6 +104,7 @@ fun WeightInputScreenContent(
     // Sử dụng collectAsStateWithLifecycle để tự động giải phóng tài nguyên khi chạy nền
     val currentCard by viewModel.currentCard.collectAsStateWithLifecycle()
     val weightEntries by viewModel.weightEntries.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
 
@@ -247,10 +250,57 @@ fun WeightInputScreenContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(AppColors.Surface),
+                .background(AppColors.Surface)
+                .navigationBarsPadding(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = AppColors.GreenPrimary)
+            if (isLoading) {
+                CircularProgressIndicator(color = AppColors.GreenPrimary)
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(AppDimensions.SpacingLg)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = AppColors.TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(AppDimensions.SpacingMd))
+                    Text(
+                        text = stringResource(R.string.weight_input_card_not_found),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = AppColors.TextPrimary,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(AppDimensions.SpacingSm))
+                    Text(
+                        text = stringResource(R.string.weight_input_card_not_found_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(AppDimensions.SpacingLg))
+                    Button(
+                        onClick = { navController.popBackStack() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.GreenPrimary,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
+                        modifier = Modifier
+                            .defaultMinSize(minHeight = 48.dp)
+                            .padding(horizontal = AppDimensions.SpacingMd)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.weight_input_back_content),
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+            }
         }
         return
     }
