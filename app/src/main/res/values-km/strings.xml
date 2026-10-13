@@ -606,6 +606,32 @@
     <string name="news_time_hours_ago">%1$d ម៉ោងមុន</string>
     <string name="news_time_days_ago">%1$d ថ្ងៃមុន</string>
     <string name="news_time_weeks_ago">%1$d សប្តាហ៍មុន</string>
-    <string name="news_time_months_ago">%1$d ខែមុន</string>
     <string name="market_post_bid_fab">ប្រកាសតម្លៃថ្មី</string>
+
+    <!-- Market Prices Tab -->
+    <string name="market_prices_my_bids_title">តម្លៃដែលអ្នកបានចុះ</string>
+    <string name="market_prices_my_bids_offline_title">តម្លៃដែលអ្នកបានចុះ (ក្រៅបណ្តាញ)</string>
+    <string name="market_prices_my_bids_subtitle">%1$d តម្លៃកំពុងផ្សាយ · ចុចដើម្បីកែសម្រួល</string>
+    <string name="market_prices_national_title">តម្លៃទិញថ្ងៃនេះ</string>
+    <string name="market_prices_national_subtitle">តារាងតម្លៃស្រូវអង្ករទូទាំងប្រទេស · %1$d លទ្ធផល</string>
+    <string name="market_prices_footer_note">ទិន្នន័យសម្រាប់ជាឯកសារយោង ប្រមូលពីឈ្មួញក្នុងតំបន់ដីសណ្តទន្លេមេគង្គ។</string>
+    <string name="market_prices_empty_title">មិនមានទិន្នន័យតម្លៃទេ</string>
+    <string name="market_prices_empty_subtitle">មិនអាចទាញយកតារាងតម្លៃថ្ងៃនេះ ឬមិនទាន់មានប្រតិបត្តិការថ្មី</string>
+    <string name="market_prices_empty_refresh_action">ផ្ទុកតារាងតម្លៃឡើងវិញ</string>
+    <string name="market_filter_all">ទាំងអស់</string>
+    <string name="market_bid_delete_action">លុបតម្លៃ</string>
+    <string name="market_bid_edit_action">កែតម្លៃ</string>
+    <string name="market_bid_region_prefix">📍 តំបន់: %1$s</string>
+    <string name="market_bid_unknown_variety">មិនទាន់កំណត់</string>
+    <string name="market_price_min_label">ទាបបំផុត</string>
+    <string name="market_price_max_label">ខ្ពស់បំផុត</string>
+    <string name="market_price_avg_label">មធ្យម ៧ថ្ងៃ</string>
+    <string name="market_price_unit">ដ/គក</string>
+    <string name="market_card_chart_desc">មើលគំនូសតាងតម្លៃ</string>
+    <string name="market_chart_title">និន្នាការតម្លៃ</string>
+    <string name="market_chart_empty">មិនទាន់មានទិន្នន័យប្រវត្តិទេ</string>
+    <string name="market_chart_days_toggle">%1$dថ្ងៃ</string>
+    <string name="market_chart_stat_min">ទាប</string>
+    <string name="market_chart_stat_avg">មធ្យម</string>
+    <string name="market_chart_stat_max">ខ្ពស់</string>
 </resources>

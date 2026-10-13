@@ -29,10 +29,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.RicePrice
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.util.HapticUtil
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -50,16 +54,20 @@ fun RicePriceCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val (trendColor, trendIcon, trendLabel) = when (price.trend) {
-        "UP" -> Triple(AppColors.Success, Icons.AutoMirrored.Filled.TrendingUp, "Tăng")
-        "DOWN" -> Triple(AppColors.Error, Icons.AutoMirrored.Filled.TrendingDown, "Giảm")
-        else -> Triple(AppColors.Info, Icons.AutoMirrored.Filled.TrendingFlat, "Ổn định")
+        "UP" -> Triple(AppColors.Success, Icons.AutoMirrored.Filled.TrendingUp, stringResource(R.string.market_bid_trend_up))
+        "DOWN" -> Triple(AppColors.Error, Icons.AutoMirrored.Filled.TrendingDown, stringResource(R.string.market_bid_trend_down))
+        else -> Triple(AppColors.Info, Icons.AutoMirrored.Filled.TrendingFlat, stringResource(R.string.market_bid_trend_stable))
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable {
+                HapticUtil.tick(context)
+                onClick()
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -91,7 +99,7 @@ fun RicePriceCard(
                 Spacer(Modifier.width(6.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Xem biểu đồ",
+                    contentDescription = stringResource(R.string.market_card_chart_desc),
                     tint = AppColors.TextHint,
                     modifier = Modifier.size(18.dp)
                 )
@@ -150,20 +158,20 @@ fun RicePriceCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 PriceColumn(
-                    label = "Thấp nhất",
+                    label = stringResource(R.string.market_price_min_label),
                     value = formatPrice(price.priceMin),
                     color = AppColors.TextSecondary,
                     modifier = Modifier.weight(1f)
                 )
                 PriceColumn(
-                    label = "Cao nhất",
+                    label = stringResource(R.string.market_price_max_label),
                     value = formatPrice(price.priceMax),
                     color = AppColors.GreenDark,
                     isHighlight = true,
                     modifier = Modifier.weight(1f)
                 )
                 PriceColumn(
-                    label = "TB 7 ngày",
+                    label = stringResource(R.string.market_price_avg_label),
                     value = formatPrice(price.priceAvg7d),
                     color = AppColors.GoldDark,
                     modifier = Modifier.weight(1f)
@@ -201,7 +209,7 @@ private fun PriceColumn(
             color = color
         )
         Text(
-            text = "đ/kg",
+            text = stringResource(R.string.market_price_unit),
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.TextHint
         )
@@ -263,16 +271,19 @@ private val PRICE_FORMAT = NumberFormat.getNumberInstance(Locale.forLanguageTag(
 
 private fun formatPrice(price: Double): String = PRICE_FORMAT.format(price.toLong())
 
+@Composable
 private fun formatRelativeTime(timestamp: Long): String {
     val diff = System.currentTimeMillis() - timestamp
+    if (diff < 0) return stringResource(R.string.news_time_just_now)
     val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
     val hours = TimeUnit.MILLISECONDS.toHours(diff)
     val days = TimeUnit.MILLISECONDS.toDays(diff)
     return when {
-        minutes < 1 -> "Vừa cập nhật"
-        minutes < 60 -> "$minutes phút trước"
-        hours < 24 -> "$hours giờ trước"
-        days < 7 -> "$days ngày trước"
-        else -> "Đã lâu"
+        minutes < 1 -> stringResource(R.string.news_time_just_now)
+        minutes < 60 -> stringResource(R.string.news_time_minutes_ago, minutes)
+        hours < 24 -> stringResource(R.string.news_time_hours_ago, hours)
+        days < 7 -> stringResource(R.string.news_time_days_ago, days)
+        days < 30 -> stringResource(R.string.news_time_weeks_ago, days / 7)
+        else -> stringResource(R.string.news_time_months_ago, days / 30)
     }
 }

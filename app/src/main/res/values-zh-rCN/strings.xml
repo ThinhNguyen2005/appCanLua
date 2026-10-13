@@ -607,6 +607,32 @@
     <string name="news_time_hours_ago">%1$d 小时前</string>
     <string name="news_time_days_ago">%1$d 天前</string>
     <string name="news_time_weeks_ago">%1$d 周前</string>
-    <string name="news_time_months_ago">%1$d 个月前</string>
     <string name="market_post_bid_fab">发布新报价</string>
+
+    <!-- Market Prices Tab -->
+    <string name="market_prices_my_bids_title">您的报价</string>
+    <string name="market_prices_my_bids_offline_title">您的报价（离线）</string>
+    <string name="market_prices_my_bids_subtitle">%1$d 条正在发布 · 轻触可编辑</string>
+    <string name="market_prices_national_title">今日收购价</string>
+    <string name="market_prices_national_subtitle">全国稻谷大米行情 · %1$d 项结果</string>
+    <string name="market_prices_footer_note">参考数据来源于湄公河三角洲地区粮商。</string>
+    <string name="market_prices_empty_title">暂无价格数据</string>
+    <string name="market_prices_empty_subtitle">无法加载今日价格或暂无最新交易</string>
+    <string name="market_prices_empty_refresh_action">刷新价格表</string>
+    <string name="market_filter_all">全部</string>
+    <string name="market_bid_delete_action">删除报价</string>
+    <string name="market_bid_edit_action">修改价格</string>
+    <string name="market_bid_region_prefix">📍 地区：%1$s</string>
+    <string name="market_bid_unknown_variety">未确定</string>
+    <string name="market_price_min_label">最低</string>
+    <string name="market_price_max_label">最高</string>
+    <string name="market_price_avg_label">7日均价</string>
+    <string name="market_price_unit">越盾/公斤</string>
+    <string name="market_card_chart_desc">查看价格走势图</string>
+    <string name="market_chart_title">价格走势</string>
+    <string name="market_chart_empty">暂无历史数据</string>
+    <string name="market_chart_days_toggle">%1$d天</string>
+    <string name="market_chart_stat_min">最低</string>
+    <string name="market_chart_stat_avg">平均</string>
+    <string name="market_chart_stat_max">最高</string>
 </resources>

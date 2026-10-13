@@ -1,6 +1,7 @@
 package com.giathinh.canlua.ui.screen.market
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -40,6 +41,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PriceChange
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -75,6 +77,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
@@ -516,8 +519,8 @@ private fun PricesPage(
                 val isOffline = myBids.any { it.isFromCache }
                 item {
                     SectionTitle(
-                        title = if (isOffline) "Giá rao của bạn (ngoại tuyến)" else "Giá rao của bạn",
-                        subtitle = "${myBids.size} tin đang đăng · chạm nhẹ để chỉnh sửa"
+                        title = if (isOffline) stringResource(R.string.market_prices_my_bids_offline_title) else stringResource(R.string.market_prices_my_bids_title),
+                        subtitle = stringResource(R.string.market_prices_my_bids_subtitle, myBids.size)
                     )
                 }
                 items(myBids, key = { "mine_${it.id}" }) { bid ->
@@ -538,13 +541,17 @@ private fun PricesPage(
 
             item {
                 SectionTitle(
-                    title = "Giá thu mua hôm nay",
-                    subtitle = "Bảng giá lúa gạo toàn quốc · ${prices.size} kết quả"
+                    title = stringResource(R.string.market_prices_national_title),
+                    subtitle = stringResource(R.string.market_prices_national_subtitle, prices.size)
                 )
             }
 
             if (isLoading && prices.isEmpty()) {
                 item { MarketSkeletonList(items = 4) }
+            } else if (prices.isEmpty()) {
+                item {
+                    MarketPricesEmptyState(onRefresh = onRefresh)
+                }
             } else {
                 items(prices, key = { it.id }) { price ->
                     RicePriceCard(
@@ -678,8 +685,7 @@ private fun FooterNote() {
             .padding(12.dp)
     ) {
         Text(
-            text = "💡 Dữ liệu mang tính tham khảo, được tổng hợp từ thương lái khu vực ĐBSCL. " +
-                    "Phiên bản tiếp theo sẽ tích hợp giá real-time định vị bằng vệ tinh GPS.",
+            text = "💡 " + stringResource(R.string.market_prices_footer_note),
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextHint
         )
@@ -694,12 +700,12 @@ private fun FilterChipsRow(
     selectedTrend: String?,
     onSelectTrend: (String?) -> Unit
 ) {
-    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
     val options = listOf(
-        Triple<String?, String, Color>(null, "Tất cả", AppColors.GreenPrimary),
-        Triple<String?, String, Color>("UP", "Đang tăng", AppColors.Success),
-        Triple<String?, String, Color>("STABLE", "Ổn định", AppColors.Info),
-        Triple<String?, String, Color>("DOWN", "Đang giảm", AppColors.Error)
+        Triple(null, stringResource(R.string.market_filter_all), AppColors.GreenPrimary),
+        Triple("UP", stringResource(R.string.market_bid_trend_up), AppColors.Success),
+        Triple("STABLE", stringResource(R.string.market_bid_trend_stable), AppColors.Info),
+        Triple("DOWN", stringResource(R.string.market_bid_trend_down), AppColors.Error)
     )
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -707,21 +713,29 @@ private fun FilterChipsRow(
     ) {
         items(options) { (key, label, color) ->
             val selected = selectedTrend == key
+            val animatedBorderColor by animateColorAsState(
+                targetValue = if (selected) color else AppColors.Divider,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "trend_chip_border"
+            )
+            val animatedBgColor by animateColorAsState(
+                targetValue = if (selected) color.copy(alpha = 0.12f) else Color.Transparent,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "trend_chip_bg"
+            )
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        if (selected) color.copy(alpha = 0.12f) else Color.Transparent
-                    )
+                    .background(animatedBgColor)
                     .border(
                         width = 1.dp,
-                        color = if (selected) color else AppColors.Divider,
+                        color = animatedBorderColor,
                         shape = RoundedCornerShape(24.dp)
                     )
                     .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        HapticUtil.tick(context)
                         onSelectTrend(key)
                     }
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -760,6 +774,7 @@ private fun MyBidCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     val numberFormat = remember { java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")) }
     val trendColor = when (bid.trend) {
         "UP" -> AppColors.Success
@@ -767,18 +782,17 @@ private fun MyBidCard(
         else -> AppColors.Info
     }
     val trendLabel = when (bid.trend) {
-        "UP" -> "Đang tăng"
-        "DOWN" -> "Đang giảm"
-        else -> "Ổn định"
+        "UP" -> stringResource(R.string.market_bid_trend_up)
+        "DOWN" -> stringResource(R.string.market_bid_trend_down)
+        else -> stringResource(R.string.market_bid_trend_stable)
     }
-    val haptic = LocalHapticFeedback.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(AppColors.GreenSurface)
             .clickable {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                HapticUtil.tick(context)
                 onEdit()
             }
             .padding(16.dp)
@@ -790,7 +804,7 @@ private fun MyBidCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = bid.variety.ifBlank { "Chưa xác định" },
+                    text = bid.variety.ifBlank { stringResource(R.string.market_bid_unknown_variety) },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary,
@@ -812,7 +826,7 @@ private fun MyBidCard(
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "${numberFormat.format(bid.priceMin.toLong())} – ${numberFormat.format(bid.priceMax.toLong())} đ/kg",
+                text = "${numberFormat.format(bid.priceMin.toLong())} – ${numberFormat.format(bid.priceMax.toLong())} " + stringResource(R.string.market_price_unit),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.GreenPrimary
@@ -820,7 +834,7 @@ private fun MyBidCard(
             Spacer(Modifier.height(4.dp))
             if (bid.region.isNotBlank()) {
                 Text(
-                    text = "📍 Khu vực: ${bid.region}",
+                    text = stringResource(R.string.market_bid_region_prefix, bid.region),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextSecondary
                 )
@@ -841,13 +855,21 @@ private fun MyBidCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
             ) {
                 androidx.compose.material3.TextButton(
-                    onClick = onDelete,
+                    onClick = {
+                        HapticUtil.tick(context)
+                        onDelete()
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Xoá tin", color = AppColors.Error, fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.market_bid_delete_action), color = AppColors.Error, fontWeight = FontWeight.Medium)
                 }
                 androidx.compose.material3.Button(
-                    onClick = onEdit,
+                    onClick = {
+                        HapticUtil.tick(context)
+                        onEdit()
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = AppColors.GreenPrimary.copy(alpha = 0.1f),
                         contentColor = AppColors.GreenPrimary
@@ -855,9 +877,66 @@ private fun MyBidCard(
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text("Sửa giá", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.market_bid_edit_action), fontWeight = FontWeight.SemiBold)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MarketPricesEmptyState(onRefresh: () -> Unit) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.PriceChange,
+            contentDescription = null,
+            tint = AppColors.TextHint,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.market_prices_empty_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.TextPrimary
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.market_prices_empty_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.TextSecondary,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(16.dp))
+        androidx.compose.material3.Button(
+            onClick = {
+                HapticUtil.tick(context)
+                onRefresh()
+            },
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = AppColors.GreenPrimary,
+                contentColor = Color.White
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.heightIn(min = 48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.market_prices_empty_refresh_action),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

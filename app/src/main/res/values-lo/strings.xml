@@ -604,6 +604,32 @@
     <string name="news_time_hours_ago">%1$d ຊົ່ວໂມງກ່ອນ</string>
     <string name="news_time_days_ago">%1$d ມື້ກ່ອນ</string>
     <string name="news_time_weeks_ago">%1$d ອາທິດກ່ອນ</string>
-    <string name="news_time_months_ago">%1$d ເດືອນກ່ອນ</string>
     <string name="market_post_bid_fab">ປະກາດລາຄາໃໝ່</string>
+
+    <!-- Market Prices Tab -->
+    <string name="market_prices_my_bids_title">ລາຄາທີ່ທ່ານປະກາດ</string>
+    <string name="market_prices_my_bids_offline_title">ລາຄາທີ່ທ່ານປະກາດ (ອອບລາຍ)</string>
+    <string name="market_prices_my_bids_subtitle">%1$d ລາຍການກຳລັງປະກາດ · ແຕະເພື່ອແກ້ໄຂ</string>
+    <string name="market_prices_national_title">ລາຄາຮັບຊື້ມື້ນີ້</string>
+    <string name="market_prices_national_subtitle">ຕາຕະລາງລາຄາເຂົ້າທົ່ວປະເທດ · %1$d ຜົນໄດ້ຮັບ</string>
+    <string name="market_prices_footer_note">ຂໍ້ມູນສຳລັບການອ້າງອີງ ລວບລວມມາຈາກພໍ່ຄ້າໃນເຂດທົ່ງພຽງແມ່ນ້ຳຂອງ.</string>
+    <string name="market_prices_empty_title">ບໍ່ມີຂໍ້ມູນລາຄາ</string>
+    <string name="market_prices_empty_subtitle">ບໍ່ສາມາດໂຫລດຕາຕະລາງລາຄາມື້ນີ້ ຫຼື ຍັງບໍ່ມີທຸລະກຳໃໝ່</string>
+    <string name="market_prices_empty_refresh_action">ໂຫລດຕາຕະລາງລາຄາຄືນໃໝ່</string>
+    <string name="market_filter_all">ທັງໝົດ</string>
+    <string name="market_bid_delete_action">ລຶບປະກາດ</string>
+    <string name="market_bid_edit_action">ແກ້ໄຂລາຄາ</string>
+    <string name="market_bid_region_prefix">📍 ເຂດ: %1$s</string>
+    <string name="market_bid_unknown_variety">ບໍ່ໄດ້ລະບຸ</string>
+    <string name="market_price_min_label">ຕ່ຳສຸດ</string>
+    <string name="market_price_max_label">ສູງສຸດ</string>
+    <string name="market_price_avg_label">ສະເລ່ຍ 7 ວັນ</string>
+    <string name="market_price_unit">ກີບ/ກກ</string>
+    <string name="market_card_chart_desc">ເບິ່ງແຜນວາດລາຄາ</string>
+    <string name="market_chart_title">ທ່າອ່ຽງລາຄາ</string>
+    <string name="market_chart_empty">ບໍ່ມີຂໍ້ມູນປະຫວັດ</string>
+    <string name="market_chart_days_toggle">%1$dວ</string>
+    <string name="market_chart_stat_min">ຕ່ຳ</string>
+    <string name="market_chart_stat_avg">ກາງ</string>
+    <string name="market_chart_stat_max">ສູງ</string>
 </resources>

@@ -611,7 +611,33 @@
     <string name="news_time_hours_ago">%1$d hours ago</string>
     <string name="news_time_days_ago">%1$d days ago</string>
     <string name="news_time_weeks_ago">%1$d weeks ago</string>
-    <string name="news_time_months_ago">%1$d months ago</string>
     <string name="market_post_bid_fab">Post new bid</string>
+
+    <!-- Market Prices Tab -->
+    <string name="market_prices_my_bids_title">Your Posted Bids</string>
+    <string name="market_prices_my_bids_offline_title">Your Posted Bids (Offline)</string>
+    <string name="market_prices_my_bids_subtitle">%1$d bids posted · tap to edit</string>
+    <string name="market_prices_national_title">Today\'s Purchase Prices</string>
+    <string name="market_prices_national_subtitle">National rice price board · %1$d results</string>
+    <string name="market_prices_footer_note">Reference data aggregated from traders across the Mekong Delta region.</string>
+    <string name="market_prices_empty_title">No Price Data</string>
+    <string name="market_prices_empty_subtitle">Unable to load today\'s prices or no market trades recorded</string>
+    <string name="market_prices_empty_refresh_action">Reload Prices</string>
+    <string name="market_filter_all">All</string>
+    <string name="market_bid_delete_action">Delete Bid</string>
+    <string name="market_bid_edit_action">Edit Price</string>
+    <string name="market_bid_region_prefix">📍 Region: %1$s</string>
+    <string name="market_bid_unknown_variety">Unspecified</string>
+    <string name="market_price_min_label">Lowest</string>
+    <string name="market_price_max_label">Highest</string>
+    <string name="market_price_avg_label">7D Avg</string>
+    <string name="market_price_unit">đ/kg</string>
+    <string name="market_card_chart_desc">View price chart</string>
+    <string name="market_chart_title">Price Trend</string>
+    <string name="market_chart_empty">No historical data available</string>
+    <string name="market_chart_days_toggle">%1$dd</string>
+    <string name="market_chart_stat_min">Min</string>
+    <string name="market_chart_stat_avg">Avg</string>
+    <string name="market_chart_stat_max">Max</string>
 </resources>
 

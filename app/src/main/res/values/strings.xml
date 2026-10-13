@@ -646,5 +646,32 @@
     <string name="news_time_weeks_ago">%1$d tuần trước</string>
     <string name="news_time_months_ago">%1$d tháng trước</string>
     <string name="market_post_bid_fab">Đăng giá mới</string>
+
+    <!-- Market Prices Tab -->
+    <string name="market_prices_my_bids_title">Giá rao của bạn</string>
+    <string name="market_prices_my_bids_offline_title">Giá rao của bạn (ngoại tuyến)</string>
+    <string name="market_prices_my_bids_subtitle">%1$d tin đang đăng · chạm nhẹ để chỉnh sửa</string>
+    <string name="market_prices_national_title">Giá thu mua hôm nay</string>
+    <string name="market_prices_national_subtitle">Bảng giá lúa gạo toàn quốc · %1$d kết quả</string>
+    <string name="market_prices_footer_note">Dữ liệu mang tính tham khảo, được tổng hợp từ thương lái khu vực ĐBSCL.</string>
+    <string name="market_prices_empty_title">Chưa có dữ liệu giá</string>
+    <string name="market_prices_empty_subtitle">Không tải được bảng giá hôm nay hoặc chưa có dữ liệu giao dịch</string>
+    <string name="market_prices_empty_refresh_action">Tải lại bảng giá</string>
+    <string name="market_filter_all">Tất cả</string>
+    <string name="market_bid_delete_action">Xoá tin</string>
+    <string name="market_bid_edit_action">Sửa giá</string>
+    <string name="market_bid_region_prefix">📍 Khu vực: %1$s</string>
+    <string name="market_bid_unknown_variety">Chưa xác định</string>
+    <string name="market_price_min_label">Thấp nhất</string>
+    <string name="market_price_max_label">Cao nhất</string>
+    <string name="market_price_avg_label">TB 7 ngày</string>
+    <string name="market_price_unit">đ/kg</string>
+    <string name="market_card_chart_desc">Xem biểu đồ giá</string>
+    <string name="market_chart_title">Xu hướng giá</string>
+    <string name="market_chart_empty">Chưa có dữ liệu lịch sử</string>
+    <string name="market_chart_days_toggle">%1$dn</string>
+    <string name="market_chart_stat_min">Min</string>
+    <string name="market_chart_stat_avg">TB</string>
+    <string name="market_chart_stat_max">Max</string>
 </resources>
 

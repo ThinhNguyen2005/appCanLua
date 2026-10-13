@@ -22,10 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.PricePoint
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.util.HapticUtil
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
@@ -70,7 +74,7 @@ fun PriceTrendChart(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Xu hướng giá",
+                    text = stringResource(R.string.market_chart_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary,
@@ -92,7 +96,7 @@ fun PriceTrendChart(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Chưa có dữ liệu lịch sử",
+                        text = stringResource(R.string.market_chart_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextHint
                     )
@@ -122,9 +126,9 @@ fun PriceTrendChart(
                     val minP = points.minOf { it.priceAvg }
                     val maxP = points.maxOf { it.priceAvg }
                     val avgP = points.map { it.priceAvg }.average()
-                    StatChip("Min", minP, AppColors.Error)
-                    StatChip("TB", avgP, AppColors.Info)
-                    StatChip("Max", maxP, AppColors.Success)
+                    StatChip(stringResource(R.string.market_chart_stat_min), minP, AppColors.Error)
+                    StatChip(stringResource(R.string.market_chart_stat_avg), avgP, AppColors.Info)
+                    StatChip(stringResource(R.string.market_chart_stat_max), maxP, AppColors.Success)
                 }
             }
         }
@@ -136,6 +140,7 @@ private fun TimeRangeToggle(
     selectedDays: Int,
     onSelect: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -150,11 +155,14 @@ private fun TimeRangeToggle(
                     .background(
                         if (selected) AppColors.GreenPrimary else Color.Transparent
                     )
-                    .clickable { onSelect(days) }
+                    .clickable {
+                        HapticUtil.tick(context)
+                        onSelect(days)
+                    }
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "${days}n",
+                    text = stringResource(R.string.market_chart_days_toggle, days),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (selected) Color.White else AppColors.TextSecondary
