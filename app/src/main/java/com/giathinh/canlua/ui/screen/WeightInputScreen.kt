@@ -169,7 +169,7 @@ fun WeightInputScreenContent(
                 viewModel.addWeightEntryDirectly(cardId, weight)
                 HapticUtil.tick(context)
             } else {
-                appToast.warning("Vui lòng nhập lần lượt từ ô trống kế tiếp")
+                appToast.warning(context.getString(R.string.weight_input_fill_consecutive_warning))
             }
         }
     }
@@ -536,13 +536,17 @@ fun WeightInputScreenContent(
                         HapticUtil.confirm(context)
                         showLockConfirmDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error),
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
                     Text(stringResource(R.string.weight_input_lock_confirm), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLockConfirmDialog = false }) {
+                TextButton(
+                    onClick = { showLockConfirmDialog = false },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
                     Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
                 }
             },
@@ -588,7 +592,7 @@ private fun WeightTableCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.weight_input_table_title, tableIndex), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
-                Text("${"%.1f".format(tableTotal)} kg", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
+                Text("${"%.1f".format(tableTotal)} " + stringResource(R.string.unit_kg), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
             }
 
             Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

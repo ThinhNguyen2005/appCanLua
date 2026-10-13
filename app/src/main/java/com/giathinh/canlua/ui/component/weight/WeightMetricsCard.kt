@@ -78,6 +78,8 @@ fun WeightMetricsCard(
     }
 
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    val unitKg = stringResource(R.string.unit_kg)
 
     // Đồng bộ text khi DB thay đổi từ bên ngoài
     LaunchedEffect(impurityWeight) {
@@ -143,10 +145,12 @@ fun WeightMetricsCard(
 
     val impurityValue = impurityWeight.coerceAtLeast(0.0)
 
-    val impurityPreviewText = remember(impurityValue, impurityIsPercent) {
+    val impurityPreviewText = if (impurityIsPercent) {
         val impurityText = "%.1f".format(java.util.Locale.US, impurityValue).replace(".", ",")
-        if (impurityIsPercent) "Đang trừ $impurityText% tạp chất sau bao bì"
-        else "Đang trừ $impurityText kg tạp chất"
+        stringResource(R.string.weight_metrics_deducting_impurity_percent, impurityText)
+    } else {
+        val impurityText = "%.1f".format(java.util.Locale.US, impurityValue).replace(".", ",")
+        stringResource(R.string.weight_metrics_deducting_impurity_kg, impurityText)
     }
 
     Box(
@@ -191,7 +195,7 @@ fun WeightMetricsCard(
                 Surface(color = AppColors.GreenSurface, shape = RoundedCornerShape(8.dp)) {
                     AnimatedNumber(
                         value = bagCount,
-                        formatter = { count -> "$count bao" },
+                        formatter = { count -> context.getString(R.string.weight_metrics_bags_count, count) },
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = AppColors.GreenPrimary
@@ -218,7 +222,7 @@ fun WeightMetricsCard(
                     )
                     AnimatedNumber(
                         value = totalWeight,
-                        formatter = { "${"%.1f".format(it)} kg" },
+                        formatter = { "${"%.1f".format(it)} $unitKg" },
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = AppColors.RemainingHighlight
@@ -249,7 +253,7 @@ fun WeightMetricsCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     },
-                    supportingText = { Text("Đang trừ $totalBagText kg bao bì") },
+                    supportingText = { Text(stringResource(R.string.weight_metrics_deducting_bag, totalBagText)) },
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { showBagInfo = true }, modifier = Modifier.size(24.dp)) {
@@ -264,7 +268,7 @@ fun WeightMetricsCard(
                             IconButton(onClick = { if (!isLocked) showBagDialog = true }, modifier = Modifier.size(24.dp)) {
                                 Icon(
                                     Icons.Default.Settings,
-                                    contentDescription = "Thiết lập bao bì",
+                                    contentDescription = stringResource(R.string.weight_metrics_setup_bag),
                                     tint = AppColors.GreenPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -385,7 +389,7 @@ fun WeightMetricsCard(
                     )
                     AnimatedNumber(
                         value = netWeight,
-                        formatter = { "${"%.1f".format(it)} kg" },
+                        formatter = { "${"%.1f".format(it)} $unitKg" },
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = AppColors.GreenPrimary
@@ -419,7 +423,6 @@ fun WeightMetricsCard(
                     color = AppColors.GreenPrimary
                 )
             }
-            val context = LocalContext.current
             MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
                 Text(
                     text = words,
@@ -468,29 +471,30 @@ fun WeightMetricsCard(
         var sampleWeightLocal by remember {
             mutableStateOf(if (bagSampleTotalWeight > 0.0) bagSampleTotalWeight.toString() else "1.0")
         }
-        val dialogPreview = remember(isSamplingLocal, sampleCountLocal, sampleWeightLocal, bagCount) {
-            val count = sampleCountLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
-            val unitKg = if (isSamplingLocal) {
-                sampleWeightLocal.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0
-            } else {
-                1.0
-            }
-            val total = (bagCount.toDouble() / count.toDouble()) * unitKg
-            "Với $bagCount bao hiện tại → trừ ${"%.1f".format(java.util.Locale.US, total).replace(".", ",")} kg"
+        val count = sampleCountLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
+        val unitKg = if (isSamplingLocal) {
+            sampleWeightLocal.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0
+        } else {
+            1.0
         }
+        val total = (bagCount.toDouble() / count.toDouble()) * unitKg
+        val formattedTotal = remember(total) {
+            "%.1f".format(java.util.Locale.US, total).replace(".", ",")
+        }
+        val dialogPreview = stringResource(R.string.weight_metrics_bag_dialog_preview, bagCount, formattedTotal)
 
         AlertDialog(
             onDismissRequest = { showBagDialog = false },
             title = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "Thiết lập trừ bao bì",
+                        text = stringResource(R.string.weight_metrics_bag_dialog_title),
                         fontWeight = FontWeight.ExtraBold,
                         style = MaterialTheme.typography.titleLarge,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = "Chọn cách quy đổi số bao sang kg bì. Công thức áp dụng ngay cho phiếu này.",
+                        text = stringResource(R.string.weight_metrics_bag_dialog_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextSecondary
                     )
@@ -503,16 +507,16 @@ fun WeightMetricsCard(
                 ) {
                     BagMethodOption(
                         selected = !isSamplingLocal,
-                        title = "Bao đơn vị (X bao = 1 kg)",
-                        subtitle = "Mỗi X bao quy đổi 1 kg bì. VD: 8 bao lúa nặng 1 kg bì",
-                        formula = "Tổng bì = Tổng bao ÷ X",
+                        title = stringResource(R.string.weight_metrics_bag_opt_unit_title),
+                        subtitle = stringResource(R.string.weight_metrics_bag_opt_unit_sub),
+                        formula = stringResource(R.string.weight_metrics_bag_opt_unit_formula),
                         onClick = { isSamplingLocal = false }
                     ) {
                         OutlinedTextField(
                             value = sampleCountLocal,
                             onValueChange = { value -> sampleCountLocal = value.filter { it.isDigit() } },
-                            label = { Text("Số bao") },
-                            suffix = { Text("bao = 1 kg") },
+                            label = { Text(stringResource(R.string.weight_metrics_bag_field_count)) },
+                            suffix = { Text(stringResource(R.string.weight_metrics_bag_field_suffix)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -522,16 +526,16 @@ fun WeightMetricsCard(
 
                     BagMethodOption(
                         selected = isSamplingLocal,
-                        title = "Cân mẫu (tùy chỉnh)",
-                        subtitle = "Cân X bao mẫu ra Y kg → suy ra kg/bao trung bình",
-                        formula = "Tổng bì = Tổng bao × (Y ÷ X)",
+                        title = stringResource(R.string.weight_metrics_bag_opt_sample_title),
+                        subtitle = stringResource(R.string.weight_metrics_bag_opt_sample_sub),
+                        formula = stringResource(R.string.weight_metrics_bag_opt_sample_formula),
                         onClick = { isSamplingLocal = true }
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
                                 value = sampleCountLocal,
                                 onValueChange = { value -> sampleCountLocal = value.filter { it.isDigit() } },
-                                label = { Text("Số bao đã cân") },
+                                label = { Text(stringResource(R.string.weight_metrics_bag_field_sample_count)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
@@ -543,7 +547,7 @@ fun WeightMetricsCard(
                                     sampleWeightLocal = value.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }
                                         .replace(',', '.')
                                 },
-                                label = { Text("Tổng kg bao mẫu") },
+                                label = { Text(stringResource(R.string.weight_metrics_bag_field_sample_weight)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
@@ -578,14 +582,18 @@ fun WeightMetricsCard(
                         onBagMethodChange(isSamplingLocal, count, weight)
                         showBagDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    Text("Áp dụng", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.action_apply), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBagDialog = false }) {
-                    Text("Hủy", color = AppColors.TextSecondary)
+                TextButton(
+                    onClick = { showBagDialog = false },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
                 }
             },
             shape = RoundedCornerShape(24.dp),

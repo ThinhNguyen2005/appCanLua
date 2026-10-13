@@ -635,4 +635,26 @@
     <string name="market_chart_stat_min">最低</string>
     <string name="market_chart_stat_avg">平均</string>
     <string name="market_chart_stat_max">最高</string>
+
+    <!-- Weight Input & Weight Metrics Polish -->
+    <string name="weight_input_fill_consecutive_warning">请在下一个空格依次输入重量</string>
+    <string name="action_apply">应用</string>
+    <string name="weight_metrics_deducting_bag">正在扣除 %1$s 公斤包装皮重</string>
+    <string name="weight_metrics_setup_bag">设置包装皮重</string>
+    <string name="weight_metrics_deducting_impurity_percent">正在扣除皮重后 %1$s%% 杂质</string>
+    <string name="weight_metrics_deducting_impurity_kg">正在扣除 %1$s 公斤杂质</string>
+    <string name="weight_metrics_bag_dialog_title">设置扣除包装皮重</string>
+    <string name="weight_metrics_bag_dialog_desc">选择袋数换算皮重方式。计算公式即时应用于此凭证。</string>
+    <string name="weight_metrics_bag_opt_unit_title">标准袋数（X 袋 = 1 公斤）</string>
+    <string name="weight_metrics_bag_opt_unit_sub">每 X 袋换算 1 公斤皮重。例：8 个稻谷包装袋重 1 公斤皮重</string>
+    <string name="weight_metrics_bag_opt_unit_formula">总皮重 = 总袋数 ÷ X</string>
+    <string name="weight_metrics_bag_field_count">袋数</string>
+    <string name="weight_metrics_bag_field_suffix">袋 = 1 公斤</string>
+    <string name="weight_metrics_bag_opt_sample_title">抽样称重（自定义）</string>
+    <string name="weight_metrics_bag_opt_sample_sub">称量 X 个样品袋得出 Y 公斤 → 换算平均每袋公斤数</string>
+    <string name="weight_metrics_bag_opt_sample_formula">总皮重 = 总袋数 × (Y ÷ X)</string>
+    <string name="weight_metrics_bag_field_sample_count">已称样品袋数</string>
+    <string name="weight_metrics_bag_field_sample_weight">样品袋总公斤数</string>
+    <string name="weight_metrics_bag_dialog_preview">当前 %1$d 袋 → 扣除 %2$s 公斤</string>
+    <string name="weight_metrics_bags_count">%1$d 袋</string>
 </resources>

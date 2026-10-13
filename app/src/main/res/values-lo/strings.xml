@@ -632,4 +632,26 @@
     <string name="market_chart_stat_min">ຕ່ຳ</string>
     <string name="market_chart_stat_avg">ກາງ</string>
     <string name="market_chart_stat_max">ສູງ</string>
+
+    <!-- Weight Input & Weight Metrics Polish -->
+    <string name="weight_input_fill_consecutive_warning">ກະລຸນາປ້ອນນ້ຳໜັກຕາມລຳດັບໃນຫ້ອງຫວ່າງຖັດໄປ</string>
+    <string name="action_apply">ນຳໃຊ້</string>
+    <string name="weight_metrics_deducting_bag">ກຳລັງຫັກ %1$s kg ນ້ຳໜັກເປົາ</string>
+    <string name="weight_metrics_setup_bag">ຕັ້ງຄ່ານ້ຳໜັກເປົາ</string>
+    <string name="weight_metrics_deducting_impurity_percent">ກຳລັງຫັກ %1$s%% ສິ່ງເຈືອປົນຫຼັງຫັກເປົາ</string>
+    <string name="weight_metrics_deducting_impurity_kg">ກຳລັງຫັກ %1$s kg ສິ່ງເຈືອປົນ</string>
+    <string name="weight_metrics_bag_dialog_title">ຕັ້ງຄ່າການຫັກນ້ຳໜັກເປົາ</string>
+    <string name="weight_metrics_bag_dialog_desc">ເລືອກວິທີປ່ຽນຈຳນວນເປົາເປັນ kg ເປົາ. ສູດຄິດໄລ່ນຳໃຊ້ທັນທີກັບໃບນີ້.</string>
+    <string name="weight_metrics_bag_opt_unit_title">ເປົາຫົວໜ່ວຍ (X ເປົາ = 1 kg)</string>
+    <string name="weight_metrics_bag_opt_unit_sub">ທຸກໆ X ເປົາເທົ່າກັບ 1 kg ເປົາ. ຕົວຢ່າງ: 8 ເປົາເຂົ້າໜັກ 1 kg ເປົາ</string>
+    <string name="weight_metrics_bag_opt_unit_formula">ນ້ຳໜັກເປົາທັງໝົດ = ຈຳນວນເປົາ ÷ X</string>
+    <string name="weight_metrics_bag_field_count">ຈຳນວນເປົາ</string>
+    <string name="weight_metrics_bag_field_suffix">ເປົາ = 1 kg</string>
+    <string name="weight_metrics_bag_opt_sample_title">ຊັ່ງຕົວຢ່າງ (ກຳນົດເອງ)</string>
+    <string name="weight_metrics_bag_opt_sample_sub">ຊັ່ງ X ເປົາຕົວຢ່າງໄດ້ Y kg → ຄິດໄລ່ສະເລ່ຍ kg/ເປົາ</string>
+    <string name="weight_metrics_bag_opt_sample_formula">ນ້ຳໜັກເປົາທັງໝົດ = ຈຳນວນເປົາ × (Y ÷ X)</string>
+    <string name="weight_metrics_bag_field_sample_count">ຈຳນວນເປົາທີ່ຊັ່ງແລ້ວ</string>
+    <string name="weight_metrics_bag_field_sample_weight">ນ້ຳໜັກເປົາຕົວຢ່າງທັງໝົດ (kg)</string>
+    <string name="weight_metrics_bag_dialog_preview">ດ້ວຍ %1$d ເປົາປັດຈຸບັນ → ຫັກ %2$s kg</string>
+    <string name="weight_metrics_bags_count">%1$d ເປົາ</string>
 </resources>

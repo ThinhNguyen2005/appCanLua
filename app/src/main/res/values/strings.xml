@@ -673,5 +673,27 @@
     <string name="market_chart_stat_min">Min</string>
     <string name="market_chart_stat_avg">TB</string>
     <string name="market_chart_stat_max">Max</string>
+
+    <!-- Weight Input & Weight Metrics Polish -->
+    <string name="weight_input_fill_consecutive_warning">Vui lòng nhập lần lượt từ ô trống kế tiếp</string>
+    <string name="action_apply">Áp dụng</string>
+    <string name="weight_metrics_deducting_bag">Đang trừ %1$s kg bao bì</string>
+    <string name="weight_metrics_setup_bag">Thiết lập bao bì</string>
+    <string name="weight_metrics_deducting_impurity_percent">Đang trừ %1$s%% tạp chất sau bao bì</string>
+    <string name="weight_metrics_deducting_impurity_kg">Đang trừ %1$s kg tạp chất</string>
+    <string name="weight_metrics_bag_dialog_title">Thiết lập trừ bao bì</string>
+    <string name="weight_metrics_bag_dialog_desc">Chọn cách quy đổi số bao sang kg bì. Công thức áp dụng ngay cho phiếu này.</string>
+    <string name="weight_metrics_bag_opt_unit_title">Bao đơn vị (X bao = 1 kg)</string>
+    <string name="weight_metrics_bag_opt_unit_sub">Mỗi X bao quy đổi 1 kg bì. VD: 8 bao lúa nặng 1 kg bì</string>
+    <string name="weight_metrics_bag_opt_unit_formula">Tổng bì = Tổng bao ÷ X</string>
+    <string name="weight_metrics_bag_field_count">Số bao</string>
+    <string name="weight_metrics_bag_field_suffix">bao = 1 kg</string>
+    <string name="weight_metrics_bag_opt_sample_title">Cân mẫu (tùy chỉnh)</string>
+    <string name="weight_metrics_bag_opt_sample_sub">Cân X bao mẫu ra Y kg → suy ra kg/bao trung bình</string>
+    <string name="weight_metrics_bag_opt_sample_formula">Tổng bì = Tổng bao × (Y ÷ X)</string>
+    <string name="weight_metrics_bag_field_sample_count">Số bao đã cân</string>
+    <string name="weight_metrics_bag_field_sample_weight">Tổng kg bao mẫu</string>
+    <string name="weight_metrics_bag_dialog_preview">Với %1$d bao hiện tại → trừ %2$s kg</string>
+    <string name="weight_metrics_bags_count">%1$d bao</string>
 </resources>
 

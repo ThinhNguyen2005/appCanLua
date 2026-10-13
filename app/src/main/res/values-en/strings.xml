@@ -639,5 +639,27 @@
     <string name="market_chart_stat_min">Min</string>
     <string name="market_chart_stat_avg">Avg</string>
     <string name="market_chart_stat_max">Max</string>
+
+    <!-- Weight Input & Weight Metrics Polish -->
+    <string name="weight_input_fill_consecutive_warning">Please enter weights consecutively in the next empty cell</string>
+    <string name="action_apply">Apply</string>
+    <string name="weight_metrics_deducting_bag">Deducting %1$s kg tare weight</string>
+    <string name="weight_metrics_setup_bag">Tare weight settings</string>
+    <string name="weight_metrics_deducting_impurity_percent">Deducting %1$s%% impurity after tare</string>
+    <string name="weight_metrics_deducting_impurity_kg">Deducting %1$s kg impurity</string>
+    <string name="weight_metrics_bag_dialog_title">Tare deduction setup</string>
+    <string name="weight_metrics_bag_dialog_desc">Select bag to kg tare conversion method. Formula is applied immediately to this card.</string>
+    <string name="weight_metrics_bag_opt_unit_title">Unit bags (X bags = 1 kg)</string>
+    <string name="weight_metrics_bag_opt_unit_sub">Each X bags convert to 1 kg tare. E.g.: 8 rice bags weigh 1 kg tare</string>
+    <string name="weight_metrics_bag_opt_unit_formula">Total tare = Total bags ÷ X</string>
+    <string name="weight_metrics_bag_field_count">Number of bags</string>
+    <string name="weight_metrics_bag_field_suffix">bags = 1 kg</string>
+    <string name="weight_metrics_bag_opt_sample_title">Sample weighing (custom)</string>
+    <string name="weight_metrics_bag_opt_sample_sub">Weigh X sample bags to get Y kg → calculate average kg/bag</string>
+    <string name="weight_metrics_bag_opt_sample_formula">Total tare = Total bags × (Y ÷ X)</string>
+    <string name="weight_metrics_bag_field_sample_count">Weighed sample bags</string>
+    <string name="weight_metrics_bag_field_sample_weight">Total sample bag kg</string>
+    <string name="weight_metrics_bag_dialog_preview">With %1$d current bags → deduct %2$s kg</string>
+    <string name="weight_metrics_bags_count">%1$d bags</string>
 </resources>
 

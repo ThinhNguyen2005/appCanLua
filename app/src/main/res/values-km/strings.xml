@@ -634,4 +634,26 @@
     <string name="market_chart_stat_min">ទាប</string>
     <string name="market_chart_stat_avg">មធ្យម</string>
     <string name="market_chart_stat_max">ខ្ពស់</string>
+
+    <!-- Weight Input & Weight Metrics Polish -->
+    <string name="weight_input_fill_consecutive_warning">សូមបញ្ចូលទម្ងន់តាមលំដាប់លំដោយក្នុងប្រអប់ទទេបន្ទាប់</string>
+    <string name="action_apply">អនុវត្ត</string>
+    <string name="weight_metrics_deducting_bag">កំពុងដក %1$s គីឡូក្រាមទម្ងន់បាវ</string>
+    <string name="weight_metrics_setup_bag">ការកំណត់ទម្ងន់បាវ</string>
+    <string name="weight_metrics_deducting_impurity_percent">កំពុងដក %1$s%% កាកសំណល់ក្រោយដកបាវ</string>
+    <string name="weight_metrics_deducting_impurity_kg">កំពុងដក %1$s គីឡូក្រាមកាកសំណល់</string>
+    <string name="weight_metrics_bag_dialog_title">ការកំណត់ការដកទម្ងន់បាវ</string>
+    <string name="weight_metrics_bag_dialog_desc">ជ្រើសរើសវិធីបម្លែងចំនួនបាវទៅជាគីឡូក្រាមបាវ។ រូបមន្តអនុវត្តភ្លាមៗសម្រាប់ប័ណ្ណនេះ។</string>
+    <string name="weight_metrics_bag_opt_unit_title">បាវឯកតា (X បាវ = 1 គីឡូក្រាម)</string>
+    <string name="weight_metrics_bag_opt_unit_sub">រាល់ X បាវបម្លែងជា 1 គីឡូក្រាមបាវ។ ឧ៖ 8 បាវស្រូវទម្ងន់ 1 គីឡូក្រាមបាវ</string>
+    <string name="weight_metrics_bag_opt_unit_formula">បាវសរុប = ចំនួនបាវសរុប ÷ X</string>
+    <string name="weight_metrics_bag_field_count">ចំនួនបាវ</string>
+    <string name="weight_metrics_bag_field_suffix">បាវ = 1 គីឡូក្រាម</string>
+    <string name="weight_metrics_bag_opt_sample_title">ថ្លឹងគំរូ (តាមបំណង)</string>
+    <string name="weight_metrics_bag_opt_sample_sub">ថ្លឹង X បាវគំរូបាន Y គីឡូក្រាម → គណនាមធ្យមភាគ គីឡូក្រាម/បាវ</string>
+    <string name="weight_metrics_bag_opt_sample_formula">បាវសរុប = ចំនួនបាវសរុប × (Y ÷ X)</string>
+    <string name="weight_metrics_bag_field_sample_count">ចំនួនបាវដែលបានថ្លឹង</string>
+    <string name="weight_metrics_bag_field_sample_weight">គីឡូក្រាមបាវគំរូសរុប</string>
+    <string name="weight_metrics_bag_dialog_preview">ជាមួយ %1$d បាវបច្ចុប្បន្ន → ដក %2$s គីឡូក្រាម</string>
+    <string name="weight_metrics_bags_count">%1$d បាវ</string>
 </resources>
