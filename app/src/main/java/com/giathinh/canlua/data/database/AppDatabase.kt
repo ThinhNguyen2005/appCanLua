@@ -32,7 +32,7 @@ import com.giathinh.canlua.data.converter.DateConverter
         NewsArticle::class,
         com.giathinh.canlua.data.model.DeletedCard::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -72,7 +72,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_14_15,
                     MIGRATION_15_16,
                     MIGRATION_16_17,
-                    MIGRATION_17_18
+                    MIGRATION_17_18,
+                    MIGRATION_18_19
                 ).setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 INSTANCE = instance
@@ -380,6 +381,19 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE rice_prices ADD COLUMN riceType TEXT NOT NULL DEFAULT 'lúa Khô'")
+            }
+        }
+
+        /**
+         * v18 → v19 — Thêm `overpaidAmount` để lưu tiền trả dư.
+         *
+         * Trước đây `remainingAmount.coerceAtLeast(0.0)` xoá sổ tiền trả dư.
+         * Nay [RiceSettlement] tính riêng `overpaidVnd` và ghi vào cột này.
+         * Default = 0 → phiếu cũ giữ nguyên hành vi.
+         */
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN overpaidAmount REAL NOT NULL DEFAULT 0")
             }
         }
     }

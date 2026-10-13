@@ -34,6 +34,7 @@ fun Card.serialize(): String {
     sb.append("\"bagMethodIsSampling\":${bagMethodIsSampling},")
     sb.append("\"bagSampleCount\":${bagSampleCount},")
     sb.append("\"bagSampleTotalWeight\":${bagSampleTotalWeight},")
+    sb.append("\"overpaidAmount\":${overpaidAmount},")
     sb.append("\"weightInputMode\":${jsonString(weightInputMode)}")
     sb.append("}")
     return sb.toString()
@@ -72,7 +73,8 @@ fun deserializeCard(json: String): Card? = runCatching {
         bagMethodIsSampling = map["bagMethodIsSampling"] as? Boolean ?: false,
         bagSampleCount = (map["bagSampleCount"] as? Number)?.toInt() ?: 0,
         bagSampleTotalWeight = (map["bagSampleTotalWeight"] as? Number)?.toDouble() ?: 0.0,
-        weightInputMode = map["weightInputMode"]?.toString().takeIf { !it.isNullOrBlank() } ?: "SMALL"
+        weightInputMode = map["weightInputMode"]?.toString().takeIf { !it.isNullOrBlank() } ?: "SMALL",
+        overpaidAmount = (map["overpaidAmount"] as? Number)?.toDouble() ?: 0.0
     )
 }.getOrNull()
 

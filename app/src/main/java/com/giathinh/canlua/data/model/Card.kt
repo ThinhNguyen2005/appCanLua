@@ -40,6 +40,12 @@ data class Card(
     val totalAmount: Double = 0.0,
     val paidAmount: Double = 0.0,
     val remainingAmount: Double = 0.0,
+    /**
+     * Tiền trả dư — số tiền đã trả vượt quá thành tiền (≥ 0).
+     * Được tính bởi [RiceSettlement] và ghi riêng, không bị clamp về 0.
+     * Default = 0.0 → phiếu cũ không bị ảnh hưởng.
+     */
+    val overpaidAmount: Double = 0.0,
     val bagCount: Int = 0,
     val isLocked: Boolean = false,
 

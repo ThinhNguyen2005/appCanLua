@@ -3,6 +3,7 @@ package com.giathinh.canlua.repository
 import com.giathinh.canlua.data.dao.CardDao
 import com.giathinh.canlua.data.dao.TransactionDao
 import com.giathinh.canlua.data.dao.WeightEntryDao
+import com.giathinh.canlua.data.database.AppDatabase
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.SeasonStats
 import com.giathinh.canlua.data.model.SeasonStatsRaw
@@ -14,9 +15,12 @@ import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.data.model.serialize
 import com.giathinh.canlua.data.model.deserializeCard
 import com.giathinh.canlua.util.RiceCalculator
+import com.giathinh.canlua.util.RiceSettlement
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import androidx.room.withTransaction
 import com.giathinh.canlua.util.CccdCrypto
+import kotlin.math.roundToLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,6 +36,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class CardRepository @Inject constructor(
+    private val db: AppDatabase,
     private val cardDao: CardDao,
     private val weightEntryDao: WeightEntryDao,
     private val transactionDao: TransactionDao,
@@ -83,31 +88,40 @@ class CardRepository @Inject constructor(
      * fail (offline), tombstone giữ flag `cloudDeleted = false` để background
      * worker retry.
      */
+    /**
+     * Xoá card local + ghi tombstone — bọc trong transaction để đảm bảo:
+     * nếu app crash sau khi ghi tombstone nhưng trước khi xoá card, DB vẫn nhất quán.
+     *
+     * ⚠️ Tombstone chỉ chứa Card header (serialize không bao gồm weight_entries /
+     * transactions). Phiếu khôi phục từ tombstone sẽ không có dòng cân.
+     * Ghi rõ điều này để user biết.
+     */
     suspend fun deleteCard(card: Card) {
-        // 1. Ghi tombstone trước. Nếu app crash giữa chừng, lần khởi động sau
-        //    pull sync sẽ skip restore phiếu này (đã có tombstone với firestoreId).
         val ownerUid = card.ownerUid.ifBlank { uid() }
-        if (ownerUid.isNotBlank()) {
-            deletedCardDao.insert(
-                com.giathinh.canlua.data.model.DeletedCard(
-                    ownerUid = ownerUid,
-                    firestoreId = card.firestoreId,
-                    localId = card.id,
-                    cardJson = card.serialize(),
-                    name = card.name,
-                    traderName = card.traderName,
-                    totalWeight = card.totalWeight,
-                    totalAmount = card.totalAmount,
-                    cardDate = card.date.time,
-                    seasonLabel = card.seasonLabel,
-                    riceVariety = card.riceVariety,
-                    // Nếu card chưa từng sync (firestoreId null), không cần xoá cloud.
-                    cloudDeleted = card.firestoreId == null
+        db.withTransaction {
+            // 1. Ghi tombstone trước — pull sync sẽ skip phiếu này dù cloud vẫn có doc.
+            if (ownerUid.isNotBlank()) {
+                deletedCardDao.insert(
+                    com.giathinh.canlua.data.model.DeletedCard(
+                        ownerUid    = ownerUid,
+                        firestoreId = card.firestoreId,
+                        localId     = card.id,
+                        cardJson    = card.serialize(),
+                        name        = card.name,
+                        traderName  = card.traderName,
+                        totalWeight = card.totalWeight,
+                        totalAmount = card.totalAmount,
+                        cardDate    = card.date.time,
+                        seasonLabel = card.seasonLabel,
+                        riceVariety = card.riceVariety,
+                        // Nếu card chưa từng sync (firestoreId null), không cần xoá cloud.
+                        cloudDeleted = card.firestoreId == null
+                    )
                 )
-            )
+            }
+            // 2. Xoá Room — FK CASCADE tự xoá weight_entries + transactions con.
+            cardDao.deleteCard(card)
         }
-        // 2. Xoá Room — FK CASCADE tự xoá weight_entries + transactions con.
-        cardDao.deleteCard(card)
     }
 
     /**
@@ -186,109 +200,83 @@ class CardRepository @Inject constructor(
     /**
      * Recalculate aggregate fields trên Card từ các WeightEntry + Transaction con.
      *
-     * **Quan trọng:** trước đây hàm này tự tính netWeight bằng công thức tự chế
-     * `totalRaw - totalRaw × moisture/100` (trừ thẳng % moisture, sai chuẩn ngành lúa).
-     * Đã unify về `RiceCalculator.calcNetWeight` để khớp với công thức tính ở từng
-     * `WeightEntry` và đúng chuẩn ngành (quy đổi về độ ẩm chuẩn 14%).
+     * **Thay đổi v19:**
+     * - Bọc toàn bộ trong `withTransaction` → loại bỏ lost-update race condition.
+     * - Guard `isLocked` → phiếu đã chốt không bị recalc.
+     * - Dùng [RiceSettlement.compute] làm nguồn tính duy nhất:
+     *   - Σ dòng == tổng phiếu tuyệt đối (Largest Remainder Method).
+     *   - Tạp chất chia theo tỷ lệ KL sau bì (không chia đều nữa).
+     *   - Tiền làm tròn 1 lần duy nhất (Long VND → Double để ghi DB).
+     *   - Tiền trả dư ghi ra `overpaidAmount` thay vì bị clamp về 0.
      */
-    suspend fun updateCardCalculations(cardId: Long) {
-        val card = cardDao.getCardById(cardId, uid()) ?: return
-        val calculation = calculateCardTotals(cardId)
-        val totalRaw = calculation.totalRawWeight
+    suspend fun updateCardCalculations(cardId: Long) = db.withTransaction {
+        val card = cardDao.getCardById(cardId, uid()) ?: return@withTransaction
+
+        // Phiếu đã chốt: không recalc để tránh đổi giá/tổng sau khi chốt.
+        if (card.isLocked) return@withTransaction
+
         val entries = weightEntryDao.getWeightEntriesByCardIdSync(cardId)
+        val paidVnd    = (transactionDao.getTotalPaidAmountByCardId(cardId)    ?: 0.0).roundToLong()
+        val depositVnd = (transactionDao.getTotalDepositAmountByCardId(cardId) ?: 0.0).roundToLong()
 
-        val validEntries = entries.filter { it.weight > 0.0 }
-        val validBagCount = validEntries.size
-
-        if (validBagCount > 0) {
-            val totalBag = RiceCalculator.calcTotalBagWeight(
-                bagCount = validBagCount,
-                bagWeight = card.bagWeight,
-                methodIsSampling = card.bagMethodIsSampling,
-                sampleCount = card.bagSampleCount,
-                sampleTotalWeight = card.bagSampleTotalWeight
+        // ── Tính toán bằng RiceSettlement (nguồn duy nhất) ──────────────────
+        val s = RiceSettlement.compute(
+            RiceSettlement.Input(
+                entryWeightsKg         = entries.map { it.weight },
+                bagWeightKg            = card.bagWeight,
+                bagMethodIsSampling    = card.bagMethodIsSampling,
+                bagSampleCount         = card.bagSampleCount,
+                bagSampleTotalWeightKg = card.bagSampleTotalWeight,
+                impurityValue          = card.impurityWeight,
+                impurityIsPercent      = card.impurityIsPercent,
+                moisturePercent        = card.moisturePercent,
+                pricePerKg             = card.pricePerKg,
+                paidVnd                = paidVnd,
+                depositVnd             = depositVnd
             )
-            val singleBagWeight = totalBag / validBagCount
-
-            val rawAfterBag = (totalRaw - totalBag).coerceAtLeast(0.0)
-            val totalImpurity = RiceCalculator.calcTotalImpurity(
-                rawAfterBag = rawAfterBag,
-                impurityValue = card.impurityWeight,
-                isPercent = card.impurityIsPercent
-            )
-            val singleImpurityWeight = totalImpurity / validBagCount
-
-            // H-01: Gồm tất cả entries cần đổi vào 1 list, gọi updateWeightEntries 1 lần
-            // thay vì N lần updateWeightEntry — giảm N transaction xuống 1 transaction.
-            val entriesToUpdate = mutableListOf<com.giathinh.canlua.data.model.WeightEntry>()
-            entries.forEach { entry ->
-                val (bagW, impW, netW) = if (entry.weight > 0.0) {
-                    val entryNetWeight = RiceCalculator.calcNetWeight(
-                        rawWeight = entry.weight,
-                        bagWeight = singleBagWeight,
-                        impurityWeight = singleImpurityWeight,
-                        moisturePercent = card.moisturePercent
-                    )
-                    Triple(singleBagWeight, singleImpurityWeight, entryNetWeight)
-                } else {
-                    Triple(0.0, 0.0, 0.0)
-                }
-
-                if (entry.bagWeight != bagW || entry.impurityWeight != impW || entry.netWeight != netW) {
-                    entriesToUpdate.add(entry.copy(bagWeight = bagW, impurityWeight = impW, netWeight = netW))
-                }
-            }
-            if (entriesToUpdate.isNotEmpty()) {
-                weightEntryDao.updateWeightEntries(entriesToUpdate)
-            }
-        } else {
-            // H-01: Tương tự — gồm các entry cần reset vào1 list
-            val entriesToReset = entries.filter {
-                it.bagWeight != 0.0 || it.impurityWeight != 0.0 || it.netWeight != 0.0
-            }.map { it.copy(bagWeight = 0.0, impurityWeight = 0.0, netWeight = 0.0) }
-            if (entriesToReset.isNotEmpty()) {
-                weightEntryDao.updateWeightEntries(entriesToReset)
-            }
-        }
-
-        // Tính KL thực theo mode bao bì; tạp chất luôn là kg trực tiếp.
-        val finalNetWeight = RiceCalculator.calcNetWeightWithModes(
-            totalRaw = totalRaw,
-            bagCount = validBagCount,
-            bagWeight = card.bagWeight,
-            bagMethodIsSampling = card.bagMethodIsSampling,
-            bagSampleCount = card.bagSampleCount,
-            bagSampleTotalWeight = card.bagSampleTotalWeight,
-            impurityValue = card.impurityWeight,
-            impurityIsPercent = card.impurityIsPercent,
-            moisturePercent = card.moisturePercent
-        ).coerceAtLeast(0.0)
-
-        val totalAmount = RiceCalculator.calcTotalAmount(
-            netWeight = finalNetWeight,
-            pricePerKg = card.pricePerKg
-        ).coerceAtLeast(0.0)
-
-        // Còn lại không cho phép âm để tránh hiển thị "-100,000đ" vô nghĩa.
-        val remainingAmount = RiceCalculator.calcRemainingAmount(
-            totalAmount = totalAmount,
-            paidAmount = calculation.totalPaid,
-            depositAmount = calculation.totalDeposit
-        ).coerceAtLeast(0.0)
-
-        val now = System.currentTimeMillis()
-        val updatedCard = card.copy(
-            totalWeight = totalRaw,
-            netWeight = finalNetWeight,
-            bagCount = calculation.bagCount,
-            paidAmount = calculation.totalPaid,
-            depositAmount = calculation.totalDeposit,
-            totalAmount = totalAmount,
-            remainingAmount = remainingAmount,
-            lastModifiedMs = now
         )
 
-        cardDao.updateCard(updatedCard)
+        // Kiểm tra bất biến — vi phạm = lỗi code, không phải lỗi user.
+        val violations = s.verify()
+        check(violations.isEmpty()) { "RiceSettlement invariant broken: $violations" }
+
+        // ── Cập nhật từng dòng (1 batch write) ──────────────────────────────
+        // rawUnits / bagUnits / impUnits / netUnits chỉ chứa dòng weight > 0,
+        // theo đúng thứ tự lọc. Map lại vào entries gốc để giữ id / firestoreId.
+        var validIdx = 0
+        val updatedEntries = entries.map { entry ->
+            if (entry.weight > 0.0) {
+                val i = validIdx++
+                entry.copy(
+                    bagWeight      = s.bagUnits[i]       / 10.0,
+                    impurityWeight = s.impurityUnits[i]  / 10.0,
+                    netWeight      = s.netUnits[i]       / 10.0
+                )
+            } else {
+                entry.copy(bagWeight = 0.0, impurityWeight = 0.0, netWeight = 0.0)
+            }
+        }
+        // Chỉ ghi những entry thực sự thay đổi
+        val dirty = updatedEntries.filterIndexed { i, e ->
+            val old = entries[i]
+            e.bagWeight != old.bagWeight || e.impurityWeight != old.impurityWeight || e.netWeight != old.netWeight
+        }
+        if (dirty.isNotEmpty()) weightEntryDao.updateWeightEntries(dirty)
+
+        // ── Cập nhật Card ────────────────────────────────────────────────────
+        cardDao.updateCard(
+            card.copy(
+                totalWeight     = s.totalRawUnits / 10.0,
+                netWeight       = s.totalNetKg,
+                bagCount        = s.rawUnits.size,   // khớp số bao đã trừ bì
+                paidAmount      = paidVnd.toDouble(),
+                depositAmount   = depositVnd.toDouble(),
+                totalAmount     = s.totalAmountVnd.toDouble(),
+                remainingAmount = s.remainingVnd.toDouble(),
+                overpaidAmount  = s.overpaidVnd.toDouble(),
+                lastModifiedMs  = System.currentTimeMillis()
+            )
+        )
     }
 
 
