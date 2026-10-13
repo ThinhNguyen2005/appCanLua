@@ -33,10 +33,8 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 
-private val SplashGreen = Color(0xFF2E7D32)
-private val SplashWhite = Color.White
-private val SplashWhiteDim = Color(0xB3FFFFFF) // 70% white
-private val SplashGold = Color(0xFFFFB300) // amber-700: đậm hơn FFC107, tương phản tốt trên nền xanh
+import androidx.compose.ui.graphics.Brush
+import com.giathinh.canlua.ui.theme.AppColors
 
 /**
  * Màn hình chờ khởi động — hiển thị trong khi [InitViewModel] đang nạp dữ liệu
@@ -60,7 +58,14 @@ fun AppSplashScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SplashGreen),
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        AppColors.GreenPrimary,
+                        AppColors.GreenDark
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -71,44 +76,44 @@ fun AppSplashScreen() {
             Image(
                 painter = painterResource(R.drawable.ic_launcher_subject),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(SplashGold, BlendMode.SrcIn),
+                colorFilter = ColorFilter.tint(AppColors.GoldDark, BlendMode.SrcIn),
                 modifier = Modifier
                     .size(108.dp)
                     .alpha(pulse)
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
             Text(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold
                 ),
-                color = SplashWhite
+                color = Color.White
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
 
             Text(
-                text = "Quản lý cân lúa thông minh",
+                text = stringResource(R.string.splash_slogan),
                 style = MaterialTheme.typography.bodyMedium,
-                color = SplashWhiteDim
+                color = Color.White.copy(alpha = 0.8f)
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(44.dp))
 
             CircularProgressIndicator(
-                color = SplashWhite,
+                color = Color.White,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(32.dp)
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
 
             Text(
-                text = "Đang tải dữ liệu…",
+                text = stringResource(R.string.splash_loading),
                 style = MaterialTheme.typography.bodySmall,
-                color = SplashWhiteDim
+                color = Color.White.copy(alpha = 0.8f)
             )
         }
     }

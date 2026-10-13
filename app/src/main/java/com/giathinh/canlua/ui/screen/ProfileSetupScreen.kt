@@ -18,14 +18,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 
 enum class UserRole { FARMER, TRADER, STAFF }
@@ -38,29 +43,40 @@ fun ProfileSetupScreen(
     onComplete: (() -> Unit)? = null
 ) {
     TrackScreenRender("profile_setup")
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var region by remember { mutableStateOf("") }
     var cccd by remember { mutableStateOf("") }
     var role by remember { mutableStateOf(UserRole.FARMER) }
 
-    Scaffold { paddingValues ->
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            AppColors.GreenSurface,
+                            AppColors.Surface,
+                            AppColors.WeightSurface
+                        )
+                    )
+                )
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(36.dp))
             
             Text(
                 text = stringResource(R.string.profile_setup_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = AppColors.TextPrimary
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -68,7 +84,7 @@ fun ProfileSetupScreen(
             Text(
                 text = stringResource(R.string.profile_setup_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center
             )
             
@@ -84,7 +100,10 @@ fun ProfileSetupScreen(
                     title = stringResource(R.string.role_farmer),
                     icon = Icons.Default.Agriculture,
                     isSelected = role == UserRole.FARMER,
-                    onClick = { role = UserRole.FARMER }
+                    onClick = {
+                        HapticUtil.tick(context)
+                        role = UserRole.FARMER
+                    }
                 )
 
                 RoleSelectionCard(
@@ -92,21 +111,24 @@ fun ProfileSetupScreen(
                     title = stringResource(R.string.role_trader),
                     icon = Icons.Default.Storefront,
                     isSelected = role == UserRole.TRADER,
-                    onClick = { role = UserRole.TRADER }
+                    onClick = {
+                        HapticUtil.tick(context)
+                        role = UserRole.TRADER
+                    }
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = stringResource(R.string.profile_setup_role_hint),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
             
             // Form Fields
             OutlinedTextField(
@@ -115,7 +137,8 @@ fun ProfileSetupScreen(
                 label = { Text(stringResource(R.string.profile_setup_name_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
-                singleLine = true
+                singleLine = true,
+                colors = profileSetupTextFieldColors()
             )
             
             Spacer(modifier = Modifier.height(18.dp))
@@ -126,7 +149,8 @@ fun ProfileSetupScreen(
                 label = { Text(stringResource(R.string.profile_setup_phone_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
-                singleLine = true
+                singleLine = true,
+                colors = profileSetupTextFieldColors()
             )
             
             Spacer(modifier = Modifier.height(18.dp))
@@ -137,7 +161,8 @@ fun ProfileSetupScreen(
                 label = { Text(stringResource(R.string.profile_setup_region_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
-                singleLine = true
+                singleLine = true,
+                colors = profileSetupTextFieldColors()
             )
             
             Spacer(modifier = Modifier.height(18.dp))
@@ -148,13 +173,15 @@ fun ProfileSetupScreen(
                 label = { Text(stringResource(R.string.profile_setup_cccd_label)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                 shape = RoundedCornerShape(14.dp),
-                singleLine = true
+                singleLine = true,
+                colors = profileSetupTextFieldColors()
             )
             
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             
             Button(
                 onClick = {
+                    HapticUtil.tick(context)
                     viewModel.saveProfile(
                         name = name,
                         phone = phone,
@@ -179,7 +206,13 @@ fun ProfileSetupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = Color.White,
+                    disabledContainerColor = AppColors.GreenPrimary.copy(alpha = 0.45f),
+                    disabledContentColor = Color.White.copy(alpha = 0.75f)
+                )
             ) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null)
                 Spacer(modifier = Modifier.size(8.dp))
@@ -192,6 +225,19 @@ fun ProfileSetupScreen(
 }
 
 @Composable
+private fun profileSetupTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = AppColors.GreenPrimary,
+    unfocusedBorderColor = AppColors.Divider,
+    focusedLabelColor = AppColors.GreenPrimary,
+    unfocusedLabelColor = AppColors.TextSecondary,
+    focusedTextColor = AppColors.TextPrimary,
+    unfocusedTextColor = AppColors.TextPrimary,
+    cursorColor = AppColors.GreenPrimary,
+    focusedContainerColor = AppColors.SurfaceContainer,
+    unfocusedContainerColor = AppColors.SurfaceContainer
+)
+
+@Composable
 fun RoleSelectionCard(
     modifier: Modifier = Modifier,
     title: String,
@@ -202,26 +248,26 @@ fun RoleSelectionCard(
     subtitle: String? = null
 ) {
     val backgroundColor = when {
-        locked -> MaterialTheme.colorScheme.surfaceVariant
-        isSelected -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surface
+        locked -> AppColors.SurfaceContainer
+        isSelected -> AppColors.GreenPrimary.copy(alpha = 0.12f)
+        else -> AppColors.CardBg
     }
     val contentColor = when {
-        locked -> MaterialTheme.colorScheme.onSurfaceVariant
-        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        locked -> AppColors.TextSecondary.copy(alpha = 0.5f)
+        isSelected -> AppColors.GreenPrimary
+        else -> AppColors.TextPrimary
     }
     val borderColor = when {
-        locked -> MaterialTheme.colorScheme.outlineVariant
-        isSelected -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.outlineVariant
+        locked -> AppColors.Divider
+        isSelected -> AppColors.GreenPrimary
+        else -> AppColors.Divider
     }
 
     Card(
         modifier = modifier
             .height(140.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)

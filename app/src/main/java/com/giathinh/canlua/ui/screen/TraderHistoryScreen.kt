@@ -2,7 +2,7 @@ package com.giathinh.canlua.ui.screen
 
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
+import com.giathinh.canlua.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card as M3Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,10 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.Card as M3Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,28 +51,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.giathinh.canlua.data.model.TraderHistoryItem
+import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Màn lịch sử đầy đủ tất cả thương lái đã từng giao dịch với farmer.
- *
- * Tách khỏi `FarmerProfileScreen` (chỉ hiện top 5) để khi user có 50+ thương lái,
- * Profile vẫn ngắn gọn — đầy đủ list nằm ở route riêng.
- *
- * Reuse `ProfileViewModel.traderHistory` (đã aggregate sẵn từ CardDao) nên
- * không cần thêm query mới.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TraderHistoryScreen(
@@ -93,23 +89,27 @@ fun TraderHistoryScreenContent(
     profileViewModel: ProfileViewModel
 ) {
     val history by profileViewModel.traderHistory.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Lịch sử thương lái",
+                        text = stringResource(R.string.profile_trader_history_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        HapticUtil.tick(context)
+                        navController.popBackStack()
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = stringResource(R.string.content_back),
                             tint = AppColors.TextPrimary
                         )
                     }
@@ -171,7 +171,7 @@ private fun SummaryHeader(count: Int) {
             ) {
                 Icon(
                     Icons.Filled.History,
-                    null,
+                    contentDescription = null,
                     tint = AppColors.CardBg,
                     modifier = Modifier.size(22.dp)
                 )
@@ -179,13 +179,13 @@ private fun SummaryHeader(count: Int) {
             Spacer(Modifier.size(12.dp))
             Column {
                 Text(
-                    text = "$count thương lái đã từng mua",
+                    text = stringResource(R.string.trader_hist_count, count),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
                 Text(
-                    text = "Sắp xếp theo lần giao dịch gần nhất",
+                    text = stringResource(R.string.trader_hist_sort_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextHint
                 )
@@ -197,6 +197,7 @@ private fun SummaryHeader(count: Int) {
 @Composable
 private fun TraderHistoryRowFull(item: TraderHistoryItem) {
     val context = LocalContext.current
+    val appToast = LocalAppToast.current
     val moneyFmt = remember { NumberFormat.getInstance(Locale.forLanguageTag("vi-VN")) }
     val dateFmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
 
@@ -207,64 +208,102 @@ private fun TraderHistoryRowFull(item: TraderHistoryItem) {
             onDismissRequest = { showContactOptions = false },
             title = {
                 Text(
-                    text = "Liên hệ thương lái",
+                    text = stringResource(R.string.trader_hist_contact_title),
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
             },
             text = {
                 Text(
-                    text = "Chọn phương thức liên hệ với ${item.traderName} (${item.traderPhone})",
+                    text = stringResource(
+                        R.string.trader_hist_contact_msg,
+                        item.traderName,
+                        item.traderPhone.ifBlank { stringResource(R.string.market_bid_unknown_variety) }
+                    ),
                     color = AppColors.TextSecondary
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        HapticUtil.tick(context)
                         showContactOptions = false
                         try {
                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${item.traderPhone}"))
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Không thể thực hiện cuộc gọi", Toast.LENGTH_SHORT).show()
+                            appToast.error(context.getString(R.string.trader_hist_err_call))
                         }
                     }
                 ) {
-                    Text("Gọi điện", color = AppColors.GreenPrimary, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(R.string.trader_hist_call),
+                        color = AppColors.GreenPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        showContactOptions = false
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://zalo.me/${item.traderPhone}"))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Không thể mở Zalo", Toast.LENGTH_SHORT).show()
+                Row {
+                    TextButton(
+                        onClick = {
+                            HapticUtil.tick(context)
+                            showContactOptions = false
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://zalo.me/${item.traderPhone}"))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                appToast.error(context.getString(R.string.trader_hist_err_zalo))
+                            }
                         }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.trader_hist_zalo),
+                            color = AppColors.GreenPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                ) {
-                    Text("Nhắn Zalo", color = AppColors.GreenPrimary, fontWeight = FontWeight.Bold)
+                    TextButton(
+                        onClick = {
+                            HapticUtil.tick(context)
+                            showContactOptions = false
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_cancel),
+                            color = AppColors.TextSecondary
+                        )
+                    }
                 }
-            }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
         )
     }
 
     M3Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
+                if (item.traderPhone.isNotBlank()) {
+                    HapticUtil.tick(context)
+                    showContactOptions = true
+                }
+            },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(AppColors.GreenSurface),
                 contentAlignment = Alignment.Center
@@ -276,11 +315,11 @@ private fun TraderHistoryRowFull(item: TraderHistoryItem) {
                     color = AppColors.GreenPrimary
                 )
             }
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.size(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    item.traderName,
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = item.traderName,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = AppColors.TextPrimary
                 )
@@ -288,18 +327,17 @@ private fun TraderHistoryRowFull(item: TraderHistoryItem) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .clickable { showContactOptions = true }
                             .padding(vertical = 2.dp)
                     ) {
                         Icon(
-                            Icons.Filled.Phone, null,
+                            Icons.Filled.Phone,
+                            contentDescription = null,
                             tint = AppColors.GreenPrimary,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(Modifier.size(6.dp))
                         Text(
-                            item.traderPhone,
+                            text = item.traderPhone,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = AppColors.GreenPrimary,
                                 fontWeight = FontWeight.Medium
@@ -313,28 +351,30 @@ private fun TraderHistoryRowFull(item: TraderHistoryItem) {
                         modifier = Modifier.padding(top = 2.dp)
                     ) {
                         Icon(
-                            Icons.Filled.Person, null,
+                            Icons.Filled.Person,
+                            contentDescription = null,
                             tint = AppColors.TextHint,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(Modifier.size(6.dp))
                         Text(
-                            "CCCD: ${item.traderCccd}",
+                            text = stringResource(R.string.trader_hist_cccd, item.traderCccd),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.TextHint
                         )
                     }
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Filled.MonetizationOn, null,
+                        Icons.Filled.MonetizationOn,
+                        contentDescription = null,
                         tint = AppColors.GoldDark,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Spacer(Modifier.size(4.dp))
                     Text(
-                        "${moneyFmt.format(item.totalRevenue.toLong())} đ",
+                        text = "${moneyFmt.format(item.totalRevenue.toLong())} đ",
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextSecondary,
                         fontWeight = FontWeight.Medium
@@ -343,21 +383,22 @@ private fun TraderHistoryRowFull(item: TraderHistoryItem) {
                     Text("•", color = AppColors.TextHint)
                     Spacer(Modifier.size(8.dp))
                     Text(
-                        "${item.deals} phiên",
+                        text = stringResource(R.string.trader_hist_deals_count, item.deals),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextSecondary
                     )
                 }
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Filled.CalendarToday, null,
+                        Icons.Filled.CalendarToday,
+                        contentDescription = null,
                         tint = AppColors.TextHint,
-                        modifier = Modifier.size(11.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                     Spacer(Modifier.size(4.dp))
                     Text(
-                        "Lần cuối ${dateFmt.format(Date(item.lastDealDate))}",
+                        text = stringResource(R.string.trader_hist_last_deal, dateFmt.format(Date(item.lastDealDate))),
                         style = MaterialTheme.typography.labelSmall,
                         color = AppColors.TextHint
                     )
@@ -376,22 +417,33 @@ private fun EmptyHistoryFull() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            Icons.Filled.Storefront, null,
-            tint = AppColors.TextHint,
-            modifier = Modifier.size(56.dp)
-        )
-        Spacer(Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(AppColors.GreenSurface),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Filled.Storefront,
+                contentDescription = null,
+                tint = AppColors.GreenPrimary,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+        Spacer(Modifier.height(16.dp))
         Text(
-            "Chưa có thương lái nào",
+            text = stringResource(R.string.trader_hist_empty_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = AppColors.TextSecondary
+            color = AppColors.TextPrimary
         )
+        Spacer(Modifier.height(6.dp))
         Text(
-            "Mỗi khi tạo phiếu cân, tên thương lái sẽ tự động được lưu vào đây.",
+            text = stringResource(R.string.trader_hist_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
-            color = AppColors.TextHint
+            color = AppColors.TextHint,
+            textAlign = TextAlign.Center
         )
     }
 }

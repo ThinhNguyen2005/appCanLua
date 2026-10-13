@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,8 +19,12 @@ import androidx.compose.material.icons.outlined.Inventory
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material.icons.outlined.Wallet
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,13 +33,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.giathinh.canlua.R
 import androidx.navigation.NavController
+import com.giathinh.canlua.ui.navigation.BottomNavItem
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.giathinh.canlua.ui.component.dashboard.KpiGrid
 import com.giathinh.canlua.ui.component.dashboard.KpiGridItem
@@ -181,8 +190,9 @@ fun FarmerProfileScreenContent(
             }
 
 
-            // ─── TIER 3: Primary KPI Grid 2×2 ───
-            dash.currentStats?.let { stats ->
+            // ─── TIER 3: Primary KPI Grid 2×2 or Empty Season Stats ───
+            val stats = dash.currentStats
+            if (stats != null && !stats.isEmpty) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         FarmerPrimaryKpiGrid(
@@ -205,15 +215,25 @@ fun FarmerProfileScreenContent(
                 }
 
                 // ─── TIER 6: AI Crop Insights ───
-                if (!stats.isEmpty) {
-                    item {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            AiInsightsCard(
-                                state = dash.aiAnalysis,
-                                onAnalyze = dashboardViewModel::analyzeWithAi,
-                                onReset = dashboardViewModel::resetAiAnalysis
-                            )
-                        }
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        AiInsightsCard(
+                            state = dash.aiAnalysis,
+                            onAnalyze = dashboardViewModel::analyzeWithAi,
+                            onReset = dashboardViewModel::resetAiAnalysis
+                        )
+                    }
+                }
+            } else {
+                item {
+                    val context = LocalContext.current
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        EmptySeasonStatsCard(
+                            onCreateSlip = {
+                                HapticUtil.tick(context)
+                                navController.navigate(BottomNavItem.SCALE.route)
+                            }
+                        )
                     }
                 }
             }
@@ -230,20 +250,91 @@ fun FarmerProfileScreenContent(
             // ─── Premium card (active hoặc upsell) ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    val context = LocalContext.current
                     val premiumInfo by com.giathinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
                             plan = premiumInfo.plan,
                             sinceMs = premiumInfo.sinceMs,
                             isEarlyAdopter = premiumInfo.isEarlyAdopter,
-                            onClick = { navController.navigate("premium") }
+                            onClick = {
+                                HapticUtil.tick(context)
+                                navController.navigate("premium")
+                            }
                         )
                     } else {
                         PremiumUpsellCard(
-                            onClick = { navController.navigate("premium") }
+                            onClick = {
+                                HapticUtil.tick(context)
+                                navController.navigate("premium")
+                            }
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Khối Empty Season Stats khi chưa có phiếu cân
+// ─────────────────────────────────────────────────────────────
+@Composable
+private fun EmptySeasonStatsCard(onCreateSlip: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AppColors.GreenSurface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Scale,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Text(
+                text = stringResource(R.string.profile_empty_season_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+            Text(
+                text = stringResource(R.string.profile_empty_season_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextSecondary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.height(4.dp))
+            Button(
+                onClick = onCreateSlip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_empty_season_action),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
         }
     }
@@ -266,7 +357,7 @@ private fun SeasonSummaryCard(dash: DashboardData) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Tóm tắt vụ mùa",
+                text = stringResource(R.string.profile_season_summary_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
@@ -295,7 +386,11 @@ private fun SeasonSummaryCard(dash: DashboardData) {
                     
                     // Vế giữa: Số liệu sản lượng dưới dạng "số KG / số bao" với màu xám nhẹ
                     Text(
-                        text = "${formatter.format(seasonStat.totalNetWeight)} kg / ${formatter.format(seasonStat.totalBags)} bao",
+                        text = stringResource(
+                            R.string.profile_season_summary_yield,
+                            formatter.format(seasonStat.totalNetWeight),
+                            formatter.format(seasonStat.totalBags)
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextHint,
                         modifier = Modifier.padding(horizontal = 8.dp)
@@ -303,7 +398,10 @@ private fun SeasonSummaryCard(dash: DashboardData) {
                     
                     // Vế phải: Số tiền cuối cùng nhận được, in đậm và dùng màu xanh lá
                     Text(
-                        text = "${formatter.format(seasonStat.totalRevenue)} đ",
+                        text = stringResource(
+                            R.string.profile_season_summary_revenue,
+                            formatter.format(seasonStat.totalRevenue)
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.GreenPrimary

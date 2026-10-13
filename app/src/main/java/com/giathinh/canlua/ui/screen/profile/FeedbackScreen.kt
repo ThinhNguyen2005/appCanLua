@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.giathinh.canlua.data.firestore.FirestoreFeedback
+import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.FeedbackViewModel
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,6 +49,7 @@ fun FeedbackScreen(
 ) {
     TrackScreenRender("feedback")
     val context = LocalContext.current
+    val appToast = LocalAppToast.current
     val focusManager = LocalFocusManager.current
     val listState = rememberLazyListState()
 
@@ -79,7 +82,10 @@ fun FeedbackScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        HapticUtil.tick(context)
+                        navController.popBackStack()
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.content_back),
@@ -91,8 +97,6 @@ fun FeedbackScreen(
                     containerColor = AppColors.Surface,
                     titleContentColor = AppColors.TextPrimary
                 ),
-                // Scaffold của MainScreen đã thêm status bar inset cho content rồi —
-                // tắt windowInsets của TopAppBar này để tránh double-padding (gap với status bar).
                 windowInsets = WindowInsets(0.dp)
             )
         },
@@ -119,12 +123,20 @@ fun FeedbackScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.Chat,
-                            contentDescription = null,
-                            tint = AppColors.TextHint.copy(alpha = 0.6f),
-                            modifier = Modifier.size(64.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(AppColors.GreenSurface),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Chat,
+                                contentDescription = null,
+                                tint = AppColors.GreenPrimary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = stringResource(R.string.feedback_empty_messages),
@@ -195,11 +207,12 @@ fun FeedbackScreen(
                         keyboardActions = KeyboardActions(
                             onSend = {
                                 if (inputText.isNotBlank() && !uiState.isSending) {
+                                    HapticUtil.tick(context)
                                     val textToSend = inputText
                                     viewModel.sendFeedback(textToSend) {
                                         inputText = ""
                                         focusManager.clearFocus()
-                                        Toast.makeText(context, context.getString(R.string.feedback_toast_success), Toast.LENGTH_LONG).show()
+                                        appToast.success(context.getString(R.string.feedback_toast_success))
                                     }
                                 }
                             }
@@ -213,17 +226,19 @@ fun FeedbackScreen(
                     IconButton(
                         onClick = {
                             if (inputText.isNotBlank() && !uiState.isSending) {
+                                HapticUtil.tick(context)
                                 val textToSend = inputText
                                 viewModel.sendFeedback(textToSend) {
                                     inputText = ""
                                     focusManager.clearFocus()
-                                    Toast.makeText(context, context.getString(R.string.feedback_toast_success), Toast.LENGTH_LONG).show()
+                                    appToast.success(context.getString(R.string.feedback_toast_success))
                                 }
                             }
                         },
                         enabled = inputText.isNotBlank() && !uiState.isSending,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(14.dp))
                             .background(
                                 if (inputText.isNotBlank() && !uiState.isSending) AppColors.GreenPrimary 
                                 else AppColors.Divider.copy(alpha = 0.5f)

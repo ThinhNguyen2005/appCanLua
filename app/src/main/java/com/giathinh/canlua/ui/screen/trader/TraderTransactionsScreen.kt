@@ -1,5 +1,6 @@
 package com.giathinh.canlua.ui.screen.trader
 
+import com.giathinh.canlua.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,48 +26,57 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import com.giathinh.canlua.ui.component.DefaultSkeleton
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.TraderTransactionItem
+import com.giathinh.canlua.ui.viewmodel.TraderTransactionsUiState
 import com.giathinh.canlua.ui.viewmodel.TraderTransactionsViewModel
 import com.giathinh.canlua.ui.viewmodel.TransactionFilter
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-import com.giathinh.canlua.ui.component.DefaultSkeleton
-
 @Composable
 fun TraderTransactionsScreen(
-    navController: androidx.navigation.NavController
+    navController: NavController
 ) {
     TrackScreenRender("trader_transactions")
     val viewModel: TraderTransactionsViewModel = hiltViewModel()
@@ -81,23 +93,64 @@ fun TraderTransactionsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TraderTransactionsScreenContent(
-    navController: androidx.navigation.NavController,
+    navController: NavController,
     viewModel: TraderTransactionsViewModel
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
-    Scaffold(containerColor = AppColors.Surface) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.trader_tx_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        HapticUtil.tick(context)
+                        navController.popBackStack()
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.content_back),
+                            tint = AppColors.TextPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.Surface,
+                    titleContentColor = AppColors.TextPrimary
+                ),
+                windowInsets = WindowInsets(0.dp)
+            )
+        },
+        containerColor = AppColors.Surface
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             when {
                 state.isLoading -> LoadingState()
                 state.totalCards == 0 -> EmptyTraderTransactions()
                 else -> TransactionContent(
                     state = state,
                     filter = filter,
-                    onFilterChange = viewModel::setFilter
+                    onFilterChange = viewModel::setFilter,
+                    onCardClick = { cardId ->
+                        HapticUtil.tick(context)
+                        navController.navigate("card_detail/$cardId")
+                    }
                 )
             }
         }
@@ -108,9 +161,10 @@ fun TraderTransactionsScreenContent(
 
 @Composable
 private fun TransactionContent(
-    state: com.giathinh.canlua.ui.viewmodel.TraderTransactionsUiState,
+    state: TraderTransactionsUiState,
     filter: TransactionFilter,
-    onFilterChange: (TransactionFilter) -> Unit
+    onFilterChange: (TransactionFilter) -> Unit,
+    onCardClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -135,7 +189,10 @@ private fun TransactionContent(
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 }),
                     exit = fadeOut() + slideOutVertically()
                 ) {
-                    TransactionRow(item = item)
+                    TransactionRow(
+                        item = item,
+                        onClick = { onCardClick(item.card.id) }
+                    )
                 }
             }
         }
@@ -147,13 +204,13 @@ private fun TransactionContent(
 private fun HeaderTitle(totalCards: Int) {
     Column {
         Text(
-            text = "Sổ giao dịch",
+            text = stringResource(R.string.trader_tx_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = AppColors.TextPrimary
         )
         Text(
-            text = "$totalCards thẻ đã thu mua · cập nhật realtime",
+            text = stringResource(R.string.trader_tx_subtitle, totalCards),
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextHint
         )
@@ -163,7 +220,7 @@ private fun HeaderTitle(totalCards: Int) {
 // ────────────────────── Stats Hero ──────────────────────
 
 @Composable
-private fun StatsHeroCard(state: com.giathinh.canlua.ui.viewmodel.TraderTransactionsUiState) {
+private fun StatsHeroCard(state: TraderTransactionsUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -185,13 +242,13 @@ private fun StatsHeroCard(state: com.giathinh.canlua.ui.viewmodel.TraderTransact
         ) {
             Column {
                 Text(
-                    "Tổng giá trị thu mua",
+                    text = stringResource(R.string.trader_tx_total_amount),
                     style = MaterialTheme.typography.labelLarge,
                     color = Color.White.copy(alpha = 0.85f)
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    formatCurrency(state.totalAmount),
+                    text = formatCurrency(state.totalAmount),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -218,12 +275,12 @@ private fun StatsHeroCard(state: com.giathinh.canlua.ui.viewmodel.TraderTransact
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        "Đã thanh toán: ${formatCurrency(state.totalPaid)}",
+                        text = stringResource(R.string.trader_tx_paid, formatCurrency(state.totalPaid)),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.9f)
                     )
                     Text(
-                        "${(progress * 100).toInt()}%",
+                        text = "${(progress * 100).toInt()}%",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
@@ -237,14 +294,14 @@ private fun StatsHeroCard(state: com.giathinh.canlua.ui.viewmodel.TraderTransact
                 ) {
                     StatChip(
                         icon = Icons.Filled.Scale,
-                        label = "Khối lượng",
+                        label = stringResource(R.string.trader_tx_net_weight),
                         value = "${formatNumber(state.totalNetWeight)} kg",
                         modifier = Modifier.weight(1f)
                     )
                     StatChip(
                         icon = Icons.Filled.WarningAmber,
-                        label = "Còn nợ",
-                        value = "${state.unpaidCount} thẻ",
+                        label = stringResource(R.string.trader_tx_debt),
+                        value = stringResource(R.string.trader_tx_cards_count, state.unpaidCount),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -293,29 +350,41 @@ private fun FilterRow(
     selected: TransactionFilter,
     onSelect: (TransactionFilter) -> Unit
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        TransactionFilter.values().forEach { f ->
+        TransactionFilter.entries.forEach { f ->
             val isSelected = f == selected
+            val labelText = when (f) {
+                TransactionFilter.ALL -> stringResource(R.string.trader_tx_filter_all)
+                TransactionFilter.THIS_WEEK -> stringResource(R.string.trader_tx_filter_this_week)
+                TransactionFilter.THIS_MONTH -> stringResource(R.string.trader_tx_filter_this_month)
+                TransactionFilter.UNPAID -> stringResource(R.string.trader_tx_filter_unpaid)
+            }
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(
                         if (isSelected) AppColors.GreenPrimary
                         else AppColors.SurfaceContainer
                     )
-                    .clickable { onSelect(f) }
-                    .padding(vertical = 10.dp),
+                    .clickable {
+                        HapticUtil.tick(context)
+                        onSelect(f)
+                    }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    f.label,
+                    text = labelText,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isSelected) Color.White else AppColors.TextSecondary
+                    color = if (isSelected) Color.White else AppColors.TextSecondary,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -325,15 +394,25 @@ private fun FilterRow(
 // ────────────────────── Row Item ──────────────────────
 
 @Composable
-private fun TransactionRow(item: TraderTransactionItem) {
+private fun TransactionRow(
+    item: TraderTransactionItem,
+    onClick: () -> Unit
+) {
     val card = item.card
     val statusColor = if (item.isFullyPaid) AppColors.Success else AppColors.Warning
     val statusBg = if (item.isFullyPaid) AppColors.GreenSurface else AppColors.GoldLight
     val statusIcon = if (item.isFullyPaid) Icons.Filled.CheckCircle else Icons.Filled.WarningAmber
-    val statusLabel = if (item.isFullyPaid) "Đã thanh toán" else "Còn nợ"
+    val statusLabel = if (item.isFullyPaid) {
+        stringResource(R.string.trader_tx_paid_status)
+    } else {
+        stringResource(R.string.trader_tx_unpaid_status)
+    }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -358,7 +437,7 @@ private fun TransactionRow(item: TraderTransactionItem) {
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        card.name.ifBlank { "Không tên" },
+                        text = card.name.ifBlank { stringResource(R.string.trader_tx_unnamed) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary,
@@ -366,7 +445,7 @@ private fun TransactionRow(item: TraderTransactionItem) {
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        formatDate(card.date),
+                        text = formatDate(card.date),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextHint
                     )
@@ -387,7 +466,7 @@ private fun TransactionRow(item: TraderTransactionItem) {
                         )
                         Spacer(Modifier.size(4.dp))
                         Text(
-                            statusLabel,
+                            text = statusLabel,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = statusColor
@@ -405,19 +484,19 @@ private fun TransactionRow(item: TraderTransactionItem) {
             ) {
                 MetricBox(
                     icon = Icons.Filled.Scale,
-                    label = "Khối lượng",
+                    label = stringResource(R.string.trader_tx_net_weight),
                     value = "${formatNumber(card.netWeight)} kg",
                     modifier = Modifier.weight(1f)
                 )
                 MetricBox(
                     icon = Icons.Filled.AccountBalanceWallet,
-                    label = "Tổng",
+                    label = stringResource(R.string.trader_tx_total),
                     value = formatCurrencyShort(card.totalAmount),
                     modifier = Modifier.weight(1f)
                 )
                 MetricBox(
                     icon = Icons.AutoMirrored.Filled.ReceiptLong,
-                    label = "Còn lại",
+                    label = stringResource(R.string.trader_tx_remaining),
                     value = formatCurrencyShort(item.remaining),
                     valueColor = if (item.isFullyPaid) AppColors.Success else AppColors.Error,
                     modifier = Modifier.weight(1f)
@@ -434,7 +513,10 @@ private fun TransactionRow(item: TraderTransactionItem) {
                         TagChip(label = card.riceVariety, color = AppColors.Info)
                     }
                     if (card.bagCount > 0) {
-                        TagChip(label = "${card.bagCount} bao", color = AppColors.GoldDark)
+                        TagChip(
+                            label = stringResource(R.string.trader_tx_bags_count, card.bagCount),
+                            color = AppColors.GoldDark
+                        )
                     }
                 }
             }
@@ -525,14 +607,14 @@ private fun EmptyTraderTransactions() {
             }
             Spacer(Modifier.height(20.dp))
             Text(
-                "Chưa có giao dịch nào",
+                text = stringResource(R.string.trader_tx_empty_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Cac giao dich cua thuong lai se hien thi tai day sau khi du lieu duoc dong bo.",
+                text = stringResource(R.string.trader_tx_empty_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center
@@ -558,7 +640,7 @@ private fun FilteredEmptyState() {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Không có giao dịch trong bộ lọc này",
+                text = stringResource(R.string.trader_tx_filtered_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.TextSecondary
             )

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,6 +48,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.AiMarkdownText
@@ -68,7 +71,7 @@ fun AiInsightsCard(
     onReset: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val purple = Color(0xFF6750A4)
+    val aiAccent = AppColors.GreenPrimary
 
     Card(
         modifier = modifier,
@@ -83,7 +86,7 @@ fun AiInsightsCard(
         ) {
             HeaderRow(
                 state = state,
-                accentColor = purple,
+                accentColor = aiAccent,
                 onReset = onReset
             )
 
@@ -99,10 +102,10 @@ fun AiInsightsCard(
             ) { _ ->
                 when (state) {
                     is AiAnalysisState.Idle -> IdleContent(
-                        accentColor = purple,
+                        accentColor = aiAccent,
                         onAnalyze = onAnalyze
                     )
-                    is AiAnalysisState.Loading -> LoadingContent(accentColor = purple)
+                    is AiAnalysisState.Loading -> LoadingContent(accentColor = aiAccent)
                     is AiAnalysisState.Success -> SuccessContent(markdown = state.markdown)
                     is AiAnalysisState.Error -> ErrorContent(
                         message = state.message,
@@ -120,6 +123,7 @@ private fun HeaderRow(
     accentColor: Color,
     onReset: () -> Unit
 ) {
+    val context = LocalContext.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -127,7 +131,7 @@ private fun HeaderRow(
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(accentColor, Color(0xFFEC407A))
+                        colors = listOf(accentColor, AppColors.GoldDark)
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -169,9 +173,13 @@ private fun HeaderRow(
             exit = fadeOut()
         ) {
             OutlinedButton(
-                onClick = onReset,
+                onClick = {
+                    HapticUtil.tick(context)
+                    onReset()
+                },
+                modifier = Modifier.heightIn(min = 40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 10.dp, vertical = 4.dp
+                    horizontal = 12.dp, vertical = 6.dp
                 )
             ) {
                 Text(stringResource(R.string.ai_insights_close), style = MaterialTheme.typography.labelMedium)
@@ -185,6 +193,7 @@ private fun IdleContent(
     accentColor: Color,
     onAnalyze: () -> Unit
 ) {
+    val context = LocalContext.current
     Column {
         Text(
             text = stringResource(R.string.ai_insights_idle_body),
@@ -193,8 +202,13 @@ private fun IdleContent(
         )
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = onAnalyze,
-            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                HapticUtil.tick(context)
+                onAnalyze()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = accentColor,
@@ -269,6 +283,7 @@ private fun SuccessContent(markdown: String) {
 
 @Composable
 private fun ErrorContent(message: String, onRetry: () -> Unit) {
+    val context = LocalContext.current
     Column {
         Text(
             text = message,
@@ -277,8 +292,13 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
         )
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
-            onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+                HapticUtil.tick(context)
+                onRetry()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,

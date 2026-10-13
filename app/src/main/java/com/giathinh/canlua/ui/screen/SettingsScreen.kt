@@ -47,6 +47,7 @@ import com.giathinh.canlua.ui.viewmodel.AuthViewModel
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
 
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,8 +102,8 @@ fun SettingsScreen(
             viewModel.exportBackup(
                 context = context,
                 uri = uri,
-                onSuccess = { appToast.success("Xuất dữ liệu sao lưu thành công!") },
-                onError = { err -> appToast.error("Lỗi xuất dữ liệu: $err") }
+                onSuccess = { appToast.success(context.getString(R.string.settings_export_success)) },
+                onError = { err -> appToast.error(context.getString(R.string.settings_export_error, err)) }
             )
         }
     }
@@ -114,8 +115,8 @@ fun SettingsScreen(
             viewModel.importBackup(
                 context = context,
                 uri = uri,
-                onSuccess = { count -> appToast.success("Khôi phục thành công $count phiếu cân!") },
-                onError = { err -> appToast.error("Lỗi khôi phục dữ liệu: $err") }
+                onSuccess = { count -> appToast.success(context.getString(R.string.settings_import_success, count)) },
+                onError = { err -> appToast.error(context.getString(R.string.settings_import_error, err)) }
             )
         }
     }
@@ -132,7 +133,10 @@ fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        HapticUtil.tick(context)
+                        navController.popBackStack()
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.content_back),
@@ -213,7 +217,10 @@ fun SettingsScreen(
                     } else {
                         stringResource(R.string.profile_trader_partner_count, traderHistory.size)
                     },
-                    onClick = { navController.navigate("trader_history") }
+                    onClick = {
+                        HapticUtil.tick(context)
+                        navController.navigate("trader_history")
+                    }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -225,7 +232,12 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_sign_out),
                 subtitle = authState.userLabel ?: stringResource(R.string.settings_not_signed_in),
                 enabled = authState.isSignedIn,
-                onClick = { if (authState.isSignedIn) showLogoutConfirm = true }
+                onClick = {
+                    if (authState.isSignedIn) {
+                        HapticUtil.tick(context)
+                        showLogoutConfirm = true
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -239,9 +251,16 @@ fun SettingsScreen(
 
             ThemeExpandableRow(
                 isExpanded = themeExpanded,
-                onToggle = { themeExpanded = !themeExpanded },
+                onToggle = {
+                    HapticUtil.tick(context)
+                    themeExpanded = !themeExpanded
+                },
                 selectedTheme = appThemeMode,
-                onSelect = { viewModel.setThemeMode(it); themeExpanded = false }
+                onSelect = {
+                    HapticUtil.tick(context)
+                    viewModel.setThemeMode(it)
+                    themeExpanded = false
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -259,7 +278,10 @@ fun SettingsScreen(
                 iconTint = AppColors.Error,
                 title = stringResource(R.string.settings_deleted_cards_title),
                 subtitle = stringResource(R.string.settings_deleted_cards_subtitle),
-                onClick = { navController.navigate("deleted_cards") }
+                onClick = {
+                    HapticUtil.tick(context)
+                    navController.navigate("deleted_cards")
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -268,13 +290,14 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Backup,
                 iconBg = AppColors.GreenSurface,
                 iconTint = AppColors.GreenPrimary,
-                title = "Sao lưu dữ liệu (Premium)",
-                subtitle = "Xuất dữ liệu phiếu cân ra file JSON",
+                title = stringResource(R.string.settings_backup_title),
+                subtitle = stringResource(R.string.settings_backup_desc),
                 onClick = {
+                    HapticUtil.tick(context)
                     if (isPremium) {
                         exportLauncher.launch("CanLua_SaoLuu_${System.currentTimeMillis() / 1000}.json")
                     } else {
-                        appToast.warning("Tính năng sao lưu yêu cầu tài khoản Premium!")
+                        appToast.warning(context.getString(R.string.settings_backup_premium_required))
                         navController.navigate("premium")
                     }
                 }
@@ -286,9 +309,10 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Restore,
                 iconBg = AppColors.BlueSurface,
                 iconTint = AppColors.Blue,
-                title = "Khôi phục dữ liệu",
-                subtitle = "Nhập dữ liệu phiếu cân từ file JSON",
+                title = stringResource(R.string.settings_restore_title),
+                subtitle = stringResource(R.string.settings_restore_desc),
                 onClick = {
+                    HapticUtil.tick(context)
                     importLauncher.launch(arrayOf("application/json"))
                 }
             )
@@ -303,6 +327,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_privacy_options),
                     subtitle = stringResource(R.string.settings_privacy_options_subtitle),
                     onClick = {
+                        HapticUtil.tick(context)
                         val activity = context as? android.app.Activity
                         if (activity != null) {
                             com.giathinh.canlua.ads.AdConsentManager.showPrivacyOptionsForm(activity)
@@ -326,6 +351,7 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        HapticUtil.tick(context)
                         authViewModel.signOut()
                         showLogoutConfirm = false
                     },
@@ -335,7 +361,10 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutConfirm = false }) {
+                TextButton(onClick = {
+                    HapticUtil.tick(context)
+                    showLogoutConfirm = false
+                }) {
                     Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
                 }
             },
@@ -641,7 +670,7 @@ private fun ExpandableCard(
                 )
                 Icon(
                     imageVector = Icons.Outlined.ExpandMore,
-                    contentDescription = if (isExpanded) "Thu gọn" else "Mở rộng",
+                    contentDescription = if (isExpanded) stringResource(R.string.settings_collapse) else stringResource(R.string.settings_expand),
                     tint = AppColors.TextSecondary,
                     modifier = Modifier
                         .size(24.dp)
@@ -671,6 +700,9 @@ private fun RoleSwitcherContent(
     isGuest: Boolean = false,
     onRoleChange: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -685,7 +717,7 @@ private fun RoleSwitcherContent(
                 color = AppColors.TextPrimary
             )
             Text(
-                text = if (isGuest) "🔒 Đăng nhập để chuyển đổi vai trò" else stringResource(R.string.profile_user_role_subtitle),
+                text = if (isGuest) stringResource(R.string.settings_role_guest_locked) else stringResource(R.string.profile_user_role_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isGuest) AppColors.Orange else AppColors.TextHint
             )
@@ -699,14 +731,14 @@ private fun RoleSwitcherContent(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val currentRole = profile?.role ?: "FARMER"
-                val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
                 RoleChipButton(
                     icon = Icons.Filled.Agriculture,
                     label = stringResource(R.string.farmer),
                     selected = currentRole != "TRADER",
                     onClick = {
+                        HapticUtil.tick(context)
                         if (isGuest) {
-                            appToast.warning("Bạn cần đăng nhập mới có thể chuyển đổi vai trò!")
+                            appToast.warning(context.getString(R.string.settings_role_guest_toast))
                         } else if (currentRole != "FARMER") {
                             onRoleChange("FARMER")
                         }
@@ -718,8 +750,9 @@ private fun RoleSwitcherContent(
                     label = stringResource(R.string.trader),
                     selected = currentRole == "TRADER",
                     onClick = {
+                        HapticUtil.tick(context)
                         if (isGuest) {
-                            appToast.warning("Bạn cần đăng nhập mới có thể chuyển đổi vai trò!")
+                            appToast.warning(context.getString(R.string.settings_role_guest_toast))
                         } else if (currentRole != "TRADER") {
                             onRoleChange("TRADER")
                         }
@@ -741,10 +774,11 @@ private fun RoleChipButton(
 ) {
     Box(
         modifier = modifier
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(11.dp))
             .background(if (selected) AppColors.GreenPrimary else Color.Transparent)
             .clickable(enabled = !selected, onClick = onClick)
-            .padding(vertical = 10.dp),
+            .padding(vertical = 10.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -770,6 +804,7 @@ private fun ThemeModeOptions(
     selected: AppThemeMode,
     onSelect: (AppThemeMode) -> Unit
 ) {
+    val context = LocalContext.current
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         AppThemeMode.entries.forEach { mode ->
             val isSelected = mode == selected
@@ -777,7 +812,10 @@ private fun ThemeModeOptions(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
                 color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
-                onClick = { onSelect(mode) }
+                onClick = {
+                    HapticUtil.tick(context)
+                    onSelect(mode)
+                }
             ) {
                 Row(
                     modifier = Modifier
@@ -807,7 +845,10 @@ private fun ThemeModeOptions(
                     }
                     RadioButton(
                         selected = isSelected,
-                        onClick = { onSelect(mode) },
+                        onClick = {
+                            HapticUtil.tick(context)
+                            onSelect(mode)
+                        },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = AppColors.GreenPrimary,
                             unselectedColor = AppColors.TextHint
@@ -833,6 +874,7 @@ private fun RoleChangeDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_change_role_title), fontWeight = FontWeight.Bold) },
@@ -846,19 +888,25 @@ private fun RoleChangeDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Vai trò sẽ thay đổi sau khi khởi động lại ứng dụng.",
+                    text = stringResource(R.string.settings_role_restart_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextHint
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(newRole) }) {
+            TextButton(onClick = {
+                HapticUtil.tick(context)
+                onConfirm(newRole)
+            }) {
                 Text(stringResource(R.string.settings_change_role_confirm), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = {
+                HapticUtil.tick(context)
+                onDismiss()
+            }) {
                 Text(stringResource(R.string.action_cancel))
             }
         },
@@ -873,17 +921,24 @@ private fun RestartConfirmDialog(
     onRestart: () -> Unit
 ) {
     if (!visible) return
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_restart_title), fontWeight = FontWeight.Bold) },
         text = { Text(stringResource(R.string.settings_restart_text)) },
         confirmButton = {
-            TextButton(onClick = onRestart) {
+            TextButton(onClick = {
+                HapticUtil.tick(context)
+                onRestart()
+            }) {
                 Text(stringResource(R.string.settings_restart_confirm), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = {
+                HapticUtil.tick(context)
+                onDismiss()
+            }) {
                 Text(stringResource(R.string.settings_restart_dismiss), color = AppColors.TextSecondary)
             }
         },

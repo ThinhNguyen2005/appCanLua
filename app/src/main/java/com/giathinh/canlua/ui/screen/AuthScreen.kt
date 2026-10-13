@@ -40,6 +40,7 @@ import com.giathinh.canlua.auth.GoogleSignInHelper
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.AuthUiState
 import com.giathinh.canlua.ui.viewmodel.AuthViewModel
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -169,6 +170,7 @@ fun AuthScreen(
 
                     GoogleSignInButton(
                         onClick = {
+                            HapticUtil.tick(context)
                             scope.launch {
                                 googleHelper.signIn(
                                     onSuccess = { account -> viewModel.signInWithGoogle(account) },
@@ -182,12 +184,17 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     TextButton(
-                        onClick = onSkipLogin,
-                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            HapticUtil.tick(context)
+                            onSkipLogin()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp),
                         colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
                     ) {
                         Text(
-                            text = "Trải nghiệm không cần đăng nhập (Khách)",
+                            text = stringResource(R.string.auth_skip_login),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -203,6 +210,7 @@ fun AuthScreen(
                 modifier = Modifier
                     .padding(top = 18.dp, bottom = 12.dp)
                     .clickable {
+                        HapticUtil.tick(context)
                         scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.auth_feature_in_progress)) }
                     }
             )
@@ -319,10 +327,12 @@ private fun AuthEmailForm(
                 color = AppColors.GreenPrimary,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
+                    .defaultMinSize(minHeight = 44.dp)
                     .clickable {
+                        HapticUtil.tick(context)
                         viewModel.requestPasswordReset(identifier.trim())
                     }
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = 10.dp, horizontal = 4.dp)
             )
         } else {
             Spacer(modifier = Modifier.width(1.dp))
@@ -333,15 +343,20 @@ private fun AuthEmailForm(
             color = AppColors.GreenPrimary,
             fontWeight = FontWeight.Medium,
             modifier = Modifier
-                .clickable { isRegister = !isRegister }
-                .padding(vertical = 4.dp)
+                .defaultMinSize(minHeight = 44.dp)
+                .clickable {
+                    HapticUtil.tick(context)
+                    isRegister = !isRegister
+                }
+                .padding(vertical = 10.dp, horizontal = 4.dp)
         )
     }
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(20.dp))
 
     Button(
         onClick = {
+            HapticUtil.tick(context)
             val idTrim = identifier.trim()
             val passwordTrim = password
             // ---- Phone OTP flow ----

@@ -108,7 +108,7 @@ data class RiceClusterItem(
     private val latLng: LatLng
 ) : ClusterItem {
     override fun getPosition(): LatLng = latLng
-    override fun getTitle(): String = card.name.ifBlank { "Không tên" }
-    override fun getSnippet(): String = "${MapFormatters.number(card.netWeight)} kg · ${card.bagCount} bao"
+    override fun getTitle(): String = card.name.ifBlank { "—" }
+    override fun getSnippet(): String = "${MapFormatters.number(card.netWeight)} kg (${card.bagCount})"
     override fun getZIndex(): Float = 0f
 }

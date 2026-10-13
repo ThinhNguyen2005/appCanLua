@@ -35,6 +35,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.ui.theme.AppColors
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.giathinh.canlua.R
+import com.giathinh.canlua.util.HapticUtil
+
 /**
  * Toolbar tìm kiếm + nút toggle bộ lọc cho RiceMap.
  *
@@ -53,6 +58,8 @@ internal fun SearchAndFilterBar(
     matchCount: Int,
     totalCount: Int
 ) {
+    val context = LocalContext.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -66,7 +73,7 @@ internal fun SearchAndFilterBar(
             onValueChange = onQueryChange,
             placeholder = {
                 Text(
-                    "Tìm tên / giống lúa / địa chỉ",
+                    stringResource(R.string.map_search_placeholder),
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.TextHint
                 )
@@ -76,8 +83,14 @@ internal fun SearchAndFilterBar(
             },
             trailingIcon = {
                 if (query.isNotEmpty()) {
-                    IconButton(onClick = onClear) {
-                        Icon(Icons.Filled.Close, contentDescription = "Xoá")
+                    IconButton(
+                        onClick = {
+                            HapticUtil.tick(context)
+                            onClear()
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.map_action_clear))
                     }
                 }
             },
@@ -96,7 +109,7 @@ internal fun SearchAndFilterBar(
 
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .background(
                     if (activeFilters || showFilters)
@@ -106,10 +119,16 @@ internal fun SearchAndFilterBar(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = onToggleFilters) {
+            IconButton(
+                onClick = {
+                    HapticUtil.tick(context)
+                    onToggleFilters()
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
                 Icon(
                     Icons.Filled.FilterList,
-                    contentDescription = "Bộ lọc",
+                    contentDescription = stringResource(R.string.map_filter_toggle),
                     tint = if (activeFilters) AppColors.GreenPrimary else AppColors.TextSecondary
                 )
             }
@@ -125,7 +144,7 @@ internal fun SearchAndFilterBar(
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
             Text(
-                "Hiện $matchCount / $totalCount điểm",
+                stringResource(R.string.map_match_count, matchCount, totalCount),
                 color = Color.White,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold
@@ -146,9 +165,11 @@ internal fun FilterChipsRow(
     selectedVariety: String?,
     onVarietyChange: (String?) -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(modifier = Modifier.padding(top = 8.dp)) {
         Text(
-            "Giá lúa",
+            stringResource(R.string.map_filter_price_header),
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.TextHint,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -158,7 +179,10 @@ internal fun FilterChipsRow(
                 val pf = PriceFilter.entries[idx]
                 FilterChip(
                     selected = priceFilter == pf,
-                    onClick = { onPriceChange(pf) },
+                    onClick = {
+                        HapticUtil.tick(context)
+                        onPriceChange(pf)
+                    },
                     label = { Text(pf.label()) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = AppColors.GreenPrimary,
@@ -171,7 +195,7 @@ internal fun FilterChipsRow(
         if (varieties.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Giống lúa",
+                stringResource(R.string.map_filter_variety_header),
                 style = MaterialTheme.typography.labelSmall,
                 color = AppColors.TextHint,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -181,14 +205,18 @@ internal fun FilterChipsRow(
                     if (i == 0) {
                         FilterChip(
                             selected = selectedVariety == null,
-                            onClick = { onVarietyChange(null) },
-                            label = { Text("Tất cả") }
+                            onClick = {
+                                HapticUtil.tick(context)
+                                onVarietyChange(null)
+                            },
+                            label = { Text(stringResource(R.string.map_filter_all)) }
                         )
                     } else {
                         val v = varieties[i - 1]
                         FilterChip(
                             selected = selectedVariety == v,
                             onClick = {
+                                HapticUtil.tick(context)
                                 onVarietyChange(if (selectedVariety == v) null else v)
                             },
                             label = { Text(v) }
@@ -202,9 +230,10 @@ internal fun FilterChipsRow(
 
 internal enum class PriceFilter { ALL, HAS_PRICE, MIN_7K, MIN_8K, MIN_9K }
 
+@Composable
 internal fun PriceFilter.label(): String = when (this) {
-    PriceFilter.ALL -> "Tất cả"
-    PriceFilter.HAS_PRICE -> "Đã có giá"
+    PriceFilter.ALL -> stringResource(R.string.map_filter_all)
+    PriceFilter.HAS_PRICE -> stringResource(R.string.map_filter_has_price)
     PriceFilter.MIN_7K -> "≥ 7,000 đ"
     PriceFilter.MIN_8K -> "≥ 8,000 đ"
     PriceFilter.MIN_9K -> "≥ 9,000 đ"

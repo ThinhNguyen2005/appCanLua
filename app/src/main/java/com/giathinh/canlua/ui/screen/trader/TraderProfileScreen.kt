@@ -1,12 +1,19 @@
 package com.giathinh.canlua.ui.screen.trader
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.outlined.AccountBalance
@@ -14,17 +21,29 @@ import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Inventory
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.giathinh.canlua.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.giathinh.canlua.ui.component.dashboard.ChartMetric
 import com.giathinh.canlua.ui.component.dashboard.KpiGrid
@@ -33,22 +52,24 @@ import com.giathinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
 import com.giathinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.giathinh.canlua.ui.component.dashboard.VarietyPieChart
 import com.giathinh.canlua.ui.component.profile.GradientProfileHeader
-import com.giathinh.canlua.ui.component.profile.TraderProfileSkeleton
 import com.giathinh.canlua.ui.component.profile.ProfileNavigationRow
 import com.giathinh.canlua.ui.component.profile.ProfileSectionTitle
 import com.giathinh.canlua.ui.component.profile.QuickStatsGlassGrid
 import com.giathinh.canlua.ui.component.profile.SecondaryStatsRow
+import com.giathinh.canlua.ui.component.profile.TraderProfileSkeleton
+import com.giathinh.canlua.ui.navigation.BottomNavItem
+import com.giathinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.giathinh.canlua.ui.screen.profile.PremiumStatusCard
 import com.giathinh.canlua.ui.screen.profile.PremiumUpsellCard
-import com.giathinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.DashboardFormatter
-import com.google.firebase.auth.FirebaseAuth
 import com.giathinh.canlua.ui.viewmodel.DashboardData
 import com.giathinh.canlua.ui.viewmodel.DashboardViewModel
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.ui.viewmodel.TraderTransactionsViewModel
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
+import com.google.firebase.auth.FirebaseAuth
 
 /**
  * Tab "Tài khoản" cho THƯƠNG LÁI — phiên bản Premium 2026.
@@ -112,6 +133,7 @@ fun TraderProfileScreenContent(
     googleAvatarUrl: String?,
     isGuestMode: Boolean
 ) {
+    val context = LocalContext.current
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderTransactionsState by traderTransactionsViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -151,7 +173,10 @@ fun TraderProfileScreenContent(
             if (isGuestMode) {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        GuestLoginPromoCard(onLoginClick = { profileViewModel.disableGuestMode() })
+                        GuestLoginPromoCard(onLoginClick = {
+                            HapticUtil.tick(context)
+                            profileViewModel.disableGuestMode()
+                        })
                     }
                 }
             }
@@ -182,17 +207,32 @@ fun TraderProfileScreenContent(
                     SeasonSelectorChip(
                         seasons = dash.seasons,
                         selectedSeason = dash.selectedSeason,
-                        onSelect = dashboardViewModel::selectSeason
+                        onSelect = { season ->
+                            HapticUtil.tick(context)
+                            dashboardViewModel.selectSeason(season)
+                        }
                     )
                 }
             }
 
-            // ─── TIER 3: Primary KPI Grid 2×2 (Trader-focused) ───
-            dash.currentStats?.let { stats ->
+            // ─── TIER 3: Primary KPI Grid 2×2 / Empty Season Stats ───
+            val currentStats = dash.currentStats
+            if (currentStats == null || currentStats.isEmpty) {
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        EmptyTraderSeasonStatsCard(
+                            onCreateSlip = {
+                                HapticUtil.tick(context)
+                                navController.navigate(BottomNavItem.SCALE.route)
+                            }
+                        )
+                    }
+                }
+            } else {
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         TraderPrimaryKpiGrid(
-                            stats = stats,
+                            stats = currentStats,
                             previous = dash.previousStats
                         )
                     }
@@ -202,10 +242,10 @@ fun TraderProfileScreenContent(
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         SecondaryStatsRow(
-                            avgMoisture = stats.avgMoisture,
-                            totalImpurity = stats.totalImpurity,
-                            dryCardCount = stats.dryCardCount,
-                            wetCardCount = stats.wetCardCount
+                            avgMoisture = currentStats.avgMoisture,
+                            totalImpurity = currentStats.totalImpurity,
+                            dryCardCount = currentStats.dryCardCount,
+                            wetCardCount = currentStats.wetCardCount
                         )
                     }
                 }
@@ -224,15 +264,19 @@ fun TraderProfileScreenContent(
                 }
 
                 // ─── TIER 6: AI Crop Insights ───
-                if (!stats.isEmpty) {
-                    item {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            AiInsightsCard(
-                                state = dash.aiAnalysis,
-                                onAnalyze = dashboardViewModel::analyzeWithAi,
-                                onReset = dashboardViewModel::resetAiAnalysis
-                            )
-                        }
+                item {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        AiInsightsCard(
+                            state = dash.aiAnalysis,
+                            onAnalyze = {
+                                HapticUtil.tick(context)
+                                dashboardViewModel.analyzeWithAi()
+                            },
+                            onReset = {
+                                HapticUtil.tick(context)
+                                dashboardViewModel.resetAiAnalysis()
+                            }
+                        )
                     }
                 }
             }
@@ -255,7 +299,10 @@ fun TraderProfileScreenContent(
                             R.string.profile_reconciled_slip_count,
                             traderTransactionsState.totalCards
                         ),
-                        onClick = { navController.navigate("trader_transactions") }
+                        onClick = {
+                            HapticUtil.tick(context)
+                            navController.navigate("trader_transactions")
+                        }
                     )
                 }
             }
@@ -269,14 +316,84 @@ fun TraderProfileScreenContent(
                             plan = premiumInfo.plan,
                             sinceMs = premiumInfo.sinceMs,
                             isEarlyAdopter = premiumInfo.isEarlyAdopter,
-                            onClick = { navController.navigate("premium") }
+                            onClick = {
+                                HapticUtil.tick(context)
+                                navController.navigate("premium")
+                            }
                         )
                     } else {
                         PremiumUpsellCard(
-                            onClick = { navController.navigate("premium") }
+                            onClick = {
+                                HapticUtil.tick(context)
+                                navController.navigate("premium")
+                            }
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Khối Empty Season Stats cho Thương Lái khi chưa có phiếu thu mua
+// ─────────────────────────────────────────────────────────────
+@Composable
+private fun EmptyTraderSeasonStatsCard(onCreateSlip: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AppColors.GreenSurface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Scale,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Text(
+                text = stringResource(R.string.profile_empty_season_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+            Text(
+                text = stringResource(R.string.profile_empty_trader_season_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.TextSecondary,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(4.dp))
+            Button(
+                onClick = onCreateSlip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_empty_season_action),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
         }
     }

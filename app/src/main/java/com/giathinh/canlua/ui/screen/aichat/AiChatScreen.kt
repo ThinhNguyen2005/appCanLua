@@ -78,20 +78,24 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.heightIn
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.AiMarkdownText
 import com.giathinh.canlua.ui.viewmodel.AiChatViewModel
 import com.giathinh.canlua.ui.viewmodel.UiMessage
 import com.giathinh.canlua.ui.viewmodel.VoiceState
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import com.giathinh.canlua.util.SpeechRecognizerHelper
 
-private val PRESETS = listOf(
-    "Lúa bị đạo ôn cổ bông xử lý sao?",
-    "Khi nào nên bón đợt 2 cho ST25?",
-    "Rầy nâu phát triển mạnh, cách phòng?",
-    "Nước ruộng ngập 5 ngày có sao không?"
+private val PRESET_RES_IDS = listOf(
+    R.string.ai_chat_preset_1,
+    R.string.ai_chat_preset_2,
+    R.string.ai_chat_preset_3,
+    R.string.ai_chat_preset_4
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -100,6 +104,7 @@ fun AiChatScreen(
     viewModel: AiChatViewModel = hiltViewModel()
 ) {
     TrackScreenRender("ai_chat")
+    val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val voice by viewModel.voiceState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -134,8 +139,15 @@ fun AiChatScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(PRESETS, key = { it }) { preset ->
-                    PresetChip(text = preset, onClick = { viewModel.usePresetPrompt(preset) })
+                items(PRESET_RES_IDS, key = { it }) { resId ->
+                    val text = stringResource(resId)
+                    PresetChip(
+                        text = text,
+                        onClick = {
+                            HapticUtil.tick(context)
+                            viewModel.usePresetPrompt(text)
+                        }
+                    )
                 }
             }
         }
@@ -197,10 +209,12 @@ fun AiChatScreen(
 private fun PresetChip(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(AppColors.GreenSurface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
@@ -282,7 +296,7 @@ private fun TypingIndicator() {
                 modifier = Modifier.size(14.dp)
             )
             Text(
-                "Đang soạn câu trả lời...",
+                stringResource(R.string.ai_chat_typing_status),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.TextHint,
                 fontWeight = FontWeight.Medium
@@ -315,12 +329,15 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.Error
         )
-        IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(44.dp)
+        ) {
             Icon(
                 Icons.Filled.Close,
-                contentDescription = "Đóng",
+                contentDescription = stringResource(R.string.ai_chat_action_close),
                 tint = AppColors.Error,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
     }
@@ -375,8 +392,8 @@ private fun InputBar(
         // Khi đang lắng nghe → hiển thị partial text dưới dạng placeholder mờ
         val displayValue = if (isListening && partial.isNotBlank() && value.isBlank()) partial else value
         val displayPlaceholder = when {
-            isListening -> "Đang nghe..."
-            else -> "Hỏi điều bạn muốn biết..."
+            isListening -> stringResource(R.string.ai_chat_listening_placeholder)
+            else -> stringResource(R.string.ai_chat_input_placeholder)
         }
 
         OutlinedTextField(
@@ -410,7 +427,10 @@ private fun InputBar(
             onMic = ::requestVoice,
             onStop = onStopVoice,
             onCancel = onCancelVoice,
-            onSend = onSend
+            onSend = {
+                HapticUtil.tick(context)
+                onSend()
+            }
         )
     }
 }
@@ -460,7 +480,7 @@ private fun ActionButton(
                 IconButton(onClick = onStop) {
                     Icon(
                         Icons.Filled.Stop,
-                        contentDescription = "Dừng nghe",
+                        contentDescription = stringResource(R.string.ai_chat_action_stop),
                         tint = Color.White
                     )
                 }
@@ -472,7 +492,7 @@ private fun ActionButton(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Gửi",
+                        contentDescription = stringResource(R.string.ai_chat_action_send),
                         tint = if (isStreaming) AppColors.TextHint else Color.White
                     )
                 }
@@ -481,7 +501,7 @@ private fun ActionButton(
                 IconButton(onClick = onMic, enabled = !isStreaming) {
                     Icon(
                         Icons.Filled.Mic,
-                        contentDescription = "Nhập bằng giọng nói",
+                        contentDescription = stringResource(R.string.ai_chat_action_voice_input),
                         tint = if (isStreaming) AppColors.TextHint else AppColors.GreenPrimary
                     )
                 }
@@ -532,14 +552,14 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
 
             // Text
             Text(
-                text = "Trợ lý AI Cân Lúa 🤖",
+                text = stringResource(R.string.ai_chat_locked_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
             )
 
             Text(
-                text = "Tính năng Hỏi đáp AI chỉ dành cho thành viên đã đăng nhập. Hãy đăng ký ngay để mở khóa các đặc quyền hấp dẫn!",
+                text = stringResource(R.string.ai_chat_locked_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center,
@@ -567,7 +587,7 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Đăng nhập sớm trước ngày 01/07/2026 để nhận ngay gói Premium Early Adopter miễn phí trọn đời!",
+                        text = stringResource(R.string.ai_chat_early_adopter_promo),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         color = AppColors.GreenPrimary,
@@ -586,7 +606,7 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
             ) {
                 Text(
-                    text = "Đăng Nhập / Đăng Ký Ngay",
+                    text = stringResource(R.string.ai_chat_btn_login_signup),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -617,11 +637,11 @@ private fun ComparisonTable() {
                     .padding(vertical = 8.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Loại", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-                Text(text = "Hỏi đáp AI", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-                Text(text = "Quảng cáo", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-                Text(text = "Sao lưu", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-                Text(text = "Ưu đãi sớm", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = stringResource(R.string.ai_chat_col_type), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = stringResource(R.string.ai_chat_col_qa), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = stringResource(R.string.ai_chat_col_ads), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = stringResource(R.string.ai_chat_col_backup), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                Text(text = stringResource(R.string.ai_chat_col_early_promo), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -633,11 +653,11 @@ private fun ComparisonTable() {
                     .padding(vertical = 8.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Khách", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)
-                Text(text = "Khóa 🔒", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Error)
-                Text(text = "Có", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
-                Text(text = "Không", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
-                Text(text = "Không", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+                Text(text = stringResource(R.string.ai_chat_tier_guest), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)
+                Text(text = stringResource(R.string.ai_chat_val_locked), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Error)
+                Text(text = stringResource(R.string.ai_chat_val_yes), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = stringResource(R.string.ai_chat_val_no), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+                Text(text = stringResource(R.string.ai_chat_val_no), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
             }
 
             HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.3f), thickness = 0.5.dp)
@@ -649,11 +669,11 @@ private fun ComparisonTable() {
                     .padding(vertical = 8.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Người dùng\nthường", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)
-                Text(text = "3 câu/ngày", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Blue)
-                Text(text = "Có", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
-                Text(text = "Không", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
-                Text(text = "Tặng Pre 🎁", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)
+                Text(text = stringResource(R.string.ai_chat_tier_standard), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)
+                Text(text = stringResource(R.string.ai_chat_val_free_questions), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Blue)
+                Text(text = stringResource(R.string.ai_chat_val_yes), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = stringResource(R.string.ai_chat_val_no), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+                Text(text = stringResource(R.string.ai_chat_val_gift_pre), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)
             }
 
             HorizontalDivider(color = AppColors.Divider.copy(alpha = 0.3f), thickness = 0.5.dp)
@@ -665,11 +685,11 @@ private fun ComparisonTable() {
                     .padding(vertical = 8.dp, horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Premium", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AppColors.GreenPrimary)
-                Text(text = "100 câu/ngày", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppColors.GreenPrimary)
-                Text(text = "Không QC ✨", modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)
-                Text(text = "Xuất JSON", modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
-                Text(text = "Kích hoạt", modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = stringResource(R.string.ai_chat_tier_premium), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AppColors.GreenPrimary)
+                Text(text = stringResource(R.string.ai_chat_val_premium_questions), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppColors.GreenPrimary)
+                Text(text = stringResource(R.string.ai_chat_val_no_ads), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)
+                Text(text = stringResource(R.string.ai_chat_val_export_json), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
+                Text(text = stringResource(R.string.ai_chat_val_activated), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)
             }
         }
     }

@@ -40,14 +40,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.giathinh.canlua.BuildConfig
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.location.LocationProvider
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.CardListViewModel
+import com.giathinh.canlua.util.HapticUtil
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -189,6 +192,7 @@ fun RiceMapScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+                    HapticUtil.tick(context)
                     val target = userLatLng ?: fallbackLatLng
                     scope.launch {
                         cameraPositionState.animate(
@@ -201,7 +205,7 @@ fun RiceMapScreen(
                 contentColor = Color.White,
                 modifier = Modifier.padding(bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
             ) {
-                Icon(Icons.Filled.MyLocation, contentDescription = "Vị trí của tôi")
+                Icon(Icons.Filled.MyLocation, contentDescription = stringResource(R.string.map_my_location))
             }
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -254,8 +258,12 @@ fun RiceMapScreen(
                         cards = filtered,
                         cameraPositionState = cameraPositionState,
                         hasLocationPermission = permissionState.allPermissionsGranted,
-                        onCardSelected = { selectedCard = it },
+                        onCardSelected = {
+                            HapticUtil.tick(context)
+                            selectedCard = it
+                        },
                         onClusterTap = { items ->
+                            HapticUtil.tick(context)
                             if (items.size == 1) {
                                 selectedCard = items.first().card
                             } else {

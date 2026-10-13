@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 
 /**
@@ -59,9 +61,9 @@ internal fun EmptyMapHint(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = when {
-                        !permissionGranted -> "Cần quyền vị trí để hiển thị bản đồ"
-                        hasFilters -> "Không có điểm nào khớp bộ lọc"
-                        else -> "Chưa có thẻ cân nào có toạ độ GPS"
+                        !permissionGranted -> stringResource(R.string.map_hint_perm_title)
+                        hasFilters -> stringResource(R.string.map_hint_filter_title)
+                        else -> stringResource(R.string.map_hint_empty_title)
                     },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
@@ -70,9 +72,9 @@ internal fun EmptyMapHint(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = when {
-                        !permissionGranted -> "Cấp quyền vị trí trong Cài đặt rồi quay lại."
-                        hasFilters -> "Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm."
-                        else -> "Tạo thẻ cân mới ngoài đồng — toạ độ sẽ tự ghi nhận."
+                        !permissionGranted -> stringResource(R.string.map_hint_perm_desc)
+                        hasFilters -> stringResource(R.string.map_hint_filter_desc)
+                        else -> stringResource(R.string.map_hint_empty_desc)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.TextSecondary,
@@ -117,14 +119,14 @@ internal fun MapComingSoonPlaceholder() {
                 Icon(Icons.Filled.Map, null, tint = AppColors.GreenPrimary, modifier = Modifier.size(48.dp))
             }
             Text(
-                "Bản đồ thu mua",
+                stringResource(R.string.map_placeholder_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
-                "Tính năng đang trong giai đoạn phát triển.\nSẽ sớm ra mắt trong bản cập nhật tiếp theo.",
+                stringResource(R.string.map_placeholder_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.TextSecondary,
                 textAlign = TextAlign.Center,
@@ -137,7 +139,7 @@ internal fun MapComingSoonPlaceholder() {
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "🚧  Sắp ra mắt",
+                    stringResource(R.string.map_placeholder_badge),
                     style = MaterialTheme.typography.labelMedium,
                     color = AppColors.GreenPrimary,
                     fontWeight = FontWeight.SemiBold

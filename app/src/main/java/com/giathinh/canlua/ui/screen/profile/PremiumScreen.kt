@@ -20,10 +20,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.PremiumState
@@ -31,15 +33,15 @@ import com.giathinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.delay
 
 enum class PremiumPackage(
-    val title: String,
+    val titleRes: Int,
     val price: String,
     val originalPrice: String?,
-    val duration: String,
+    val durationRes: Int,
     val isBestValue: Boolean = false
 ) {
-    MONTHLY("Gói Mùa Gặt", "49.000 đ", null, "1 tháng"),
-    YEARLY("Gói Cả Năm", "299.000 đ", "588.000 đ", "12 tháng", isBestValue = true),
-    LIFETIME("Gói Vĩnh Viễn", "599.000 đ", "999.000 đ", "Trọn đời")
+    MONTHLY(R.string.premium_plan_monthly_title, "49.000 đ", null, R.string.premium_plan_monthly_dur),
+    YEARLY(R.string.premium_plan_yearly_title, "299.000 đ", "588.000 đ", R.string.premium_plan_yearly_dur, isBestValue = true),
+    LIFETIME(R.string.premium_plan_lifetime_title, "599.000 đ", "999.000 đ", R.string.premium_plan_lifetime_dur)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,17 +60,23 @@ fun PremiumScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Cân Lúa Premium",
+                        stringResource(R.string.premium_screen_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            HapticUtil.tick(context)
+                            navController.popBackStack()
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = stringResource(R.string.premium_action_back),
                             tint = AppColors.TextPrimary
                         )
                     }
@@ -129,7 +137,7 @@ fun PremiumScreen(
                         }
 
                         Text(
-                            text = "Nâng Cấp Premium",
+                            text = stringResource(R.string.premium_banner_title),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -137,7 +145,7 @@ fun PremiumScreen(
                         )
 
                         Text(
-                            text = "Giải phóng toàn bộ sức mạnh công nghệ lúa gạo cầm tay",
+                            text = stringResource(R.string.premium_banner_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.85f),
                             textAlign = TextAlign.Center
@@ -157,37 +165,37 @@ fun PremiumScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = "Quyền lợi Premium đặc quyền:",
+                            text = stringResource(R.string.premium_benefits_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.GreenPrimary
                         )
 
                         PremiumFeatureRow(
-                            title = "Không giới hạn phiếu cân lúa",
-                            description = "Lưu trữ không giới hạn số lượng phiếu cân lúa, xuất file PDF báo cáo nông nghiệp chuyên nghiệp."
+                            title = stringResource(R.string.premium_feat_slips_title),
+                            description = stringResource(R.string.premium_feat_slips_desc)
                         )
                         PremiumFeatureRow(
-                            title = "Chat AI không giới hạn",
-                            description = "Kích hoạt RAG hỗ trợ tư vấn nông nghiệp sâu cùng trợ lý AI lúa gạo thông minh 24/7."
+                            title = stringResource(R.string.premium_feat_ai_title),
+                            description = stringResource(R.string.premium_feat_ai_desc)
                         )
                         PremiumFeatureRow(
-                            title = "Bản đồ vệ tinh nhiệt (Heatmap)",
-                            description = "Xem mật độ thu mua thực tế và lịch sử biến động giá cả nông sản 30 ngày qua."
+                            title = stringResource(R.string.premium_feat_map_title),
+                            description = stringResource(R.string.premium_feat_map_desc)
                         )
                         PremiumFeatureRow(
-                            title = "Tự động đồng bộ tức thời",
-                            description = "Đồng bộ tức thời dữ liệu lên Cloud khi thiết bị kết nối mạng mà không cần chờ đợi."
+                            title = stringResource(R.string.premium_feat_sync_title),
+                            description = stringResource(R.string.premium_feat_sync_desc)
                         )
                         PremiumFeatureRow(
-                            title = "Hoàn toàn không có quảng cáo",
-                            description = "Trải nghiệm mượt mà, sạch sẽ 100%, không bị ngắt quãng khi làm việc ngoài đồng ruộng."
+                            title = stringResource(R.string.premium_feat_ads_title),
+                            description = stringResource(R.string.premium_feat_ads_desc)
                         )
                     }
                 }
 
                 Text(
-                    text = "Chọn gói dịch vụ phù hợp:",
+                    text = stringResource(R.string.premium_select_plan),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextSecondary,
@@ -195,7 +203,7 @@ fun PremiumScreen(
                 )
 
                 // Danh Sách Gói Cước
-                PremiumPackage.values().forEach { pack ->
+                PremiumPackage.entries.forEach { pack ->
                     val isSelected = selectedPackage == pack
                     val borderAlpha = if (isSelected) 0.8f else 0.15f
                     val borderColor = if (isSelected) AppColors.GoldAccent else AppColors.TextHint
@@ -211,8 +219,8 @@ fun PremiumScreen(
                                 shape = RoundedCornerShape(18.dp)
                             )
                             .clickable {
-                                selectedPackage = pack
                                 HapticUtil.tick(context)
+                                selectedPackage = pack
                             }
                             .padding(16.dp)
                     ) {
@@ -230,7 +238,7 @@ fun PremiumScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        text = pack.title,
+                                        text = stringResource(pack.titleRes),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSelected) AppColors.GoldDark else AppColors.TextPrimary
@@ -242,7 +250,7 @@ fun PremiumScreen(
                                             modifier = Modifier.padding(horizontal = 4.dp)
                                         ) {
                                             Text(
-                                                text = "HỜI NHẤT",
+                                                text = stringResource(R.string.premium_badge_best_value),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = Color.White,
                                                 fontWeight = FontWeight.ExtraBold,
@@ -253,7 +261,7 @@ fun PremiumScreen(
                                 }
 
                                 Text(
-                                    text = "Sử dụng trong ${pack.duration}",
+                                    text = stringResource(R.string.premium_plan_duration_format, stringResource(pack.durationRes)),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.TextHint
                                 )
@@ -310,14 +318,14 @@ fun PremiumScreen(
                         )
                     } else {
                         Text(
-                            text = "Đăng ký ngay với ${selectedPackage.price}",
+                            text = stringResource(R.string.premium_btn_subscribe, selectedPackage.price),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
                 }
 
                 Text(
-                    text = "Cam kết bảo mật giao dịch qua cổng thanh toán Google Play. Hủy bất kỳ lúc nào trong cài đặt đăng ký của bạn.",
+                    text = stringResource(R.string.premium_disclaimer),
                     style = MaterialTheme.typography.labelSmall,
                     color = AppColors.TextHint,
                     textAlign = TextAlign.Center,
@@ -329,15 +337,16 @@ fun PremiumScreen(
         }
     }
 
-    // Giả lập tiến trình thanh toán Premium cực kỳ xịn sò
+    // Giả lập tiến trình thanh toán Premium
+    val selectedPackageTitle = stringResource(selectedPackage.titleRes)
     LaunchedEffect(isPurchasing) {
         if (isPurchasing) {
             delay(1800L) // Giả lập mạng và thanh toán Google Play
             isPurchasing = false
             // Flip cờ Premium reactive — quảng cáo trên MarketScreen sẽ fade out ngay.
             // Lưu kèm tên gói để hiển thị trên huy hiệu Premium ở Profile + Settings.
-            PremiumState.setPremium(context, true, plan = selectedPackage.title)
-            com.giathinh.canlua.util.AnalyticsHelper.premiumPurchased(selectedPackage.title)
+            PremiumState.setPremium(context, true, plan = selectedPackageTitle)
+            com.giathinh.canlua.util.AnalyticsHelper.premiumPurchased(selectedPackageTitle)
             showSuccessDialog = true
             HapticUtil.confirm(context)
         }
@@ -362,7 +371,7 @@ fun PremiumScreen(
                         modifier = Modifier.size(48.dp)
                     )
                     Text(
-                        text = "Thanh toán thành công!",
+                        text = stringResource(R.string.premium_success_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
@@ -371,7 +380,7 @@ fun PremiumScreen(
             },
             text = {
                 Text(
-                    text = "Chúc mừng! Bạn đã nâng cấp thành công tài khoản Premium của Cân Lúa Mobile. Toàn bộ các đặc quyền của bạn đã được kích hoạt tức thì.",
+                    text = stringResource(R.string.premium_success_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.TextPrimary,
                     textAlign = TextAlign.Center
@@ -380,12 +389,14 @@ fun PremiumScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        HapticUtil.tick(context)
                         showSuccessDialog = false
                         navController.popBackStack()
                     },
+                    modifier = Modifier.heightIn(min = 48.dp),
                     colors = ButtonDefaults.textButtonColors(contentColor = AppColors.GreenPrimary)
                 ) {
-                    Text("Đóng và Trải nghiệm", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.premium_success_action), fontWeight = FontWeight.Bold)
                 }
             },
             shape = RoundedCornerShape(20.dp),

@@ -29,11 +29,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.util.HapticUtil
 
 /**
  * Bottom sheet hiển thị tóm tắt 1 thẻ cân khi user tap marker đơn lẻ.
@@ -44,6 +48,8 @@ internal fun CardSummaryBottomSheet(
     card: Card,
     onWeighClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -69,7 +75,7 @@ internal fun CardSummaryBottomSheet(
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    card.name.ifBlank { "Không tên" },
+                    card.name.ifBlank { stringResource(R.string.map_sheet_untitled) },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary,
@@ -90,13 +96,13 @@ internal fun CardSummaryBottomSheet(
         ) {
             MapStatBox(
                 icon = Icons.Filled.Scale,
-                label = "Khối lượng",
+                label = stringResource(R.string.map_sheet_weight),
                 value = "${MapFormatters.number(card.netWeight)} kg",
                 modifier = Modifier.weight(1f)
             )
             MapStatBox(
                 icon = Icons.Filled.ShoppingCart,
-                label = "Số bao",
+                label = stringResource(R.string.map_sheet_bag_count),
                 value = "${card.bagCount}",
                 modifier = Modifier.weight(1f)
             )
@@ -115,7 +121,7 @@ internal fun CardSummaryBottomSheet(
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            "Giống: ${card.riceVariety}",
+                            stringResource(R.string.map_sheet_variety_badge, card.riceVariety),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = AppColors.Info
@@ -130,7 +136,7 @@ internal fun CardSummaryBottomSheet(
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            "Giá: ${MapFormatters.number(card.pricePerKg)} đ/kg",
+                            stringResource(R.string.map_sheet_price_badge, MapFormatters.number(card.pricePerKg)),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = AppColors.GreenPrimary
@@ -143,7 +149,7 @@ internal fun CardSummaryBottomSheet(
         if (card.fieldAddress.isNotBlank()) {
             ContactInfoRow(
                 icon = Icons.Filled.LocationOn,
-                label = "Địa chỉ ruộng",
+                label = stringResource(R.string.map_sheet_address),
                 value = card.fieldAddress,
                 tint = AppColors.GreenPrimary
             )
@@ -152,7 +158,7 @@ internal fun CardSummaryBottomSheet(
         if (card.traderPhone.isNotBlank()) {
             ContactInfoRow(
                 icon = Icons.Filled.Phone,
-                label = "SĐT thương lái",
+                label = stringResource(R.string.map_sheet_phone),
                 value = card.traderPhone,
                 tint = AppColors.Info
             )
@@ -161,7 +167,10 @@ internal fun CardSummaryBottomSheet(
         Spacer(Modifier.height(4.dp))
 
         Button(
-            onClick = onWeighClick,
+            onClick = {
+                HapticUtil.tick(context)
+                onWeighClick()
+            },
             modifier = Modifier.fillMaxWidth().height(54.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
             shape = RoundedCornerShape(14.dp)
@@ -169,7 +178,7 @@ internal fun CardSummaryBottomSheet(
             Icon(Icons.Filled.Scale, contentDescription = null)
             Spacer(Modifier.size(8.dp))
             Text(
-                "Vào Nhập Cân",
+                stringResource(R.string.map_sheet_action_weigh),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )

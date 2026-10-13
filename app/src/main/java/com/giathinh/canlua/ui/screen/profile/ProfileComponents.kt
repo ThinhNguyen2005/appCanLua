@@ -49,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 
@@ -148,7 +150,10 @@ fun PersonalInfoCard(
                     color = AppColors.TextPrimary,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = onToggleEdit) {
+                IconButton(
+                    onClick = onToggleEdit,
+                    modifier = Modifier.size(48.dp)
+                ) {
                     Icon(
                         imageVector = if (editing) Icons.Filled.Save else Icons.Filled.Edit,
                         contentDescription = stringResource(if (editing) R.string.save else R.string.edit),
@@ -300,12 +305,19 @@ private fun RoleChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(11.dp))
             .background(if (selected) AppColors.GreenPrimary else Color.Transparent)
-            .clickable(enabled = !selected, onClick = onClick)
-            .padding(vertical = 10.dp),
+            .clickable(
+                enabled = !selected,
+                onClick = {
+                    HapticUtil.tick(context)
+                    onClick()
+                }
+            )
+            .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -489,6 +501,7 @@ fun GuestLoginPromoCard(
     onLoginClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -516,7 +529,7 @@ fun GuestLoginPromoCard(
                 }
                 Spacer(Modifier.size(12.dp))
                 Text(
-                    text = "🔑 Trải nghiệm Chế độ Khách",
+                    text = "🔑 " + stringResource(R.string.profile_guest_promo_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
@@ -524,13 +537,16 @@ fun GuestLoginPromoCard(
             }
 
             Text(
-                text = "Bạn đang trải nghiệm ứng dụng dưới danh nghĩa Khách. Đăng nhập ngay hôm nay để đồng bộ dữ liệu an toàn, sử dụng Trợ lý AI và nhận ưu đãi Premium Early Adopter miễn phí trọn đời (trước ngày 01/07/2026)!",
+                text = stringResource(R.string.profile_guest_promo_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.TextSecondary
             )
 
             Button(
-                onClick = onLoginClick,
+                onClick = {
+                    HapticUtil.tick(context)
+                    onLoginClick()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -538,7 +554,7 @@ fun GuestLoginPromoCard(
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
             ) {
                 Text(
-                    text = "Đăng Nhập / Đăng Ký Ngay",
+                    text = stringResource(R.string.profile_guest_login_btn),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
