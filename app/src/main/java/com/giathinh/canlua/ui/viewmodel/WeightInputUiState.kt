@@ -23,7 +23,7 @@ data class WeightInputUiState(
      * về tiêu chuẩn 14%.
      *
      * Dùng [RiceCalculator.calcNetWeight] để nhất quán với cách tính tại
-     * [WeightInputScreen] (`liveNetWeight`) và Repository (`updateCardCalculations`).
+     * [com.giathinh.canlua.ui.screen.WeightInputScreen] (`liveNetWeight`) và Repository (`updateCardCalculations`).
      */
     val netWeight: Double
         get() = RiceCalculator.calcNetWeight(

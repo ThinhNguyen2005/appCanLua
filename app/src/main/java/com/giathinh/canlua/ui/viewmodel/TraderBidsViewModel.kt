@@ -1,15 +1,10 @@
 package com.giathinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.giathinh.canlua.data.model.RicePrice
-import com.giathinh.canlua.repository.MarketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
-import androidx.lifecycle.viewModelScope
 import javax.inject.Inject
 
 data class TraderBidUiState(
@@ -29,23 +24,13 @@ data class TraderBidUiState(
  * is cleaned up from TRADER-specific UI (bid editor, my-bids tab).
  */
 @HiltViewModel
-class TraderBidsViewModel @Inject constructor(
-    marketRepository: MarketRepository
-) : ViewModel() {
-
-    /** Market prices (read-only from Room/Supabase cache). */
-    val marketPrices: StateFlow<List<RicePrice>> =
-        marketRepository.getAllPrices()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
+class TraderBidsViewModel @Inject constructor() : ViewModel() {
 
     private val _uiState = MutableStateFlow(TraderBidUiState())
     val uiState: StateFlow<TraderBidUiState> = _uiState.asStateFlow()
 
     // Stub — no longer supported. Prices are managed via GAS → Supabase.
+    @Suppress("UNUSED_PARAMETER")
     fun submitBid(
         variety: String,
         priceMin: Double,
@@ -61,6 +46,7 @@ class TraderBidsViewModel @Inject constructor(
         )
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun deleteBid(bidId: String) {
         _uiState.value = TraderBidUiState(
             errorMessage = "Chức năng xóa giá đã được chuyển sang hệ thống quản lý."

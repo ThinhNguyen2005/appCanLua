@@ -22,12 +22,15 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +72,8 @@ fun SyncStatusScreen(
     TrackScreenRender("sync_status")
     val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
     val lastSyncTime by viewModel.lastSyncTime.collectAsStateWithLifecycle()
+    val backupStatus by viewModel.backupStatus.collectAsStateWithLifecycle()
+    val lastBackupTime by viewModel.lastBackupTime.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Scaffold(
@@ -217,6 +222,95 @@ fun SyncStatusScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            // Cloud Database Backup Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Outlined.CloudUpload,
+                                contentDescription = null,
+                                tint = AppColors.GreenPrimary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Sao lưu dữ liệu đám mây",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AppColors.TextPrimary
+                            )
+                        }
+
+                        if (backupStatus is com.giathinh.canlua.repository.BackupStatus.BackingUp) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = AppColors.GreenPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+
+                    val backupMessage = when (backupStatus) {
+                        is com.giathinh.canlua.repository.BackupStatus.Success -> "Đã sao lưu cơ sở dữ liệu lên Cloud Storage an toàn."
+                        is com.giathinh.canlua.repository.BackupStatus.Error -> "Lỗi sao lưu: ${(backupStatus as com.giathinh.canlua.repository.BackupStatus.Error).message}"
+                        is com.giathinh.canlua.repository.BackupStatus.BackingUp -> "Đang đóng gói và tải dữ liệu lên đám mây..."
+                        else -> "Tạo bản sao lưu nén của cơ sở dữ liệu lên Firebase Storage phòng trường hợp đổi máy."
+                    }
+                    Text(
+                        text = backupMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (backupStatus is com.giathinh.canlua.repository.BackupStatus.Error) AppColors.Error else AppColors.TextSecondary
+                    )
+
+                    lastBackupTime?.let { time ->
+                        val dateFormat = remember { SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault()) }
+                        Text(
+                            text = "Lần sao lưu gần nhất: ${dateFormat.format(Date(time))}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.TextHint
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            HapticUtil.tick(context)
+                            viewModel.backupNow()
+                        },
+                        enabled = backupStatus !is com.giathinh.canlua.repository.BackupStatus.BackingUp,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.GreenPrimary)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Backup,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Sao lưu ngay lên đám mây",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
 
             // Info Card

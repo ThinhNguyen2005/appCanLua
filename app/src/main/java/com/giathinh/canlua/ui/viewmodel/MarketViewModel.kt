@@ -179,7 +179,6 @@ class MarketViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         nativeAdLoaderManager.destroyAd()
     }
 }

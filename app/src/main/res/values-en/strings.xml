@@ -451,6 +451,8 @@
     <string name="settings_sync_status_success">Sync completed successfully</string>
     <string name="settings_sync_status_error">Sync error: %1$s</string>
     <string name="settings_sync_status_idle">Not synced</string>
+    <string name="settings_auto_sync_title">Auto-sync</string>
+    <string name="settings_auto_sync_subtitle">Automatically sync weight cards when connected to the Internet</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_subtitle">Select the display language of the app</string>
 

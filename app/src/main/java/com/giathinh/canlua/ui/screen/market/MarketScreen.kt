@@ -275,13 +275,25 @@ fun MarketScreenContent(
                 }
             )
 
-            val onNewsRefresh = remember { { newsViewModel.refresh() } }
-            val onRefreshNewsPage = remember { { newsViewModel.refresh() } }
+            val onNewsRefresh = remember {
+                {
+                    newsViewModel.refresh()
+                    viewModel.loadNativeAd(forceReload = true)
+                }
+            }
+            val onRefreshNewsPage = remember {
+                {
+                    newsViewModel.refresh()
+                    viewModel.loadNativeAd(forceReload = true)
+                }
+            }
             val onSelectTopic = remember { newsViewModel::selectTopic }
             val onDismissError = remember { newsViewModel::clearError }
             val onRefreshPrices = remember { { viewModel.refreshFromSupabase() } }
             val onSelectTrend = remember { viewModel::setTrendFilter }
             val onSelectVariety = remember { viewModel::selectVariety }
+            val onFilterVariety = remember { viewModel::setVarietyFilter }
+            val onClearFilters = remember { viewModel::clearFilters }
             val onEditBid = remember {
                 { bid: FirestoreRicePrice ->
                     editingBid = bid
@@ -321,6 +333,8 @@ fun MarketScreenContent(
                         onRefresh = onRefreshPrices,
                         onSelectTrend = onSelectTrend,
                         onSelectVariety = onSelectVariety,
+                        onFilterVariety = onFilterVariety,
+                        onClearFilters = onClearFilters,
                         onEditBid = onEditBid,
                         onDeleteBid = onDeleteBid
                     )
@@ -494,6 +508,8 @@ private fun PricesPage(
     onRefresh: () -> Unit,
     onSelectTrend: (String?) -> Unit,
     onSelectVariety: (String?) -> Unit,
+    onFilterVariety: (String?) -> Unit = {},
+    onClearFilters: () -> Unit = {},
     onEditBid: (FirestoreRicePrice) -> Unit,
     onDeleteBid: (String) -> Unit
 ) {
@@ -535,7 +551,9 @@ private fun PricesPage(
             item {
                 FilterChipsRow(
                     selectedTrend = filter.trend,
-                    onSelectTrend = onSelectTrend
+                    onSelectTrend = onSelectTrend,
+                    hasActiveFilter = filter.trend != null || filter.variety != null,
+                    onClearFilters = onClearFilters
                 )
             }
 
@@ -550,7 +568,11 @@ private fun PricesPage(
                 item { MarketSkeletonList(items = 4) }
             } else if (prices.isEmpty()) {
                 item {
-                    MarketPricesEmptyState(onRefresh = onRefresh)
+                    MarketPricesEmptyState(
+                        isFiltered = filter.trend != null || filter.variety != null,
+                        onClearFilters = onClearFilters,
+                        onRefresh = onRefresh
+                    )
                 }
             } else {
                 items(prices, key = { it.id }) { price ->
@@ -698,7 +720,9 @@ private fun FooterNote() {
 @Composable
 private fun FilterChipsRow(
     selectedTrend: String?,
-    onSelectTrend: (String?) -> Unit
+    onSelectTrend: (String?) -> Unit,
+    hasActiveFilter: Boolean = false,
+    onClearFilters: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val options = listOf(
@@ -711,6 +735,34 @@ private fun FilterChipsRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 4.dp)
     ) {
+        if (hasActiveFilter && onClearFilters != null) {
+            item {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(AppColors.Error.copy(alpha = 0.12f))
+                        .border(
+                            width = 1.dp,
+                            color = AppColors.Error,
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                        .clickable {
+                            HapticUtil.tick(context)
+                            onClearFilters()
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.action_clear_filter),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Error
+                    )
+                }
+            }
+        }
         items(options) { (key, label, color) ->
             val selected = selectedTrend == key
             val animatedBorderColor by animateColorAsState(
@@ -885,7 +937,11 @@ private fun MyBidCard(
 }
 
 @Composable
-private fun MarketPricesEmptyState(onRefresh: () -> Unit) {
+private fun MarketPricesEmptyState(
+    isFiltered: Boolean = false,
+    onClearFilters: (() -> Unit)? = null,
+    onRefresh: () -> Unit
+) {
     val context = LocalContext.current
     Column(
         modifier = Modifier
@@ -901,42 +957,63 @@ private fun MarketPricesEmptyState(onRefresh: () -> Unit) {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = stringResource(R.string.market_prices_empty_title),
+            text = if (isFiltered) "Không tìm thấy giá phù hợp" else stringResource(R.string.market_prices_empty_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = AppColors.TextPrimary
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = stringResource(R.string.market_prices_empty_subtitle),
+            text = if (isFiltered) "Hãy thử bỏ bộ lọc để xem toàn bộ giá lúa thị trường." else stringResource(R.string.market_prices_empty_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextSecondary,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
-        androidx.compose.material3.Button(
-            onClick = {
-                HapticUtil.tick(context)
-                onRefresh()
-            },
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = AppColors.GreenPrimary,
-                contentColor = Color.White
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.heightIn(min = 48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.market_prices_empty_refresh_action),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
-            )
+        if (isFiltered && onClearFilters != null) {
+            androidx.compose.material3.Button(
+                onClick = {
+                    HapticUtil.tick(context)
+                    onClearFilters()
+                },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.action_clear_filter),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        } else {
+            androidx.compose.material3.Button(
+                onClick = {
+                    HapticUtil.tick(context)
+                    onRefresh()
+                },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.market_prices_empty_refresh_action),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }

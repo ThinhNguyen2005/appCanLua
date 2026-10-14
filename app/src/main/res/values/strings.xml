@@ -505,6 +505,8 @@
     <string name="settings_sync_status_success">Đồng bộ thành công</string>
     <string name="settings_sync_status_error">Lỗi đồng bộ: %1$s</string>
     <string name="settings_sync_status_idle">Chưa đồng bộ</string>
+    <string name="settings_auto_sync_title">Tự động đồng bộ</string>
+    <string name="settings_auto_sync_subtitle">Tự động đồng bộ phiếu cân khi thiết bị có mạng Internet</string>
     <string name="settings_language_title">Ngôn ngữ</string>
     <string name="settings_language_subtitle">Chọn ngôn ngữ hiển thị của ứng dụng</string>
     <string name="language_vietnamese">Tiếng Việt</string>

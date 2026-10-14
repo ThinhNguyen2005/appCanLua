@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Agriculture
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.*
 import com.giathinh.canlua.ui.screen.profile.PersonalInfoCard
@@ -68,11 +69,13 @@ fun SettingsScreen(
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle(initialValue = emptyList())
     val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
+    val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
 
     var pendingRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
     var showRestartConfirm by remember { mutableStateOf(false) }
     var themeExpanded by remember { mutableStateOf(false) }
+    var languageExpanded by remember { mutableStateOf(false) }
 
     var editing by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
@@ -263,6 +266,22 @@ fun SettingsScreen(
                 }
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LanguageExpandableRow(
+                isExpanded = languageExpanded,
+                onToggle = {
+                    HapticUtil.tick(context)
+                    languageExpanded = !languageExpanded
+                },
+                selectedLanguage = language,
+                onSelect = {
+                    HapticUtil.tick(context)
+                    viewModel.setLanguage(it)
+                    languageExpanded = false
+                }
+            )
+
             Spacer(modifier = Modifier.height(20.dp))
 
             SectionHeader(
@@ -271,6 +290,23 @@ fun SettingsScreen(
                 iconBg = AppColors.OrangeSurface,
                 iconTint = AppColors.Orange
             )
+
+            SettingsCardBox {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    ToggleRow(
+                        icon = Icons.Outlined.CloudSync,
+                        title = stringResource(R.string.settings_auto_sync_title),
+                        subtitle = stringResource(R.string.settings_auto_sync_subtitle),
+                        checked = isAutoSyncEnabled,
+                        onCheckedChange = {
+                            HapticUtil.tick(context)
+                            viewModel.setAutoSyncEnabled(it)
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             ClickableSettingsRow(
                 icon = Icons.Outlined.DeleteForever,
@@ -596,6 +632,70 @@ private fun ThemeExpandableRow(
                 selected = selectedTheme,
                 onSelect = onSelect
             )
+        }
+    )
+}
+
+@Composable
+private fun LanguageExpandableRow(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    selectedLanguage: com.giathinh.canlua.data.model.AppLanguage,
+    onSelect: (com.giathinh.canlua.data.model.AppLanguage) -> Unit
+) {
+    ExpandableCard(
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        icon = Icons.Outlined.Translate,
+        title = stringResource(R.string.settings_language_title),
+        selectedValue = stringResource(selectedLanguage.nativeLabelRes),
+        optionsContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                com.giathinh.canlua.data.model.AppLanguage.entries.forEach { lang ->
+                    val isSelected = lang == selectedLanguage
+                    Surface(
+                        onClick = { onSelect(lang) },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = stringResource(lang.nativeLabelRes),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) AppColors.GreenPrimary else AppColors.TextPrimary
+                                )
+                                Text(
+                                    text = stringResource(lang.labelRes),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.TextHint
+                                )
+                            }
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     )
 }
