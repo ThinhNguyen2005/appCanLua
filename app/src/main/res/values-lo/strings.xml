@@ -183,7 +183,7 @@
     <string name="card_detail_missing_gps">ຍັງບໍ່ມີພິກັດ GPS</string>
     <string name="card_detail_default_field_label">ທົ່ງນາ</string>
     <string name="card_detail_map_app_error">ບໍ່ພົບແອັບແຜនທີ່</string>
-    <string name="card_detail_updating_location">ກຳລັງອັບເດດຕຳແໜ່ງ...</string>
+    <string name="card_detail_updating_location">ກຳລັງອັບເດດຕຳແໜ່ງ…</string>
     <string name="card_detail_delete_title">ລຶບໃບຊັ່ງ?</string>
     <string name="card_detail_delete_message">ການກະທຳນີ້ຈະລຶບໃບຊັ່ງ ແລະ ນ້ຳໜັກທັງໝົດທີ່ກ່ຽວຂ້ອງ.</string>
     <string name="card_detail_delete_confirm">ລຶບ</string>
@@ -191,7 +191,7 @@
     <string name="card_detail_deleted_bag">ລຶບເປົາ #%1$d ແລ້ວ</string>
     <string name="card_detail_pdf_premium_required">ການສົ່ງອອກ PDF ແມ່ນຟີເຈີ Premium</string>
     <string name="card_detail_pdf_subject">ໃບຊັ່ງ #%1$d</string>
-    <string name="card_detail_pdf_share_title">ແບ່ງປັນໃບຊັ່ງຜ່ານ...</string>
+    <string name="card_detail_pdf_share_title">ແບ່ງປັນໃບຊັ່ງຜ່ານ…</string>
     <string name="card_detail_pdf_error">ບໍ່ສາມາດສົ່ງອອກ PDF ໄດ້: %1$s</string>
     <string name="card_detail_unknown_error">ຂໍ้ຜິດພາດທີ່ບໍ່ຮູ້ຈັກ</string>
     <string name="card_detail_locked_success">ລັອກໃບຊັ່ງແລ້ວ</string>
@@ -261,7 +261,7 @@
     <string name="header_lock_card_content">ລັອກໃບຊັ່ງ</string>
     <string name="header_delete_card">ລຶບໃບຊັ່ງ</string>
     <string name="header_export_pdf">ສົ່ງອອກ PDF ໃບຊັ່ງ</string>
-    <string name="dropdown_rice_variety_placeholder">ຕົວຢ່າງ: ST25...</string>
+    <string name="dropdown_rice_variety_placeholder">ຕົວຢ່າງ: ST25…</string>
     <string name="dropdown_season_placeholder">ຕົວຢ່າງ: ລະດູແລ້ງ 2026</string>
     <string name="season_dong_xuan">ລະດູໜາວ-ລະດູບານໃໝ່</string>
     <string name="season_he_thu">ລະດູຮ້ອນ-ລະດູໃບໄມ້ຫຼົ່ນ</string>
@@ -269,7 +269,7 @@
     <string name="offline_content_description">ອອບລາຍ</string>
     <string name="offline_banner_message">ກຳລັງອອບລາຍ — ຂໍ້ມູນຖືກບັນທຶກໃນເຄື່ອງ ແລະຈະຊິງຄ໌ເມື່ອມີເນັດ</string>
     <string name="ai_insights_title">ການວິເຄາະ AI</string>
-    <string name="ai_insights_loading">ກຳລັງວິເຄາະຂໍ້ມູນລະດູການ...</string>
+    <string name="ai_insights_loading">ກຳລັງວິເຄາະຂໍ້ມູນລະດູການ…</string>
     <string name="ai_insights_success_subtitle">ຂໍ້ມູນເຈาະເລິກຈາກຜູ້ຊ່ວຍການກະເສດ</string>
     <string name="ai_insights_error_subtitle">ເກີດຂໍ້ຜິດພາດ</string>
     <string name="ai_insights_idle_subtitle">ເຂົ້າໃຈລະດູການຂອງທ່ານຢ່າງວ່ອງໄວ</string>
@@ -443,7 +443,7 @@
     <string name="settings_change_role_to_farmer">ທ່ານຈະກັບໄປໜ້າຊາວນາ ພ້ອມຟັງຊັນຊັ່ງເຂົ້າ, ລະດູການ ແລະ AI ການກະເສດ.</string>
     <string name="settings_change_role_confirm">ປ່ຽນບົດບາດ</string>
     <string name="settings_empty_time">ຍັງບໍ່ມີ</string>
-    <string name="settings_sync_status_syncing">ກຳລັງຊິງຄ໌...</string>
+    <string name="settings_sync_status_syncing">ກຳລັງຊິງຄ໌…</string>
     <string name="settings_sync_status_success">ຊິງຄ໌ສຳເລັດ</string>
     <string name="settings_sync_status_error">ຊິງຄ໌ຜິດພາດ: %1$s</string>
     <string name="settings_sync_status_idle">ຍັງບໍ່ໄດ້ຊິງຄ໌</string>
@@ -469,7 +469,7 @@
     <string name="create_card_cccd_help_title">ເລກບັດປະຈຳຕົວປະຊາຊົນ</string>
     <string name="create_card_cccd_help_description">ປ້ອນເລກບັດປະຈຳຕົວ 12 ຕົວເລກຂອງຄູ່ຮ່ວມງານເພື່ອເປັນຫຼັກຖານທາງກົດໝາຍໃນການກວດສອບ ແລະ ເຊັນສັນຍາເອເລັກໂຕຣນິກໃນອະນາຄົດ. ຫ້ອງນີ້ແມ່ນບໍ່ບັງຄັບ.</string>
     <string name="create_card_impurity_help_title">ຫັກສິ່ງເຈືອປົນ</string>
-    <string name="create_card_impurity_help_description">ນ້ຳໜັກ (kg) ຂອງສິ່ງເຈືອປົນ (ເຟືອງ, ດິນ...) ຈະຖືກຫັກໂດຍອັດຕະໂນມັດໂດຍກົງຈາກນ້ຳໜັກເຂົ້າທັງໝົດຂອງໃບນີ້ໃນເວລານຳມາຄິດໄລ່ນ້ຳໜັກຕົວຈິງ.</string>
+    <string name="create_card_impurity_help_description">ນ້ຳໜັກ (kg) ຂອງສິ່ງເຈືອປົນ (ເຟືອງ, ດິນ…) ຈະຖືກຫັກໂດຍອັດຕະໂນມັດໂດຍກົງຈາກນ້ຳໜັກເຂົ້າທັງໝົດຂອງໃບນີ້ໃນເວລານຳມາຄິດໄລ່ນ້ຳໜັກຕົວຈິງ.</string>
     <string name="create_card_bag_help_title">ຫັກການຫຸ້ມຫໍ່</string>
     <string name="create_card_moisture_help_title">ຄວາມຊຸ່ມຂອງເຂົ້າ</string>
     <string name="create_card_moisture_help_description">ເປີເຊັນຄວາມຊຸ່ມຂອງເຂົ້າເວລາຊັ່ງນໍ້າໜັກ (%). ຄວາມຊຸ່ມນີ້ແມ່ນໃຊ້ສໍາລັບການອ້າງອີງໃນລະຫວ່າງການຕາກເຂົ້າ ຫຼື ການເຈລະຈາອັດຕາການຫຼຸດຜ່ອນນໍ້າໜັກສໍາລັບເຂົ້າແຫ້ງ.</string>
@@ -480,7 +480,7 @@
     <string name="card_detail_delete_blocked_unpaid">ໃບທີ່ຍັງບໍ່ທັນຊຳລະເງິນ — ບໍ່ສາມາດລຶບໄດ້</string>
     <string name="help_btn_feedback">ສົ່ງຄຳຄິດເຫັນ</string>
     <string name="feedback_screen_title">ສົ່ງຄຳຄິດເຫັນ</string>
-    <string name="feedback_placeholder">ປ້ອນຄຳຄິດເຫັນຂອງທ່ານຢູ່ບ່ອນນີ້...</string>
+    <string name="feedback_placeholder">ປ້ອນຄຳຄິດເຫັນຂອງທ່ານຢູ່ບ່ອນນີ້…</string>
     <string name="feedback_btn_send">ສົ່ງ</string>
     <string name="feedback_toast_success">ຂໍຂອບໃຈສຳລັບຄຳຄິດເຫັນຂອງທ່ານ! ພວກເຮົາຈະພິຈາລະນາໂດຍໄວທີ່ສຸດ.</string>
     <string name="feedback_toast_empty">ກະລຸນາປ້ອນເນື້ອຫາຄຳຄິດເຫັນ.</string>
@@ -555,14 +555,14 @@
     <string name="market_bid_price_max_label">ລາຄາສູງ (đ/kg)</string>
     <string name="market_bid_price_max_placeholder">ຕົວຢ່າງ: 8,500</string>
     <string name="market_bid_region_label">ເຂດຮັບຊື້</string>
-    <string name="market_bid_region_placeholder">ຕົວຢ່າງ: Cần Thơ, Tiền Giang...</string>
+    <string name="market_bid_region_placeholder">ຕົວຢ່າງ: Cần Thơ, Tiền Giang…</string>
     <string name="market_bid_trend_section">ທ່າອ່ຽງລາຄາ</string>
     <string name="market_bid_trend_up">ກຳລັງເພີ່ມຂຶ້ນ</string>
     <string name="market_bid_trend_stable">ຄົງທີ່</string>
     <string name="market_bid_trend_down">ກຳລັງຫຼຸດລົງ</string>
     <string name="market_bid_note_label">ໝາຍເຫດ (ເລືອກໄດ້)</string>
-    <string name="market_bid_note_placeholder">ຕົວຢ່າງ: ຊື້ຢູ່ໄຮ່ນາ, ບຸລິມະສິດເຂົ້າແຫ້ງ...</string>
-    <string name="market_bid_saving">ກຳລັງບັນທຶກ...</string>
+    <string name="market_bid_note_placeholder">ຕົວຢ່າງ: ຊື້ຢູ່ໄຮ່ນາ, ບຸລິມະສິດເຂົ້າແຫ້ງ…</string>
+    <string name="market_bid_saving">ກຳລັງບັນທຶກ…</string>
     <string name="market_bid_submit_create">ປະກາດລາຄາ</string>
     <string name="market_bid_submit_update">ອັບເດດ</string>
 
@@ -660,9 +660,9 @@
     <string name="ai_chat_preset_2">ເວລາໃດຄວນໃສ່ຝຸ່ນຮອບ 2 ໃຫ້ເຂົ້າ ST25?</string>
     <string name="ai_chat_preset_3">ແມງບົ້ງສີນ້ຳຕານແຜ່ລາມໄວ ຄວນປ້ອງກັນແນວໃດ?</string>
     <string name="ai_chat_preset_4">ນ້ຳຖ້ວມນາ 5 ວັນ ເຂົ້າຈະຕາຍບໍ່?</string>
-    <string name="ai_chat_typing_status">ກຳລັງຂຽນຄຳຕອບ...</string>
-    <string name="ai_chat_input_placeholder">ຖາມສິ່ງທີ່ທ່ານຢາກຮູ້...</string>
-    <string name="ai_chat_listening_placeholder">ກຳລັງຟັງ...</string>
+    <string name="ai_chat_typing_status">ກຳລັງຂຽນຄຳຕອບ…</string>
+    <string name="ai_chat_input_placeholder">ຖາມສິ່ງທີ່ທ່ານຢາກຮູ້…</string>
+    <string name="ai_chat_listening_placeholder">ກຳລັງຟັງ…</string>
     <string name="ai_chat_action_send">ສົ່ງ</string>
     <string name="ai_chat_action_stop">ຢຸດຟັງ</string>
     <string name="ai_chat_action_voice_input">ປ້ອນດ້ວຍສຽງ</string>
@@ -771,9 +771,25 @@
     <string name="settings_backup_premium_required">ຄຸນສົມບັດການສຳຮອງຕ້ອງການບັນຊີ Premium!</string>
     <string name="settings_restore_title">ກູ້ຄືນຂໍ້ມູນ</string>
     <string name="settings_restore_desc">ນຳເຂົ້າຂໍ້ມູນໃບບິນຊັ່ງຈາກໄຟລ໌ JSON</string>
+    <string name="settings_restore_subtitle">ຮວມຂໍ້ມູນຈາກໄຟລ໌ສຳຮອງ JSON ເຂົ້າໃນເຄື່ອງ</string>
+    <string name="settings_restore_dialog_title">ຢືນຢັນການກູ້ຄືນຂໍ້ມູນສຳຮອງ</string>
+    <string name="settings_restore_dialog_count">ໄຟລ໌ສຳຮອງປະກອບມີ %1$d ໃບບິນຊັ່ງ.</string>
+    <string name="settings_restore_dialog_desc">ຂໍ້ມູນຈາກໄຟລ໌ຈະຖືກຮວມເພີ່ມເຂົ້າໃນລາຍການປັດຈຸບັນໃນເຄື່ອງຂອງທ່ານ (ບໍ່ເຮັດໃຫ້ສູນເສຍ ຫຼື ຂຽນທັບໃບບິນທີ່ມີຢູ່).</string>
+    <string name="settings_restore_confirm_btn">ກູ້ຄືន</string>
     <string name="settings_collapse">ຫຍໍ້ເຂົ້າ</string>
     <string name="settings_expand">ຂະຫຍາຍອອກ</string>
     <string name="settings_role_guest_locked">🔒 ເຂົ້າສູ່ລະບົບເພື່ອປ່ຽນບົດບາດ</string>
+    <string name="settings_sync_wifi_only_title">ຊິ້ງຜ່ານ Wi-Fi ເທົ່ານັ້ນ</string>
+    <string name="settings_sync_wifi_only_subtitle">ປະຢັດອິນເຕີເນັດ 4G/5G ເວລາຊັ່ງຢູ່ທົ່ງນາ</string>
+    <string name="settings_backup_desc_locked">ສົ່ງອອກໄຟລ໌ສຳຮອງ JSON ຢ່າງປອດໄພ (ສະເພາະ Premium)</string>
+    <string name="settings_badge_premium">PREMIUM</string>
+    <string name="settings_guest_not_signed_in">ຍັງບໍ່ໄດ້ເຂົ້າສູ່ລະບົບ</string>
+    <string name="settings_guest_mode_badge">ທ່ານກຳລັງໃຊ້ງານໃນໂໝດແຂກ</string>
+    <string name="settings_guest_login_benefit">ເຂົ້າສູ່ລະບົບເພື່ອສຳຮອງຂໍ້ມູນຂຶ້ນຄລາວໂດຍອັດຕະໂນມັດ, ຊິ້ງລະຫວ່າງອຸປະກອນ ແລະ ປົດລັອກບົດບາດຊາວນາ &amp; ພໍ່ຄ້າຢ່າງສົມບູນ.</string>
+    <string name="settings_login_now">ເຂົ້າສູ່ລະບົບດຽວນີ້</string>
+    <string name="settings_app_version">Can Lua v%1$s</string>
+    <string name="settings_file_invalid">ໄຟລ໌ບໍ່ຖືກຕ້ອງ</string>
+    <string name="settings_file_read_error">ບໍ່ສາມາດອ່ານໄຟລ໌ສຳຮອງໄດ້</string>
     <!-- Trader Transactions Screen -->
     <string name="trader_tx_title">ປຶ້ມທຸລະກຳ</string>
     <string name="trader_tx_subtitle">%1$d ໃບຊື້ເຂົ້າ · ອັບເດດສົດ</string>
@@ -825,7 +841,7 @@
     <string name="sync_screen_title">ການຊິ້ງຂໍ້ມູນ</string>
     <string name="sync_screen_success">ຊິ້ງຂໍ້ມູນສຳເລັດ</string>
     <string name="sync_screen_error">ເກີດຂໍ້ຜິດພາດໃນການຊິ້ງ</string>
-    <string name="sync_screen_syncing">ກຳລັງຊິ້ງຂໍ້ມູນ...</string>
+    <string name="sync_screen_syncing">ກຳລັງຊິ້ງຂໍ້ມູນ…</string>
     <string name="sync_screen_idle">ຍັງບໍ່ໄດ້ຊິ້ງ</string>
     <string name="sync_screen_last_time">ຊິ້ງຄັ້ງຫຼ້າສຸດ: %1$s</string>
     <string name="sync_screen_btn_action">ຊິ້ງດຽວນີ້</string>
@@ -837,4 +853,53 @@
     <string name="auth_skip_login">ສືບຕໍ່ໃນຖານະແຂກ (ບໍ່ຕ້ອງເຂົ້າສູ່ລະບົບ)</string>
     <string name="splash_slogan">ການຄຸ້ມຄອງການຊັ່ງເຂົ້າແບບສະຫຼາດ</string>
     <string name="splash_loading">ກຳລັງໂຫລດຂໍ້ມູນ…</string>
+
+    <string name="settings_auto_sync_title">ຊິງຄ໌ອັດຕະໂນມັດ</string>
+    <string name="settings_auto_sync_subtitle">ຊິງຄ໌ໃບຊັ່ງອັດຕະໂນມັດເມື່ອອຸປະກອນມີອິນເຕີເນັດ</string>
+    <string name="news_time_months_ago">%1$d ເດືອນກ່ອນ</string>
+    <string name="settings_role_guest_toast">ທ່ານຕ້ອງເຂົ້າສູ່ລະບົບເພື່ອປ່ຽນບົດບາດ!</string>
+    <string name="settings_role_restart_hint">ບົດບາດຈະປ່ຽນຫຼັງຈາກເລີ່ມແອັບໃໝ່.</string>
+    <!-- CardDetailScreen Dialogs & Actions -->
+    <string name="card_detail_tab_info">ຂໍ້ມູນ</string>
+    <string name="card_detail_tab_deduction">ຫັກນ້ຳໜັກ</string>
+    <string name="card_detail_tab_finance">ການເງິນ</string>
+    <string name="card_detail_variety_display_only_hint">ແນວພັນເຂົ້າສະແດງເທົ່ານັ້ນ, ບໍ່ມີຜົນຕໍ່ການຄິດໄລ່</string>
+    <string name="card_detail_deduction_recalc_hint">ການປ່ຽນແປງຈະຄິດໄລ່ນ້ຳໜັກຮັບຕົວຈິງຄືນໃໝ່</string>
+    <string name="unit_percent" formatted="false">%</string>
+    <string name="unit_vnd">đ</string>
+    <string name="unit_vnd_per_kg">đ/kg</string>
+
+    <string name="card_detail_edit_bag_title">ແກ້ໄຂນ້ຳໜັກເປົາ #%1$d</string>
+    <string name="card_detail_edit_bag_prompt">ປ້ອນນ້ຳໜັກຕົວຈິງຂອງເປົານີ້ໃໝ່ (0.1 kg – 200 kg):</string>
+    <string name="card_detail_edit_bag_label">ນ້ຳໜັກເປົາ (kg)</string>
+    <string name="card_detail_edit_bag_error">ນ້ຳໜັກຕ້ອງຢູ່ລະຫວ່າງ 0.1 ຫາ 200 kg</string>
+    <string name="card_detail_updated_bag_toast">ອັບເດດເປົາ #%1$d ແລ້ວ: %2$s kg</string>
+
+    <string name="card_detail_add_payment_title">ຊຳລະເພີ່ມງວດນີ້</string>
+    <string name="card_detail_remaining_to_pay">ຍັງເຫຼືອຕ້ອງຈ່າຍ:</string>
+    <string name="card_detail_amount_with_currency">%1$s đ</string>
+    <string name="card_detail_pay_full_100" formatted="false">ຈ່າຍຄົບ 100%</string>
+    <string name="card_detail_pay_half_50" formatted="false">ຈ່າຍ 50%</string>
+    <string name="card_detail_payment_amount_label">ຈຳນວນເງິນຊຳລະ (VND)</string>
+    <string name="card_detail_payment_note_label">ໝາຍເຫດ / ວິທີຊຳລະ</string>
+    <string name="card_detail_payment_note_placeholder">ເງິນສົດ, ໂອນເງິນ…</string>
+    <string name="card_detail_payment_method_cash">ເງິນສົດ</string>
+    <string name="card_detail_payment_method_transfer">ໂອນເງິນ</string>
+    <string name="card_detail_payment_default_desc">ຊຳລະເພີ່ມ</string>
+    <string name="card_detail_payment_confirm_btn">ຢືນຢັນການຈ່າຍ</string>
+    <string name="card_detail_payment_recorded_toast">ບັນທຶກການຊຳລະ %1$s đ ແລ້ວ</string>
+
+
+    <!-- CardListScreen -->
+    <string name="card_list_delete_success_toast">ລຶບບັດ %1$s ສຳເລັດແລ້ວ</string>
+    <string name="card_list_delete_error_toast">ລຶບບັດບໍ່ສຳເລັດ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ</string>
+    <string name="card_list_date_today_prefix">ມື້ນີ້ · %1$s</string>
+    <string name="card_list_date_yesterday_prefix">ມື້ວານນີ້ · %1$s</string>
+    <string name="card_list_day_card_count">%1$d ບັດ</string>
+
+    <string name="compact_billion">%1$s ຕື້</string>
+    <string name="compact_million">%1$s ລ້ານ</string>
+    <string name="compact_thousand">%1$s ພັນ</string>
+    <string name="compact_ton">%1$s ໂຕນ</string>
+
 </resources>

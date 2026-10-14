@@ -71,11 +71,13 @@ class KnowledgeBaseRepository @Inject constructor(
         if (tokens.isEmpty()) return emptyList()
 
         return entries
+            .asSequence()
             .map { it to scoreEntry(it, normQuery, tokens) }
             .filter { it.second > 0 }
             .sortedByDescending { it.second }
             .take(maxResults)
             .map { it.first }
+            .toList()
     }
 
     private fun scoreEntry(entry: KnowledgeEntry, normQuery: String, tokens: List<String>): Int {

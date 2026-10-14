@@ -6,7 +6,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -72,9 +71,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -94,7 +91,6 @@ import com.giathinh.canlua.ui.component.market.NewsSection
 import com.giathinh.canlua.ui.component.market.PriceTrendChart
 import com.giathinh.canlua.ui.component.market.RicePriceCard
 import com.giathinh.canlua.ui.theme.AppColors
-import com.giathinh.canlua.ui.util.isScrollingUp
 import com.giathinh.canlua.ui.viewmodel.MarketViewModel
 import com.giathinh.canlua.ui.viewmodel.NewsViewModel
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel

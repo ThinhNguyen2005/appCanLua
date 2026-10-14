@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Agriculture
 import androidx.compose.material.icons.filled.Check
@@ -48,7 +50,6 @@ import com.giathinh.canlua.R
 import com.giathinh.canlua.ads.AdConsentManager
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
-import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.data.model.Profile
 import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.ui.screen.profile.PersonalInfoCard
@@ -87,8 +88,6 @@ fun SettingsScreen(
 ) {
     TrackScreenRender("settings")
 
-    val isTtsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
-    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -96,13 +95,13 @@ fun SettingsScreen(
     val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle(initialValue = emptyList())
     val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
     val isAutoSyncEnabled by viewModel.isAutoSyncEnabled.collectAsStateWithLifecycle()
+    val isSyncOnlyWifi by viewModel.isSyncOnlyWifi.collectAsStateWithLifecycle()
 
     var pendingRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
     var showRestartConfirm by remember { mutableStateOf(false) }
     var themeExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
-    var fontScaleExpanded by remember { mutableStateOf(false) }
 
     // State preservation for user inputs across configuration changes / process kill
     var editing by rememberSaveable { mutableStateOf(false) }
@@ -153,18 +152,19 @@ fun SettingsScreen(
                     BufferedReader(InputStreamReader(inputStream, "UTF-8")).use { reader ->
                         reader.readText()
                     }
-                } ?: throw IllegalStateException("Không thể đọc tệp sao lưu")
+                } ?: throw IllegalStateException(context.getString(R.string.settings_file_read_error))
                 val payload = Gson().fromJson(json, BackupManager.BackupPayload::class.java)
                 val count = payload?.data?.size ?: 0
                 pendingRestoreCount = count
                 pendingRestoreUri = uri
             } catch (e: Exception) {
-                appToast.error(context.getString(R.string.settings_import_error, e.message ?: "Tệp không hợp lệ"))
+                appToast.error(context.getString(R.string.settings_import_error, e.message ?: context.getString(R.string.settings_file_invalid)))
             }
         }
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TopAppBar(
                 title = {
@@ -190,7 +190,8 @@ fun SettingsScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = AppColors.Surface,
                     titleContentColor = AppColors.TextPrimary
-                )
+                ),
+                windowInsets = WindowInsets(0.dp)
             )
         },
         containerColor = AppColors.Surface
@@ -285,42 +286,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ── KHỐI 2: CÂN LÚA & THAO TÁC (CORE WEIGHING SETTINGS) ─────────
-            SectionTitle("Cân lúa & Thao tác")
-            SettingsGroupCard {
-                ToggleRow(
-                    icon = Icons.Outlined.RecordVoiceOver,
-                    title = stringResource(R.string.settings_tts_title),
-                    subtitle = stringResource(R.string.settings_tts_subtitle),
-                    checked = isTtsEnabled,
-                    onCheckedChange = {
-                        HapticUtil.tick(context)
-                        viewModel.setTtsEnabled(it)
-                    }
-                )
-
-                HorizontalDivider(
-                    color = AppColors.Divider.copy(alpha = 0.4f),
-                    thickness = 0.5.dp,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                FontScaleExpandableRow(
-                    isExpanded = fontScaleExpanded,
-                    onToggle = {
-                        HapticUtil.tick(context)
-                        fontScaleExpanded = !fontScaleExpanded
-                    },
-                    selectedFontScale = fontScale,
-                    onSelect = {
-                        HapticUtil.tick(context)
-                        viewModel.setFontScale(it)
-                        fontScaleExpanded = false
-                    }
-                )
-            }
-
-            // ── KHỐI 3: HIỂN THỊ & NGÔN NGỮ (DISPLAY & LANGUAGE) ───────────
+            // ── KHỐI 2: HIỂN THỊ & NGÔN NGỮ (DISPLAY & LANGUAGE) ───────────
             SectionTitle(stringResource(R.string.settings_section_display))
             SettingsGroupCard {
                 ThemeExpandableRow(
@@ -358,7 +324,7 @@ fun SettingsScreen(
                 )
             }
 
-            // ── KHỐI 4: QUẢN LÝ DỮ LIỆU & SAO LƯU ──────────────────────────
+            // ── KHỐI 3: QUẢN LÝ DỮ LIỆU & SAO LƯU ──────────────────────────
             SectionTitle(stringResource(R.string.settings_section_data))
             SettingsGroupCard {
                 ToggleRow(
@@ -372,13 +338,32 @@ fun SettingsScreen(
                     }
                 )
 
+                AnimatedVisibility(visible = isAutoSyncEnabled) {
+                    Column {
+                        HorizontalDivider(
+                            color = AppColors.Divider.copy(alpha = 0.4f),
+                            thickness = 0.5.dp,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        ToggleRow(
+                            icon = Icons.Outlined.Wifi,
+                            title = stringResource(R.string.settings_sync_wifi_only_title),
+                            subtitle = stringResource(R.string.settings_sync_wifi_only_subtitle),
+                            checked = isSyncOnlyWifi,
+                            onCheckedChange = {
+                                HapticUtil.tick(context)
+                                viewModel.setSyncOnlyWifi(it)
+                            }
+                        )
+                    }
+                }
+
                 HorizontalDivider(
                     color = AppColors.Divider.copy(alpha = 0.4f),
                     thickness = 0.5.dp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
-                // Phiếu đã xoá dùng icon khôi phục trung tính, không dùng màu đỏ
                 SettingsClickableRow(
                     icon = Icons.Outlined.RestoreFromTrash,
                     iconBg = AppColors.SurfaceContainer,
@@ -397,7 +382,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
-                // Sao lưu dữ liệu (kèm nhãn Premium, không toast trùng)
                 SettingsClickableRow(
                     icon = Icons.Outlined.Backup,
                     iconBg = AppColors.GreenSurface,
@@ -406,9 +390,9 @@ fun SettingsScreen(
                     subtitle = if (isPremium) {
                         stringResource(R.string.settings_backup_desc)
                     } else {
-                        "Xuất file JSON sao lưu an toàn (Dành riêng cho Premium)"
+                        stringResource(R.string.settings_backup_desc_locked)
                     },
-                    trailingBadge = if (!isPremium) "PREMIUM" else null,
+                    trailingBadge = if (!isPremium) stringResource(R.string.settings_badge_premium) else null,
                     onClick = {
                         HapticUtil.tick(context)
                         if (isPremium) {
@@ -425,13 +409,12 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
-                // Khôi phục dữ liệu (mở dialog xác nhận gộp dữ liệu)
                 SettingsClickableRow(
                     icon = Icons.Outlined.Restore,
                     iconBg = AppColors.BlueSurface,
                     iconTint = AppColors.Blue,
                     title = stringResource(R.string.settings_restore_title),
-                    subtitle = "Gộp dữ liệu từ file sao lưu JSON vào máy",
+                    subtitle = stringResource(R.string.settings_restore_subtitle),
                     onClick = {
                         HapticUtil.tick(context)
                         importLauncher.launch(arrayOf("application/json"))
@@ -462,7 +445,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ── KHỐI 5: ĐĂNG XUẤT (TÁCH RIÊNG Ở CUỐI) ──────────────────────
+            // ── KHỐI 4: ĐĂNG XUẤT (TÁCH RIÊNG Ở CUỐI) ──────────────────────
             if (!isUserGuest) {
                 Spacer(modifier = Modifier.height(24.dp))
                 SignOutCard(
@@ -499,7 +482,7 @@ fun SettingsScreen(
             },
             title = {
                 Text(
-                    text = "Xác nhận khôi phục sao lưu",
+                    text = stringResource(R.string.settings_restore_dialog_title),
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -507,13 +490,13 @@ fun SettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Tệp sao lưu chứa $count phiếu cân.",
+                        text = stringResource(R.string.settings_restore_dialog_count, count),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = "Dữ liệu từ tệp sẽ được GỘP THÊM vào danh sách hiện tại trên máy của bạn (không làm mất hoặc ghi đè các phiếu đã có).",
+                        text = stringResource(R.string.settings_restore_dialog_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.TextSecondary
                     )
@@ -541,7 +524,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Khôi phục", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(stringResource(R.string.settings_restore_confirm_btn), fontWeight = FontWeight.Bold, color = Color.White)
                 }
             },
             dismissButton = {
@@ -663,13 +646,13 @@ private fun GuestAccountCard(onLoginClick: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Chưa đăng nhập tài khoản",
+                        text = stringResource(R.string.settings_guest_not_signed_in),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = "Bạn đang dùng ở chế độ Khách",
+                        text = stringResource(R.string.settings_guest_mode_badge),
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextHint
                     )
@@ -677,7 +660,7 @@ private fun GuestAccountCard(onLoginClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Đăng nhập để tự động sao lưu dữ liệu lên đám mây, đồng bộ giữa các máy và mở khoá đầy đủ vai trò Nông dân & Thương lái.",
+                text = stringResource(R.string.settings_guest_login_benefit),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.TextSecondary,
                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
@@ -690,14 +673,14 @@ private fun GuestAccountCard(onLoginClick: () -> Unit) {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
-                    Icons.Outlined.Login,
+                    Icons.AutoMirrored.Outlined.Login,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     tint = Color.White
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Đăng nhập ngay",
+                    text = stringResource(R.string.settings_login_now),
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -915,63 +898,6 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun FontScaleExpandableRow(
-    isExpanded: Boolean,
-    onToggle: () -> Unit,
-    selectedFontScale: FontScale,
-    onSelect: (FontScale) -> Unit
-) {
-    ExpandableRowContent(
-        isExpanded = isExpanded,
-        onToggle = onToggle,
-        icon = Icons.Outlined.FormatSize,
-        title = stringResource(R.string.settings_font_size_title),
-        selectedValue = stringResource(selectedFontScale.labelRes),
-        optionsContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                FontScale.values().forEach { scale ->
-                    val isSelected = scale == selectedFontScale
-                    Surface(
-                        onClick = { onSelect(scale) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(scale.labelRes),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
-                            )
-                            RadioButton(
-                                selected = isSelected,
-                                onClick = { onSelect(scale) },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = AppColors.GreenPrimary,
-                                    unselectedColor = AppColors.TextHint
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    )
-}
-
-@Composable
 private fun ThemeExpandableRow(
     isExpanded: Boolean,
     onToggle: () -> Unit,
@@ -1013,7 +939,7 @@ private fun LanguageExpandableRow(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                AppLanguage.values().forEach { lang ->
+                AppLanguage.entries.forEach { lang ->
                     val isSelected = lang == selectedLanguage
                     Surface(
                         onClick = { onSelect(lang) },
@@ -1253,7 +1179,7 @@ private fun ThemeModeOptions(
 ) {
     val context = LocalContext.current
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        AppThemeMode.values().forEach { mode ->
+        AppThemeMode.entries.forEach { mode ->
             val isSelected = mode == selected
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -1310,8 +1236,16 @@ private fun ThemeModeOptions(
 @Composable
 private fun SettingsFooter() {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "Cân Lúa v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
-        Text(text = "Gia Thịnh \u00a9 2026", style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint.copy(alpha = 0.7f))
+        Text(
+            text = stringResource(R.string.settings_app_version, BuildConfig.VERSION_NAME),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.TextHint
+        )
+        Text(
+            text = stringResource(R.string.settings_copyright),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.TextHint.copy(alpha = 0.7f)
+        )
     }
 }
 

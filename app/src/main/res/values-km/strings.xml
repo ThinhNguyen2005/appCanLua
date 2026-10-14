@@ -183,7 +183,7 @@
     <string name="card_detail_missing_gps">មិនទាន់មានកូអរដោនេ GPS ទេ</string>
     <string name="card_detail_default_field_label">វាលស្រែ</string>
     <string name="card_detail_map_app_error">រកមិនឃើញកម្មវិធីផែនទីទេ</string>
-    <string name="card_detail_updating_location">កំពុងធ្វើបច្ចុប្បន្នភាពទីតាំង...</string>
+    <string name="card_detail_updating_location">កំពុងធ្វើបច្ចុប្បន្នភាពទីតាំង…</string>
     <string name="card_detail_delete_title">លុបវិក្កយបត្រ?</string>
     <string name="card_detail_delete_message">សកម្មភាពនេះនឹងលុបវិក្កយបត្រ និងទម្ងន់ពាក់ព័ន្ធទាំងអស់។</string>
     <string name="card_detail_delete_confirm">លុប</string>
@@ -191,7 +191,7 @@
     <string name="card_detail_deleted_bag">បានលុបការ៉ុង #%1$d</string>
     <string name="card_detail_pdf_premium_required">ការនាំចេញ PDF គឺជាមុខងារ Premium</string>
     <string name="card_detail_pdf_subject">វិក្កយបត្រថ្លឹង #%1$d</string>
-    <string name="card_detail_pdf_share_title">ចែករំលែកវិក្កយបត្រថ្លឹងតាមរយៈ...</string>
+    <string name="card_detail_pdf_share_title">ចែករំលែកវិក្កយបត្រថ្លឹងតាមរយៈ…</string>
     <string name="card_detail_pdf_error">មិនអាចនាំចេញ PDF បានទេ៖ %1$s</string>
     <string name="card_detail_unknown_error">កំហុសមិនស្គាល់</string>
     <string name="card_detail_locked_success">បានចាក់សោវិក្កយបត្រថ្លឹង</string>
@@ -261,7 +261,7 @@
     <string name="header_lock_card_content">ចាក់សោសំបុត្រ</string>
     <string name="header_delete_card">លុបសំបុត្រ</string>
     <string name="header_export_pdf">នាំចេញ PDF សំបុត្រថ្លឹង</string>
-    <string name="dropdown_rice_variety_placeholder">ឧទាហរណ៍៖ ST25...</string>
+    <string name="dropdown_rice_variety_placeholder">ឧទាហរណ៍៖ ST25…</string>
     <string name="dropdown_season_placeholder">ឧទាហរណ៍៖ រដូវប្រាំង 2026</string>
     <string name="season_dong_xuan">រដូវរងា-និទាឃរដូវ</string>
     <string name="season_he_thu">រដូវក្តៅ-រដូវស្លឹកឈើជ្រុះ</string>
@@ -269,7 +269,7 @@
     <string name="offline_content_description">គ្មានអ៊ីនធឺណិត</string>
     <string name="offline_banner_message">កំពុងគ្មានអ៊ីនធឺណិត — ទិន្នន័យរក្សាទុកលើឧបករណ៍ ហើយនឹងធ្វើសមកាលកម្មពេលមានបណ្ដាញ</string>
     <string name="ai_insights_title">ការវិភាគដោយ AI</string>
-    <string name="ai_insights_loading">កំពុងវិភាគទិន្នន័យរដូវកាល...</string>
+    <string name="ai_insights_loading">កំពុងវិភាគទិន្នន័យរដូវកាល…</string>
     <string name="ai_insights_success_subtitle">ព័ត៌មានលម្អិតពីជំនួយការកសិកម្ម</string>
     <string name="ai_insights_error_subtitle">បានកើតឡើងកំហុស</string>
     <string name="ai_insights_idle_subtitle">ស្វែងយល់ពីរដូវកាលរបស់អ្នកយ៉ាងឆាប់រហ័ស</string>
@@ -445,7 +445,7 @@
     <string name="settings_change_role_to_farmer">អ្នកនឹងត្រឡប់ទៅចំណុចប្រទាក់កសិករ ដែលមានមុខងារថ្លឹងស្រូវ រដូវកាល និង AI កសិកម្ម។</string>
     <string name="settings_change_role_confirm">ប្តូរតួនាទី</string>
     <string name="settings_empty_time">មិនទាន់មាន</string>
-    <string name="settings_sync_status_syncing">កំពុងសមកាលកម្ម...</string>
+    <string name="settings_sync_status_syncing">កំពុងសមកាលកម្ម…</string>
     <string name="settings_sync_status_success">សមកាលកម្មបានជោគជ័យ</string>
     <string name="settings_sync_status_error">កំហុសសមកាលកម្ម: %1$s</string>
     <string name="settings_sync_status_idle">មិនទាន់សមកាលកម្ម</string>
@@ -471,7 +471,7 @@
     <string name="create_card_cccd_help_title">លេខអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ</string>
     <string name="create_card_cccd_help_description">បញ្ចូលលេខអត្តសញ្ញាណប័ណ្ណ ១២ខ្ទង់ របស់ដៃគូ ដើម្បីធ្វើជាភស្តុតាងស្របច្បាប់សម្រាប់ការផ្ទៀងផ្ទាត់ និងការចុះហត្ថលេខាលើកិច្ចសន្យាអេឡិចត្រូនិកនាពេលអនាគត។ វាលនេះគឺស្រេចចិត្ត។</string>
     <string name="create_card_impurity_help_title">ដកភាពមិនបរិសុទ្ធ</string>
-    <string name="create_card_impurity_help_description">ទម្ងន់ (គីឡូក្រាម) នៃភាពមិនបរិសុទ្ធ (ចំបើង ដី...) នឹងត្រូវដកចេញដោយស្វ័យប្រវត្តិកាត់ចេញពីទម្ងន់ស្រូវសរុបនៃសន្លឹកបៀនេះ នៅពេលគណនាទម្ងន់ជាក់ស្តែង។</string>
+    <string name="create_card_impurity_help_description">ទម្ងន់ (គីឡូក្រាម) នៃភាពមិនបរិសុទ្ធ (ចំបើង ដី…) នឹងត្រូវដកចេញដោយស្វ័យប្រវត្តិកាត់ចេញពីទម្ងន់ស្រូវសរុបនៃសន្លឹកបៀនេះ នៅពេលគណនាទម្ងន់ជាក់ស្តែង។</string>
     <string name="create_card_bag_help_title">ដកការវេចខ្ចប់</string>
     <string name="create_card_moisture_help_title">សំណើមស្រូវ</string>
     <string name="create_card_moisture_help_description">ភាគរយនៃសំណើមស្រូវនៅពេលថ្លឹង (%)។ សំណើមនេះត្រូវបានប្រើសម្រាប់ជាឯកសារយោងក្នុងអំឡុងពេលសម្ងួតស្រូវ ឬការចរចាអត្រាកាត់បន្ថយទម្ងន់សម្រាប់ស្រូវស្ងួត។</string>
@@ -482,7 +482,7 @@
     <string name="card_detail_delete_blocked_unpaid">សន្លឹកបៀមិនទាន់បង់ប្រាក់ — មិនអាចលុបបានទេ</string>
     <string name="help_btn_feedback">ផ្ញើមតិកែលម្អ</string>
     <string name="feedback_screen_title">ផ្ញើមតិកែលម្អ</string>
-    <string name="feedback_placeholder">បញ្ចូលមតិកែលម្អរបស់អ្នកនៅទីនេះ...</string>
+    <string name="feedback_placeholder">បញ្ចូលមតិកែលម្អរបស់អ្នកនៅទីនេះ…</string>
     <string name="feedback_btn_send">ផ្ញើ</string>
     <string name="feedback_toast_success">សូមអរគុណសម្រាប់មតិកែលម្អរបស់អ្នក! យើងនឹងពិនិត្យមើលវាឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។</string>
     <string name="feedback_toast_empty">សូមបញ្ចូលខ្លឹមសារមតិកែលម្អរបស់អ្នក។</string>
@@ -557,14 +557,14 @@
     <string name="market_bid_price_max_label">តម្លៃខ្ពស់ (đ/kg)</string>
     <string name="market_bid_price_max_placeholder">ឧទាហរណ៍៖ 8,500</string>
     <string name="market_bid_region_label">តំបន់ទិញ</string>
-    <string name="market_bid_region_placeholder">ឧទាហរណ៍៖ Cần Thơ, Tiền Giang...</string>
+    <string name="market_bid_region_placeholder">ឧទាហរណ៍៖ Cần Thơ, Tiền Giang…</string>
     <string name="market_bid_trend_section">និន្នាការតម្លៃ</string>
     <string name="market_bid_trend_up">កំពុងកើនឡើង</string>
     <string name="market_bid_trend_stable">មានស្ថេរភាព</string>
     <string name="market_bid_trend_down">កំពុងធ្លាក់ចុះ</string>
     <string name="market_bid_note_label">ចំណាំ (ស្រេចចិត្ត)</string>
-    <string name="market_bid_note_placeholder">ឧទាហរណ៍៖ ទិញនៅស្រែ ផ្តល់អាទិភាពដល់ស្រូវស្ងួត...</string>
-    <string name="market_bid_saving">កំពុងរក្សាទុក...</string>
+    <string name="market_bid_note_placeholder">ឧទាហរណ៍៖ ទិញនៅស្រែ ផ្តល់អាទិភាពដល់ស្រូវស្ងួត…</string>
+    <string name="market_bid_saving">កំពុងរក្សាទុក…</string>
     <string name="market_bid_submit_create">ប្រកាសតម្លៃ</string>
     <string name="market_bid_submit_update">ធ្វើបច្ចុប្បន្នភាព</string>
 
@@ -662,9 +662,9 @@
     <string name="ai_chat_preset_2">ពេលណាគួរបាចជីលើកទី ២ សម្រាប់ស្រូវ ST25?</string>
     <string name="ai_chat_preset_3">មមាចត្នោតកើនឡើងច្រើន តើត្រូវការពារដូចម្តេច?</string>
     <string name="ai_chat_preset_4">ទឹកលិចស្រែ ៥ ថ្ងៃ តើមានបញ្ហាអ្វីទេ?</string>
-    <string name="ai_chat_typing_status">កំពុងរៀបចំចម្លើយ...</string>
-    <string name="ai_chat_input_placeholder">សួរអ្វីដែលអ្នកចង់ដឹង...</string>
-    <string name="ai_chat_listening_placeholder">កំពុងស្តាប់...</string>
+    <string name="ai_chat_typing_status">កំពុងរៀបចំចម្លើយ…</string>
+    <string name="ai_chat_input_placeholder">សួរអ្វីដែលអ្នកចង់ដឹង…</string>
+    <string name="ai_chat_listening_placeholder">កំពុងស្តាប់…</string>
     <string name="ai_chat_action_send">ផ្ញើ</string>
     <string name="ai_chat_action_stop">បញ្ឈប់ស្តាប់</string>
     <string name="ai_chat_action_voice_input">បញ្ចូលតាមសំឡេង</string>
@@ -773,9 +773,25 @@
     <string name="settings_backup_premium_required">មុខងារបម្រុងទុកទាមទារគណនី Premium!</string>
     <string name="settings_restore_title">ស្តារទិន្នន័យឡើងវិញ</string>
     <string name="settings_restore_desc">នាំចូលទិន្នន័យប័ណ្ណថ្លឹងពីឯកសារ JSON</string>
+    <string name="settings_restore_subtitle">បញ្ចូលទិន្នន័យពីឯកសារបម្រុងទុក JSON ទៅក្នុងឧបករណ៍</string>
+    <string name="settings_restore_dialog_title">បញ្ជាក់ការស្តារទិន្នន័យបម្រុងទុក</string>
+    <string name="settings_restore_dialog_count">ឯកសារបម្រុងទុកមាន %1$d ប័ណ្ណថ្លឹង។</string>
+    <string name="settings_restore_dialog_desc">ទិន្នន័យពីឯកសារនឹងត្រូវបានបញ្ចូលបន្ថែមទៅក្នុងបញ្ជីបច្ចុប្បន្ននៅលើឧបករណ៍របស់អ្នក (មិនធ្វើឱ្យបាត់បង់ ឬសរសេរជាន់លើប័ណ្ណដែលមានស្រាប់ឡើយ)។</string>
+    <string name="settings_restore_confirm_btn">ស្តារឡើងវិញ</string>
     <string name="settings_collapse">បង្រួម</string>
     <string name="settings_expand">ពង្រីក</string>
     <string name="settings_role_guest_locked">🔒 ចូលគណនីដើម្បីប្តូរតួនាទី</string>
+    <string name="settings_sync_wifi_only_title">ធ្វើសមកាលកម្មតាមរយៈ Wi-Fi តែប៉ុណ្ណោះ</string>
+    <string name="settings_sync_wifi_only_subtitle">សន្សំសំចៃទិន្នន័យ 4G/5G ពេលថ្លឹងនៅវាលស្រែ</string>
+    <string name="settings_backup_desc_locked">នាំចេញឯកសារបម្រុងទុក JSON ដោយសុវត្ថិភាព (សម្រាប់តែ Premium)</string>
+    <string name="settings_badge_premium">PREMIUM</string>
+    <string name="settings_guest_not_signed_in">មិនទាន់ចូលគណនីទេ</string>
+    <string name="settings_guest_mode_badge">អ្នកកំពុងប្រើប្រាស់ក្នុងទម្រង់ភ្ញៀវ</string>
+    <string name="settings_guest_login_benefit">ចូលគណនីដើម្បីបម្រុងទុកទិន្នន័យទៅពពកដោយស្វ័យប្រវត្តិ ធ្វើសមកាលកម្មរវាងឧបករណ៍ និងដោះសោតួនាទីកសិករ និងឈ្មួញពេញលេញ។</string>
+    <string name="settings_login_now">ចូលគណនីឥឡូវនេះ</string>
+    <string name="settings_app_version">Can Lua v%1$s</string>
+    <string name="settings_file_invalid">ឯកសារមិនត្រឹមត្រូវ</string>
+    <string name="settings_file_read_error">មិនអាចអានឯកសារបម្រុងទុកបានទេ</string>
     <!-- Trader Transactions Screen -->
     <string name="trader_tx_title">សៀវភៅប្រតិបត្តិការ</string>
     <string name="trader_tx_subtitle">%1$d ប័ណ្ណទិញស្រូវ · បច្ចុប្បន្នភាពផ្ទាល់</string>
@@ -827,7 +843,7 @@
     <string name="sync_screen_title">ការធ្វើសមកាលកម្មទិន្នន័យ</string>
     <string name="sync_screen_success">ធ្វើសមកាលកម្មបានជោគជ័យ</string>
     <string name="sync_screen_error">កំហុសក្នុងការធ្វើសមកាលកម្ម</string>
-    <string name="sync_screen_syncing">កំពុងធ្វើសមកាលកម្ម...</string>
+    <string name="sync_screen_syncing">កំពុងធ្វើសមកាលកម្ម…</string>
     <string name="sync_screen_idle">មិនទាន់ធ្វើសមកាលកម្ម</string>
     <string name="sync_screen_last_time">សមកាលកម្មចុងក្រោយ៖ %1$s</string>
     <string name="sync_screen_btn_action">ធ្វើសមកាលកម្មឥឡូវនេះ</string>
@@ -835,8 +851,58 @@
     <string name="sync_screen_info_line1">• សមកាលកម្មប័ណ្ណ ទម្ងន់ និងប្រតិបត្តិការទាំងអស់</string>
     <string name="sync_screen_info_line2">• ទាមទារការតភ្ជាប់អ៊ីនធឺណិត</string>
     <string name="sync_screen_info_line3">• ទិន្នន័យត្រូវបានរក្សាទុកដោយសុវត្ថិភាពលើពពក</string>
+
+    <string name="settings_auto_sync_title">ធ្វើសមកាលកម្មដោយស្វ័យប្រវត្តិ</string>
+    <string name="settings_auto_sync_subtitle">ធ្វើសមកាលកម្មវិក្កយបត្រថ្លឹងដោយស្វ័យប្រវត្តិនៅពេលឧបករណ៍មានអ៊ីនធឺណិត</string>
+    <string name="news_time_months_ago">%1$d ខែមុន</string>
+    <string name="settings_role_guest_toast">អ្នកត្រូវចូលគណនីដើម្បីប្តូរតួនាទី!</string>
+    <string name="settings_role_restart_hint">តួនាទីនឹងផ្លាស់ប្តូរបន្ទាប់ពីចាប់ផ្តើមកម្មវិធីឡើងវិញ។</string>
     <!-- Auth & Splash Polish -->
     <string name="auth_skip_login">បន្តជាភ្ញៀវ (មិនបាច់ចូលគណនី)</string>
     <string name="splash_slogan">ការគ្រប់គ្រងការថ្លឹងស្រូវឆ្លាតវៃ</string>
     <string name="splash_loading">កំពុងផ្ទុកទិន្នន័យ…</string>
+
+    <!-- CardDetailScreen Dialogs & Actions -->
+    <string name="card_detail_tab_info">ព័ត៌មាន</string>
+    <string name="card_detail_tab_deduction">ការដក</string>
+    <string name="card_detail_tab_finance">ហិរញ្ញវត្ថុ</string>
+    <string name="card_detail_variety_display_only_hint">ពូជស្រូវបង្ហាញតែប៉ុណ្ណោះ មិនប៉ះពាល់ដល់ការគណនាទេ</string>
+    <string name="card_detail_deduction_recalc_hint">ការផ្លាស់ប្តូរនឹងគណនាទម្ងន់ទទួលជាក់ស្តែងឡើងវិញ</string>
+    <string name="unit_percent" formatted="false">%</string>
+    <string name="unit_vnd">đ</string>
+    <string name="unit_vnd_per_kg">đ/kg</string>
+
+    <string name="card_detail_edit_bag_title">កែទម្ងន់បាវ #%1$d</string>
+    <string name="card_detail_edit_bag_prompt">បញ្ចូលទម្ងន់ជាក់ស្តែងម្តងទៀតសម្រាប់បាវនេះ (0.1 kg – 200 kg)៖</string>
+    <string name="card_detail_edit_bag_label">ទម្ងន់បាវ (kg)</string>
+    <string name="card_detail_edit_bag_error">ទម្ងន់ត្រូវស្ថិតនៅចន្លោះ 0.1 ដល់ 200 kg</string>
+    <string name="card_detail_updated_bag_toast">បានធ្វើបច្ចុប្បន្នភាពបាវ #%1$d៖ %2$s kg</string>
+
+    <string name="card_detail_add_payment_title">ទូទាត់បន្ថែមលើកនេះ</string>
+    <string name="card_detail_remaining_to_pay">នៅសល់ត្រូវបង់៖</string>
+    <string name="card_detail_amount_with_currency">%1$s đ</string>
+    <string name="card_detail_pay_full_100" formatted="false">បង់ពេញ 100%</string>
+    <string name="card_detail_pay_half_50" formatted="false">បង់ 50%</string>
+    <string name="card_detail_payment_amount_label">ចំនួនទឹកប្រាក់ទូទាត់ (VND)</string>
+    <string name="card_detail_payment_note_label">កំណត់ចំណាំ / វិធីសាស្ត្រ</string>
+    <string name="card_detail_payment_note_placeholder">សាច់ប្រាក់ ផ្ទេរប្រាក់…</string>
+    <string name="card_detail_payment_method_cash">សាច់ប្រាក់</string>
+    <string name="card_detail_payment_method_transfer">ផ្ទេរប្រាក់</string>
+    <string name="card_detail_payment_default_desc">ទូទាត់បន្ថែម</string>
+    <string name="card_detail_payment_confirm_btn">បញ្ជាក់ការបង់</string>
+    <string name="card_detail_payment_recorded_toast">បានកត់ត្រាការទូទាត់ %1$s đ</string>
+
+
+    <!-- CardListScreen -->
+    <string name="card_list_delete_success_toast">បានលុបប័ណ្ណ %1$s ដោយជោគជ័យ</string>
+    <string name="card_list_delete_error_toast">មិនអាចលុបប័ណ្ណបានទេ។ សូមព្យាយាមម្តងទៀតនៅពេលក្រោយ</string>
+    <string name="card_list_date_today_prefix">ថ្ងៃនេះ · %1$s</string>
+    <string name="card_list_date_yesterday_prefix">ម្សិលមិញ · %1$s</string>
+    <string name="card_list_day_card_count">ប័ណ្ណ %1$d</string>
+
+
+    <string name="compact_billion">%1$s ពាន់លាន</string>
+    <string name="compact_million">%1$s លាន</string>
+    <string name="compact_thousand">%1$s ពាន់</string>
+    <string name="compact_ton">%1$s តោន</string>
 </resources>

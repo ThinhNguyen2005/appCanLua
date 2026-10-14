@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.runtime.Immutable
+import com.giathinh.canlua.util.calcDeltaPercent
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -82,6 +83,17 @@ data class DashboardData(
             isAggregated = false
         )
     }
+    val weightDeltaPercent: Double?
+        get() {
+            val cur = currentStats ?: return null
+            return calcDeltaPercent(cur.totalNetWeight, previousStats?.totalNetWeight)
+        }
+
+    val revenueDeltaPercent: Double?
+        get() {
+            val cur = currentStats ?: return null
+            return calcDeltaPercent(cur.totalRevenue, previousStats?.totalRevenue)
+        }
 }
 
 /**

@@ -190,7 +190,7 @@
     <string name="card_detail_deleted_bag">Deleted bag #%1$d</string>
     <string name="card_detail_pdf_premium_required">PDF Export is a Premium feature</string>
     <string name="card_detail_pdf_subject">Weighing Slip #%1$d</string>
-    <string name="card_detail_pdf_share_title">Share weighing slip via...</string>
+    <string name="card_detail_pdf_share_title">Share weighing slip via…</string>
     <string name="card_detail_pdf_error">Failed to export PDF: %1$s</string>
     <string name="card_detail_unknown_error">unknown error</string>
     <string name="card_detail_locked_success">Weighing slip locked</string>
@@ -260,7 +260,7 @@
     <string name="header_lock_card_content">Lock slip</string>
     <string name="header_delete_card">Delete slip</string>
     <string name="header_export_pdf">Export PDF</string>
-    <string name="dropdown_rice_variety_placeholder">e.g., ST25...</string>
+    <string name="dropdown_rice_variety_placeholder">e.g., ST25…</string>
     <string name="dropdown_season_placeholder">e.g., Winter-Spring 2026</string>
     <string name="season_dong_xuan">Winter-Spring</string>
     <string name="season_he_thu">Summer-Autumn</string>
@@ -268,7 +268,7 @@
     <string name="offline_content_description">Offline</string>
     <string name="offline_banner_message">You are offline — data saved locally, will auto-sync when connected</string>
     <string name="ai_insights_title">AI Insights</string>
-    <string name="ai_insights_loading">Analyzing crop data...</string>
+    <string name="ai_insights_loading">Analyzing crop data…</string>
     <string name="ai_insights_success_subtitle">Insights from your Ag Extension Assistant</string>
     <string name="ai_insights_error_subtitle">An error occurred</string>
     <string name="ai_insights_idle_subtitle">Understand your harvest instantly</string>
@@ -447,7 +447,7 @@
     <string name="settings_change_role_to_farmer">You will switch back to the FARMER interface with features such as rice weighing, crop seasons, and ag extension AI assistant.</string>
     <string name="settings_change_role_confirm">Change Role</string>
     <string name="settings_empty_time">None</string>
-    <string name="settings_sync_status_syncing">Syncing...</string>
+    <string name="settings_sync_status_syncing">Syncing…</string>
     <string name="settings_sync_status_success">Sync completed successfully</string>
     <string name="settings_sync_status_error">Sync error: %1$s</string>
     <string name="settings_sync_status_idle">Not synced</string>
@@ -455,6 +455,9 @@
     <string name="settings_auto_sync_subtitle">Automatically sync weight cards when connected to the Internet</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_language_subtitle">Select the display language of the app</string>
+    <string name="news_time_months_ago">%1$d months ago</string>
+    <string name="settings_role_guest_toast">You need to sign in to switch roles!</string>
+    <string name="settings_role_restart_hint">The role will change after restarting the app.</string>
 
     <!-- Settings Section Headers -->
     <string name="card_detail_location_denied">Location permission is required to locate your rice field</string>
@@ -485,7 +488,7 @@
     <string name="create_card_cccd_help_title">ID Card Number</string>
     <string name="create_card_cccd_help_description">Enter the partner\'s 12-digit ID card number to serve as legal proof for future verification and electronic contract signing. This field is optional.</string>
     <string name="create_card_impurity_help_title">Deduct Impurities</string>
-    <string name="create_card_impurity_help_description">The weight (kg) of impurities (straw, soil...) will be automatically deducted directly from the total rice weight of this card when calculating the actual weight.</string>
+    <string name="create_card_impurity_help_description">The weight (kg) of impurities (straw, soil…) will be automatically deducted directly from the total rice weight of this card when calculating the actual weight.</string>
     <string name="create_card_bag_help_title">Deduct Packaging</string>
     <string name="create_card_bag_help_description">The default weight of an empty rice bag (kg/bag). During weighing input, the system will automatically multiply it by the bag count to deduct the total packaging weight.</string>
     <string name="create_card_moisture_help_title">Rice Moisture</string>
@@ -496,7 +499,7 @@
     <string name="card_detail_delete_blocked_unpaid">Unpaid card — cannot be deleted</string>
     <string name="help_btn_feedback">Send Feedback</string>
     <string name="feedback_screen_title">Send Feedback</string>
-    <string name="feedback_placeholder">Enter your feedback here...</string>
+    <string name="feedback_placeholder">Enter your feedback here…</string>
     <string name="feedback_btn_send">Send</string>
     <string name="feedback_toast_success">Thank you for your feedback! We will review it as soon as possible.</string>
     <string name="feedback_toast_empty">Please enter your feedback content.</string>
@@ -564,14 +567,14 @@
     <string name="market_bid_price_max_label">Max price (đ/kg)</string>
     <string name="market_bid_price_max_placeholder">E.g. 8,500</string>
     <string name="market_bid_region_label">Purchase region</string>
-    <string name="market_bid_region_placeholder">E.g. Can Tho, Tien Giang...</string>
+    <string name="market_bid_region_placeholder">E.g. Can Tho, Tien Giang…</string>
     <string name="market_bid_trend_section">PRICE TREND</string>
     <string name="market_bid_trend_up">Increasing</string>
     <string name="market_bid_trend_stable">Stable</string>
     <string name="market_bid_trend_down">Decreasing</string>
     <string name="market_bid_note_label">Notes (optional)</string>
-    <string name="market_bid_note_placeholder">E.g. Farm gate purchase, prefer dry paddy...</string>
-    <string name="market_bid_saving">Saving...</string>
+    <string name="market_bid_note_placeholder">E.g. Farm gate purchase, prefer dry paddy…</string>
+    <string name="market_bid_saving">Saving…</string>
     <string name="market_bid_submit_create">Post price</string>
     <string name="market_bid_submit_update">Update</string>
 
@@ -669,9 +672,9 @@
     <string name="ai_chat_preset_2">When to apply the 2nd fertilizer for ST25?</string>
     <string name="ai_chat_preset_3">Brown planthopper outbreak, how to prevent?</string>
     <string name="ai_chat_preset_4">Is rice flooded for 5 days damaged?</string>
-    <string name="ai_chat_typing_status">Drafting answer...</string>
-    <string name="ai_chat_input_placeholder">Ask anything about rice farming...</string>
-    <string name="ai_chat_listening_placeholder">Listening...</string>
+    <string name="ai_chat_typing_status">Drafting answer…</string>
+    <string name="ai_chat_input_placeholder">Ask anything about rice farming…</string>
+    <string name="ai_chat_listening_placeholder">Listening…</string>
     <string name="ai_chat_action_send">Send</string>
     <string name="ai_chat_action_stop">Stop</string>
     <string name="ai_chat_action_voice_input">Voice input</string>
@@ -780,9 +783,25 @@
     <string name="settings_backup_premium_required">Backup feature requires a Premium account!</string>
     <string name="settings_restore_title">Restore Data</string>
     <string name="settings_restore_desc">Import weighing slips from JSON file</string>
+    <string name="settings_restore_subtitle">Merge data from JSON backup file into device</string>
+    <string name="settings_restore_dialog_title">Confirm Backup Restore</string>
+    <string name="settings_restore_dialog_count">Backup file contains %1$d weighing slips.</string>
+    <string name="settings_restore_dialog_desc">Data from the file will be MERGED into your current device list (existing slips will not be lost or overwritten).</string>
+    <string name="settings_restore_confirm_btn">Restore</string>
     <string name="settings_collapse">Collapse</string>
     <string name="settings_expand">Expand</string>
     <string name="settings_role_guest_locked">🔒 Sign in to switch roles</string>
+    <string name="settings_sync_wifi_only_title">Sync over Wi-Fi only</string>
+    <string name="settings_sync_wifi_only_subtitle">Save mobile data while weighing in the field</string>
+    <string name="settings_backup_desc_locked">Securely export JSON backup file (Premium only)</string>
+    <string name="settings_badge_premium">PREMIUM</string>
+    <string name="settings_guest_not_signed_in">Not signed in</string>
+    <string name="settings_guest_mode_badge">You are currently in Guest mode</string>
+    <string name="settings_guest_login_benefit">Sign in to automatically back up data to the cloud, sync across devices, and unlock full Farmer &amp; Trader roles.</string>
+    <string name="settings_login_now">Sign in now</string>
+    <string name="settings_app_version">Can Lua v%1$s</string>
+    <string name="settings_file_invalid">Invalid file</string>
+    <string name="settings_file_read_error">Cannot read backup file</string>
     <!-- Trader Transactions Screen -->
     <string name="trader_tx_title">Transaction Log</string>
     <string name="trader_tx_subtitle">%1$d purchase slips · live update</string>
@@ -834,7 +853,7 @@
     <string name="sync_screen_title">Data Synchronization</string>
     <string name="sync_screen_success">Synchronized Successfully</string>
     <string name="sync_screen_error">Synchronization Failed</string>
-    <string name="sync_screen_syncing">Synchronizing...</string>
+    <string name="sync_screen_syncing">Synchronizing…</string>
     <string name="sync_screen_idle">Not Synchronized</string>
     <string name="sync_screen_last_time">Last synchronized: %1$s</string>
     <string name="sync_screen_btn_action">Sync Now</string>
@@ -846,5 +865,49 @@
     <string name="auth_skip_login">Continue as Guest (No login required)</string>
     <string name="splash_slogan">Smart Rice Weighing Management</string>
     <string name="splash_loading">Loading data…</string>
+
+    <!-- CardDetailScreen Dialogs & Actions -->
+    <string name="card_detail_tab_info">Info</string>
+    <string name="card_detail_tab_deduction">Deductions</string>
+    <string name="card_detail_tab_finance">Finance</string>
+    <string name="card_detail_variety_display_only_hint">Rice variety is for display only and does not affect calculations</string>
+    <string name="card_detail_deduction_recalc_hint">Changes will recalculate the net received weight</string>
+    <string name="unit_percent" formatted="false">%</string>
+    <string name="unit_vnd">đ</string>
+    <string name="unit_vnd_per_kg">đ/kg</string>
+
+    <string name="card_detail_edit_bag_title">Edit weight of bag #%1$d</string>
+    <string name="card_detail_edit_bag_prompt">Re-enter the actual weight for this bag (0.1 kg – 200 kg):</string>
+    <string name="card_detail_edit_bag_label">Bag weight (kg)</string>
+    <string name="card_detail_edit_bag_error">Weight must be between 0.1 and 200 kg</string>
+    <string name="card_detail_updated_bag_toast">Updated bag #%1$d: %2$s kg</string>
+
+    <string name="card_detail_add_payment_title">Add payment for this installment</string>
+    <string name="card_detail_remaining_to_pay">Remaining to pay:</string>
+    <string name="card_detail_amount_with_currency">%1$s đ</string>
+    <string name="card_detail_pay_full_100" formatted="false">Pay in full (100%)</string>
+    <string name="card_detail_pay_half_50" formatted="false">Pay 50%</string>
+    <string name="card_detail_payment_amount_label">Payment amount (VND)</string>
+    <string name="card_detail_payment_note_label">Note / Method</string>
+    <string name="card_detail_payment_note_placeholder">Cash, Bank transfer…</string>
+    <string name="card_detail_payment_method_cash">Cash</string>
+    <string name="card_detail_payment_method_transfer">Bank transfer</string>
+    <string name="card_detail_payment_default_desc">Additional payment</string>
+    <string name="card_detail_payment_confirm_btn">Confirm payment</string>
+    <string name="card_detail_payment_recorded_toast">Recorded payment of %1$s đ</string>
+
+
+    <!-- CardListScreen -->
+    <string name="card_list_delete_success_toast">Card %1$s deleted successfully</string>
+    <string name="card_list_delete_error_toast">Couldn\'t delete the card. Please try again later.</string>
+    <string name="card_list_date_today_prefix">Today · %1$s</string>
+    <string name="card_list_date_yesterday_prefix">Yesterday · %1$s</string>
+    <string name="card_list_day_card_count">%1$d cards</string>
+
+    <string name="compact_billion">%1$s billion</string>
+    <string name="compact_million">%1$sM</string>
+    <string name="compact_thousand">%1$sk</string>
+    <string name="compact_ton">%1$s tons</string>
+
 </resources>
 

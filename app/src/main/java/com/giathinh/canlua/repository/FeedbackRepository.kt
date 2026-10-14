@@ -21,6 +21,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 
 @Singleton
 class FeedbackRepository @Inject constructor(
@@ -68,7 +69,7 @@ class FeedbackRepository @Inject constructor(
     fun observeUnreadReplyCount(intervalMs: Long = 30_000L): Flow<Int> = flow {
         while (true) {
             emit(fetchUnreadReplyCount())
-            delay(intervalMs)
+            delay(intervalMs.milliseconds)
         }
     }.flowOn(Dispatchers.IO).distinctUntilChanged()
 
@@ -148,8 +149,8 @@ class FeedbackRepository @Inject constructor(
             val roleName = if (role.uppercase() == "TRADER") "Thương lái" else "Nông dân"
             val textMessage = """
 <b>📩 PHẢN HỒI MỚI TỪ APP CÂN LÚA</b>
-👤 <b>Người gửi:</b> ${name} (${roleName})
-💬 <b>Nội dung:</b> "${messageText}"
+👤 <b>Người gửi:</b> $name (${roleName})
+💬 <b>Nội dung:</b> "$messageText"
 
 Ref: <code>${feedbackId}</code>
 ──────────────────

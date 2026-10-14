@@ -1,26 +1,31 @@
 package com.giathinh.canlua.ui.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
 import com.giathinh.canlua.data.model.FontScale
+import com.giathinh.canlua.repository.AuthManager
+import com.giathinh.canlua.repository.CardRepository
 import com.giathinh.canlua.repository.SettingsRepository
 import com.giathinh.canlua.repository.WeighDefaults
+import com.giathinh.canlua.util.BackupManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val cardRepository: com.giathinh.canlua.repository.CardRepository,
-    private val authManager: com.giathinh.canlua.repository.AuthManager
+    private val cardRepository: CardRepository,
+    private val authManager: AuthManager
 ) : ViewModel() {
-    
+
     val isTtsEnabled: StateFlow<Boolean> = settingsRepository.ttsEnabled
         .stateIn(
             scope = viewModelScope,
@@ -33,6 +38,13 @@ class SettingsViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = settingsRepository.isAutoSyncEnabled()
+        )
+
+    val isSyncOnlyWifi: StateFlow<Boolean> = settingsRepository.syncOnlyWifi
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = settingsRepository.isSyncOnlyWifi()
         )
 
     val fontScale: StateFlow<FontScale> = settingsRepository.fontScale
@@ -79,6 +91,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setSyncOnlyWifi(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSyncOnlyWifi(enabled)
+        }
+    }
+
     fun setFontScale(scale: FontScale) {
         viewModelScope.launch {
             settingsRepository.setFontScale(scale)
@@ -110,10 +128,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun exportBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun exportBackup(
+        context: Context,
+        uri: Uri,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
         viewModelScope.launch {
             val uid = authManager.currentUser?.uid ?: "GUEST"
-            val result = com.giathinh.canlua.util.BackupManager.exportData(context, uri, uid, cardRepository)
+            val result = BackupManager.exportData(context, uri, uid, cardRepository)
             if (result.isSuccess) {
                 onSuccess()
             } else {
@@ -122,10 +145,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun importBackup(context: android.content.Context, uri: android.net.Uri, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {
+    fun importBackup(
+        context: Context,
+        uri: Uri,
+        onSuccess: (Int) -> Unit,
+        onError: (String) -> Unit
+    ) {
         viewModelScope.launch {
             val uid = authManager.currentUser?.uid ?: "GUEST"
-            val result = com.giathinh.canlua.util.BackupManager.importData(context, uri, uid, cardRepository)
+            val result = BackupManager.importData(context, uri, uid, cardRepository)
             if (result.isSuccess) {
                 onSuccess(result.getOrNull() ?: 0)
             } else {
@@ -134,4 +162,3 @@ class SettingsViewModel @Inject constructor(
         }
     }
 }
-

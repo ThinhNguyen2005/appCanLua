@@ -113,7 +113,7 @@
     <string name="create_card_cccd_help_title">Số CCCD (Căn cước công dân)</string>
     <string name="create_card_cccd_help_description">Nhập số CCCD gồm 12 chữ số của đối tác để làm bằng chứng pháp lý khi đối soát và ký số hợp đồng điện tử sau này. Trường này không bắt buộc.</string>
     <string name="create_card_impurity_help_title">Trừ Tạp Chất</string>
-    <string name="create_card_impurity_help_description">Số ký (kg) tạp chất (rơm, rạ, đất...) sẽ tự động trừ trực tiếp vào tổng khối lượng lúa của phiếu này khi tính toán khối lượng thực tế.</string>
+    <string name="create_card_impurity_help_description">Số ký (kg) tạp chất (rơm, rạ, đất…) sẽ tự động trừ trực tiếp vào tổng khối lượng lúa của phiếu này khi tính toán khối lượng thực tế.</string>
     <string name="create_card_bag_help_title">Trừ Bao Bì</string>
     <string name="create_card_bag_help_description">Trọng lượng mặc định của một vỏ bao lúa (kg/bao). Khi nhập cân, hệ thống sẽ tự động nhân với số bao để trừ đi tổng trọng lượng bao bì.</string>
     <string name="create_card_moisture_help_title">Độ Ẩm Lúa</string>
@@ -219,7 +219,7 @@
     <string name="card_detail_deleted_bag">Đã xóa bao #%1$d</string>
     <string name="card_detail_pdf_premium_required">Xuất PDF là tính năng Premium</string>
     <string name="card_detail_pdf_subject">Phiếu cân #%1$d</string>
-    <string name="card_detail_pdf_share_title">Chia sẻ phiếu cân qua...</string>
+    <string name="card_detail_pdf_share_title">Chia sẻ phiếu cân qua…</string>
     <string name="card_detail_pdf_error">Không xuất được PDF: %1$s</string>
     <string name="card_detail_unknown_error">lỗi không xác định</string>
     <string name="card_detail_locked_success">Đã khóa phiếu cân</string>
@@ -296,7 +296,7 @@
     <string name="header_delete_card">Xóa phiếu</string>
     <string name="header_export_pdf">Xuất phiếu cân PDF</string>
 
-    <string name="dropdown_rice_variety_placeholder">VD: ST25...</string>
+    <string name="dropdown_rice_variety_placeholder">VD: ST25…</string>
     <string name="dropdown_season_placeholder">VD: Đông Xuân 2026</string>
     <string name="season_dong_xuan">Đông Xuân</string>
     <string name="season_he_thu">Hè Thu</string>
@@ -305,7 +305,7 @@
     <string name="offline_banner_message">Đang offline — dữ liệu lưu tại máy, tự đồng bộ khi có mạng</string>
 
     <string name="ai_insights_title">Phân tích AI</string>
-    <string name="ai_insights_loading">Đang phân tích dữ liệu vụ...</string>
+    <string name="ai_insights_loading">Đang phân tích dữ liệu vụ…</string>
     <string name="ai_insights_success_subtitle">Insights từ Trợ Lý Khuyến Nông</string>
     <string name="ai_insights_error_subtitle">Đã xảy ra lỗi</string>
     <string name="ai_insights_idle_subtitle">Hiểu nhanh vụ mùa của bạn</string>
@@ -501,7 +501,7 @@
     <string name="settings_change_role_to_farmer">Bạn sẽ quay lại giao diện NÔNG DÂN với các chức năng cân lúa, mùa vụ, AI khuyến nông.</string>
     <string name="settings_change_role_confirm">Đổi vai trò</string>
     <string name="settings_empty_time">Chưa có</string>
-    <string name="settings_sync_status_syncing">Đang đồng bộ...</string>
+    <string name="settings_sync_status_syncing">Đang đồng bộ…</string>
     <string name="settings_sync_status_success">Đồng bộ thành công</string>
     <string name="settings_sync_status_error">Lỗi đồng bộ: %1$s</string>
     <string name="settings_sync_status_idle">Chưa đồng bộ</string>
@@ -522,7 +522,7 @@
     <!-- Feedback strings -->
     <string name="help_btn_feedback">Gửi phản hồi</string>
     <string name="feedback_screen_title">Gửi Phản Hồi</string>
-    <string name="feedback_placeholder">Nhập ý kiến phản hồi của bà con ở đây...</string>
+    <string name="feedback_placeholder">Nhập ý kiến phản hồi của bà con ở đây…</string>
     <string name="feedback_btn_send">Gửi</string>
     <string name="feedback_toast_success">Cảm ơn bà con đã gửi phản hồi! Chúng tôi sẽ xem xét sớm nhất.</string>
     <string name="feedback_toast_empty">Vui lòng nhập nội dung phản hồi.</string>
@@ -597,14 +597,14 @@
     <string name="market_bid_price_max_label">Giá cao (đ/kg)</string>
     <string name="market_bid_price_max_placeholder">VD: 8.500</string>
     <string name="market_bid_region_label">Khu vực thu mua</string>
-    <string name="market_bid_region_placeholder">VD: Cần Thơ, Tiền Giang...</string>
+    <string name="market_bid_region_placeholder">VD: Cần Thơ, Tiền Giang…</string>
     <string name="market_bid_trend_section">XU HƯỚNG GIÁ</string>
     <string name="market_bid_trend_up">Đang tăng</string>
     <string name="market_bid_trend_stable">Ổn định</string>
     <string name="market_bid_trend_down">Đang giảm</string>
     <string name="market_bid_note_label">Ghi chú (tuỳ chọn)</string>
-    <string name="market_bid_note_placeholder">VD: Mua tại ruộng, ưu tiên lúa khô...</string>
-    <string name="market_bid_saving">Đang lưu...</string>
+    <string name="market_bid_note_placeholder">VD: Mua tại ruộng, ưu tiên lúa khô…</string>
+    <string name="market_bid_saving">Đang lưu…</string>
     <string name="market_bid_submit_create">Đăng giá</string>
     <string name="market_bid_submit_update">Cập nhật</string>
 
@@ -703,9 +703,9 @@
     <string name="ai_chat_preset_2">Khi nào nên bón đợt 2 cho ST25?</string>
     <string name="ai_chat_preset_3">Rầy nâu phát triển mạnh, cách phòng?</string>
     <string name="ai_chat_preset_4">Nước ruộng ngập 5 ngày có sao không?</string>
-    <string name="ai_chat_typing_status">Đang soạn câu trả lời...</string>
-    <string name="ai_chat_input_placeholder">Hỏi điều bạn muốn biết...</string>
-    <string name="ai_chat_listening_placeholder">Đang nghe...</string>
+    <string name="ai_chat_typing_status">Đang soạn câu trả lời…</string>
+    <string name="ai_chat_input_placeholder">Hỏi điều bạn muốn biết…</string>
+    <string name="ai_chat_listening_placeholder">Đang nghe…</string>
     <string name="ai_chat_action_send">Gửi</string>
     <string name="ai_chat_action_stop">Dừng nghe</string>
     <string name="ai_chat_action_voice_input">Nhập bằng giọng nói</string>
@@ -814,11 +814,27 @@
     <string name="settings_backup_premium_required">Tính năng sao lưu yêu cầu tài khoản Premium!</string>
     <string name="settings_restore_title">Khôi phục dữ liệu</string>
     <string name="settings_restore_desc">Nhập dữ liệu phiếu cân từ file JSON</string>
+    <string name="settings_restore_subtitle">Gộp dữ liệu từ file sao lưu JSON vào máy</string>
+    <string name="settings_restore_dialog_title">Xác nhận khôi phục sao lưu</string>
+    <string name="settings_restore_dialog_count">Tệp sao lưu chứa %1$d phiếu cân.</string>
+    <string name="settings_restore_dialog_desc">Dữ liệu từ tệp sẽ được GỘP THÊM vào danh sách hiện tại trên máy của bạn (không làm mất hoặc ghi đè các phiếu đã có).</string>
+    <string name="settings_restore_confirm_btn">Khôi phục</string>
     <string name="settings_collapse">Thu gọn</string>
     <string name="settings_expand">Mở rộng</string>
     <string name="settings_role_guest_locked">🔒 Đăng nhập để chuyển đổi vai trò</string>
     <string name="settings_role_guest_toast">Bạn cần đăng nhập mới có thể chuyển đổi vai trò!</string>
     <string name="settings_role_restart_hint">Vai trò sẽ thay đổi sau khi khởi động lại ứng dụng.</string>
+    <string name="settings_sync_wifi_only_title">Chỉ đồng bộ qua Wi-Fi</string>
+    <string name="settings_sync_wifi_only_subtitle">Tiết kiệm 4G/5G khi đang cân ngoài đồng</string>
+    <string name="settings_backup_desc_locked">Xuất file JSON sao lưu an toàn (Dành riêng cho Premium)</string>
+    <string name="settings_badge_premium">PREMIUM</string>
+    <string name="settings_guest_not_signed_in">Chưa đăng nhập tài khoản</string>
+    <string name="settings_guest_mode_badge">Bạn đang dùng ở chế độ Khách</string>
+    <string name="settings_guest_login_benefit">Đăng nhập để tự động sao lưu dữ liệu lên đám mây, đồng bộ giữa các máy và mở khoá đầy đủ vai trò Nông dân &amp; Thương lái.</string>
+    <string name="settings_login_now">Đăng nhập ngay</string>
+    <string name="settings_app_version">Cân Lúa v%1$s</string>
+    <string name="settings_file_invalid">Tệp không hợp lệ</string>
+    <string name="settings_file_read_error">Không thể đọc tệp sao lưu</string>
     <!-- Trader Transactions Screen -->
     <string name="trader_tx_title">Sổ giao dịch</string>
     <string name="trader_tx_subtitle">%1$d thẻ đã thu mua · cập nhật realtime</string>
@@ -870,7 +886,7 @@
     <string name="sync_screen_title">Đồng bộ dữ liệu</string>
     <string name="sync_screen_success">Đồng bộ thành công</string>
     <string name="sync_screen_error">Lỗi đồng bộ</string>
-    <string name="sync_screen_syncing">Đang đồng bộ...</string>
+    <string name="sync_screen_syncing">Đang đồng bộ…</string>
     <string name="sync_screen_idle">Chưa đồng bộ</string>
     <string name="sync_screen_last_time">Lần đồng bộ cuối: %1$s</string>
     <string name="sync_screen_btn_action">Đồng bộ ngay</string>
@@ -882,5 +898,47 @@
     <string name="auth_skip_login">Trải nghiệm không cần đăng nhập (Khách)</string>
     <string name="splash_slogan">Quản lý cân lúa thông minh</string>
     <string name="splash_loading">Đang tải dữ liệu…</string>
+
+    <!-- CardDetailScreen Dialogs & Actions -->
+    <string name="card_detail_tab_info">Thông tin</string>
+    <string name="card_detail_tab_deduction">Trừ hao</string>
+    <string name="card_detail_tab_finance">Tài chính</string>
+    <string name="card_detail_variety_display_only_hint">Giống lúa chỉ hiển thị, không ảnh hưởng tính toán</string>
+    <string name="card_detail_deduction_recalc_hint">Thay đổi sẽ tính lại khối lượng thực nhận</string>
+    <string name="unit_percent" formatted="false">%</string>
+    <string name="unit_vnd">đ</string>
+    <string name="unit_vnd_per_kg">đ/kg</string>
+
+    <string name="card_detail_edit_bag_title">Sửa số ký bao #%1$d</string>
+    <string name="card_detail_edit_bag_prompt">Nhập lại số ký thực tế cho bao này (0,1 kg – 200 kg):</string>
+    <string name="card_detail_edit_bag_label">Số ký bao (kg)</string>
+    <string name="card_detail_edit_bag_error">Số ký phải từ 0,1 đến 200 kg</string>
+    <string name="card_detail_updated_bag_toast">Đã cập nhật bao #%1$d: %2$s kg</string>
+
+    <string name="card_detail_add_payment_title">Thanh toán thêm đợt này</string>
+    <string name="card_detail_remaining_to_pay">Còn lại cần trả:</string>
+    <string name="card_detail_amount_with_currency">%1$s đ</string>
+    <string name="card_detail_pay_full_100" formatted="false">Trả đủ 100%</string>
+    <string name="card_detail_pay_half_50" formatted="false">Trả 50%</string>
+    <string name="card_detail_payment_amount_label">Số tiền thanh toán (VNĐ)</string>
+    <string name="card_detail_payment_note_label">Ghi chú / Phương thức</string>
+    <string name="card_detail_payment_note_placeholder">Tiền mặt, Chuyển khoản…</string>
+    <string name="card_detail_payment_method_cash">Tiền mặt</string>
+    <string name="card_detail_payment_method_transfer">Chuyển khoản</string>
+    <string name="card_detail_payment_default_desc">Thanh toán thêm</string>
+    <string name="card_detail_payment_confirm_btn">Xác nhận trả</string>
+    <string name="card_detail_payment_recorded_toast">Đã ghi nhận thanh toán %1$s đ</string>
+
+    <!-- CardListScreen -->
+    <string name="card_list_delete_success_toast">Đã xoá phiếu %1$s</string>
+    <string name="card_list_delete_error_toast">Không xoá được phiếu. Thử lại sau</string>
+    <string name="card_list_date_today_prefix">Hôm nay · %1$s</string>
+    <string name="card_list_date_yesterday_prefix">Hôm qua · %1$s</string>
+    <string name="card_list_day_card_count">%1$d phiếu</string>
+
+    <string name="compact_billion">%1$s tỷ</string>
+    <string name="compact_million">%1$s tr</string>
+    <string name="compact_thousand">%1$sk</string>
+    <string name="compact_ton">%1$s tấn</string>
 </resources>
 

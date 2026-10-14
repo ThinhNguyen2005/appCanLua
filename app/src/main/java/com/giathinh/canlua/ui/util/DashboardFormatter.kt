@@ -1,62 +1,56 @@
 package com.giathinh.canlua.ui.util
 
+import android.content.res.Resources
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.giathinh.canlua.R
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
-/**
- * Helper format số liệu cho dashboard — tối ưu cho hiển thị compact.
- *
- * Tránh số quá dài làm tràn UI:
- *  - 1,500,000 đ → "1.5tr"
- *  - 1,500,000,000 đ → "1.5 tỷ"
- *  - Cân nặng > 1000kg → "X.X tấn"
- */
-object DashboardFormatter {
+class DashboardFormatter(private val res: Resources) {
+    private val locale: Locale = res.configuration.locales[0]
+    private val compactNf = NumberFormat.getNumberInstance(locale).apply {
+        maximumFractionDigits = 1
+        minimumFractionDigits = 0
+    }
+    private val intNf = NumberFormat.getIntegerInstance(locale)
 
-    private val viNumber = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
-
-    /** Money compact: 12.5tr / 1.4 tỷ / 850k. */
     fun money(amount: Double): String {
-        val abs = abs(amount)
+        val a = abs(amount)
         return when {
-            abs >= 1_000_000_000.0 -> "%.2f tỷ".format(amount / 1_000_000_000.0)
-            abs >= 1_000_000.0 -> "%.1f tr".format(amount / 1_000_000.0)
-            abs >= 1_000.0 -> "%.0fk".format(amount / 1_000.0)
-            else -> "${viNumber.format(amount.toLong())}đ"
+            a >= 999_950_000 -> res.getString(R.string.compact_billion, compactNf.format(amount / 1e9))
+            a >= 999_500 -> res.getString(R.string.compact_million, compactNf.format(amount / 1e6))
+            a >= 1_000 -> res.getString(R.string.compact_thousand, intNf.format(amount / 1e3))
+            else -> moneyFull(amount)
         }
     }
 
-    /** Money full với đơn vị "đ" — dùng khi có chỗ. */
-    fun moneyFull(amount: Double): String {
-        return "${viNumber.format(amount.toLong())}đ"
-    }
+    fun moneyFull(amount: Double): String =
+        res.getString(R.string.card_list_money_vnd, intNf.format(amount))
 
-    /** Cân nặng: < 1000kg → kg, ≥ 1000kg → tấn. */
-    fun weight(kg: Double): String {
-        return if (kg >= 1_000.0) {
-            "%.1f tấn".format(kg / 1_000.0)
-        } else {
-            "%.0f kg".format(kg)
-        }
-    }
+    fun weight(kg: Double): String =
+        if (kg >= 999.5) res.getString(R.string.compact_ton, compactNf.format(kg / 1000))
+        else res.getString(R.string.card_list_weight_kg, intNf.format(kg))
 
-    /** Tỉ lệ phần trăm với 1 chữ số sau dấu phẩy. */
-    fun percent(value: Double): String = "%.1f%%".format(value)
+    fun percent(value: Double): String = "${compactNf.format(value)}%"
 
-    /**
-     * Tính delta % giữa current và previous.
-     * Trả về null nếu previous = 0 (không tính được tỉ lệ thay đổi).
-     */
     fun deltaPercent(current: Double, previous: Double): Double? {
         if (previous == 0.0) return null
         return ((current - previous) / previous) * 100.0
     }
 
-    /** Format delta thành "+15%" / "-8%" / "0%". */
     fun formatDelta(delta: Double?): String {
-        if (delta == null) return "—"
-        val sign = if (delta >= 0) "+" else ""
-        return "$sign%.0f%%".format(delta)
+        if (delta == null || !delta.isFinite()) return "—"
+        val r = delta.roundToInt()
+        return if (r > 0) "+$r%" else "$r%"
     }
+}
+
+@Composable
+fun rememberDashboardFormatter(): DashboardFormatter {
+    val res = LocalContext.current.resources
+    return remember(res.configuration) { DashboardFormatter(res) }
 }

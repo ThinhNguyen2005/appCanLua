@@ -14,7 +14,6 @@ import com.giathinh.canlua.data.model.VarietyStat
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.data.model.serialize
 import com.giathinh.canlua.data.model.deserializeCard
-import com.giathinh.canlua.util.RiceCalculator
 import com.giathinh.canlua.util.RiceSettlement
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -61,7 +60,7 @@ class CardRepository @Inject constructor(
     suspend fun insertCard(card: Card): Long {
         val now = System.currentTimeMillis()
         val owned = card.copy(
-            ownerUid = if (card.ownerUid.isBlank()) uid() else card.ownerUid,
+            ownerUid = card.ownerUid.ifBlank { uid() },
             lastModifiedMs = if (card.lastModifiedMs == 0L) now else card.lastModifiedMs,
             cccd = CccdCrypto.encrypt(card.cccd)
         )

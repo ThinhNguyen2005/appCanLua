@@ -22,8 +22,8 @@ import javax.inject.Singleton
 @Singleton
 class SupabasePriceRepository @Inject constructor(
     private val supabase: SupabaseClient,
-    @Named("supabaseUrl") private val baseUrl: String,
-    @Named("supabaseAnonKey") private val anonKey: String
+    @Named("supabaseUrl") private val supabaseUrl: String,
+    @Named("supabaseAnonKey") private val supabaseAnonKey: String
 ) {
     companion object {
         private const val TABLE = "rice_prices"
@@ -39,8 +39,8 @@ class SupabasePriceRepository @Inject constructor(
             val type = com.google.gson.reflect.TypeToken
                 .getParameterized(List::class.java, RicePriceDto::class.java).type
             val dtos = supabase.getList<RicePriceDto>(
-                baseUrl = baseUrl,
-                anonKey = anonKey,
+                baseUrl = supabaseUrl,
+                anonKey = supabaseAnonKey,
                 table = TABLE,
                 params = mapOf(
                     "active" to "eq.true",

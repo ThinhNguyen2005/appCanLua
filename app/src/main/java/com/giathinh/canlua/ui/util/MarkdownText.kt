@@ -1,6 +1,8 @@
 package com.giathinh.canlua.ui.util
 
+import android.content.Context
 import android.text.method.LinkMovementMethod
+import android.util.TypedValue
 import android.widget.TextView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -8,21 +10,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 
-/**
- * Parser markdown tối giản: chỉ xử lý `**bold**`, `*italic*`, và `` `code` ``.
- * Thiết kế để render lại text từ AI vốn hay dùng Markdown bold.
- *
- * Không phải parser đầy đủ — đủ tốt cho chat bubble, không edge-case xa xôi.
- */
+/** Dùng chung 1 instance Markwon cho toàn app, tránh tạo mới ở mỗi bubble chat. */
+private object MarkwonHolder {
+    @Volatile private var instance: Markwon? = null
+    fun get(ctx: Context): Markwon = instance ?: synchronized(this) {
+        instance ?: Markwon.builder(ctx.applicationContext)
+            .usePlugin(TablePlugin.create(ctx.applicationContext))
+            .build()
+            .also { instance = it }
+    }
+}
+
 @Composable
 fun AiMarkdownText(
     markdown: String,
@@ -32,83 +36,30 @@ fun AiMarkdownText(
     textSizeSp: Float = 14f
 ) {
     val context = LocalContext.current
-    val markwon = remember(context) {
-        Markwon.builder(context)
-            .usePlugin(TablePlugin.create(context))
-            .build()
-    }
+    val markwon = remember { MarkwonHolder.get(context) }
+    val sizePx = with(LocalDensity.current) { textSizeSp.sp.toPx() }
 
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
             TextView(ctx).apply {
-                setTextColor(textColor.toArgb())
-                setLinkTextColor(linkColor.toArgb())
-                textSize = textSizeSp
                 movementMethod = LinkMovementMethod.getInstance()
                 setLineSpacing(0f, 1.1f)
             }
         },
         update = { view ->
+            view.setTextSize(TypedValue.COMPLEX_UNIT_PX, sizePx)
             view.setTextColor(textColor.toArgb())
             view.setLinkTextColor(linkColor.toArgb())
-            view.textSize = textSizeSp
-            // Phòng vệ 2 lớp cho release build: nếu Markwon nội bộ throw
-            // (R8 minify thiếu rule, plugin reflection fail, markdown lỗi format) →
-            // fallback text thuần để chat bubble vẫn hiển thị được thay vì crash app.
-            try {
-                markwon.setMarkdown(view, markdown)
-            } catch (t: Throwable) {
-                view.text = markdown
+            // Chỉ parse lại khi nội dung thật sự đổi
+            if (view.tag != markdown) {
+                view.tag = markdown
+                try {
+                    markwon.setMarkdown(view, markdown)
+                } catch (e: Exception) {
+                    view.text = markdown   // fallback: hiện text thuần
+                }
             }
         }
     )
-}
-
-fun parseInlineMarkdown(text: String): AnnotatedString = buildAnnotatedString {
-    var i = 0
-    while (i < text.length) {
-        val rest = text.substring(i)
-        when {
-            // Bold ** ... **  (kiểm tra trước italic vì 2 sao lồng 1 sao)
-            rest.startsWith("**") -> {
-                val end = text.indexOf("**", startIndex = i + 2)
-                if (end > i + 2) {
-                    pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                    append(text.substring(i + 2, end))
-                    pop()
-                    i = end + 2
-                } else {
-                    append(text[i]); i++
-                }
-            }
-            // Italic * ... *  (single, không bị nuốt bởi bold)
-            rest.startsWith("*") -> {
-                val end = text.indexOf("*", startIndex = i + 1)
-                if (end > i + 1 && !text.substring(i + 1, end).contains("\n")) {
-                    pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                    append(text.substring(i + 1, end))
-                    pop()
-                    i = end + 1
-                } else {
-                    append(text[i]); i++
-                }
-            }
-            // Inline code `...`
-            rest.startsWith("`") -> {
-                val end = text.indexOf("`", startIndex = i + 1)
-                if (end > i + 1) {
-                    pushStyle(SpanStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace))
-                    append(text.substring(i + 1, end))
-                    pop()
-                    i = end + 1
-                } else {
-                    append(text[i]); i++
-                }
-            }
-            else -> {
-                append(text[i]); i++
-            }
-        }
-    }
 }

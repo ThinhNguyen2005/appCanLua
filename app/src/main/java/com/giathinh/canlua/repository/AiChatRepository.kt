@@ -22,6 +22,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * AI chat qua OpenRouter (OpenAI-compatible). Dùng model free-tier để tiết kiệm chi phí.
@@ -100,7 +101,7 @@ class AiChatRepository @Inject constructor(
 
         return try {
             val req = OpenRouterRequest(model = MODEL, messages = messages)
-            val resp: OpenRouterResponse = withTimeout(30_000L) {
+            val resp: OpenRouterResponse = withTimeout(30_000L.milliseconds) {
                 httpClient.postJson(
                     url = URL,
                     body = req,

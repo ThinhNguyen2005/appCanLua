@@ -262,7 +262,7 @@ class NewsRepository @Inject constructor(
         try {
             httpClient.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) return@use
-                val html = resp.body?.string() ?: return@use
+                val html = resp.body.string()
 
                 // og:image
                 if (thumbnail.isNullOrBlank()) {

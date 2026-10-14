@@ -7,103 +7,98 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import com.giathinh.canlua.util.HapticUtil
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.ui.res.stringResource
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Grass
-import androidx.compose.material.icons.outlined.Scale
-import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.giathinh.canlua.R
+import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.repository.SyncStatus
 import com.giathinh.canlua.ui.component.CardItem
 import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.component.CreateCardMode
-import com.giathinh.canlua.ui.component.cardlist.CardListSkeleton
 import com.giathinh.canlua.ui.component.cardlist.CardListEmptyState
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterBar
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterSheet
+import com.giathinh.canlua.ui.component.cardlist.CardListSkeleton
 import com.giathinh.canlua.ui.component.cardlist.CardListSummaryCard
 import com.giathinh.canlua.ui.component.cardlist.DeleteCardConfirmDialog
 import com.giathinh.canlua.ui.component.cardlist.PremiumQuotaDialog
+import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.ui.theme.AppColors
-import com.giathinh.canlua.ui.util.isScrollingUp
+import com.giathinh.canlua.ui.theme.AppDimensions
+import com.giathinh.canlua.ui.util.BottomBarVisibility
 import com.giathinh.canlua.ui.viewmodel.CardListViewModel
 import com.giathinh.canlua.ui.viewmodel.DeleteCardEvent
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.ui.viewmodel.SyncViewModel
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.ButtonDefaults
+import com.giathinh.canlua.util.AnalyticsHelper
+import com.giathinh.canlua.util.HapticUtil
+import com.giathinh.canlua.util.PremiumState
+import com.giathinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.delay
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
-import com.giathinh.canlua.ui.feedback.LocalAppToast
+private const val SCREEN_NAME_SCALE = "scale"
+private const val ROLE_TRADER = "TRADER"
+private const val ROLE_FARMER = "FARMER"
+private const val ROUTE_PREMIUM = "premium"
+private const val KEY_SUMMARY_HEADER = "summary_header"
+private const val KEY_FILTER_BAR = "filter_bar"
+private const val KEY_EMPTY = "empty"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardListScreen(
     navController: NavController
 ) {
-    com.giathinh.canlua.util.TrackScreenRender("scale")
+    TrackScreenRender(SCREEN_NAME_SCALE)
     val viewModel: CardListViewModel = hiltViewModel()
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val syncViewModel: SyncViewModel = hiltViewModel()
@@ -126,8 +121,6 @@ fun CardListScreenContent(
 ) {
     val cards by viewModel.cards.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    // Skeleton chỉ hiện ở lần load đầu tiên khi chưa có dữ liệu (không min duration cứng).
-    // Khi refresh mà đã có data cũ, giữ content và hiển thị indicator xoay của PullToRefreshBox.
     val showSkeleton = isLoading && cards.isEmpty()
     val selectedFilter by viewModel.selectedVarietyFilter.collectAsStateWithLifecycle()
     val availableVarieties by viewModel.availableVarieties.collectAsStateWithLifecycle()
@@ -136,88 +129,85 @@ fun CardListScreenContent(
     val availableSeasons by viewModel.availableSeasons.collectAsStateWithLifecycle()
     val profileState by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
-    val hasPendingSyncData by syncViewModel.hasPendingSyncData.collectAsStateWithLifecycle()
     val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
-    val isPremium by com.giathinh.canlua.util.PremiumState.isPremium.collectAsStateWithLifecycle()
-    val cardsToday by com.giathinh.canlua.util.PremiumState.dailyCreated.collectAsStateWithLifecycle()
+    val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
+    val cardsToday by PremiumState.dailyCreated.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val appToast = LocalAppToast.current
+
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showPremiumGate by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
-    var cardToDelete by remember { mutableStateOf<com.giathinh.canlua.data.model.Card?>(null) }
+    var cardToDelete by remember { mutableStateOf<Card?>(null) }
     var manualRefreshing by remember { mutableStateOf(false) }
+
     val listState = rememberLazyListState()
     val scrollingUp = listState.isScrollingUp()
-    // derivedStateOf: chỉ trigger recompose khi giá trị BOOLEAN thay đổi,
-    // không phải mỗi khi scrollingUp hoặc cards.isEmpty() State đọc lại.
     val fabVisible by remember {
         derivedStateOf { scrollingUp || cards.isEmpty() }
     }
 
-    // Đồng bộ ẩn/hiện bottom bar theo hướng cuộn — FAB không bị thanh điều hướng chồng.
     LaunchedEffect(fabVisible) {
-        com.giathinh.canlua.ui.util.BottomBarVisibility.set(fabVisible)
+        BottomBarVisibility.set(fabVisible)
     }
-    androidx.compose.runtime.DisposableEffect(Unit) {
-        onDispose { com.giathinh.canlua.ui.util.BottomBarVisibility.reset() }
+    DisposableEffect(Unit) {
+        onDispose { BottomBarVisibility.reset() }
     }
 
-    // Tự động tắt refreshing khi sync xong (hoặc hết 800ms giả lập để user thấy phong cách)
     LaunchedEffect(manualRefreshing, syncStatus) {
         if (manualRefreshing && syncStatus !is SyncStatus.Syncing) {
-            delay(150)
+            delay(150.milliseconds)
             manualRefreshing = false
         }
     }
 
-    LaunchedEffect(viewModel) {
+    val deleteErrorMsg = stringResource(R.string.card_list_delete_error_toast)
+    val deleteSuccessTemplate = stringResource(R.string.card_list_delete_success_toast)
+    LaunchedEffect(viewModel, deleteSuccessTemplate, deleteErrorMsg) {
         viewModel.deleteEvents.collect { event ->
             when (event) {
-                is DeleteCardEvent.Success -> appToast.success("Đã xoá phiếu ${event.cardName}")
-                DeleteCardEvent.Error -> appToast.error("Không xoá được phiếu. Thử lại sau")
+                is DeleteCardEvent.Success -> {
+                    appToast.success(deleteSuccessTemplate.format(event.cardName))
+                }
+                DeleteCardEvent.Error -> appToast.error(deleteErrorMsg)
             }
         }
     }
 
-    // Owner = người đang đăng nhập; counterparty tùy theo role (farmer vs trader).
-    val isTrader = profileState?.role == "TRADER"
-    val ownerName = profileState?.name ?: if (isTrader) "Thương lái" else "Nông dân"
+    val isTrader = profileState?.role == ROLE_TRADER
+    val defaultRoleLabel = if (isTrader) {
+        stringResource(R.string.trader)
+    } else {
+        stringResource(R.string.farmer)
+    }
+    val ownerName = profileState?.name?.takeIf { it.isNotBlank() } ?: defaultRoleLabel
 
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
+    val todayDateStr = remember(cards) { dateFormat.format(Calendar.getInstance().time) }
+    val yesterdayDateStr = remember(cards) {
+        Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }.let { dateFormat.format(it.time) }
+    }
 
-    // Calculate today's stats - Optimizing recomposition with remember
-    val todayCards = remember(cards) {
-        val todayCal = Calendar.getInstance()
-        cards.filter { card ->
-            val cardCal = Calendar.getInstance().apply { time = card.date }
-            cardCal.get(Calendar.DAY_OF_YEAR) == todayCal.get(Calendar.DAY_OF_YEAR) &&
-                    cardCal.get(Calendar.YEAR) == todayCal.get(Calendar.YEAR)
-        }
+    val todayCards = remember(cards, todayDateStr) {
+        cards.filter { dateFormat.format(it.date) == todayDateStr }
     }
     val todayTotalKg = remember(todayCards) { todayCards.sumOf { it.totalWeight } }
     val todayTotalAmount = remember(todayCards) { todayCards.sumOf { it.totalAmount } }
-    // Đơn giá trung bình (đ/kg) — từ pricePerKg đã lưu sẵn trên phiếu, tránh tính lại từ
-    // totalAmount/totalKg (có thể nhiễu do tạm ứng/đặt cọc). Bỏ qua phiếu pricePerKg = 0.
     val todayAvgPricePerKg = remember(todayCards) {
         val pricedCards = todayCards.filter { it.pricePerKg > 0 }
-        if (pricedCards.isEmpty()) null
-        else pricedCards.map { it.pricePerKg }.average()
+        if (pricedCards.isEmpty()) null else pricedCards.map { it.pricePerKg }.average()
     }
-    // Tổng số bao trong ngày.
     val todayBagCount = remember(todayCards) {
         val total = todayCards.sumOf { it.bagCount }
         if (total <= 0) null else total
     }
 
-    // Lift lambda ra ngoài items{} → 1 instance dùng chung cho cả danh sách,
-    // tránh tạo 200 closure mới mỗi khi cards thay đổi (sync/filter).
     val onCardClick = remember(navController) {
         { id: Long -> navController.navigate("card_detail/$id") }
     }
-    val onCardDelete: (com.giathinh.canlua.data.model.Card) -> Unit = remember {
+    val onCardDelete: (Card) -> Unit = remember {
         { card ->
             cardToDelete = card
             showDeleteConfirmDialog = true
@@ -226,191 +216,225 @@ fun CardListScreenContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // === Card List (chứa cả Summary + Filter chips để cuộn theo) ===
-            // Crossfade thay vì 2 AnimatedVisibility riêng biệt vì skeleton và real content
-            // GIỜ CÙNG cấu trúc LazyColumn → swap mượt, không unmeasure → measure lại.
-            // listState DÙNG CHUNG giữa skeleton và real content → scroll position
-            // được bảo toàn khi skeleton → content (sau khi InitViewModel warm cache).
-            // C-05: pullState khai báo NGOÀI Crossfade → không bị reset khi transition.
             val pullState = rememberPullToRefreshState()
             if (showSkeleton) {
                 CardListSkeleton(count = 3, listState = listState)
             } else {
-                    PullToRefreshBox(
-                        isRefreshing = manualRefreshing,
-                        onRefresh = {
-                            manualRefreshing = true
-                            viewModel.refreshCards()
-                            syncViewModel.syncAll()
-                        },
-                        state = pullState,
+                PullToRefreshBox(
+                    isRefreshing = manualRefreshing,
+                    onRefresh = {
+                        manualRefreshing = true
+                        viewModel.refreshCards()
+                        syncViewModel.syncAll()
+                    },
+                    state = pullState,
+                    modifier = Modifier.fillMaxSize(),
+                    indicator = {
+                        PullToRefreshDefaults.Indicator(
+                            state = pullState,
+                            isRefreshing = manualRefreshing,
+                            color = AppColors.GreenPrimary,
+                            containerColor = AppColors.GreenSurface,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .graphicsLayer {
+                                    val p = pullState.distanceFraction.coerceIn(0f, 1f)
+                                    scaleX = p
+                                    scaleY = p
+                                    alpha = p
+                                }
+                        )
+                    }
+                ) {
+                    val groupedCards = remember(cards) {
+                        cards.groupBy { card -> dateFormat.format(card.date) }
+                    }
+
+                    LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        indicator = {
-                            PullToRefreshDefaults.Indicator(
-                                state = pullState,
-                                isRefreshing = manualRefreshing,
-                                color = AppColors.GreenPrimary,
-                                containerColor = AppColors.GreenSurface,
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .graphicsLayer {
-                                        val p = pullState.distanceFraction.coerceIn(0f, 1f)
-                                        scaleX = p
-                                        scaleY = p
-                                        alpha = p
-                                    }
+                        contentPadding = PaddingValues(
+                            start = AppDimensions.SpacingMd,
+                            end = AppDimensions.SpacingMd,
+                            top = AppDimensions.SpacingXs,
+                            bottom = AppDimensions.BottomBarHeight + AppDimensions.SpacingMd
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(AppDimensions.SpacingXs)
+                    ) {
+                        item(key = KEY_SUMMARY_HEADER) {
+                            CardListSummaryCard(
+                                cardCount = todayCards.size,
+                                totalKg = todayTotalKg,
+                                totalAmount = todayTotalAmount,
+                                syncStatus = syncStatus,
+                                showSyncStatus = false,
+                                avgPricePerKg = todayAvgPricePerKg,
+                                bagCount = todayBagCount
                             )
                         }
-                    ) {
-                        val groupedCards = remember(cards) {
-                            cards.groupBy { card ->
-                                dateFormat.format(card.date)
+
+                        if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
+                            item(key = KEY_FILTER_BAR) {
+                                CardListFilterBar(
+                                    selectedSeason = selectedSeason,
+                                    selectedVariety = selectedFilter,
+                                    onOpenFilter = { showFilterSheet = true },
+                                    onClearSeason = { viewModel.setSeasonFilter(null) },
+                                    onClearVariety = { viewModel.setVarietyFilter(null) },
+                                    onClearAll = viewModel::clearFilters,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
 
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 8.dp,
-                                bottom = 96.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            item(key = "summary_header") {
-                                CardListSummaryCard(
-                                    cardCount = todayCards.size,
-                                    totalKg = todayTotalKg,
-                                    totalAmount = todayTotalAmount,
-                                    syncStatus = syncStatus,
-                                    // Bỏ chấm pulse ở trang Cân lúa theo yêu cầu —
-                                    // giữ signature nguyên để tương thích ngược (trader dashboard
-                                    // hoặc nơi khác vẫn truyền true được). Bên trong component
-                                    // hiện không render SyncStatusPulse ở trang này.
-                                    showSyncStatus = false,
-                                    avgPricePerKg = todayAvgPricePerKg,
-                                    bagCount = todayBagCount
-                                )
-                            }
-
-                            if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
-                                item(key = "filter_bar") {
-                                    CardListFilterBar(
-                                        selectedSeason = selectedSeason,
-                                        selectedVariety = selectedFilter,
-                                        onOpenFilter = { showFilterSheet = true },
-                                        onClearSeason = { viewModel.setSeasonFilter(null) },
-                                        onClearVariety = { viewModel.setVarietyFilter(null) },
-                                        onClearAll = viewModel::clearFilters,
-                                        modifier = Modifier.fillMaxWidth()
+                        if (cards.isEmpty()) {
+                            val isFiltered = selectedFilter != null || selectedSeason != null
+                            item(key = KEY_EMPTY) {
+                                if (isFiltered) {
+                                    CardListEmptyState(
+                                        icon = Icons.Default.Info,
+                                        title = stringResource(R.string.card_list_empty_filter_title),
+                                        subtitle = stringResource(R.string.card_list_empty_filter_subtitle),
+                                        onSyncClick = null,
+                                        actionButtonText = stringResource(R.string.card_list_clear_filter_action),
+                                        onActionClick = viewModel::clearFilters
+                                    )
+                                } else {
+                                    CardListEmptyState(
+                                        onSyncClick = if (syncViewModel.isUserSignedIn && lastSyncTime == null) {
+                                            { syncViewModel.syncAll() }
+                                        } else {
+                                            null
+                                        },
+                                        syncing = syncStatus is SyncStatus.Syncing,
+                                        actionButtonText = stringResource(R.string.card_list_create_card_action),
+                                        onActionClick = {
+                                            if (!isPremium && cardsToday >= PremiumState.FREE_CARDS_PER_DAY) {
+                                                showPremiumGate = true
+                                                AnalyticsHelper.premiumGateShown(cardsToday)
+                                            } else {
+                                                showCreateDialog = true
+                                            }
+                                        }
                                     )
                                 }
                             }
+                        } else {
+                            groupedCards.forEach { (date, cardsInDay) ->
+                                item(key = "header_$date") {
+                                    val friendlyDateLabel = when (date) {
+                                        todayDateStr -> stringResource(R.string.card_list_date_today_prefix, date)
+                                        yesterdayDateStr -> stringResource(R.string.card_list_date_yesterday_prefix, date)
+                                        else -> date
+                                    }
 
-                            if (cards.isEmpty()) {
-                                val isFiltered = selectedFilter != null || selectedSeason != null
-                                item(key = "empty") {
-                                    if (isFiltered) {
-                                        CardListEmptyState(
-                                            icon = Icons.Default.Info,
-                                            title = stringResource(com.giathinh.canlua.R.string.card_list_empty_filter_title),
-                                            subtitle = stringResource(com.giathinh.canlua.R.string.card_list_empty_filter_subtitle),
-                                            onSyncClick = null,
-                                            actionButtonText = stringResource(com.giathinh.canlua.R.string.card_list_clear_filter_action),
-                                            onActionClick = viewModel::clearFilters
+                                    // Phân cấp rõ tiêu đề nhóm ngày + số lượng phiếu + hỗ trợ TalkBack heading
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                top = AppDimensions.SpacingSm,
+                                                bottom = AppDimensions.SpacingXxs
+                                            )
+                                            .semantics { heading() },
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = friendlyDateLabel,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = AppColors.TextPrimary,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                    } else {
-                                        CardListEmptyState(
-                                            onSyncClick = if (syncViewModel.isUserSignedIn && lastSyncTime == null) {
-                                                { syncViewModel.syncAll() }
-                                            } else {
-                                                null
-                                            },
-                                            syncing = syncStatus is SyncStatus.Syncing,
-                                            actionButtonText = stringResource(com.giathinh.canlua.R.string.card_list_create_card_action),
-                                            onActionClick = {
-                                                if (!isPremium && cardsToday >= com.giathinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY) {
-                                                    showPremiumGate = true
-                                                    com.giathinh.canlua.util.AnalyticsHelper.premiumGateShown(cardsToday)
-                                                } else {
-                                                    showCreateDialog = true
-                                                }
-                                            }
-                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(AppDimensions.CornerRadiusSm),
+                                            color = AppColors.SurfaceContainer
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.card_list_day_card_count, cardsInDay.size),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = AppColors.TextSecondary,
+                                                fontWeight = FontWeight.SemiBold,
+                                                modifier = Modifier.padding(
+                                                    horizontal = AppDimensions.SpacingXs,
+                                                    vertical = 2.dp
+                                                )
+                                            )
+                                        }
                                     }
                                 }
-                            } else {
-                                groupedCards.forEach { (date, cardsInDay) ->
-                                    item(key = "header_$date") {
-                                        Text(
-                                            text = date,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = AppColors.TextSecondary,
-                                            fontWeight = FontWeight.Medium,
-                                            modifier = Modifier.padding(
-                                                top = 8.dp,
-                                                bottom = 4.dp
-                                            )
-                                        )
-                                    }
-                                    items(
-                                        items = cardsInDay,
-                                        key = { it.id }
-                                    ) { card ->
-                                        CardItem(
-                                            card = card,
-                                            onClick = onCardClick,
-                                            onDelete = onCardDelete
-                                        )
-                                    }
+                                items(
+                                    items = cardsInDay,
+                                    key = { it.id }
+                                ) { card ->
+                                    CardItem(
+                                        card = card,
+                                        onClick = onCardClick,
+                                        onDelete = onCardDelete
+                                    )
                                 }
                             }
                         }
                     }
                 }
+            }
         }
 
-        // FAB — auto-hide khi scroll xuống đọc danh sách; bottom bar cũng tự ẩn theo
-        // (xem LaunchedEffect ở trên). Dùng Modifier.navigationBarsPadding() thay vì
-        // WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() để
-        // tránh alloc PaddingValues object mỗi recomposition khi scroll danh sách.
         AnimatedVisibility(
             visible = fabVisible,
-            enter = fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)) +
-                    slideInVertically(
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
-                        initialOffsetY = { it / 2 }
-                    ),
-            exit = fadeOut(animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)) +
-                   slideOutVertically(
-                       animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-                       targetOffsetY = { it / 2 }
-                   ),
+            enter = fadeIn(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + slideInVertically(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                initialOffsetY = { it / 2 }
+            ),
+            exit = fadeOut(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            ) + slideOutVertically(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                targetOffsetY = { it / 2 }
+            ),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 96.dp)
+                .padding(
+                    end = AppDimensions.SpacingMd,
+                    bottom = AppDimensions.BottomBarHeight + AppDimensions.SpacingMd
+                )
         ) {
             ExtendedFloatingActionButton(
                 onClick = {
                     HapticUtil.tick(context)
-                    // Premium gate: free user tối đa FREE_CARDS_PER_DAY phiếu/ngày.
-                    // Đếm reactive từ cardsToday → nếu vượt mở dialog upsell thay vì tạo.
-                    if (!isPremium && cardsToday >= com.giathinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY) {
+                    if (!isPremium && cardsToday >= PremiumState.FREE_CARDS_PER_DAY) {
                         showPremiumGate = true
-                        com.giathinh.canlua.util.AnalyticsHelper.premiumGateShown(cardsToday)
+                        AnalyticsHelper.premiumGateShown(cardsToday)
                     } else {
                         showCreateDialog = true
                     }
                 },
                 containerColor = AppColors.GreenPrimary,
-                contentColor = AppColors.CardBg,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                ),
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = {
                     Text(
-                        text = stringResource(com.giathinh.canlua.R.string.card_list_create_card_action),
+                        text = stringResource(R.string.card_list_create_card_action),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -418,7 +442,6 @@ fun CardListScreenContent(
         }
     }
 
-    // Create Dialog — reuse cho cả farmer & trader (mode swap label).
     if (showCreateDialog) {
         CreateCardBottomSheet(
             ownerName = ownerName,
@@ -426,8 +449,6 @@ fun CardListScreenContent(
             mode = if (isTrader) CreateCardMode.TRADER else CreateCardMode.FARMER,
             onDismiss = { showCreateDialog = false },
             onCreate = { counterpartyName, counterpartyPhone, variety, season, moisture, price, deposit, cccd, impurityWeight, recordLocation ->
-                // FARMER: name=farmer (owner), traderName=counterparty.
-                // TRADER: name=farmer (counterparty), traderName=trader (owner).
                 val cardName = if (isTrader) counterpartyName else ownerName
                 val cardTraderName = if (isTrader) ownerName else counterpartyName
                 val cardTraderPhone = if (isTrader) profileState?.phone.orEmpty() else counterpartyPhone
@@ -444,13 +465,11 @@ fun CardListScreenContent(
                     impurityWeight = impurityWeight,
                     recordLocation = recordLocation
                 )
-                // Tăng counter chống gian lận. Counter chỉ tăng — xoá phiếu cũ
-                // KHÔNG giảm → user free không thể bypass quota 3 phiếu/ngày.
                 if (!isPremium) {
-                    com.giathinh.canlua.util.PremiumState.incrementDailyCreated(context)
+                    PremiumState.incrementDailyCreated(context)
                 }
-                com.giathinh.canlua.util.AnalyticsHelper.cardCreated(
-                    role = if (isTrader) "TRADER" else "FARMER",
+                AnalyticsHelper.cardCreated(
+                    role = if (isTrader) ROLE_TRADER else ROLE_FARMER,
                     hasGps = profileState?.region?.isNotBlank() == true
                 )
             }
@@ -476,10 +495,10 @@ fun CardListScreenContent(
     if (showPremiumGate) {
         PremiumQuotaDialog(
             cardsToday = cardsToday,
-            freeLimit = com.giathinh.canlua.util.PremiumState.FREE_CARDS_PER_DAY,
+            freeLimit = PremiumState.FREE_CARDS_PER_DAY,
             onUpgrade = {
                 showPremiumGate = false
-                navController.navigate("premium")
+                navController.navigate(ROUTE_PREMIUM)
             },
             onDismiss = { showPremiumGate = false }
         )

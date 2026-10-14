@@ -57,6 +57,7 @@ import com.giathinh.canlua.ui.screen.profile.PremiumUpsellCard
 import com.giathinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.DashboardFormatter
+import com.giathinh.canlua.ui.util.rememberDashboardFormatter
 import com.giathinh.canlua.ui.viewmodel.DashboardData
 import com.giathinh.canlua.ui.viewmodel.DashboardViewModel
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
@@ -197,7 +198,9 @@ fun FarmerProfileScreenContent(
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         FarmerPrimaryKpiGrid(
                             stats = stats,
-                            previous = dash.previousStats
+                            previous = dash.previousStats,
+                            weightDelta = dash.weightDeltaPercent,
+                            revenueDelta = dash.revenueDeltaPercent
                         )
                     }
                 }
@@ -418,14 +421,11 @@ private fun SeasonSummaryCard(dash: DashboardData) {
 @Composable
 private fun FarmerPrimaryKpiGrid(
     stats: com.giathinh.canlua.data.model.SeasonStats,
-    previous: com.giathinh.canlua.data.model.SeasonStats?
+    previous: com.giathinh.canlua.data.model.SeasonStats?,
+    weightDelta: Double?,
+    revenueDelta: Double?
 ) {
-    val weightDelta = previous?.let {
-        DashboardFormatter.deltaPercent(stats.totalNetWeight, it.totalNetWeight)
-    }
-    val revenueDelta = previous?.let {
-        DashboardFormatter.deltaPercent(stats.totalRevenue, it.totalRevenue)
-    }
+    val fmt = rememberDashboardFormatter()
     val deltaLabelPrefix = stringResource(R.string.profile_delta_vs)
     val deltaLabel = previous?.season?.let { "$deltaLabelPrefix $it" }
 
@@ -434,7 +434,7 @@ private fun FarmerPrimaryKpiGrid(
             KpiGridItem(
                 icon = Icons.Outlined.Scale,
                 label = stringResource(R.string.profile_kpi_sold_yield),
-                value = DashboardFormatter.weight(stats.totalNetWeight),
+                value = fmt.weight(stats.totalNetWeight),
                 accentColor = AppColors.GreenPrimary,
                 deltaPercent = weightDelta,
                 deltaLabel = deltaLabel,
@@ -443,7 +443,7 @@ private fun FarmerPrimaryKpiGrid(
             KpiGridItem(
                 icon = Icons.Outlined.Wallet,
                 label = stringResource(R.string.profile_stats_revenue),
-                value = DashboardFormatter.money(stats.totalRevenue),
+                value = fmt.money(stats.totalRevenue),
                 accentColor = Color(0xFFF9A825),
                 deltaPercent = revenueDelta,
                 deltaLabel = deltaLabel,
@@ -454,7 +454,7 @@ private fun FarmerPrimaryKpiGrid(
                 label = stringResource(R.string.profile_kpi_avg_kg_per_bag),
                 value = if (stats.avgKgPerBag > 0) stringResource(
                     R.string.profile_kg_per_bag_value,
-                    DashboardFormatter.weight(stats.avgKgPerBag)
+                    fmt.weight(stats.avgKgPerBag)
                 ) else "—",
                 accentColor = Color(0xFF8D6E63)
             ),

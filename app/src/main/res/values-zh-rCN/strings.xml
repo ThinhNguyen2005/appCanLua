@@ -261,7 +261,7 @@
     <string name="header_lock_card_content">锁定称重单</string>
     <string name="header_delete_card">删除称重单</string>
     <string name="header_export_pdf">导出 PDF 称重单</string>
-    <string name="dropdown_rice_variety_placeholder">例：ST25...</string>
+    <string name="dropdown_rice_variety_placeholder">例：ST25…</string>
     <string name="dropdown_season_placeholder">例：2026年早稻</string>
     <string name="season_dong_xuan">冬春</string>
     <string name="season_he_thu">夏秋</string>
@@ -443,7 +443,7 @@
     <string name="settings_change_role_to_farmer">您将切换回“农民”界面，可使用称重记账、每季作物统计、AI 农技助手等功能。</string>
     <string name="settings_change_role_confirm">确认切换</string>
     <string name="settings_empty_time">暂无</string>
-    <string name="settings_sync_status_syncing">正在同步...</string>
+    <string name="settings_sync_status_syncing">正在同步…</string>
     <string name="settings_sync_status_success">同步成功</string>
     <string name="settings_sync_status_error">同步出错：%1$s</string>
     <string name="settings_sync_status_idle">未同步</string>
@@ -490,7 +490,7 @@
     <string name="card_detail_delete_blocked_unpaid">未付款账单 — 无法删除</string>
     <string name="help_btn_feedback">发送反馈</string>
     <string name="feedback_screen_title">发送反馈</string>
-    <string name="feedback_placeholder">在这里输入您的反馈意见...</string>
+    <string name="feedback_placeholder">在这里输入您的反馈意见…</string>
     <string name="feedback_btn_send">发送</string>
     <string name="feedback_toast_success">感谢您的反馈意见！我们将尽快进行评估。</string>
     <string name="feedback_toast_empty">请输入反馈内容。</string>
@@ -565,7 +565,7 @@
     <string name="market_bid_trend_down">下跌中</string>
     <string name="market_bid_note_label">备注 (可选)</string>
     <string name="market_bid_note_placeholder">例如：田间收购，优先干稻谷……</string>
-    <string name="market_bid_saving">保存中...</string>
+    <string name="market_bid_saving">保存中…</string>
     <string name="market_bid_submit_create">发布价格</string>
     <string name="market_bid_submit_update">更新</string>
 
@@ -663,9 +663,9 @@
     <string name="ai_chat_preset_2">ST25香稻何时进行第二次追肥？</string>
     <string name="ai_chat_preset_3">褐飞虱爆发如何有效防治？</string>
     <string name="ai_chat_preset_4">稻田淹水5天会有影响吗？</string>
-    <string name="ai_chat_typing_status">正在组织回答...</string>
-    <string name="ai_chat_input_placeholder">输入您想咨询的问题...</string>
-    <string name="ai_chat_listening_placeholder">正在倾听...</string>
+    <string name="ai_chat_typing_status">正在组织回答…</string>
+    <string name="ai_chat_input_placeholder">输入您想咨询的问题…</string>
+    <string name="ai_chat_listening_placeholder">正在倾听…</string>
     <string name="ai_chat_action_send">发送</string>
     <string name="ai_chat_action_stop">停止</string>
     <string name="ai_chat_action_voice_input">语音输入</string>
@@ -774,9 +774,25 @@
     <string name="settings_backup_premium_required">数据备份功能需要 Premium 会员权限！</string>
     <string name="settings_restore_title">恢复数据</string>
     <string name="settings_restore_desc">从 JSON 文件导入称重单数据</string>
+    <string name="settings_restore_subtitle">将 JSON 备份文件中的数据合并到设备中</string>
+    <string name="settings_restore_dialog_title">确认恢复备份</string>
+    <string name="settings_restore_dialog_count">备份文件包含 %1$d 条过磅单。</string>
+    <string name="settings_restore_dialog_desc">文件中的数据将合并添加到您设备上的当前列表中（不会丢失或覆盖现有过磅单）。</string>
+    <string name="settings_restore_confirm_btn">恢复</string>
     <string name="settings_collapse">收起</string>
     <string name="settings_expand">展开</string>
     <string name="settings_role_guest_locked">🔒 登录以切换身份</string>
+    <string name="settings_sync_wifi_only_title">仅通过 Wi-Fi 同步</string>
+    <string name="settings_sync_wifi_only_subtitle">在田间称重时节省蜂窝移动数据</string>
+    <string name="settings_backup_desc_locked">安全导出 JSON 备份文件（仅限 Premium）</string>
+    <string name="settings_badge_premium">PREMIUM</string>
+    <string name="settings_guest_not_signed_in">未登录账号</string>
+    <string name="settings_guest_mode_badge">您目前处于访客模式</string>
+    <string name="settings_guest_login_benefit">登录以自动将数据备份到云端、跨设备同步，并解锁完整的农户与米商角色。</string>
+    <string name="settings_login_now">立即登录</string>
+    <string name="settings_app_version">称稻谷 v%1$s</string>
+    <string name="settings_file_invalid">无效文件</string>
+    <string name="settings_file_read_error">无法读取备份文件</string>
     <!-- Trader Transactions Screen -->
     <string name="trader_tx_title">交易账簿</string>
     <string name="trader_tx_subtitle">%1$d 张收购凭证 · 实时更新</string>
@@ -828,7 +844,7 @@
     <string name="sync_screen_title">数据同步</string>
     <string name="sync_screen_success">同步成功</string>
     <string name="sync_screen_error">同步出错</string>
-    <string name="sync_screen_syncing">正在同步...</string>
+    <string name="sync_screen_syncing">正在同步…</string>
     <string name="sync_screen_idle">尚未同步</string>
     <string name="sync_screen_last_time">上次同步：%1$s</string>
     <string name="sync_screen_btn_action">立即同步</string>
@@ -840,4 +856,56 @@
     <string name="auth_skip_login">以访客身份体验（无需登录）</string>
     <string name="splash_slogan">智能稻米称重管理</string>
     <string name="splash_loading">正在加载数据…</string>
+
+    <!-- CardDetailScreen Dialogs & Actions -->
+    <string name="card_detail_tab_info">信息</string>
+    <string name="card_detail_tab_deduction">扣减</string>
+    <string name="card_detail_tab_finance">财务</string>
+    <string name="card_detail_variety_display_only_hint">水稻品种仅用于显示，不影响计算</string>
+    <string name="card_detail_deduction_recalc_hint">修改后将重新计算实收重量</string>
+    <string name="unit_percent" formatted="false">%</string>
+    <string name="unit_vnd">盾</string>
+    <string name="unit_vnd_per_kg">盾/公斤</string>
+
+    <string name="card_detail_edit_bag_title">修改第 #%1$d 袋重量</string>
+    <string name="card_detail_edit_bag_prompt">请重新输入该袋的实际重量（0.1 公斤 – 200 公斤）：</string>
+    <string name="card_detail_edit_bag_label">袋重 (公斤)</string>
+    <string name="card_detail_edit_bag_error">重量必须在 0.1 至 200 公斤之间</string>
+    <string name="card_detail_updated_bag_toast">已更新第 #%1$d 袋：%2$s 公斤</string>
+
+    <string name="card_detail_add_payment_title">本次追加付款</string>
+    <string name="card_detail_remaining_to_pay">尚需支付：</string>
+    <string name="card_detail_amount_with_currency">%1$s 盾</string>
+    <string name="card_detail_pay_full_100" formatted="false">全额付清 (100%)</string>
+    <string name="card_detail_pay_half_50" formatted="false">支付 50%</string>
+    <string name="card_detail_payment_amount_label">付款金额 (越南盾)</string>
+    <string name="card_detail_payment_note_label">备注 / 方式</string>
+    <string name="card_detail_payment_note_placeholder">现金、转账…</string>
+    <string name="card_detail_payment_method_cash">现金</string>
+    <string name="card_detail_payment_method_transfer">转账</string>
+    <string name="card_detail_payment_default_desc">追加付款</string>
+    <string name="card_detail_payment_confirm_btn">确认付款</string>
+    <string name="card_detail_payment_recorded_toast">已记录付款 %1$s 盾</string>
+
+    <string name="settings_auto_sync_title">自动同步</string>
+    <string name="settings_auto_sync_subtitle">设备联网时自动同步称重单</string>
+    <string name="news_time_months_ago">%1$d 个月前</string>
+    <string name="settings_role_guest_toast">您需要登录才能切换身份！</string>
+    <string name="settings_role_restart_hint">身份将在重启应用后生效。</string>
+
+
+
+    <!-- CardListScreen -->
+    <string name="card_list_delete_success_toast">已成功删除单据 %1$s</string>
+    <string name="card_list_delete_error_toast">无法删除单据，请稍后重试</string>
+    <string name="card_list_date_today_prefix">今天 · %1$s</string>
+    <string name="card_list_date_yesterday_prefix">昨天 · %1$s</string>
+    <string name="card_list_day_card_count">%1$d 张单据</string>
+
+
+    <string name="compact_billion">%1$s十亿</string>
+    <string name="compact_million">%1$s百万</string>
+    <string name="compact_thousand">%1$s千</string>
+    <string name="compact_ton">%1$s吨</string>
+
 </resources>

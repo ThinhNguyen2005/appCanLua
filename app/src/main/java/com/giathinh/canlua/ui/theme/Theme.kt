@@ -3,6 +3,7 @@ package com.giathinh.canlua.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography as MaterialTypography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -18,50 +19,6 @@ import androidx.compose.ui.unit.isUnspecified
 import com.giathinh.canlua.data.model.AppThemeMode
 import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.ui.util.LocalFontScaleFactor
-
-private val DarkHighContrastColorScheme = darkColorScheme(
-    primary = Green80,
-    secondary = GreenGrey80,
-    tertiary = Amber80,
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    surfaceVariant = Color(0xFF2C2C2C),
-    onBackground = Color(0xFFE0E0E0),
-    onSurface = Color(0xFFE0E0E0),
-    onSurfaceVariant = Color(0xFFB0B0B0),
-    inverseSurface = Color(0xFFE0E0E0),
-    inverseOnSurface = Color(0xFF121212),
-)
-
-private val DarkOledColorScheme = darkColorScheme(
-    primary = Green80,
-    secondary = GreenGrey80,
-    tertiary = Amber80,
-    background = Color(0xFF000000),
-    surface = Color(0xFF0A0A0A),
-    surfaceVariant = Color(0xFF121212),
-    surfaceContainer = Color(0xFF0F0F0F),
-    onBackground = Color(0xFFE8E8E8),
-    onSurface = Color(0xFFE8E8E8),
-    onSurfaceVariant = Color(0xFFB0B0B0),
-    inverseSurface = Color(0xFFE8E8E8),
-    inverseOnSurface = Color(0xFF000000),
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Green40,
-    secondary = GreenGrey40,
-    tertiary = Amber40,
-    background = SurfaceGreen,
-    surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFE8F5E9),
-    onPrimary = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFFFFFFFF),
-    onTertiary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF1A1C1A),
-    onSurface = Color(0xFF1A1C1A),
-    onSurfaceVariant = Color(0xFF424940)
-)
 
 private val LightColorSchemeNoDynamic = lightColorScheme(
     primary = Green40,
@@ -137,9 +94,6 @@ fun CanLuaTheme(
         }
 
         AppThemeMode.OLED -> {
-            // OLED intentionally ignores dynamic color — we NEED pure #000000 background
-            // for true AMOLED black and maximum power saving. The wallpaper-extracted
-            // dynamic colors are "dark grey" at best, defeating the entire purpose.
             DarkOledColorSchemeNoDynamic
         }
 
@@ -168,15 +122,16 @@ fun CanLuaTheme(
 
 private fun TextStyle.scale(factor: Float): TextStyle {
     fun TextUnit.scaleOrKeep() = if (isUnspecified) this else this * factor
+
     return copy(
         fontSize = fontSize.scaleOrKeep(),
         lineHeight = lineHeight.scaleOrKeep(),
-        letterSpacing = letterSpacing // keep spacing
+        letterSpacing = letterSpacing
     )
 }
 
-private fun androidx.compose.material3.Typography.scale(factor: Float): androidx.compose.material3.Typography {
-    return androidx.compose.material3.Typography(
+private fun MaterialTypography.scale(factor: Float): MaterialTypography {
+    return MaterialTypography(
         displayLarge = displayLarge.scale(factor),
         displayMedium = displayMedium.scale(factor),
         displaySmall = displaySmall.scale(factor),
