@@ -1,55 +1,81 @@
 package com.giathinh.canlua.ui.screen
 
-import com.giathinh.canlua.R
-
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Agriculture
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.*
-import com.giathinh.canlua.ui.screen.profile.PersonalInfoCard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.giathinh.canlua.ui.feedback.LocalAppToast
+import com.giathinh.canlua.BuildConfig
+import com.giathinh.canlua.R
+import com.giathinh.canlua.ads.AdConsentManager
+import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.FontScale
+import com.giathinh.canlua.data.model.Profile
+import com.giathinh.canlua.ui.feedback.LocalAppToast
+import com.giathinh.canlua.ui.screen.profile.PersonalInfoCard
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.viewmodel.AuthViewModel
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
-
+import com.giathinh.canlua.util.BackupManager
 import com.giathinh.canlua.util.HapticUtil
+import com.giathinh.canlua.util.PremiumState
 import com.giathinh.canlua.util.TrackScreenRender
+import com.google.gson.Gson
+import java.io.BufferedReader
+import java.io.InputStreamReader
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+private fun restartActivity(context: Context) {
+    val activity = context.findActivity() ?: return
+    val intent = activity.intent
+    activity.finish()
+    activity.startActivity(intent)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,26 +102,30 @@ fun SettingsScreen(
     var showRestartConfirm by remember { mutableStateOf(false) }
     var themeExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
+    var fontScaleExpanded by remember { mutableStateOf(false) }
 
-    var editing by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var region by remember { mutableStateOf("") }
-    var cccd by remember { mutableStateOf("") }
+    // State preservation for user inputs across configuration changes / process kill
+    var editing by rememberSaveable { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var phone by rememberSaveable { mutableStateOf("") }
+    var region by rememberSaveable { mutableStateOf("") }
+    var cccd by remember { mutableStateOf("") } // keep remember for sensitive data
 
-    LaunchedEffect(profile?.uid) {
-        profile?.let {
-            name = it.name
-            phone = it.phone
-            region = it.region
-            cccd = it.cccd
+    // Reload form whenever profile updates (e.g. sync finish) if not actively editing
+    LaunchedEffect(profile) {
+        if (!editing) {
+            profile?.let {
+                name = it.name
+                phone = it.phone
+                region = it.region
+                cccd = it.cccd
+            }
         }
     }
 
     val scrollState = rememberScrollState()
     val context = LocalContext.current
-
-    val isPremium by com.giathinh.canlua.util.PremiumState.isPremium.collectAsStateWithLifecycle()
+    val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
     val appToast = LocalAppToast.current
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -111,16 +141,26 @@ fun SettingsScreen(
         }
     }
 
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingRestoreCount by remember { mutableStateOf<Int?>(null) }
+
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            viewModel.importBackup(
-                context = context,
-                uri = uri,
-                onSuccess = { count -> appToast.success(context.getString(R.string.settings_import_success, count)) },
-                onError = { err -> appToast.error(context.getString(R.string.settings_import_error, err)) }
-            )
+            try {
+                val json = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BufferedReader(InputStreamReader(inputStream, "UTF-8")).use { reader ->
+                        reader.readText()
+                    }
+                } ?: throw IllegalStateException("Không thể đọc tệp sao lưu")
+                val payload = Gson().fromJson(json, BackupManager.BackupPayload::class.java)
+                val count = payload?.data?.size ?: 0
+                pendingRestoreCount = count
+                pendingRestoreUri = uri
+            } catch (e: Exception) {
+                appToast.error(context.getString(R.string.settings_import_error, e.message ?: "Tệp không hợp lệ"))
+            }
         }
     }
 
@@ -130,7 +170,7 @@ fun SettingsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.topbar_settings),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
@@ -150,8 +190,7 @@ fun SettingsScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = AppColors.Surface,
                     titleContentColor = AppColors.TextPrimary
-                ),
-                windowInsets = WindowInsets(0.dp)
+                )
             )
         },
         containerColor = AppColors.Surface
@@ -162,212 +201,275 @@ fun SettingsScreen(
                 .background(AppColors.Surface)
                 .padding(paddingValues)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .navigationBarsPadding()
                 .imePadding()
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            val isUserGuest = isGuestMode || !authState.isSignedIn
 
-            SectionHeader(
-                icon = Icons.Outlined.Person,
-                label = stringResource(R.string.settings_section_account),
-                iconBg = AppColors.BlueSurface,
-                iconTint = AppColors.Blue
-            )
+            // ── KHỐI 1: TÀI KHOẢN (ACCOUNT) ─────────────────────────────────
+            SectionTitle(stringResource(R.string.settings_section_account))
 
-            RoleSwitcherContent(
-                profile = profile,
-                isGuest = isGuestMode,
-                onRoleChange = { pendingRole = it }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Tùy chỉnh thông tin cá nhân
-            PersonalInfoCard(
-                editing = editing,
-                name = name, onName = { name = it },
-                phone = phone, onPhone = { phone = it },
-                region = region, onRegion = { region = it },
-                cccd = cccd, onCccd = { cccd = it },
-                onToggleEdit = {
-                    if (editing) {
-                        profile?.let { current ->
-                            profileViewModel.updateProfile(
-                                current = current,
-                                name = name,
-                                phone = phone,
-                                region = region,
-                                cccd = cccd
-                            )
-                        }
-                    }
-                    editing = !editing
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Lịch sử thương lái (chỉ hiển thị với Nông dân)
-            if (profile?.role == "FARMER") {
-                ClickableSettingsRow(
-                    icon = Icons.Outlined.History,
-                    iconBg = AppColors.GreenSurface,
-                    iconTint = AppColors.GreenPrimary,
-                    title = stringResource(R.string.profile_trader_history_title),
-                    subtitle = if (traderHistory.isEmpty()) {
-                        stringResource(R.string.profile_no_transactions)
-                    } else {
-                        stringResource(R.string.profile_trader_partner_count, traderHistory.size)
-                    },
-                    onClick = {
+            if (isUserGuest) {
+                GuestAccountCard(
+                    onLoginClick = {
                         HapticUtil.tick(context)
-                        navController.navigate("trader_history")
+                        viewModel.setGuestMode(false)
                     }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            } else {
+                SettingsGroupCard {
+                    PersonalInfoCard(
+                        editing = editing,
+                        name = name, onName = { name = it },
+                        phone = phone, onPhone = { phone = it },
+                        region = region, onRegion = { region = it },
+                        cccd = cccd, onCccd = { cccd = it },
+                        onToggleEdit = {
+                            if (editing) {
+                                profile?.let { current ->
+                                    profileViewModel.updateProfile(
+                                        current = current,
+                                        name = name,
+                                        phone = phone,
+                                        region = region,
+                                        cccd = cccd
+                                    )
+                                }
+                            }
+                            editing = !editing
+                        },
+                        onCancelEdit = {
+                            profile?.let {
+                                name = it.name
+                                phone = it.phone
+                                region = it.region
+                                cccd = it.cccd
+                            }
+                            editing = false
+                        }
+                    )
+                }
 
-            ClickableSettingsRow(
-                icon = Icons.Outlined.Logout,
-                iconBg = AppColors.Error.copy(alpha = 0.12f),
-                iconTint = AppColors.Error,
-                title = stringResource(R.string.settings_sign_out),
-                subtitle = authState.userLabel ?: stringResource(R.string.settings_not_signed_in),
-                enabled = authState.isSignedIn,
-                onClick = {
-                    if (authState.isSignedIn) {
-                        HapticUtil.tick(context)
-                        showLogoutConfirm = true
+                Spacer(modifier = Modifier.height(12.dp))
+
+                SettingsGroupCard {
+                    RoleSwitcherContent(
+                        profile = profile,
+                        isGuest = false,
+                        onRoleChange = { pendingRole = it }
+                    )
+
+                    if (profile?.role == "FARMER") {
+                        HorizontalDivider(
+                            color = AppColors.Divider.copy(alpha = 0.4f),
+                            thickness = 0.5.dp,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        SettingsClickableRow(
+                            icon = Icons.Outlined.History,
+                            iconBg = AppColors.GreenSurface,
+                            iconTint = AppColors.GreenPrimary,
+                            title = stringResource(R.string.profile_trader_history_title),
+                            subtitle = if (traderHistory.isEmpty()) {
+                                stringResource(R.string.profile_no_transactions)
+                            } else {
+                                stringResource(R.string.profile_trader_partner_count, traderHistory.size)
+                            },
+                            onClick = {
+                                HapticUtil.tick(context)
+                                navController.navigate("trader_history")
+                            }
+                        )
                     }
                 }
-            )
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // ── KHỐI 2: CÂN LÚA & THAO TÁC (CORE WEIGHING SETTINGS) ─────────
+            SectionTitle("Cân lúa & Thao tác")
+            SettingsGroupCard {
+                ToggleRow(
+                    icon = Icons.Outlined.RecordVoiceOver,
+                    title = stringResource(R.string.settings_tts_title),
+                    subtitle = stringResource(R.string.settings_tts_subtitle),
+                    checked = isTtsEnabled,
+                    onCheckedChange = {
+                        HapticUtil.tick(context)
+                        viewModel.setTtsEnabled(it)
+                    }
+                )
 
-            SectionHeader(
-                icon = Icons.Outlined.Palette,
-                label = stringResource(R.string.settings_section_display),
-                iconBg = AppColors.BlueSurface,
-                iconTint = AppColors.Blue
-            )
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
-            ThemeExpandableRow(
-                isExpanded = themeExpanded,
-                onToggle = {
-                    HapticUtil.tick(context)
-                    themeExpanded = !themeExpanded
-                },
-                selectedTheme = appThemeMode,
-                onSelect = {
-                    HapticUtil.tick(context)
-                    viewModel.setThemeMode(it)
-                    themeExpanded = false
-                }
-            )
+                FontScaleExpandableRow(
+                    isExpanded = fontScaleExpanded,
+                    onToggle = {
+                        HapticUtil.tick(context)
+                        fontScaleExpanded = !fontScaleExpanded
+                    },
+                    selectedFontScale = fontScale,
+                    onSelect = {
+                        HapticUtil.tick(context)
+                        viewModel.setFontScale(it)
+                        fontScaleExpanded = false
+                    }
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // ── KHỐI 3: HIỂN THỊ & NGÔN NGỮ (DISPLAY & LANGUAGE) ───────────
+            SectionTitle(stringResource(R.string.settings_section_display))
+            SettingsGroupCard {
+                ThemeExpandableRow(
+                    isExpanded = themeExpanded,
+                    onToggle = {
+                        HapticUtil.tick(context)
+                        themeExpanded = !themeExpanded
+                    },
+                    selectedTheme = appThemeMode,
+                    onSelect = {
+                        HapticUtil.tick(context)
+                        viewModel.setThemeMode(it)
+                        themeExpanded = false
+                    }
+                )
 
-            LanguageExpandableRow(
-                isExpanded = languageExpanded,
-                onToggle = {
-                    HapticUtil.tick(context)
-                    languageExpanded = !languageExpanded
-                },
-                selectedLanguage = language,
-                onSelect = {
-                    HapticUtil.tick(context)
-                    viewModel.setLanguage(it)
-                    languageExpanded = false
-                }
-            )
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
-            Spacer(modifier = Modifier.height(20.dp))
+                LanguageExpandableRow(
+                    isExpanded = languageExpanded,
+                    onToggle = {
+                        HapticUtil.tick(context)
+                        languageExpanded = !languageExpanded
+                    },
+                    selectedLanguage = language,
+                    onSelect = {
+                        HapticUtil.tick(context)
+                        viewModel.setLanguage(it)
+                        languageExpanded = false
+                    }
+                )
+            }
 
-            SectionHeader(
-                icon = Icons.Outlined.Folder,
-                label = stringResource(R.string.settings_section_data),
-                iconBg = AppColors.OrangeSurface,
-                iconTint = AppColors.Orange
-            )
+            // ── KHỐI 4: QUẢN LÝ DỮ LIỆU & SAO LƯU ──────────────────────────
+            SectionTitle(stringResource(R.string.settings_section_data))
+            SettingsGroupCard {
+                ToggleRow(
+                    icon = Icons.Outlined.CloudSync,
+                    title = stringResource(R.string.settings_auto_sync_title),
+                    subtitle = stringResource(R.string.settings_auto_sync_subtitle),
+                    checked = isAutoSyncEnabled,
+                    onCheckedChange = {
+                        HapticUtil.tick(context)
+                        viewModel.setAutoSyncEnabled(it)
+                    }
+                )
 
-            SettingsCardBox {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    ToggleRow(
-                        icon = Icons.Outlined.CloudSync,
-                        title = stringResource(R.string.settings_auto_sync_title),
-                        subtitle = stringResource(R.string.settings_auto_sync_subtitle),
-                        checked = isAutoSyncEnabled,
-                        onCheckedChange = {
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                // Phiếu đã xoá dùng icon khôi phục trung tính, không dùng màu đỏ
+                SettingsClickableRow(
+                    icon = Icons.Outlined.RestoreFromTrash,
+                    iconBg = AppColors.SurfaceContainer,
+                    iconTint = AppColors.TextSecondary,
+                    title = stringResource(R.string.settings_deleted_cards_title),
+                    subtitle = stringResource(R.string.settings_deleted_cards_subtitle),
+                    onClick = {
+                        HapticUtil.tick(context)
+                        navController.navigate("deleted_cards")
+                    }
+                )
+
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                // Sao lưu dữ liệu (kèm nhãn Premium, không toast trùng)
+                SettingsClickableRow(
+                    icon = Icons.Outlined.Backup,
+                    iconBg = AppColors.GreenSurface,
+                    iconTint = AppColors.GreenPrimary,
+                    title = stringResource(R.string.settings_backup_title),
+                    subtitle = if (isPremium) {
+                        stringResource(R.string.settings_backup_desc)
+                    } else {
+                        "Xuất file JSON sao lưu an toàn (Dành riêng cho Premium)"
+                    },
+                    trailingBadge = if (!isPremium) "PREMIUM" else null,
+                    onClick = {
+                        HapticUtil.tick(context)
+                        if (isPremium) {
+                            exportLauncher.launch("CanLua_SaoLuu_${System.currentTimeMillis() / 1000}.json")
+                        } else {
+                            navController.navigate("premium")
+                        }
+                    }
+                )
+
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                // Khôi phục dữ liệu (mở dialog xác nhận gộp dữ liệu)
+                SettingsClickableRow(
+                    icon = Icons.Outlined.Restore,
+                    iconBg = AppColors.BlueSurface,
+                    iconTint = AppColors.Blue,
+                    title = stringResource(R.string.settings_restore_title),
+                    subtitle = "Gộp dữ liệu từ file sao lưu JSON vào máy",
+                    onClick = {
+                        HapticUtil.tick(context)
+                        importLauncher.launch(arrayOf("application/json"))
+                    }
+                )
+
+                val isPrivacyOptionsRequired by AdConsentManager.isPrivacyOptionsRequired.collectAsStateWithLifecycle()
+                if (isPrivacyOptionsRequired) {
+                    HorizontalDivider(
+                        color = AppColors.Divider.copy(alpha = 0.4f),
+                        thickness = 0.5.dp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    SettingsClickableRow(
+                        icon = Icons.Outlined.Security,
+                        iconBg = AppColors.BlueSurface,
+                        iconTint = AppColors.Info,
+                        title = stringResource(R.string.settings_privacy_options),
+                        subtitle = stringResource(R.string.settings_privacy_options_subtitle),
+                        onClick = {
                             HapticUtil.tick(context)
-                            viewModel.setAutoSyncEnabled(it)
+                            val activity = context.findActivity()
+                            if (activity != null) {
+                                AdConsentManager.showPrivacyOptionsForm(activity)
+                            }
                         }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ClickableSettingsRow(
-                icon = Icons.Outlined.DeleteForever,
-                iconBg = AppColors.Error.copy(alpha = 0.12f),
-                iconTint = AppColors.Error,
-                title = stringResource(R.string.settings_deleted_cards_title),
-                subtitle = stringResource(R.string.settings_deleted_cards_subtitle),
-                onClick = {
-                    HapticUtil.tick(context)
-                    navController.navigate("deleted_cards")
-                }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ClickableSettingsRow(
-                icon = Icons.Outlined.Backup,
-                iconBg = AppColors.GreenSurface,
-                iconTint = AppColors.GreenPrimary,
-                title = stringResource(R.string.settings_backup_title),
-                subtitle = stringResource(R.string.settings_backup_desc),
-                onClick = {
-                    HapticUtil.tick(context)
-                    if (isPremium) {
-                        exportLauncher.launch("CanLua_SaoLuu_${System.currentTimeMillis() / 1000}.json")
-                    } else {
-                        appToast.warning(context.getString(R.string.settings_backup_premium_required))
-                        navController.navigate("premium")
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ClickableSettingsRow(
-                icon = Icons.Outlined.Restore,
-                iconBg = AppColors.BlueSurface,
-                iconTint = AppColors.Blue,
-                title = stringResource(R.string.settings_restore_title),
-                subtitle = stringResource(R.string.settings_restore_desc),
-                onClick = {
-                    HapticUtil.tick(context)
-                    importLauncher.launch(arrayOf("application/json"))
-                }
-            )
-
-            val isPrivacyOptionsRequired by com.giathinh.canlua.ads.AdConsentManager.isPrivacyOptionsRequired.collectAsStateWithLifecycle()
-            if (isPrivacyOptionsRequired) {
-                Spacer(modifier = Modifier.height(12.dp))
-                ClickableSettingsRow(
-                    icon = Icons.Outlined.Security,
-                    iconBg = AppColors.BlueSurface,
-                    iconTint = AppColors.Info,
-                    title = stringResource(R.string.settings_privacy_options),
-                    subtitle = stringResource(R.string.settings_privacy_options_subtitle),
+            // ── KHỐI 5: ĐĂNG XUẤT (TÁCH RIÊNG Ở CUỐI) ──────────────────────
+            if (!isUserGuest) {
+                Spacer(modifier = Modifier.height(24.dp))
+                SignOutCard(
+                    userLabel = authState.userLabel ?: stringResource(R.string.settings_not_signed_in),
                     onClick = {
                         HapticUtil.tick(context)
-                        val activity = context as? android.app.Activity
-                        if (activity != null) {
-                            com.giathinh.canlua.ads.AdConsentManager.showPrivacyOptionsForm(activity)
-                        }
+                        showLogoutConfirm = true
                     }
                 )
             }
@@ -375,10 +477,87 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             SettingsFooter()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
+    // ── HỘP THOẠI XÁC NHẬN KHÔI PHỤC ─────────────────────────────────────────
+    if (pendingRestoreUri != null) {
+        val count = pendingRestoreCount ?: 0
+        AlertDialog(
+            onDismissRequest = {
+                pendingRestoreUri = null
+                pendingRestoreCount = null
+            },
+            icon = {
+                Icon(
+                    Icons.Outlined.Restore,
+                    contentDescription = null,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Xác nhận khôi phục sao lưu",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Tệp sao lưu chứa $count phiếu cân.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = "Dữ liệu từ tệp sẽ được GỘP THÊM vào danh sách hiện tại trên máy của bạn (không làm mất hoặc ghi đè các phiếu đã có).",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val uri = pendingRestoreUri
+                        pendingRestoreUri = null
+                        pendingRestoreCount = null
+                        if (uri != null) {
+                            viewModel.importBackup(
+                                context = context,
+                                uri = uri,
+                                onSuccess = { importedCount ->
+                                    appToast.success(context.getString(R.string.settings_import_success, importedCount))
+                                },
+                                onError = { err ->
+                                    appToast.error(context.getString(R.string.settings_import_error, err))
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Khôi phục", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    pendingRestoreUri = null
+                    pendingRestoreCount = null
+                }) {
+                    Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
+        )
+    }
+
+    // ── HỘP THOẠI ĐĂNG XUẤT ─────────────────────────────────────────────────
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
@@ -423,7 +602,6 @@ fun SettingsScreen(
 
     if (showRestartConfirm) {
         RestartConfirmDialog(
-            visible = true,
             onDismiss = { showRestartConfirm = false },
             onRestart = {
                 showRestartConfirm = false
@@ -433,103 +611,185 @@ fun SettingsScreen(
     }
 }
 
-private fun restartActivity(context: android.content.Context) {
-    val activity = context as? android.app.Activity ?: return
-    val intent = activity.intent
-    activity.finish()
-    activity.startActivity(intent)
-    activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+@Composable
+private fun SectionTitle(title: String) {
+    Text(
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = AppColors.TextSecondary,
+        modifier = Modifier.padding(start = 6.dp, top = 22.dp, bottom = 8.dp)
+    )
 }
 
 @Composable
-private fun SectionHeader(
-    icon: ImageVector,
-    label: String,
-    iconBg: Color,
-    iconTint: Color
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+private fun SettingsGroupCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
-        IconBadge(icon = icon, bg = iconBg, tint = iconTint)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AppColors.TextPrimary
-        )
-    }
-}
-
-@Composable
-private fun IconBadge(icon: ImageVector, bg: Color, tint: Color) {
-    Surface(shape = RoundedCornerShape(12.dp), color = bg, modifier = Modifier.size(40.dp)) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        Column(modifier = Modifier.fillMaxWidth()) {
+            content()
         }
     }
 }
 
 @Composable
-private fun SettingsCardBox(content: @Composable () -> Unit) {
+private fun GuestAccountCard(onLoginClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
-        content()
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.GreenSurface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.AccountCircle,
+                        contentDescription = null,
+                        tint = AppColors.GreenPrimary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Chưa đăng nhập tài khoản",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = "Bạn đang dùng ở chế độ Khách",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextHint
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Đăng nhập để tự động sao lưu dữ liệu lên đám mây, đồng bộ giữa các máy và mở khoá đầy đủ vai trò Nông dân & Thương lái.",
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.TextSecondary,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.Login,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Đăng nhập ngay",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun ClickableSettingsRow(
-    icon: ImageVector,
-    iconBg: Color,
-    iconTint: Color,
-    title: String,
-    subtitle: String,
-    enabled: Boolean = true,
+private fun SignOutCard(
+    userLabel: String,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-        label = "rowScale"
-    )
-    val elevation by animateFloatAsState(
-        targetValue = if (pressed) 0f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-        label = "rowElevation"
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = AppColors.CardBg,
-            disabledContainerColor = AppColors.CardBg.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = elevation.dp,
-            pressedElevation = 0.dp
-        ),
-        enabled = enabled,
+    Surface(
         onClick = onClick,
-        interactionSource = interactionSource
+        shape = RoundedCornerShape(16.dp),
+        color = AppColors.Error.copy(alpha = 0.08f),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.Error.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.Logout,
+                        contentDescription = null,
+                        tint = AppColors.Error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_sign_out),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.Error
+                    )
+                    Text(
+                        text = userLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextHint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = AppColors.Error.copy(alpha = 0.6f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsClickableRow(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    title: String,
+    subtitle: String,
+    trailingBadge: String? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -538,19 +798,44 @@ private fun ClickableSettingsRow(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                IconBadge(icon = icon, bg = iconBg, tint = iconTint)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(iconBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = if (enabled) AppColors.TextPrimary else AppColors.TextHint
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = if (enabled) AppColors.TextPrimary else AppColors.TextHint
+                        )
+                        if (trailingBadge != null) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = AppColors.GoldAccent.copy(alpha = 0.16f),
+                                modifier = Modifier.padding(start = 2.dp)
+                            ) {
+                                Text(
+                                    text = trailingBadge,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.GoldDark,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.TextHint,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -574,7 +859,14 @@ private fun ToggleRow(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChange
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -583,7 +875,15 @@ private fun ToggleRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            IconBadge(icon = icon, bg = AppColors.GreenSurface, tint = AppColors.GreenPrimary)
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(AppColors.GreenSurface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = AppColors.GreenPrimary, modifier = Modifier.size(20.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -603,7 +903,7 @@ private fun ToggleRow(
         Spacer(modifier = Modifier.width(12.dp))
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = AppColors.GreenPrimary,
@@ -615,13 +915,70 @@ private fun ToggleRow(
 }
 
 @Composable
+private fun FontScaleExpandableRow(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    selectedFontScale: FontScale,
+    onSelect: (FontScale) -> Unit
+) {
+    ExpandableRowContent(
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        icon = Icons.Outlined.FormatSize,
+        title = stringResource(R.string.settings_font_size_title),
+        selectedValue = stringResource(selectedFontScale.labelRes),
+        optionsContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                FontScale.values().forEach { scale ->
+                    val isSelected = scale == selectedFontScale
+                    Surface(
+                        onClick = { onSelect(scale) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(scale.labelRes),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                            )
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { onSelect(scale) },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = AppColors.GreenPrimary,
+                                    unselectedColor = AppColors.TextHint
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
 private fun ThemeExpandableRow(
     isExpanded: Boolean,
     onToggle: () -> Unit,
     selectedTheme: AppThemeMode,
     onSelect: (AppThemeMode) -> Unit
 ) {
-    ExpandableCard(
+    ExpandableRowContent(
         isExpanded = isExpanded,
         onToggle = onToggle,
         icon = Icons.Outlined.DarkMode,
@@ -640,10 +997,10 @@ private fun ThemeExpandableRow(
 private fun LanguageExpandableRow(
     isExpanded: Boolean,
     onToggle: () -> Unit,
-    selectedLanguage: com.giathinh.canlua.data.model.AppLanguage,
-    onSelect: (com.giathinh.canlua.data.model.AppLanguage) -> Unit
+    selectedLanguage: AppLanguage,
+    onSelect: (AppLanguage) -> Unit
 ) {
-    ExpandableCard(
+    ExpandableRowContent(
         isExpanded = isExpanded,
         onToggle = onToggle,
         icon = Icons.Outlined.Translate,
@@ -654,9 +1011,9 @@ private fun LanguageExpandableRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                com.giathinh.canlua.data.model.AppLanguage.entries.forEach { lang ->
+                AppLanguage.values().forEach { lang ->
                     val isSelected = lang == selectedLanguage
                     Surface(
                         onClick = { onSelect(lang) },
@@ -701,7 +1058,7 @@ private fun LanguageExpandableRow(
 }
 
 @Composable
-private fun ExpandableCard(
+private fun ExpandableRowContent(
     isExpanded: Boolean,
     onToggle: () -> Unit,
     icon: ImageVector,
@@ -709,36 +1066,25 @@ private fun ExpandableCard(
     selectedValue: String,
     optionsContent: @Composable () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
-        label = "expandableScale"
-    )
-
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 0.dp),
-        onClick = onToggle,
-        interactionSource = interactionSource
-    ) {
-        Column(
-            modifier = Modifier.animateContentSize(
+            .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioNoBouncy,
                     stiffness = Spring.StiffnessMediumLow
                 )
             )
+    ) {
+        Surface(
+            onClick = onToggle,
+            color = Color.Transparent,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -747,7 +1093,15 @@ private fun ExpandableCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    IconBadge(icon = icon, bg = AppColors.GreenSurface, tint = AppColors.GreenPrimary)
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AppColors.GreenSurface),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(icon, contentDescription = null, tint = AppColors.GreenPrimary, modifier = Modifier.size(20.dp))
+                    }
                     Column {
                         Text(
                             text = title,
@@ -777,18 +1131,18 @@ private fun ExpandableCard(
                         .graphicsLayer { rotationZ = rotation }
                 )
             }
+        }
 
-            if (isExpanded) {
-                HorizontalDivider(
-                    color = AppColors.Divider.copy(alpha = 0.5f),
-                    thickness = 0.5.dp,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                Box(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp, top = 4.dp)
-                ) {
-                    optionsContent()
-                }
+        if (isExpanded) {
+            HorizontalDivider(
+                color = AppColors.Divider.copy(alpha = 0.4f),
+                thickness = 0.5.dp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Box(
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 12.dp, top = 4.dp)
+            ) {
+                optionsContent()
             }
         }
     }
@@ -796,70 +1150,63 @@ private fun ExpandableCard(
 
 @Composable
 private fun RoleSwitcherContent(
-    profile: com.giathinh.canlua.data.model.Profile?,
+    profile: Profile?,
     isGuest: Boolean = false,
     onRoleChange: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
+    val appToast = LocalAppToast.current
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.profile_user_role),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = stringResource(R.string.profile_user_role),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = AppColors.TextPrimary
+        )
+        Text(
+            text = if (isGuest) stringResource(R.string.settings_role_guest_locked) else stringResource(R.string.profile_user_role_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (isGuest) AppColors.Orange else AppColors.TextHint
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(AppColors.SurfaceContainer)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            val currentRole = profile?.role ?: "FARMER"
+            RoleChipButton(
+                icon = Icons.Filled.Agriculture,
+                label = stringResource(R.string.farmer),
+                selected = currentRole != "TRADER",
+                onClick = {
+                    HapticUtil.tick(context)
+                    if (isGuest) {
+                        appToast.warning(context.getString(R.string.settings_role_guest_toast))
+                    } else if (currentRole != "FARMER") {
+                        onRoleChange("FARMER")
+                    }
+                },
+                modifier = Modifier.weight(1f)
             )
-            Text(
-                text = if (isGuest) stringResource(R.string.settings_role_guest_locked) else stringResource(R.string.profile_user_role_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isGuest) AppColors.Orange else AppColors.TextHint
+            RoleChipButton(
+                icon = Icons.Filled.Storefront,
+                label = stringResource(R.string.trader),
+                selected = currentRole == "TRADER",
+                onClick = {
+                    HapticUtil.tick(context)
+                    if (isGuest) {
+                        appToast.warning(context.getString(R.string.settings_role_guest_toast))
+                    } else if (currentRole != "TRADER") {
+                        onRoleChange("TRADER")
+                    }
+                },
+                modifier = Modifier.weight(1f)
             )
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(AppColors.SurfaceContainer)
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                val currentRole = profile?.role ?: "FARMER"
-                RoleChipButton(
-                    icon = Icons.Filled.Agriculture,
-                    label = stringResource(R.string.farmer),
-                    selected = currentRole != "TRADER",
-                    onClick = {
-                        HapticUtil.tick(context)
-                        if (isGuest) {
-                            appToast.warning(context.getString(R.string.settings_role_guest_toast))
-                        } else if (currentRole != "FARMER") {
-                            onRoleChange("FARMER")
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                RoleChipButton(
-                    icon = Icons.Filled.Storefront,
-                    label = stringResource(R.string.trader),
-                    selected = currentRole == "TRADER",
-                    onClick = {
-                        HapticUtil.tick(context)
-                        if (isGuest) {
-                            appToast.warning(context.getString(R.string.settings_role_guest_toast))
-                        } else if (currentRole != "TRADER") {
-                            onRoleChange("TRADER")
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
     }
 }
@@ -906,7 +1253,7 @@ private fun ThemeModeOptions(
 ) {
     val context = LocalContext.current
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        AppThemeMode.entries.forEach { mode ->
+        AppThemeMode.values().forEach { mode ->
             val isSelected = mode == selected
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -963,8 +1310,8 @@ private fun ThemeModeOptions(
 @Composable
 private fun SettingsFooter() {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "CanLua v1.0.0", style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
-        Text(text = "GiaThinh \u00a9 2024", style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint.copy(alpha = 0.7f))
+        Text(text = "Cân Lúa v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)
+        Text(text = "Gia Thịnh \u00a9 2026", style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint.copy(alpha = 0.7f))
     }
 }
 
@@ -1016,11 +1363,9 @@ private fun RoleChangeDialog(
 
 @Composable
 private fun RestartConfirmDialog(
-    visible: Boolean,
     onDismiss: () -> Unit,
     onRestart: () -> Unit
 ) {
-    if (!visible) return
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,

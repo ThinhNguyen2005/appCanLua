@@ -23,9 +23,12 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,7 +40,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -134,7 +140,8 @@ fun PersonalInfoCard(
     phone: String, onPhone: (String) -> Unit,
     region: String, onRegion: (String) -> Unit,
     cccd: String, onCccd: (String) -> Unit,
-    onToggleEdit: () -> Unit
+    onToggleEdit: () -> Unit,
+    onCancelEdit: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -150,15 +157,40 @@ fun PersonalInfoCard(
                     color = AppColors.TextPrimary,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(
-                    onClick = onToggleEdit,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = if (editing) Icons.Filled.Save else Icons.Filled.Edit,
-                        contentDescription = stringResource(if (editing) R.string.save else R.string.edit),
-                        tint = AppColors.GreenPrimary
-                    )
+                if (editing) {
+                    if (onCancelEdit != null) {
+                        IconButton(
+                            onClick = onCancelEdit,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.action_cancel),
+                                tint = AppColors.TextSecondary
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onToggleEdit,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Save,
+                            contentDescription = stringResource(R.string.save),
+                            tint = AppColors.GreenPrimary
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = onToggleEdit,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = stringResource(R.string.edit),
+                            tint = AppColors.GreenPrimary
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -191,7 +223,8 @@ fun PersonalInfoCard(
                 label = "CCCD",
                 value = cccd,
                 onValueChange = onCccd,
-                keyboardType = KeyboardType.Number
+                keyboardType = KeyboardType.Number,
+                isSensitive = true
             )
         }
     }
@@ -204,8 +237,11 @@ private fun EditableRow(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isSensitive: Boolean = false
 ) {
+    var isSensitiveVisible by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -239,11 +275,31 @@ private fun EditableRow(
                     )
                 )
             } else {
+                val displayValue = if (value.isBlank()) {
+                    stringResource(R.string.not_updated)
+                } else if (isSensitive && !isSensitiveVisible) {
+                    if (value.length > 4) "•••• •••• ${value.takeLast(4)}" else "••••••••"
+                } else {
+                    value
+                }
                 Text(
-                    text = value.ifBlank { stringResource(R.string.not_updated) },
+                    text = displayValue,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (value.isBlank()) AppColors.TextHint else AppColors.TextPrimary,
                     fontWeight = FontWeight.Medium
+                )
+            }
+        }
+        if (!editing && isSensitive && value.isNotBlank()) {
+            IconButton(
+                onClick = { isSensitiveVisible = !isSensitiveVisible },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = if (isSensitiveVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription = if (isSensitiveVisible) "Ẩn số CCCD" else "Hiện số CCCD",
+                    tint = AppColors.TextHint,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }

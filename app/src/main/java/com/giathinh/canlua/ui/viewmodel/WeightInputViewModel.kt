@@ -6,7 +6,6 @@ import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.repository.SyncableCardRepository
 import com.giathinh.canlua.repository.SettingsRepository
-import com.giathinh.canlua.util.RiceCalculator
 import com.giathinh.canlua.util.TextToSpeechManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
