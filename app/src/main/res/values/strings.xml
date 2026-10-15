@@ -940,5 +940,10 @@
     <string name="compact_million">%1$s tr</string>
     <string name="compact_thousand">%1$sk</string>
     <string name="compact_ton">%1$s tấn</string>
+
+    <!-- values (vi) -->
+    <string name="ai_error_no_data">Vụ này chưa có phiếu cân nào để phân tích.</string>
+    <string name="ai_error_failed">Không thể kết nối AI. Vui lòng thử lại.</string>
+
 </resources>
 

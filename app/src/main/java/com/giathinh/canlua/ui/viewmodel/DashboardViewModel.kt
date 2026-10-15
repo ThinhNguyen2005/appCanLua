@@ -9,7 +9,6 @@ import com.giathinh.canlua.data.model.VarietyStat
 import com.giathinh.canlua.repository.AiChatRepository
 import com.giathinh.canlua.repository.CardRepository
 import com.giathinh.canlua.repository.ProfileRepository
-import com.giathinh.canlua.ui.util.DashboardFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +19,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.runtime.Immutable
+import com.giathinh.canlua.util.AnalyticsHelper
+import com.giathinh.canlua.util.PromptFormat
 import com.giathinh.canlua.util.calcDeltaPercent
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -45,17 +46,13 @@ sealed class AiAnalysisState {
     object Idle : AiAnalysisState()
     object Loading : AiAnalysisState()
     data class Success(val markdown: String) : AiAnalysisState()
-    data class Error(val message: String) : AiAnalysisState()
+
+    /** Mang mã lỗi, không mang chuỗi hiển thị: UI tự dịch theo ngôn ngữ người dùng. */
+    data class Error(val reason: Reason, val detail: String? = null) : AiAnalysisState() {
+        enum class Reason { NO_DATA, FAILED }
+    }
 }
 
-/**
- * Combined UI state for the entire dashboard. Emits atomically — prevents
- * "Flow Collection Avalanche" where 7-8 staggered flow emissions trigger
- * 5-7 rapid recompositions in the first frame.
- *
- * Used by both FarmerProfileScreen and TraderProfileScreen to consume dashboard
- * data via a single collectAsStateWithLifecycle() call instead of many.
- */
 @Immutable
 data class DashboardData(
     val seasons: List<String>,
@@ -67,7 +64,10 @@ data class DashboardData(
     val seasonsComparison: List<SeasonStats>,
     val varieties: List<VarietyStat>,
     val aiAnalysis: AiAnalysisState,
-    val isAggregated: Boolean
+    val isAggregated: Boolean,
+    // Tính sẵn ở ViewModel, UI chỉ hiển thị
+    val weightDeltaPercent: Double? = null,
+    val revenueDeltaPercent: Double? = null
 ) {
     companion object {
         val EMPTY = DashboardData(
@@ -83,17 +83,6 @@ data class DashboardData(
             isAggregated = false
         )
     }
-    val weightDeltaPercent: Double?
-        get() {
-            val cur = currentStats ?: return null
-            return calcDeltaPercent(cur.totalNetWeight, previousStats?.totalNetWeight)
-        }
-
-    val revenueDeltaPercent: Double?
-        get() {
-            val cur = currentStats ?: return null
-            return calcDeltaPercent(cur.totalRevenue, previousStats?.totalRevenue)
-        }
 }
 
 /**
@@ -117,7 +106,6 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _selectedSeason = MutableStateFlow<String?>(null)
-    val selectedSeason: StateFlow<String?> = _selectedSeason.asStateFlow()
 
     /** Danh sách vụ có dữ liệu trong DB. */
     val seasons: StateFlow<List<String>> = repository.getDistinctSeasons()
@@ -129,16 +117,18 @@ class DashboardViewModel @Inject constructor(
     val aiAnalysis: StateFlow<AiAnalysisState> = _aiAnalysis.asStateFlow()
 
     init {
-        // Auto-select vụ mới nhất khi data load lần đầu
-        combine(seasons, _selectedSeason) { list, selected ->
-            if (selected == null && list.isNotEmpty()) {
-                _selectedSeason.value = list.first()
+        // Tự chọn vụ mới nhất khi dữ liệu load lần đầu
+        seasons
+            .onEach { list ->
+                if (_selectedSeason.value == null && list.isNotEmpty()) {
+                    _selectedSeason.value = list.first()
+                }
             }
-        }.launchIn(viewModelScope)
+            .launchIn(viewModelScope)
 
-        // Reset AI analysis khi user đổi vụ — tránh hiển thị insights cũ cho vụ mới
+        // Đổi vụ thì xóa kết quả AI cũ
         _selectedSeason
-            .map { _aiAnalysis.value = AiAnalysisState.Idle }
+            .onEach { _aiAnalysis.value = AiAnalysisState.Idle }
             .launchIn(viewModelScope)
     }
 
@@ -179,7 +169,6 @@ class DashboardViewModel @Inject constructor(
      * chuyển từ skeleton sang UI thật — không dựa thời gian cố định.
      */
     private val _isAggregated = MutableStateFlow(false)
-    val isAggregated: StateFlow<Boolean> = _isAggregated.asStateFlow()
 
     /** So sánh 6 vụ gần nhất — dùng cho bar chart. */
     val seasonsComparison: StateFlow<List<SeasonStats>> = repository.getAllSeasonsComparison()
@@ -246,7 +235,13 @@ class DashboardViewModel @Inject constructor(
             seasonsComparison = seasonsComparisonVal,
             varieties = varietiesVal,
             aiAnalysis = aiAnalysisVal,
-            isAggregated = isAggregatedVal
+            isAggregated = isAggregatedVal,
+            weightDeltaPercent = currentStatsVal?.let {
+                calcDeltaPercent(it.totalNetWeight, previousStatsVal?.totalNetWeight)
+            },
+            revenueDeltaPercent = currentStatsVal?.let {
+                calcDeltaPercent(it.totalRevenue, previousStatsVal?.totalRevenue)
+            }
         )
     }
 
@@ -276,7 +271,7 @@ class DashboardViewModel @Inject constructor(
     fun analyzeWithAi() {
         val stats = currentStats.value ?: return
         if (stats.isEmpty) {
-            _aiAnalysis.value = AiAnalysisState.Error("Vụ này chưa có phiếu cân nào để phân tích.")
+            _aiAnalysis.value = AiAnalysisState.Error(AiAnalysisState.Error.Reason.NO_DATA)
             return
         }
         if (_aiAnalysis.value is AiAnalysisState.Loading) return
@@ -296,17 +291,16 @@ class DashboardViewModel @Inject constructor(
                 seasonSummary = summary,
                 profile = profile.value
             )
-            _aiAnalysis.value = if (result.isSuccess) {
-                AiAnalysisState.Success(result.getOrNull().orEmpty())
-            } else {
-                AiAnalysisState.Error(
-                    result.exceptionOrNull()?.message ?: "Không thể kết nối AI"
-                )
-            }
+            _aiAnalysis.value = result.fold(
+                onSuccess = { AiAnalysisState.Success(it ) },
+                onFailure = {
+                    AnalyticsHelper.logNonFatal(it, tag = "ai_season_analysis")
+                    AiAnalysisState.Error(AiAnalysisState.Error.Reason.FAILED, it.message)
+                }
+            )
         }
     }
 
-    /** Build context summary block đưa vào AI. Dùng tiếng Việt thuần để AI parse dễ. */
     private fun buildSeasonSummary(
         stats: SeasonStats,
         previous: SeasonStats?,
@@ -317,58 +311,54 @@ class DashboardViewModel @Inject constructor(
         val sb = StringBuilder()
         sb.append("📊 SỐ LIỆU VỤ ${stats.season}:\n")
         sb.append("- Tổng số phiếu cân: ${stats.cardCount}\n")
-        sb.append("- Sản lượng: ${DashboardFormatter.weight(stats.totalNetWeight)}\n")
-        sb.append("- Doanh thu: ${DashboardFormatter.moneyFull(stats.totalRevenue)}\n")
-        sb.append("- Đã thanh toán: ${DashboardFormatter.moneyFull(stats.totalPaid)}\n")
-        sb.append("- Công nợ còn lại: ${DashboardFormatter.moneyFull(stats.totalRemaining)}\n")
-        sb.append("- Giá TB: ${DashboardFormatter.moneyFull(stats.avgPricePerKg)}/kg\n")
+        sb.append("- Sản lượng: ${PromptFormat.weight(stats.totalNetWeight)}\n")
+        sb.append("- Doanh thu: ${PromptFormat.money(stats.totalRevenue)}\n")
+        sb.append("- Đã thanh toán: ${PromptFormat.money(stats.totalPaid)}\n")
+        sb.append("- Công nợ còn lại: ${PromptFormat.money(stats.totalRemaining)}\n")
+        sb.append("- Giá TB: ${PromptFormat.money(stats.avgPricePerKg)}/kg\n")
         if (stats.avgMoisture > 0) {
-            sb.append("- Độ ẩm TB: ${DashboardFormatter.percent(stats.avgMoisture)}\n")
+            sb.append("- Độ ẩm TB: ${PromptFormat.percent(stats.avgMoisture)}\n")
         }
         sb.append("- Tổng số bao: ${stats.totalBags}\n")
 
-        // Vụ trước để tính delta
         if (previous != null) {
             sb.append("\n📈 VỤ TRƯỚC (${previous.season}) ĐỂ SO SÁNH:\n")
-            sb.append("- Sản lượng: ${DashboardFormatter.weight(previous.totalNetWeight)}\n")
-            sb.append("- Doanh thu: ${DashboardFormatter.moneyFull(previous.totalRevenue)}\n")
+            sb.append("- Sản lượng: ${PromptFormat.weight(previous.totalNetWeight)}\n")
+            sb.append("- Doanh thu: ${PromptFormat.money(previous.totalRevenue)}\n")
             sb.append("- Số phiếu: ${previous.cardCount}\n")
-            DashboardFormatter.deltaPercent(stats.totalNetWeight, previous.totalNetWeight)?.let {
-                sb.append("- Delta sản lượng: ${DashboardFormatter.formatDelta(it)}\n")
+            calcDeltaPercent(stats.totalNetWeight, previous.totalNetWeight)?.let {
+                sb.append("- Delta sản lượng: ${PromptFormat.delta(it)}\n")
             }
-            DashboardFormatter.deltaPercent(stats.totalRevenue, previous.totalRevenue)?.let {
-                sb.append("- Delta doanh thu: ${DashboardFormatter.formatDelta(it)}\n")
+            calcDeltaPercent(stats.totalRevenue, previous.totalRevenue)?.let {
+                sb.append("- Delta doanh thu: ${PromptFormat.delta(it)}\n")
             }
         } else {
             sb.append("\n📈 VỤ TRƯỚC: Không có dữ liệu (đây là vụ đầu tiên).\n")
         }
 
-        // Phân bổ giống lúa
         if (varieties.isNotEmpty()) {
             sb.append("\n🌾 PHÂN BỔ GIỐNG LÚA TRONG VỤ:\n")
             val totalVariety = varieties.sumOf { it.weight }
             varieties.forEach { v ->
                 val pct = if (totalVariety > 0) v.weight / totalVariety * 100 else 0.0
-                sb.append("- ${v.variety}: ${DashboardFormatter.weight(v.weight)} " +
-                        "(${DashboardFormatter.percent(pct)}, ${v.count} phiếu)\n")
+                sb.append("- ${v.variety}: ${PromptFormat.weight(v.weight)} " +
+                        "(${PromptFormat.percent(pct)}, ${v.count} phiếu)\n")
             }
         }
 
-        // Top traders
         if (topTraders.isNotEmpty()) {
             sb.append("\n🤝 TOP THƯƠNG LÁI:\n")
             topTraders.take(3).forEachIndexed { idx, t ->
                 sb.append("${idx + 1}. ${t.traderName}: " +
-                        "${DashboardFormatter.moneyFull(t.revenue)} (${t.deals} phiếu)\n")
+                        "${PromptFormat.money(t.revenue)} (${t.deals} phiếu)\n")
             }
         }
 
-        // Lịch sử các vụ gần nhất (≤ 6 vụ)
         if (comparison.size > 1) {
             sb.append("\n📅 LỊCH SỬ ${comparison.size} VỤ GẦN NHẤT:\n")
             comparison.forEach { c ->
-                sb.append("- ${c.season}: ${DashboardFormatter.weight(c.totalNetWeight)} · " +
-                        "${DashboardFormatter.moneyFull(c.totalRevenue)} · ${c.cardCount} phiếu\n")
+                sb.append("- ${c.season}: ${PromptFormat.weight(c.totalNetWeight)} · " +
+                        "${PromptFormat.money(c.totalRevenue)} · ${c.cardCount} phiếu\n")
             }
         }
 

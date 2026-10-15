@@ -908,4 +908,8 @@
     <string name="compact_thousand">%1$s千</string>
     <string name="compact_ton">%1$s吨</string>
 
+    <!-- values-zh -->
+    <string name="ai_error_no_data">本季暂无称重单可供分析。</string>
+    <string name="ai_error_failed">无法连接 AI，请重试。</string>
+
 </resources>

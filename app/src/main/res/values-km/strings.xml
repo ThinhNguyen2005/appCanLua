@@ -905,4 +905,8 @@
     <string name="compact_million">%1$s លាន</string>
     <string name="compact_thousand">%1$s ពាន់</string>
     <string name="compact_ton">%1$s តោន</string>
+
+    <!-- values-km -->
+    <string name="ai_error_no_data">រដូវកាលនេះមិនទាន់មានវិក្កយបត្រថ្លឹងសម្រាប់វិភាគទេ។</string>
+    <string name="ai_error_failed">មិនអាចតភ្ជាប់ AI បានទេ។ សូមព្យាយាមម្តងទៀត។</string>
 </resources>

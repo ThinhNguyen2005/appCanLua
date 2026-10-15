@@ -56,7 +56,6 @@ import com.giathinh.canlua.ui.screen.profile.PremiumStatusCard
 import com.giathinh.canlua.ui.screen.profile.PremiumUpsellCard
 import com.giathinh.canlua.ui.screen.profile.GuestLoginPromoCard
 import com.giathinh.canlua.ui.theme.AppColors
-import com.giathinh.canlua.ui.util.DashboardFormatter
 import com.giathinh.canlua.ui.util.rememberDashboardFormatter
 import com.giathinh.canlua.ui.viewmodel.DashboardData
 import com.giathinh.canlua.ui.viewmodel.DashboardViewModel

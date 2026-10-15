@@ -909,5 +909,9 @@
     <string name="compact_thousand">%1$sk</string>
     <string name="compact_ton">%1$s tons</string>
 
+    <!-- values-en -->
+    <string name="ai_error_no_data">This season has no weighing slips to analyze.</string>
+    <string name="ai_error_failed">Unable to reach the AI. Please try again.</string>
+
 </resources>
 

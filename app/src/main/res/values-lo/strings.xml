@@ -902,4 +902,15 @@
     <string name="compact_thousand">%1$s ພັນ</string>
     <string name="compact_ton">%1$s ໂຕນ</string>
 
+
+
+
+
+
+
+
+    <!-- values-lo -->
+    <string name="ai_error_no_data">ລະດູການນີ້ຍັງບໍ່ມີໃບຊັ່ງເພື່ອວິເຄາະ.</string>
+    <string name="ai_error_failed">ບໍ່ສາມາດເຊື່ອມຕໍ່ AI ໄດ້. ກະລຸນາລອງໃໝ່.</string>
+
 </resources>
