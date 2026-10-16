@@ -60,6 +60,7 @@ import com.giathinh.canlua.repository.SyncStatus
 import com.giathinh.canlua.ui.component.CardItem
 import com.giathinh.canlua.ui.component.CreateCardBottomSheet
 import com.giathinh.canlua.ui.component.CreateCardMode
+import com.giathinh.canlua.ui.component.cardlist.CardListCreateFab
 import com.giathinh.canlua.ui.component.cardlist.CardListEmptyState
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterBar
 import com.giathinh.canlua.ui.component.cardlist.CardListFilterSheet
@@ -381,32 +382,17 @@ fun CardListScreenContent(
             }
         }
 
-        AnimatedVisibility(
+        CardListCreateFab(
             visible = fabVisible,
-            enter = fadeIn(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                )
-            ) + slideInVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                ),
-                initialOffsetY = { it / 2 }
-            ),
-            exit = fadeOut(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + slideOutVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
-                targetOffsetY = { it / 2 }
-            ),
+            onClick = {
+                HapticUtil.tick(context)
+                if (!isPremium && cardsToday >= PremiumState.FREE_CARDS_PER_DAY) {
+                    showPremiumGate = true
+                    AnalyticsHelper.premiumGateShown(cardsToday)
+                } else {
+                    showCreateDialog = true
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
@@ -414,33 +400,7 @@ fun CardListScreenContent(
                     end = AppDimensions.SpacingMd,
                     bottom = AppDimensions.BottomBarHeight + AppDimensions.SpacingMd
                 )
-        ) {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    HapticUtil.tick(context)
-                    if (!isPremium && cardsToday >= PremiumState.FREE_CARDS_PER_DAY) {
-                        showPremiumGate = true
-                        AnalyticsHelper.premiumGateShown(cardsToday)
-                    } else {
-                        showCreateDialog = true
-                    }
-                },
-                containerColor = AppColors.GreenPrimary,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 4.dp,
-                    pressedElevation = 8.dp
-                ),
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = {
-                    Text(
-                        text = stringResource(R.string.card_list_create_card_action),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            )
-        }
+        )
     }
 
     if (showCreateDialog) {
