@@ -71,6 +71,7 @@ import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.AppDimensions
 import com.giathinh.canlua.ui.util.BottomBarVisibility
+import com.giathinh.canlua.ui.util.isScrollingUp
 import com.giathinh.canlua.ui.viewmodel.CardListViewModel
 import com.giathinh.canlua.ui.viewmodel.DeleteCardEvent
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel

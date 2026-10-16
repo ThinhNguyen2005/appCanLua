@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -146,7 +147,6 @@ fun CardDetailScreenContent(
     val lockedSuccessMsg = stringResource(R.string.card_detail_locked_success)
     val unlockedSuccessMsg = stringResource(R.string.card_detail_unlocked_success)
     val deleteBlockedUnpaidMsg = stringResource(R.string.card_detail_delete_blocked_unpaid)
-    val deletedBagFmt = stringResource(R.string.card_detail_deleted_bag, "%d")
     val pdfPremiumRequiredMsg = stringResource(R.string.card_detail_pdf_premium_required)
     val pdfSubjectTemplate = stringResource(R.string.card_detail_pdf_subject)
     val pdfShareTitle = stringResource(R.string.card_detail_pdf_share_title)
@@ -355,7 +355,9 @@ fun CardDetailScreenContent(
             ) {
                 LazyColumn(
                     state = scrollState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollDir),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
@@ -628,7 +630,7 @@ fun CardDetailScreenContent(
                         viewModel.deleteWeightEntry(entry)
                         entryActionTarget = null
 
-                        appToast.success(deletedBagFmt.format(entryActionGlobalIndex))
+                        appToast.success(context.getString(R.string.card_detail_deleted_bag, entryActionGlobalIndex))
                     }
                 )
             }

@@ -91,6 +91,8 @@ import com.giathinh.canlua.ui.component.market.NewsSection
 import com.giathinh.canlua.ui.component.market.PriceTrendChart
 import com.giathinh.canlua.ui.component.market.RicePriceCard
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.util.BottomBarVisibility
+import com.giathinh.canlua.ui.util.isScrollingUp
 import com.giathinh.canlua.ui.viewmodel.MarketViewModel
 import com.giathinh.canlua.ui.viewmodel.NewsViewModel
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel

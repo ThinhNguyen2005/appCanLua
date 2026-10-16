@@ -107,10 +107,16 @@ fun AiInsightsCard(
                     )
                     is AiAnalysisState.Loading -> LoadingContent(accentColor = aiAccent)
                     is AiAnalysisState.Success -> SuccessContent(markdown = state.markdown)
-                    is AiAnalysisState.Error -> ErrorContent(
-                        message = state.message,
-                        onRetry = onAnalyze
-                    )
+                    is AiAnalysisState.Error -> {
+                        val errorMessage = when (state.reason) {
+                            AiAnalysisState.Error.Reason.NO_DATA -> stringResource(R.string.ai_error_no_data)
+                            AiAnalysisState.Error.Reason.FAILED -> state.detail ?: stringResource(R.string.ai_error_failed)
+                        }
+                        ErrorContent(
+                            message = errorMessage,
+                            onRetry = onAnalyze
+                        )
+                    }
                 }
             }
         }
