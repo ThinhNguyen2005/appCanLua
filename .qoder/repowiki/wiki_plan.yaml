@@ -1,0 +1,36 @@
+version: 1
+
+scope:
+  include:
+    - "app/src/**"
+  exclude:
+    - ".kotlin/**"
+    - "docs/**"
+    - "gas/**"
+    - "tools/**"
+    - "public/**"
+    - "gradle/**"
+
+repowiki:
+  template: "architecture"
+  notes:
+    - text: "This is a Kotlin 2.3 / Jetpack Compose offline-first Android app (minSdk 24, targetSdk 37) using MVVM + Clean Architecture with unidirectional data flow via StateFlow and coroutines; treat this layering as canonical when describing modules."
+      author: user
+    - text: "Local persistence is AndroidX Room 2.8.4, schema v18 with 8 entities and an explicit migration chain; never describe the DB version or entity count differently."
+      author: user
+    - text: "Cloud sync is bidirectional to Firebase Firestore and Supabase, scheduled idempotently via WorkManager; the app must remain fully functional with zero network. Follow this offline-first framing in any sync-related page."
+      author: user
+    - text: "The app serves three roles — FARMER, TRADER, and GUEST — with role-conditional portals; AI features run through OpenRouter (Gemini Flash) with RAG context from app/src/main/assets knowledge JSON files."
+      author: user
+    - text: "Do not describe or analyze the .agents/ AG Kit tooling, docs/ design specs, or gas/ Google Apps Script files; they are outside the documented scope of this wiki."
+      author: user
+  documents: []
+
+knowledgecard:
+  notes:
+    - text: "Break knowledge cards down by natural module under app/src/main/java/com/giathinh/canlua: data layer (database/dao/model/converter/remote), repository, ui (screen/component/viewmodel/theme), di, auth, ads, and util (RiceCalculator, PdfExporter, formatters). One card per coherent module; do not merge ui and repository."
+      author: user
+    - text: "For each module card, capture its boundary (which layers it may depend on) and its role in the offline-first pipeline: UI → ViewModel → Repository → Room (source of truth) → WorkManager sync → Firestore/Supabase."
+      author: user
+    - text: "Note the UX conventions the code enforces: touch targets >= 48dp (keypad >= 56dp), haptics via HapticUtil.tick, and the Purple Ban palette defined by DESIGN.md (GreenPrimary / GoldDark / SurfaceContainer) so module cards stay consistent with them."
+      author: user

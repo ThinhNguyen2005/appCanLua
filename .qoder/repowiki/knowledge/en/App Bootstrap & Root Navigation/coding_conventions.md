@@ -1,0 +1,4 @@
+- Long-running initialization and reactive wiring in `CanLuaApplication` are launched on a private `CoroutineScope(SupervisorJob() + Dispatchers.IO)` rather than per-call scopes.
+- Heavy dependencies injected into `CanLuaApplication` (e.g. `CardRepository`, `SyncManager`) are wrapped in `Lazy<>` to defer their construction until first use.
+- Navigation destinations are declared as `private const val ROOT_ROUTE_*` constants and referenced uniformly across the `LaunchedEffect` routing logic and the `NavHost` composable blocks.
+- Deep-link handling is duplicated in two places — `navDeepLink { uriPattern = ... }` in code and an `autoVerify=true` `<intent-filter>` in `AndroidManifest.xml` — keeping runtime and manifest URIs in sync.

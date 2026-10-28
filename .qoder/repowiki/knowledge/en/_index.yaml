@@ -1,0 +1,18 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: master
+nodes_managed: true
+exported_at: "2026-10-27T13:49:35Z"
+modules:
+    "":
+        dir_name: App Bootstrap & Root Navigation
+        title: App Bootstrap & Root Navigation
+        scope:
+            - app/src/main/java/com/giathinh/canlua/CanLuaApplication.kt
+            - app/src/main/java/com/giathinh/canlua/MainActivity.kt
+            - app/src/main/AndroidManifest.xml
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: ""
+title: App Bootstrap & Root Navigation
+scope:
+    - app/src/main/java/com/giathinh/canlua/CanLuaApplication.kt
+    - app/src/main/java/com/giathinh/canlua/MainActivity.kt
+    - app/src/main/AndroidManifest.xml
+source_files: []
+depends_on: []
+related_to: []

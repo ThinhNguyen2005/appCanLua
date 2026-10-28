@@ -1,0 +1,1 @@
+Google Maps API key is injected at build time via `local.properties` as `MAPS_API_KEY` (referenced as `${MAPS_API_KEY}` in the manifest). WorkManager's default `androidx.startup.InitializationProvider` is explicitly removed so `HiltWorkerFactory` can be supplied — without this, `SyncWorker` construction fails with `NoSuchMethodException`.

@@ -1,0 +1,1 @@
+Kotlin + AndroidX Compose + Navigation Compose; Dagger/Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `HiltWorkerFactory`); Firebase App Check (Play Integrity / Debug providers), Firebase Remote Config; WorkManager with custom worker factory; Google Mobile Ads test App ID; Android App Links for deep linking.

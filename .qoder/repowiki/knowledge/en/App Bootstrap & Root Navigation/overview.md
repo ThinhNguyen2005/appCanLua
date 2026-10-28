@@ -1,0 +1,1 @@
+Application entry point that bootstraps Firebase, Hilt WorkManager, analytics, premium state and sync, then hosts the Compose navigation graph routing between splash, auth, profile setup and main screens.
