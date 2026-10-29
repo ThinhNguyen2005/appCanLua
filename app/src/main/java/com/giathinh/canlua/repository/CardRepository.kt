@@ -49,8 +49,45 @@ class CardRepository @Inject constructor(
         list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
     }
 
+    suspend fun getCardsWithDetails(uid: String = uid()): List<com.giathinh.canlua.data.model.CardWithDetails> {
+        val details = cardDao.getCardsWithDetails(uid)
+        return details.map { d ->
+            d.copy(card = d.card.copy(cccd = CccdCrypto.decrypt(d.card.cccd, d.card.ownerUid)))
+        }
+    }
+
+    suspend fun importBackupBatch(
+        ownerUid: String,
+        wrappers: List<com.giathinh.canlua.util.BackupManager.CardBackupWrapper>
+    ): Int = db.withTransaction {
+        var count = 0
+        for (wrapper in wrappers) {
+            val cardCopy = wrapper.card.copy(
+                id = 0,
+                ownerUid = ownerUid,
+                cccd = CccdCrypto.encrypt(wrapper.card.cccd, ownerUid)
+            )
+            val newCardId = cardDao.insertCard(cardCopy)
+            for (entry in wrapper.entries) {
+                val entryCopy = entry.copy(id = 0, cardId = newCardId)
+                weightEntryDao.insertWeightEntry(entryCopy)
+            }
+            for (tx in wrapper.transactions) {
+                val txCopy = tx.copy(id = 0, cardId = newCardId)
+                transactionDao.insertTransaction(txCopy)
+            }
+            updateCardCalculations(newCardId)
+            count++
+        }
+        count
+    }
+
+    fun getCardByIdFlow(id: Long): Flow<Card?> = cardDao.getCardByIdFlow(id, uid()).map { card ->
+        card?.copy(cccd = CccdCrypto.decrypt(card.cccd, card.ownerUid))
+    }
+
     suspend fun getCardById(id: Long): Card? = cardDao.getCardById(id, uid())?.let {
-        it.copy(cccd = CccdCrypto.decrypt(it.cccd))
+        it.copy(cccd = CccdCrypto.decrypt(it.cccd, it.ownerUid))
     }
 
     /**

@@ -45,7 +45,7 @@ class DashboardFormatter(private val res: Resources? = null) {
         return "${compactNf.format(value)}%"
     }
 
-    fun deltaPercent(current: Double, previous: Double): Double? =
+    fun deltaPercent(current: Double, previous: Double?): Double? =
         Companion.deltaPercent(current, previous)
 
     fun formatDelta(delta: Double?): String =
@@ -86,8 +86,8 @@ class DashboardFormatter(private val res: Resources? = null) {
          * Tính delta % giữa current và previous.
          * Trả về null nếu previous = 0 (không tính được tỉ lệ thay đổi).
          */
-        fun deltaPercent(current: Double, previous: Double): Double? {
-            if (previous == 0.0) return null
+        fun deltaPercent(current: Double, previous: Double?): Double? {
+            if (previous == null || previous == 0.0) return null
             return ((current - previous) / previous) * 100.0
         }
 

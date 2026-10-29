@@ -2,59 +2,73 @@ package com.giathinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.giathinh.canlua.data.location.LocationProvider
 import com.giathinh.canlua.data.model.Card
+import com.giathinh.canlua.data.model.Transaction
+import com.giathinh.canlua.data.model.TransactionType
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.repository.SyncableCardRepository
-import com.giathinh.canlua.data.location.LocationProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CardDetailViewModel @Inject constructor(
     private val repository: SyncableCardRepository,
     private val locationProvider: LocationProvider
 ) : ViewModel() {
 
-    private val _currentCard = MutableStateFlow<Card?>(null)
-    val currentCard: StateFlow<Card?> = _currentCard.asStateFlow()
+    private val _cardId = MutableStateFlow<Long?>(null)
 
-    private val _weightEntries = MutableStateFlow<List<WeightEntry>>(emptyList())
-    val weightEntries: StateFlow<List<WeightEntry>> = _weightEntries.asStateFlow()
+    val currentCard: StateFlow<Card?> = _cardId
+        .flatMapLatest { id ->
+            if (id == null || id <= 0L) flowOf(null)
+            else repository.getCardByIdFlow(id)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private var weightEntriesJob: Job? = null
+    val weightEntries: StateFlow<List<WeightEntry>> = _cardId
+        .flatMapLatest { id ->
+            if (id == null || id <= 0L) flowOf(emptyList())
+            else repository.getWeightEntriesByCardId(id)
+        }
+        .onEach { _isLoading.value = false }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun loadCardById(cardId: Long) {
-        weightEntriesJob?.cancel()
-        weightEntriesJob = viewModelScope.launch(Dispatchers.IO) {
+        if (_cardId.value != cardId) {
             _isLoading.value = true
-            val card = repository.getCardById(cardId)
-            _currentCard.value = card
+            _cardId.value = cardId
+        } else {
+            _isLoading.value = false
+        }
+    }
 
-            if (card != null) {
-                repository.getWeightEntriesByCardId(cardId).collect { entries ->
-                    _weightEntries.value = entries
-                    _isLoading.value = false
-                }
-            } else {
-                _isLoading.value = false
+    private fun updateCardField(cardId: Long, recalculate: Boolean = true, transform: (Card) -> Card) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val card = repository.getCardById(cardId) ?: return@launch
+            repository.updateCard(transform(card))
+            if (recalculate) {
+                repository.updateCardCalculations(cardId)
             }
         }
     }
 
     fun updateCard(card: Card) {
-        val current = _currentCard.value
-        if (current != null && current.id == card.id) {
-            _currentCard.value = card
-        }
         viewModelScope.launch(Dispatchers.IO) {
             val oldCard = repository.getCardById(card.id) ?: return@launch
             repository.updateCard(card)
@@ -63,10 +77,10 @@ class CardDetailViewModel @Inject constructor(
             val depositDiff = card.depositAmount - oldCard.depositAmount
             if (depositDiff != 0.0) {
                 repository.insertTransaction(
-                    com.giathinh.canlua.data.model.Transaction(
+                    Transaction(
                         cardId = card.id,
                         amount = depositDiff,
-                        type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT,
+                        type = TransactionType.DEPOSIT,
                         description = "Cập nhật tiền cọc"
                     )
                 )
@@ -76,28 +90,22 @@ class CardDetailViewModel @Inject constructor(
             val paidDiff = card.paidAmount - oldCard.paidAmount
             if (paidDiff != 0.0) {
                 repository.insertTransaction(
-                    com.giathinh.canlua.data.model.Transaction(
+                    Transaction(
                         cardId = card.id,
                         amount = paidDiff,
-                        type = com.giathinh.canlua.data.model.TransactionType.PAYMENT,
+                        type = TransactionType.PAYMENT,
                         description = "Cập nhật đã trả"
                     )
                 )
                 needRecalc = true
             }
 
-            if (needRecalc || 
+            if (needRecalc ||
                 oldCard.pricePerKg != card.pricePerKg ||
                 oldCard.impurityWeight != card.impurityWeight ||
                 oldCard.moisturePercent != card.moisturePercent
             ) {
                 repository.updateCardCalculations(card.id)
-                loadCardById(card.id)
-            } else {
-                val latestCard = repository.getCardById(card.id)
-                if (latestCard != null) {
-                    _currentCard.value = latestCard
-                }
             }
         }
     }
@@ -109,102 +117,33 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateCardName(cardId: Long, name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (name.isBlank()) return@launch
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(name = name.trim()))
-            }
-        }
+        if (name.isBlank()) return
+        updateCardField(cardId, recalculate = false) { it.copy(name = name.trim()) }
     }
 
-    fun updateCardBagWeight(cardId: Long, bagWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                val updatedCard = it.copy(bagWeight = bagWeight)
-                repository.updateCard(updatedCard)
-                repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardBagWeight(cardId: Long, bagWeight: Double) =
+        updateCardField(cardId) { it.copy(bagWeight = bagWeight) }
 
-    fun updateCardImpurityWeight(cardId: Long, impurityWeight: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                val updatedCard = it.copy(impurityWeight = impurityWeight)
-                repository.updateCard(updatedCard)
-                repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardImpurityWeight(cardId: Long, impurityWeight: Double) =
+        updateCardField(cardId) { it.copy(impurityWeight = impurityWeight) }
 
-    fun updateCardPricePerKg(cardId: Long, pricePerKg: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                val updatedCard = it.copy(pricePerKg = pricePerKg)
-                repository.updateCard(updatedCard)
-                repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardPricePerKg(cardId: Long, pricePerKg: Double) =
+        updateCardField(cardId) { it.copy(pricePerKg = pricePerKg) }
 
-    fun updateCardMoisture(cardId: Long, moisturePercent: Double) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                val updatedCard = it.copy(moisturePercent = moisturePercent)
-                repository.updateCard(updatedCard)
-                repository.updateCardCalculations(cardId)
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardMoisture(cardId: Long, moisturePercent: Double) =
+        updateCardField(cardId) { it.copy(moisturePercent = moisturePercent) }
 
-    fun updateCardRiceVariety(cardId: Long, variety: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(riceVariety = variety))
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardRiceVariety(cardId: Long, variety: String) =
+        updateCardField(cardId, recalculate = false) { it.copy(riceVariety = variety) }
 
-    fun updateCardSeasonLabel(cardId: Long, seasonLabel: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(seasonLabel = seasonLabel))
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardSeasonLabel(cardId: Long, seasonLabel: String) =
+        updateCardField(cardId, recalculate = false) { it.copy(seasonLabel = seasonLabel) }
 
-    fun updateCardTraderPhone(cardId: Long, phone: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(traderPhone = phone.trim()))
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardTraderPhone(cardId: Long, phone: String) =
+        updateCardField(cardId, recalculate = false) { it.copy(traderPhone = phone.trim()) }
 
-    fun updateCardFieldAddress(cardId: Long, address: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                repository.updateCard(it.copy(fieldAddress = address.trim()))
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun updateCardFieldAddress(cardId: Long, address: String) =
+        updateCardField(cardId, recalculate = false) { it.copy(fieldAddress = address.trim()) }
 
     fun refreshFieldLocation(cardId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -218,7 +157,6 @@ class CardDetailViewModel @Inject constructor(
                     fieldAddress = address.ifBlank { card.fieldAddress }
                 )
             )
-            loadCardById(cardId)
         }
     }
 
@@ -227,28 +165,19 @@ class CardDetailViewModel @Inject constructor(
             val card = repository.getCardById(cardId) ?: return@launch
             if (card.isLocked) return@launch
             repository.insertTransaction(
-                com.giathinh.canlua.data.model.Transaction(
+                Transaction(
                     cardId = cardId,
                     amount = amount,
-                    type = com.giathinh.canlua.data.model.TransactionType.PAYMENT,
+                    type = TransactionType.PAYMENT,
                     description = description ?: "Thanh toán thêm"
                 )
             )
             repository.updateCardCalculations(cardId)
-            loadCardById(cardId)
         }
     }
 
-    fun toggleCardLock(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId)
-            card?.let {
-                val updatedCard = it.copy(isLocked = !it.isLocked)
-                repository.updateCard(updatedCard)
-                loadCardById(cardId)
-            }
-        }
-    }
+    fun toggleCardLock(cardId: Long) =
+        updateCardField(cardId, recalculate = false) { it.copy(isLocked = !it.isLocked) }
 
     fun updateCardWeighOptions(
         cardId: Long,
@@ -257,27 +186,20 @@ class CardDetailViewModel @Inject constructor(
         bagSampleCount: Int,
         bagSampleTotalWeight: Double,
         weightInputMode: String
-    ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId) ?: return@launch
-            val updated = card.copy(
-                impurityIsPercent = impurityIsPercent,
-                bagMethodIsSampling = bagMethodIsSampling,
-                bagSampleCount = bagSampleCount,
-                bagSampleTotalWeight = bagSampleTotalWeight,
-                weightInputMode = weightInputMode
-            )
-            repository.updateCard(updated)
-            repository.updateCardCalculations(cardId)
-            loadCardById(cardId)
-        }
+    ) = updateCardField(cardId) {
+        it.copy(
+            impurityIsPercent = impurityIsPercent,
+            bagMethodIsSampling = bagMethodIsSampling,
+            bagSampleCount = bagSampleCount,
+            bagSampleTotalWeight = bagSampleTotalWeight,
+            weightInputMode = weightInputMode
+        )
     }
 
     fun updateWeightEntry(entry: WeightEntry) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.updateWeightEntry(entry)
             repository.updateCardCalculations(entry.cardId)
-            loadCardById(entry.cardId)
         }
     }
 
@@ -285,11 +207,6 @@ class CardDetailViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteWeightEntry(entry)
             repository.updateCardCalculations(entry.cardId)
-            loadCardById(entry.cardId)
         }
-    }
-
-    override fun onCleared() {
-        weightEntriesJob?.cancel()
     }
 }

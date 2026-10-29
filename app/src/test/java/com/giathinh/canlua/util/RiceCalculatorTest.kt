@@ -58,7 +58,7 @@ class RiceCalculatorTest {
             impurityWeight = 10.0,
             moisturePercent = 20.0
         )
-        assertEquals(874.4, result, eps)
+        assertEquals(874.42, result, eps)
     }
 
     @Test
@@ -154,7 +154,7 @@ class RiceCalculatorTest {
             moisturePercent = 22.0
         )
         // 1000 × 78/86 = 906.9767... → làm tròn 1 chữ số: 907.0
-        assertEquals(907.0, net, eps)
+        assertEquals(906.98, net, eps)
     }
 
     /**

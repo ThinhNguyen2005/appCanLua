@@ -1,9 +1,9 @@
 package com.giathinh.canlua.util
 
 /**
- * Công cụ tính toán chuẩn ngành lúa gạo.
- * - Quy đổi khối lượng theo độ ẩm (standard 14%)
- * - Khối lượng thực (trừ bao bì + tạp chất)
+ * Adapter tính toán chuẩn ngành lúa gạo.
+ * Ủy quyền (delegate) tính toán sang [RiceSettlement] để bảo đảm Single Source of Truth,
+ * triệt tiêu sai số làm tròn giữa UI preview và Database.
  */
 object RiceCalculator {
 
@@ -24,6 +24,7 @@ object RiceCalculator {
 
     /**
      * Khối lượng thực = (Thô - Bao bì - Tạp chất) rồi quy đổi theo độ ẩm.
+     * Ủy quyền sang [RiceSettlement.compute] để đồng nhất với Database.
      */
     fun calcNetWeight(
         rawWeight: Double,
@@ -31,10 +32,16 @@ object RiceCalculator {
         impurityWeight: Double,
         moisturePercent: Double
     ): Double {
+        if (rawWeight <= 0.0) return 0.0
         val gross = rawWeight - bagWeight - impurityWeight
         if (gross <= 0.0) return 0.0
-        val net = calcStandardWeight(gross, moisturePercent)
-        return (Math.round(net * 10.0) / 10.0).coerceAtLeast(0.0)
+        val input = RiceSettlement.Input(
+            entryWeightsKg = listOf(rawWeight),
+            bagWeightKg = bagWeight,
+            impurityValue = impurityWeight,
+            moisturePercent = moisturePercent
+        )
+        return RiceSettlement.compute(input).totalNetKg
     }
 
     /**
@@ -78,7 +85,7 @@ object RiceCalculator {
 
     /**
      * Tính KL thực có ý thức về mode — wrapper bao trùm cả 2 quyết định mode
-     * (bao bì A/B, tạp kg/%). Dùng trong CardRepository khi recalc per-card.
+     * (bao bì A/B, tạp kg/%). Ủy quyền sang [RiceSettlement.compute].
      */
     fun calcNetWeightWithModes(
         totalRaw: Double,
@@ -91,18 +98,24 @@ object RiceCalculator {
         impurityIsPercent: Boolean,
         moisturePercent: Double
     ): Double {
-        val totalBag = calcTotalBagWeight(
-            bagCount = bagCount,
-            bagWeight = bagWeight,
-            methodIsSampling = bagMethodIsSampling,
-            sampleCount = bagSampleCount,
-            sampleTotalWeight = bagSampleTotalWeight
+        if (totalRaw <= 0.0) return 0.0
+        val entries = if (bagCount > 1) {
+            val avg = totalRaw / bagCount
+            List(bagCount) { avg }
+        } else {
+            listOf(totalRaw)
+        }
+        val input = RiceSettlement.Input(
+            entryWeightsKg = entries,
+            bagWeightKg = bagWeight,
+            bagMethodIsSampling = bagMethodIsSampling,
+            bagSampleCount = bagSampleCount,
+            bagSampleTotalWeightKg = bagSampleTotalWeight,
+            impurityValue = impurityValue,
+            impurityIsPercent = impurityIsPercent,
+            moisturePercent = moisturePercent
         )
-        val rawAfterBag = (totalRaw - totalBag).coerceAtLeast(0.0)
-        val totalImpurity = calcTotalImpurity(rawAfterBag, impurityValue, impurityIsPercent)
-        val gross = (rawAfterBag - totalImpurity).coerceAtLeast(0.0)
-        val net = calcStandardWeight(gross, moisturePercent)
-        return (Math.round(net * 10.0) / 10.0).coerceAtLeast(0.0)
+        return RiceSettlement.compute(input).totalNetKg
     }
 
     /** Thành tiền = Khối lượng thực × Đơn giá */

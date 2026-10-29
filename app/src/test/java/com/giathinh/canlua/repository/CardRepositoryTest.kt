@@ -92,7 +92,8 @@ class CardRepositoryTest {
         assertEquals("user-123", captured.ownerUid)
         assertTrue(captured.lastModifiedMs > 0L)
         // Verify CCCD is encrypted
-        assertEquals(CccdCrypto.encrypt("123456789"), captured.cccd)
+        assertTrue(captured.cccd?.startsWith("v2:") == true)
+        assertEquals("123456789", CccdCrypto.decrypt(captured.cccd, captured.ownerUid))
     }
 
     @Test
@@ -120,7 +121,8 @@ class CardRepositoryTest {
         // Verify original date is preserved and NOT overwritten with System.currentTimeMillis()
         assertEquals(originalDate.time, captured.date.time)
         assertTrue(captured.lastModifiedMs > 10L)
-        assertEquals(CccdCrypto.encrypt("123456789"), captured.cccd)
+        assertTrue(captured.cccd?.startsWith("v2:") == true)
+        assertEquals("123456789", CccdCrypto.decrypt(captured.cccd, captured.ownerUid))
     }
 
     @Test
@@ -215,5 +217,39 @@ class CardRepositoryTest {
 
         assertEquals(1, count)
         coVerify(exactly = 1) { weightEntryDao.insertWeightEntry(any()) }
+    }
+
+    @Test
+    fun `getCardsWithDetails should fetch details and decrypt CCCD`() = runTest {
+        val encryptedCccd = CccdCrypto.encrypt("037092111222", "user-123")
+        val card = Card(id = 1L, name = "Farmer", date = Date(0L), ownerUid = "user-123", cccd = encryptedCccd)
+        val details = com.giathinh.canlua.data.model.CardWithDetails(card = card, entries = emptyList(), transactions = emptyList())
+        coEvery { cardDao.getCardsWithDetails("user-123") } returns listOf(details)
+
+        val result = repository.getCardsWithDetails("user-123")
+
+        assertEquals(1, result.size)
+        assertEquals("037092111222", result[0].card.cccd)
+    }
+
+    @Test
+    fun `importBackupBatch should insert cards, entries, txs and update calculations atomically`() = runTest {
+        coEvery { cardDao.insertCard(any()) } returns 500L
+        coEvery { weightEntryDao.insertWeightEntry(any()) } returns 10L
+        coEvery { transactionDao.insertTransaction(any()) } returns 20L
+        coEvery { cardDao.getCardById(500L, "user-123") } returns Card(id = 500L, name = "Farmer", date = Date(0L), ownerUid = "user-123")
+
+        val wrapper = com.giathinh.canlua.util.BackupManager.CardBackupWrapper(
+            card = Card(id = 1L, name = "Imported", date = Date(0L)),
+            entries = listOf(WeightEntry(id = 2L, cardId = 1L, weight = 50.0)),
+            transactions = listOf(Transaction(id = 3L, cardId = 1L, amount = 1000.0, type = TransactionType.PAYMENT, date = Date(0L)))
+        )
+
+        val count = repository.importBackupBatch("user-123", listOf(wrapper))
+
+        assertEquals(1, count)
+        coVerify(exactly = 1) { cardDao.insertCard(match { it.ownerUid == "user-123" && it.id == 0L }) }
+        coVerify(exactly = 1) { weightEntryDao.insertWeightEntry(match { it.cardId == 500L && it.id == 0L }) }
+        coVerify(exactly = 1) { transactionDao.insertTransaction(match { it.cardId == 500L && it.id == 0L }) }
     }
 }

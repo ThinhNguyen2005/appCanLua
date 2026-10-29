@@ -92,21 +92,14 @@ class MarketViewModel @Inject constructor(
     }
 
     private fun observeAdRequirements() {
-        // Tự động hủy quảng cáo nếu người dùng nâng cấp Premium
+        // Tự động quản lý tải/hủy quảng cáo khi trạng thái Premium hoặc UMP Consent thay đổi
         viewModelScope.launch {
-            PremiumState.isPremium.collect { isPremium ->
+            combine(PremiumState.isPremium, AdConsentManager.canRequestAds) { isPremium, canRequest ->
+                isPremium to canRequest
+            }.collect { (isPremium, canRequest) ->
                 if (isPremium) {
                     nativeAdLoaderManager.destroyAd()
-                } else if (AdConsentManager.canRequestAds.value) {
-                    nativeAdLoaderManager.loadAd()
-                }
-            }
-        }
-
-        // Tự động tải quảng cáo khi nhận được sự đồng thuận từ UMP
-        viewModelScope.launch {
-            AdConsentManager.canRequestAds.collect { canRequest ->
-                if (canRequest && !PremiumState.isPremium.value) {
+                } else if (canRequest) {
                     nativeAdLoaderManager.loadAd()
                 }
             }

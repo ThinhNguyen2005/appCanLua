@@ -50,11 +50,10 @@ object BackupManager {
         cardRepository: CardRepository
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val cards = cardRepository.getAllCards().first().filter { it.ownerUid == ownerUid }
-            val wrappers = cards.map { card ->
-                val entries = cardRepository.getWeightEntriesByCardId(card.id).first()
-                val transactions = cardRepository.getTransactionsByCardId(card.id).first()
-                CardBackupWrapper(card, entries, transactions)
+            // Tối ưu N+1 Query: Sử dụng quan hệ @Relation của Room để tải 1 lần toàn bộ CardWithDetails
+            val details = cardRepository.getCardsWithDetails(ownerUid)
+            val wrappers = details.map { d ->
+                CardBackupWrapper(d.card, d.entries, d.transactions)
             }
             val payload = BackupPayload(
                 version = 1,
@@ -73,6 +72,7 @@ object BackupManager {
     /**
      * Khôi phục toàn bộ phiếu cân từ file JSON vào Room DB.
      * Liên kết lại khóa ngoại (foreign keys) để giữ vững tính toàn vẹn liên kết.
+     * Đóng gói toàn bộ trong 1 Room Transaction duy nhất (All-or-Nothing).
      */
     suspend fun importData(
         context: Context,
@@ -88,29 +88,15 @@ object BackupManager {
             } ?: throw IllegalStateException("Không thể mở luồng đọc file: $uri")
 
             val payload = gson.fromJson(json, BackupPayload::class.java)
-            var count = 0
-            for (wrapper in payload.data) {
-                // Nhân bản Card (id tự sinh = 0) và gán ownerUid hiện tại sau khi đã được sanitize tránh lỗi Gson null fields
-                val cardCopy = wrapper.card.sanitize().copy(id = 0, ownerUid = ownerUid)
-                val newCardId = cardRepository.insertCard(cardCopy)
-
-                // Nhập danh sách bao lúa với cardId mới
-                for (entry in wrapper.entries.orEmpty()) {
-                    val entryCopy = entry.copy(id = 0, cardId = newCardId)
-                    cardRepository.insertWeightEntry(entryCopy)
-                }
-
-                // Nhập danh sách giao dịch với cardId mới
-                for (tx in wrapper.transactions.orEmpty()) {
-                    val txCopy = tx.sanitize().copy(id = 0, cardId = newCardId)
-                    cardRepository.insertTransaction(txCopy)
-                }
-
-                // Tính toán lại tổng khối lượng/tiền tệ cho Card mới chèn
-                cardRepository.updateCardCalculations(newCardId)
-                count++
+            val sanitizedWrappers = payload.data.orEmpty().map { wrapper ->
+                CardBackupWrapper(
+                    card = wrapper.card.sanitize(),
+                    entries = wrapper.entries.orEmpty(),
+                    transactions = wrapper.transactions.orEmpty().map { it.sanitize() }
+                )
             }
-            count
+            // Thực thi toàn bộ batch trong 1 Transaction duy nhất qua Repository
+            cardRepository.importBackupBatch(ownerUid, sanitizedWrappers)
         }
     }
 }

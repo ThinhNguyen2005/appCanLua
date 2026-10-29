@@ -18,6 +18,13 @@ interface CardDao {
     @Query("SELECT * FROM cards WHERE ownerUid = :uid ORDER BY date DESC")
     fun getAllCards(uid: String): Flow<List<Card>>
 
+    @Transaction
+    @Query("SELECT * FROM cards WHERE ownerUid = :uid ORDER BY date DESC")
+    suspend fun getCardsWithDetails(uid: String): List<com.giathinh.canlua.data.model.CardWithDetails>
+
+    @Query("SELECT * FROM cards WHERE id = :id AND ownerUid = :uid")
+    fun getCardByIdFlow(id: Long, uid: String): Flow<Card?>
+
     @Query("SELECT * FROM cards WHERE id = :id AND ownerUid = :uid")
     suspend fun getCardById(id: Long, uid: String): Card?
 

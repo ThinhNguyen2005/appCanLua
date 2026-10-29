@@ -175,7 +175,7 @@ class RiceCalculatorEdgeCaseTest {
             moisturePercent = 20.0
         )
         // 930.23... rounded to 1 decimal = 930.2
-        assertEquals(930.2, result, eps)
+        assertEquals(930.23, result, eps)
     }
 
     @Test
@@ -316,7 +316,7 @@ class RiceCalculatorEdgeCaseTest {
         // W_std = 9866 × 72/86 = 9866 × 72 / 86 = 710352/86 = 8259.906976...
         // Làm tròn 1 chữ số: 8259.9
 
-        assertEquals(8259.9, net, eps)
+        assertEquals(8259.91, net, eps)
 
         // Tiền: 8259.9 × 8000 đ/kg = 66_079_200
         val total = RiceCalculator.calcTotalAmount(net, 8000.0)

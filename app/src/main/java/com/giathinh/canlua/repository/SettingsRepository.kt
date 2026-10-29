@@ -36,6 +36,7 @@ class SettingsRepository @Inject constructor(
     val syncOnlyWifi: Flow<Boolean> = _syncOnlyWifi.asStateFlow()
 
     private val _weighDefaults = MutableStateFlow(readWeighDefaults())
+    @get:JvmName("getWeighDefaultsFlow")
     val weighDefaults: Flow<WeighDefaults> = _weighDefaults.asStateFlow()
 
     private val _ttsEnabled = MutableStateFlow(prefs.getBoolean(KEY_TTS_ENABLED, true))

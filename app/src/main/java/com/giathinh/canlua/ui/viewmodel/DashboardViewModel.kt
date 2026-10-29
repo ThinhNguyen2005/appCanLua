@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.flowOf
 import androidx.compose.runtime.Immutable
 import com.giathinh.canlua.util.AnalyticsHelper
 import com.giathinh.canlua.util.PromptFormat
-import com.giathinh.canlua.util.calcDeltaPercent
+import com.giathinh.canlua.ui.util.DashboardFormatter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -237,10 +237,10 @@ class DashboardViewModel @Inject constructor(
             aiAnalysis = aiAnalysisVal,
             isAggregated = isAggregatedVal,
             weightDeltaPercent = currentStatsVal?.let {
-                calcDeltaPercent(it.totalNetWeight, previousStatsVal?.totalNetWeight)
+                DashboardFormatter.deltaPercent(it.totalNetWeight, previousStatsVal?.totalNetWeight)
             },
             revenueDeltaPercent = currentStatsVal?.let {
-                calcDeltaPercent(it.totalRevenue, previousStatsVal?.totalRevenue)
+                DashboardFormatter.deltaPercent(it.totalRevenue, previousStatsVal?.totalRevenue)
             }
         )
     }
@@ -326,10 +326,10 @@ class DashboardViewModel @Inject constructor(
             sb.append("- Sản lượng: ${PromptFormat.weight(previous.totalNetWeight)}\n")
             sb.append("- Doanh thu: ${PromptFormat.money(previous.totalRevenue)}\n")
             sb.append("- Số phiếu: ${previous.cardCount}\n")
-            calcDeltaPercent(stats.totalNetWeight, previous.totalNetWeight)?.let {
+            DashboardFormatter.deltaPercent(stats.totalNetWeight, previous.totalNetWeight)?.let {
                 sb.append("- Delta sản lượng: ${PromptFormat.delta(it)}\n")
             }
-            calcDeltaPercent(stats.totalRevenue, previous.totalRevenue)?.let {
+            DashboardFormatter.deltaPercent(stats.totalRevenue, previous.totalRevenue)?.let {
                 sb.append("- Delta doanh thu: ${PromptFormat.delta(it)}\n")
             }
         } else {

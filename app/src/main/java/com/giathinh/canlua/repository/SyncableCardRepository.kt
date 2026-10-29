@@ -31,6 +31,8 @@ class SyncableCardRepository @Inject constructor(
 
     fun getDistinctSeasons(): Flow<List<String>> = cardRepository.getDistinctSeasons()
 
+    fun getCardByIdFlow(id: Long): Flow<Card?> = cardRepository.getCardByIdFlow(id)
+
     suspend fun getCardById(id: Long): Card? = cardRepository.getCardById(id)
 
     suspend fun insertCard(card: Card): Long {
