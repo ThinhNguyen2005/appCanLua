@@ -47,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.giathinh.canlua.BuildConfig
 import com.giathinh.canlua.R
-import com.giathinh.canlua.ads.AdConsentManager
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
 import com.giathinh.canlua.data.model.Profile
@@ -421,7 +420,7 @@ fun SettingsScreen(
                     }
                 )
 
-                val isPrivacyOptionsRequired by AdConsentManager.isPrivacyOptionsRequired.collectAsStateWithLifecycle()
+                val isPrivacyOptionsRequired by viewModel.isPrivacyOptionsRequired.collectAsStateWithLifecycle()
                 if (isPrivacyOptionsRequired) {
                     HorizontalDivider(
                         color = AppColors.Divider.copy(alpha = 0.4f),
@@ -438,7 +437,7 @@ fun SettingsScreen(
                             HapticUtil.tick(context)
                             val activity = context.findActivity()
                             if (activity != null) {
-                                AdConsentManager.showPrivacyOptionsForm(activity)
+                                viewModel.showPrivacyOptionsForm(activity)
                             }
                         }
                     )

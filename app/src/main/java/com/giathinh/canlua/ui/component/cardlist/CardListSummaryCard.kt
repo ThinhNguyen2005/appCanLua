@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
 import com.giathinh.canlua.repository.SyncStatus
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.theme.AppDimensions
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -57,8 +58,8 @@ fun CardListSummaryCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(AppDimensions.CornerRadiusLg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
         border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
     ) {
@@ -75,8 +76,8 @@ fun CardListSummaryCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(AppDimensions.SpacingMd),
+                verticalArrangement = Arrangement.spacedBy(AppDimensions.SpacingSm)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -178,7 +179,7 @@ private fun SummaryMetric(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
             .background(AppColors.SurfaceContainer)
             .padding(horizontal = 10.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -186,7 +187,7 @@ private fun SummaryMetric(
         Box(
             modifier = Modifier
                 .size(30.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
                 .background(tint.copy(alpha = 0.14f)),
             contentAlignment = Alignment.Center
         ) {
@@ -223,7 +224,7 @@ private fun SecondaryMetric(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
             .background(AppColors.SurfaceContainer)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)

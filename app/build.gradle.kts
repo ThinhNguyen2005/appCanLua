@@ -25,6 +25,11 @@ val telegramAdminChatId: String = localProps.getProperty("TELEGRAM_ADMIN_CHAT_ID
 val supabaseUrl: String = localProps.getProperty("SUPABASE_URL", "")
 val supabaseAnonKey: String = localProps.getProperty("SUPABASE_ANON_KEY", "")
 
+// AdMob — App ID + Native Ad Unit ID THẬT cho release (debug luôn dùng test ID chính thức của Google).
+val admobAppId: String = localProps.getProperty("ADMOB_APP_ID", "")
+val admobNativeUnitId: String = localProps.getProperty("ADMOB_NATIVE_UNIT_ID", "")
+val googleTestAdmobAppId = "ca-app-pub-3940256099942544~3347511713"
+
 fun encodeBase64(value: String): String {
     return Base64.getEncoder().encodeToString(value.toByteArray())
 }
@@ -57,8 +62,15 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
 
+        // AdMob IDs — giá trị thật được chọn theo build type (xem buildTypes bên dưới).
+        // Mặc định = test ID (debug); release override bằng ID thật từ local.properties.
+        buildConfigField("String", "ADMOB_APP_ID", "\"$googleTestAdmobAppId\"")
+        buildConfigField("String", "ADMOB_NATIVE_UNIT_ID", "\"ca-app-pub-3940256099942544/2247696110\"")
+
         // Maps API key tham chiếu trong AndroidManifest.xml qua placeholder ${MAPS_API_KEY}
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        // App ID trong manifest PHẢI trùng app ID truyền vào MobileAds.initialize (Next-Gen SDK yêu cầu).
+        manifestPlaceholders["ADMOB_APP_ID"] = googleTestAdmobAppId
     }
 
     buildTypes {
@@ -76,6 +88,11 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+
+            // Release dùng ID THẬT từ local.properties (ADMOB_APP_ID / ADMOB_NATIVE_UNIT_ID).
+            buildConfigField("String", "ADMOB_APP_ID", "\"$admobAppId\"")
+            buildConfigField("String", "ADMOB_NATIVE_UNIT_ID", "\"$admobNativeUnitId\"")
+            manifestPlaceholders["ADMOB_APP_ID"] = admobAppId
         }
         debug {
             // Tắt minify cho debug build nhanh + Crashlytics symbols mapping rõ ràng.
@@ -98,6 +115,8 @@ android {
         unitTests.all {
             it.jvmArgs("-Djdk.attach.allowAttachSelf=true", "-XX:+EnableDynamicAgentLoading")
         }
+        // android.util.Log trong unit test trả giá trị mặc định thay vì ném "not mocked".
+        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -212,6 +231,35 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+// Guard: bản release KHÔNG được build với AdMob ID thiếu/placeholder/test ID.
+// Vô hiệu hóa mọi task assembleRelease (kể cả bundleRelease) cho tới khi cấu hình đúng.
+val googleTestNativeUnitId = "ca-app-pub-3940256099942544/2247696110"
+val admobReleaseIdCheck = tasks.register("checkAdmobReleaseIds") {
+    description = "Chuc minh ADMOB_APP_ID / ADMOB_NATIVE_UNIT_ID that trong local.properties cho release."
+    doLast {
+        fun invalid(value: String, name: String): String? = when {
+            value.isBlank() -> "$name chua duoc cau hinh trong local.properties."
+            value.startsWith("YOUR_") || value.contains("XXXX", ignoreCase = true) || value.contains("PLACEHOLDER", ignoreCase = true) -> "$name van con gia tri placeholder."
+            else -> null
+        }
+        val errors = listOfNotNull(
+            invalid(admobAppId, "ADMOB_APP_ID"),
+            invalid(admobNativeUnitId, "ADMOB_NATIVE_UNIT_ID"),
+            if (admobAppId == googleTestAdmobAppId) "ADMOB_APP_ID la test ID cua Google — khong duoc dung ban release." else null,
+            if (admobNativeUnitId == googleTestNativeUnitId) "ADMOB_NATIVE_UNIT_ID la test ID cua Google — khong duoc dung ban release." else null,
+        )
+        if (errors.isNotEmpty()) {
+            throw GradleException(
+                "AdMob release config missing:\n  - " + errors.joinToString("\n  - ") +
+                    "\nAdd ADMOB_APP_ID / ADMOB_NATIVE_UNIT_ID into local.properties."
+            )
+        }
+    }
+}
+tasks.matching { it.name.startsWith("assembleRelease") || it.name.startsWith("bundleRelease") }.configureEach {
+    dependsOn(admobReleaseIdCheck)
 }
 
 tasks.withType<Test> {

@@ -23,3 +23,10 @@ OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE
 # Get from: https://app.supabase.com → Project Settings → API
 SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY_HERE
+
+# AdMob — REAL IDs for RELEASE builds only (debug always uses Google official test IDs).
+# Get from: https://admob.google.com → Apps → Settings / Ad units
+# Required format: ca-app-pub-PUBLISHER_ID~APP_ID (app) and ca-app-pub-PUBLISHER_ID/UNIT_ID (ad unit)
+# Build of type release will FAIL if these are missing, placeholder, or Google test IDs.
+ADMOB_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
+ADMOB_NATIVE_UNIT_ID=ca-app-pub-XXXXXXXXXXXXXXXX/NNNNNNNNNN

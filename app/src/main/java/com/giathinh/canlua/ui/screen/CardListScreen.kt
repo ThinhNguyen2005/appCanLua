@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,6 +83,7 @@ import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.PremiumState
 import com.giathinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.delay
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -95,7 +97,7 @@ private const val KEY_SUMMARY_HEADER = "summary_header"
 private const val KEY_FILTER_BAR = "filter_bar"
 private const val KEY_EMPTY = "empty"
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CardListScreen(
     navController: NavController
@@ -113,7 +115,7 @@ fun CardListScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CardListScreenContent(
     navController: NavController,
@@ -187,22 +189,38 @@ fun CardListScreenContent(
     val ownerName = profileState?.name?.takeIf { it.isNotBlank() } ?: defaultRoleLabel
 
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")) }
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")) }
     val todayDateStr = remember(cards) { dateFormat.format(Calendar.getInstance().time) }
     val yesterdayDateStr = remember(cards) {
         Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }.let { dateFormat.format(it.time) }
     }
 
-    val todayCards = remember(cards, todayDateStr) {
-        cards.filter { dateFormat.format(it.date) == todayDateStr }
+    val groupedCards = remember(cards) {
+        cards.groupBy { card -> dateFormat.format(card.date) }
     }
-    val todayTotalKg = remember(todayCards) { todayCards.sumOf { it.totalWeight } }
-    val todayTotalAmount = remember(todayCards) { todayCards.sumOf { it.totalAmount } }
-    val todayAvgPricePerKg = remember(todayCards) {
-        val pricedCards = todayCards.filter { it.pricePerKg > 0 }
+    val todayCards = remember(groupedCards, todayDateStr) {
+        groupedCards[todayDateStr].orEmpty()
+    }
+    val latestDateEntry = remember(groupedCards) {
+        groupedCards.entries.firstOrNull()
+    }
+    val hasTodayCards = todayCards.isNotEmpty()
+    val summaryCards = if (hasTodayCards) todayCards else (latestDateEntry?.value.orEmpty())
+    val isLatestFallback = !hasTodayCards && summaryCards.isNotEmpty()
+
+    val summaryTitlePrefix = when {
+        hasTodayCards -> stringResource(R.string.card_list_today_prefix)
+        isLatestFallback -> stringResource(R.string.card_list_latest_date_prefix, latestDateEntry?.key.orEmpty())
+        else -> stringResource(R.string.card_list_today_prefix)
+    }
+    val summaryTotalKg = remember(summaryCards) { summaryCards.sumOf { it.totalWeight } }
+    val summaryTotalAmount = remember(summaryCards) { summaryCards.sumOf { it.totalAmount } }
+    val summaryAvgPricePerKg = remember(summaryCards) {
+        val pricedCards = summaryCards.filter { it.pricePerKg > 0 }
         if (pricedCards.isEmpty()) null else pricedCards.map { it.pricePerKg }.average()
     }
-    val todayBagCount = remember(todayCards) {
-        val total = todayCards.sumOf { it.bagCount }
+    val summaryBagCount = remember(summaryCards) {
+        val total = summaryCards.sumOf { it.bagCount }
         if (total <= 0) null else total
     }
 
@@ -248,10 +266,6 @@ fun CardListScreenContent(
                         )
                     }
                 ) {
-                    val groupedCards = remember(cards) {
-                        cards.groupBy { card -> dateFormat.format(card.date) }
-                    }
-
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
@@ -265,13 +279,14 @@ fun CardListScreenContent(
                     ) {
                         item(key = KEY_SUMMARY_HEADER) {
                             CardListSummaryCard(
-                                cardCount = todayCards.size,
-                                totalKg = todayTotalKg,
-                                totalAmount = todayTotalAmount,
+                                cardCount = summaryCards.size,
+                                totalKg = summaryTotalKg,
+                                totalAmount = summaryTotalAmount,
                                 syncStatus = syncStatus,
                                 showSyncStatus = false,
-                                avgPricePerKg = todayAvgPricePerKg,
-                                bagCount = todayBagCount
+                                avgPricePerKg = summaryAvgPricePerKg,
+                                bagCount = summaryBagCount,
+                                titlePrefix = summaryTitlePrefix
                             )
                         }
 
@@ -323,45 +338,57 @@ fun CardListScreenContent(
                             }
                         } else {
                             groupedCards.forEach { (date, cardsInDay) ->
-                                item(key = "header_$date") {
+                                stickyHeader(key = "header_$date") {
                                     val friendlyDateLabel = when (date) {
                                         todayDateStr -> stringResource(R.string.card_list_date_today_prefix, date)
                                         yesterdayDateStr -> stringResource(R.string.card_list_date_yesterday_prefix, date)
                                         else -> date
                                     }
+                                    val dayTotalKg = remember(cardsInDay) { cardsInDay.sumOf { it.totalWeight } }
+                                    val formattedDayKg = remember(dayTotalKg) { numberFormat.format(dayTotalKg) }
 
-                                    // Phân cấp rõ tiêu đề nhóm ngày + số lượng phiếu + hỗ trợ TalkBack heading
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(
-                                                top = AppDimensions.SpacingSm,
-                                                bottom = AppDimensions.SpacingXxs
-                                            )
-                                            .semantics { heading() },
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                    // Phân cấp rõ tiêu đề nhóm ngày + số lượng phiếu + tổng kg + hỗ trợ TalkBack heading
+                                    // Surface với background opaque để khi cuộn không bị card bên dưới lọt qua chữ
+                                    Surface(
+                                        color = AppColors.Surface,
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text(
-                                            text = friendlyDateLabel,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            color = AppColors.TextPrimary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(AppDimensions.CornerRadiusSm),
-                                            color = AppColors.SurfaceContainer
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(
+                                                    top = AppDimensions.SpacingSm,
+                                                    bottom = AppDimensions.SpacingXxs
+                                                )
+                                                .semantics { heading() },
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = stringResource(R.string.card_list_day_card_count, cardsInDay.size),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = AppColors.TextSecondary,
-                                                fontWeight = FontWeight.SemiBold,
-                                                modifier = Modifier.padding(
-                                                    horizontal = AppDimensions.SpacingXs,
-                                                    vertical = 2.dp
-                                                )
+                                                text = friendlyDateLabel,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = AppColors.TextPrimary,
+                                                fontWeight = FontWeight.Bold
                                             )
+                                            Surface(
+                                                shape = RoundedCornerShape(AppDimensions.CornerRadiusSm),
+                                                color = AppColors.SurfaceContainer
+                                            ) {
+                                                Text(
+                                                    text = stringResource(
+                                                        R.string.card_list_day_summary_yield,
+                                                        cardsInDay.size,
+                                                        formattedDayKg
+                                                    ),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = AppColors.TextSecondary,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    modifier = Modifier.padding(
+                                                        horizontal = AppDimensions.SpacingXs,
+                                                        vertical = 2.dp
+                                                    )
+                                                )
+                                            }
                                         }
                                     }
                                 }

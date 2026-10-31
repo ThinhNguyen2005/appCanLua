@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import com.giathinh.canlua.ads.AdConsentManager
+import com.giathinh.canlua.ads.MobileAdsSdkState
 import com.giathinh.canlua.ads.NativeAdLoaderManager
 import com.giathinh.canlua.ads.NativeAdUiState
 import com.giathinh.canlua.util.PremiumState
@@ -29,11 +30,18 @@ data class MarketFilter(
     val trend: String? = null       // UP / DOWN / STABLE
 )
 
+/** Điều kiện hiển thị ad tổng hợp từ Premium/Consent/SDK state. */
+data class AdsEligibility(
+    val eligible: Boolean,
+    val adRemoved: Boolean
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MarketViewModel @Inject constructor(
     private val marketRepository: MarketRepository,
-    private val nativeAdLoaderManager: NativeAdLoaderManager
+    private val nativeAdLoaderManager: NativeAdLoaderManager,
+    private val adConsentManager: AdConsentManager
 ) : ViewModel() {
 
     val nativeAdState: StateFlow<NativeAdUiState> = nativeAdLoaderManager.adState
@@ -92,14 +100,25 @@ class MarketViewModel @Inject constructor(
     }
 
     private fun observeAdRequirements() {
-        // Tự động quản lý tải/hủy quảng cáo khi trạng thái Premium hoặc UMP Consent thay đổi
+        // Tự động quản lý tải/hủy quảng cáo khi trạng thái Premium, UMP Consent
+        // hoặc trạng thái khởi tạo SDK thay đổi.
         viewModelScope.launch {
-            combine(PremiumState.isPremium, AdConsentManager.canRequestAds) { isPremium, canRequest ->
-                isPremium to canRequest
-            }.collect { (isPremium, canRequest) ->
-                if (isPremium) {
+            combine(
+                PremiumState.isPremium,
+                adConsentManager.canRequestAds,
+                adConsentManager.sdkState
+            ) { isPremium, canRequest, sdkState ->
+                AdsEligibility(
+                    eligible = !isPremium && canRequest && sdkState is MobileAdsSdkState.Ready,
+                    adRemoved = isPremium || !canRequest
+                )
+            }.collect { eligibility ->
+                if (eligibility.adRemoved) {
+                    // Mất consent hoặc nâng Premium giữa phiên: hủy ad đang hiển thị
+                    // và vô hiệu hóa callback của request đang chạy.
                     nativeAdLoaderManager.destroyAd()
-                } else if (canRequest) {
+                }
+                if (eligibility.eligible) {
                     nativeAdLoaderManager.loadAd()
                 }
             }

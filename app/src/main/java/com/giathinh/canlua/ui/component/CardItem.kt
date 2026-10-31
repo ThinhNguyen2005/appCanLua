@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.data.model.Card as CardModel
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.theme.AppDimensions
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -77,7 +78,7 @@ fun CardItem(
     @Suppress("DEPRECATION")
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked && card.isPaid) {
+            if (value == SwipeToDismissBoxValue.EndToStart && !card.isLocked) {
                 HapticUtil.error(context)
                 onDelete(card)
                 false
@@ -98,7 +99,7 @@ fun CardItem(
                     HapticUtil.tick(context)
                     onClick(card.id)
                 },
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(AppDimensions.CornerRadiusLg),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 2.dp
             ),
@@ -109,7 +110,7 @@ fun CardItem(
             )
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(AppDimensions.SpacingMd)
             ) {
                 // Header row: Name + Lock icon + Date
                 Row(
@@ -288,7 +289,7 @@ fun CardItem(
                     ) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
                                 .background(AppColors.GreenPrimary)
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
@@ -305,9 +306,9 @@ fun CardItem(
         }
     }
 
-    // Locked hoặc chưa thanh toán → render trực tiếp, không có swipe-to-delete.
+    // Locked → render trực tiếp, không có swipe-to-delete.
     // Tránh backgroundContent đỏ hắt qua các cạnh khi user vô tình kéo nhẹ.
-    if (card.isLocked || !card.isPaid) {
+    if (card.isLocked) {
         Box(modifier = modifier) { cardContent() }
     } else {
         SwipeToDismissBox(
@@ -317,7 +318,7 @@ fun CardItem(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(140.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(AppDimensions.CornerRadiusLg))
                         .background(AppColors.Error.copy(alpha = 0.9f))
                         .padding(end = 24.dp),
                     contentAlignment = Alignment.CenterEnd

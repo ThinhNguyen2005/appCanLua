@@ -30,6 +30,7 @@ import com.giathinh.canlua.ui.viewmodel.SettingsViewModel
 import com.giathinh.canlua.util.LocaleUtil
 import com.giathinh.canlua.util.PerformanceTracker
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 private const val ROOT_ROUTE_SPLASH = "splash"
 private const val ROOT_ROUTE_LOGIN = "login"
@@ -41,6 +42,9 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var initViewModel: InitViewModel
     private lateinit var authViewModel: AuthViewModel
+
+    @Inject
+    lateinit var adConsentManager: AdConsentManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -59,7 +63,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         PerformanceTracker.setActivity(this)
-        AdConsentManager.gatherConsent(this)
+        adConsentManager.gatherConsent(this)
 
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()

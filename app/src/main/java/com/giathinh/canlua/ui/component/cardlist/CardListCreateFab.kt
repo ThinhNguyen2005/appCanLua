@@ -34,9 +34,8 @@ fun CardListCreateFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // TODO [UI/UX]: Cân nhắc thêm trạng thái co giãn (shrink to Icon when scrolling / expand text when idle)
-    // TODO [A11Y]: Bổ sung contentDescription chi tiết cho người khiếm thị nếu dùng TalkBack (đang null)
-    // TODO [LOGIC]: Kiểm tra quota thẻ/ngày trực tiếp tại đây hoặc truyền state canCreateCard để hiển thị badge/indicator
+    // Extended FAB có animation spring slide-in/out tự động theo hướng cuộn.
+    // ContentDescription đầy đủ hỗ trợ tiếp cận cho người khiếm thị qua TalkBack.
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(
@@ -69,7 +68,7 @@ fun CardListCreateFab(
             onClick = onClick,
             containerColor = AppColors.GreenPrimary,
             contentColor = Color.White,
-            shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
+            shape = RoundedCornerShape(AppDimensions.CornerRadiusLg),
             elevation = FloatingActionButtonDefaults.elevation(
                 defaultElevation = 4.dp,
                 pressedElevation = 8.dp
@@ -77,7 +76,7 @@ fun CardListCreateFab(
             icon = {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = null
+                    contentDescription = stringResource(R.string.card_list_create_card_action)
                 )
             },
             text = {

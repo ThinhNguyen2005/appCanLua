@@ -935,6 +935,8 @@
     <string name="card_list_date_today_prefix">Hôm nay · %1$s</string>
     <string name="card_list_date_yesterday_prefix">Hôm qua · %1$s</string>
     <string name="card_list_day_card_count">%1$d phiếu</string>
+    <string name="card_list_day_summary_yield">%1$d phiếu · %2$s kg</string>
+    <string name="card_list_latest_date_prefix">Gần nhất (%1$s)</string>
 
     <string name="compact_billion">%1$s tỷ</string>
     <string name="compact_million">%1$s tr</string>

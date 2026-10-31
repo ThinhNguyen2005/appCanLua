@@ -32,10 +32,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
 
-        <!-- Google Mobile Ads (AdMob) App ID — Development/Test ID -->
+        <!-- Google Mobile Ads (AdMob) App ID — debug = test ID, release = ADMOB_APP_ID trong local.properties.
+             PHẢI trùng app ID mà AdConsentManager truyền vào MobileAds.initialize (Next-Gen SDK). -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="${ADMOB_APP_ID}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

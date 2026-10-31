@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.giathinh.canlua.ads.AdConsentManager
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
 import com.giathinh.canlua.data.model.FontScale
@@ -23,8 +24,17 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val cardRepository: CardRepository,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val adConsentManager: AdConsentManager
 ) : ViewModel() {
+
+    /** Trạng thái "Privacy options" do UMP quyết định — UI chỉ tự ẩn/hiện theo flow này. */
+    val isPrivacyOptionsRequired: StateFlow<Boolean> = adConsentManager.isPrivacyOptionsRequired
+
+    /** Mở form Privacy Options của UMP (activity chỉ sống trong phạm vi 1 lần gọi). */
+    fun showPrivacyOptionsForm(activity: android.app.Activity) {
+        adConsentManager.showPrivacyOptionsForm(activity)
+    }
 
     val isTtsEnabled: StateFlow<Boolean> = settingsRepository.ttsEnabled
         .stateIn(
