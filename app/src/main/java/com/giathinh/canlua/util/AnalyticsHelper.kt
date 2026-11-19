@@ -30,6 +30,7 @@ object AnalyticsHelper {
 
     /** User vừa đăng nhập thành công — set userId cho Analytics + Crashlytics. */
     fun setUser(uid: String?, role: String?) {
+        if (!::analytics.isInitialized) return
         analytics.setUserId(uid)
         if (uid != null) crashlytics.setUserId(uid)
         if (role != null) {
@@ -40,6 +41,7 @@ object AnalyticsHelper {
 
     /** Premium state thay đổi — gắn property để filter analytics theo Premium/Free. */
     fun setPremium(isPremium: Boolean, plan: String?) {
+        if (!::analytics.isInitialized) return
         analytics.setUserProperty("is_premium", isPremium.toString())
         analytics.setUserProperty("premium_plan", plan ?: "")
         crashlytics.setCustomKey("is_premium", isPremium)
@@ -84,16 +86,19 @@ object AnalyticsHelper {
      * @param tag dùng làm subject/group trong Crashlytics console
      */
     fun logNonFatal(throwable: Throwable, tag: String? = null) {
+        if (!::analytics.isInitialized) return
         if (tag != null) crashlytics.setCustomKey("tag", tag)
         crashlytics.recordException(throwable)
     }
 
     /** Log breadcrumb — debug context kèm vào next crash. */
     fun breadcrumb(message: String) {
+        if (!::analytics.isInitialized) return
         crashlytics.log(message)
     }
 
-    private inline fun log(eventName: String, paramsBuilder: Bundle.() -> Unit = {}) {
+    private fun log(eventName: String, paramsBuilder: Bundle.() -> Unit = {}) {
+        if (!::analytics.isInitialized) return
         val params = Bundle().apply(paramsBuilder)
         analytics.logEvent(eventName, params)
     }
