@@ -996,5 +996,42 @@
     <string name="profile_variety_chart_accessibility">Biểu đồ phân bổ giống lúa gồm %1$s</string>
     <string name="profile_variety_chart_empty_accessibility">Biểu đồ phân bổ giống lúa: chưa có dữ liệu</string>
 
+    <!-- Bluetooth Scale -->
+    <string name="scale_error_permission_required">Cần cấp quyền Bluetooth để kết nối cân điện tử</string>
+    <string name="scale_error_bluetooth_unsupported">Thiết bị này không hỗ trợ Bluetooth</string>
+    <string name="scale_error_bluetooth_disabled">Bluetooth đang tắt. Vui lòng bật Bluetooth rồi thử lại</string>
+    <string name="scale_error_device_not_found">Không tìm thấy thiết bị cân đã chọn</string>
+    <string name="scale_error_connection_failed">Không kết nối được với cân. Kiểm tra cân đã bật nguồn</string>
+    <string name="scale_error_connection_lost">Mất kết nối với cân Bluetooth</string>
+    <string name="scale_status_disconnected">Cân Bluetooth</string>
+    <string name="scale_status_connecting">Đang kết nối %1$s…</string>
+    <string name="scale_status_waiting_zero">Chờ về 0 kg…</string>
+    <string name="scale_status_live_weight">%1$s kg</string>
+    <string name="scale_status_live_stable">%1$s kg · Ổn định</string>
+    <string name="scale_status_error_short">Lỗi kết nối cân</string>
+    <string name="scale_capture_button">Chốt %1$s kg</string>
+    <string name="scale_capture_button_idle">Chờ đặt bao lên cân</string>
+    <string name="scale_sheet_title">Kết nối cân điện tử</string>
+    <string name="scale_sheet_subtitle">Bluetooth Classic (SPP) · Hỗ trợ cân tự động &amp; nhập tay song song</string>
+    <string name="scale_sheet_permission_banner_title">Cần cấp quyền Bluetooth</string>
+    <string name="scale_sheet_permission_banner_desc">Cấp quyền thiết bị lân cận để xem danh sách cân đã ghép đôi.</string>
+    <string name="scale_sheet_grant_permission">Cấp quyền</string>
+    <string name="scale_sheet_bt_off_banner">Bluetooth đang tắt — hãy bật Bluetooth trên điện thoại.</string>
+    <string name="scale_mode_label">Chế độ chốt số</string>
+    <string name="scale_mode_semi_auto">Bán tự động</string>
+    <string name="scale_mode_auto_capture">Tự động chốt</string>
+    <string name="scale_mode_semi_auto_desc">Số cân hiện trực tiếp, bấm nút Chốt để lưu từng bao.</string>
+    <string name="scale_mode_auto_desc">Tự động lưu khi ổn định (≥ 5 kg) và chờ về &lt; 2 kg cho bao tiếp.</string>
+    <string name="scale_connected_device_label">Đang kết nối: %1$s</string>
+    <string name="scale_mock_device_name">Cân giả lập (Debug)</string>
+    <string name="scale_disconnect_button">Ngắt kết nối</string>
+    <string name="scale_bonded_devices_title">Thiết bị đã ghép đôi</string>
+    <string name="scale_refresh_devices">Làm mới</string>
+    <string name="scale_bonded_devices_empty">Chưa có thiết bị nào ghép đôi. Hãy ghép đôi cân trong Cài đặt Bluetooth.</string>
+    <string name="scale_debug_mock_button">Dùng cân giả lập (Debug)</string>
+    <string name="scale_debug_mock_desc">Mô phỏng luồng cân 0 → 52,1 kg → 0 kg để test không cần cân thật</string>
+    <string name="scale_accessibility_chip">Trạng thái cân Bluetooth: %1$s</string>
+    <string name="scale_accessibility_connect_device">Kết nối với %1$s</string>
+
 </resources>
 

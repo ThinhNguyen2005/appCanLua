@@ -10,12 +10,16 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.graphics.graphicsLayer
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.*
@@ -47,6 +51,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.giathinh.canlua.util.RiceCalculator
 import androidx.compose.material.icons.outlined.Info
+import com.giathinh.canlua.data.bluetooth.ScaleCaptureMode
+import com.giathinh.canlua.data.bluetooth.ScaleConnectionState
+import com.giathinh.canlua.domain.WeighValidation
+import com.giathinh.canlua.ui.component.weight.BluetoothScaleSheet
 import com.giathinh.canlua.ui.component.weight.WeightMetricsCard
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.AppDimensions
@@ -56,6 +64,7 @@ import com.giathinh.canlua.util.TrackScreenRender
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.toPersistentList
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,9 +132,17 @@ fun WeightInputScreenContent(
     // === KHAI BÁO STATE (MANDATORY: Đặt trước check null để bảo toàn Composition Tree) ===
 
     var showLockConfirmDialog by remember { mutableStateOf(false) }
+    var showBluetoothSheet by remember { mutableStateOf(false) }
 
     val tables by viewModel.tables.collectAsStateWithLifecycle()
     val settlement by viewModel.settlement.collectAsStateWithLifecycle()
+    val weightUiState by viewModel.weightInputState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.scaleCaptureEvents.collect {
+            HapticUtil.confirm(context)
+        }
+    }
 
     // === STABLE STATE REFS (rememberUpdatedState) ===
     // Cho phép lambda onCellWeightEntered được tạo một lần duy nhất (remember {})
@@ -292,75 +309,95 @@ fun WeightInputScreenContent(
                 color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // === LAYOUT STABILITY (Performance Optimization) ===
-                        // heightIn(min) thay vì height() — khoá chiều cao tối thiểu để hệ thống
-                        // không phải tính lại Measure/Layout pass khi IME (bàn phím ảo) bật/tắt
-                        // hoặc khi nội dung con thay đổi alpha/scale.
-                        .heightIn(min = 56.dp)
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Nút Quay lại
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.weight_input_back_content))
-                    }
-
-                    // Khu vực căn giữa tiêu đề dịch chuyển động
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // === LAYOUT STABILITY (Performance Optimization) ===
+                            // heightIn(min) thay vì height() — khoá chiều cao tối thiểu để hệ thống
+                            // không phải tính lại Measure/Layout pass khi IME (bàn phím ảo) bật/tắt
+                            // hoặc khi nội dung con thay đổi alpha/scale.
+                            .heightIn(min = 56.dp)
+                            .padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 1. Tên thương lái (Mặc định) — fallback về tên nông dân nếu trader trống
-                        val displayName = card.traderName.ifBlank { card.name }
-                        Text(
-                            text = displayName,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.graphicsLayer {
-                                alpha = (1f - scrollFraction).coerceIn(0f, 1f)
-                            }
-                        )
-
-                        // 2. Chỉ số cân thu gọn (Khi cuộn lên)
-                        val totalWeightStr = remember(liveTotalWeight) {
-                            "%.1f".format(java.util.Locale.US, liveTotalWeight).replace(".", ",")
+                        // Nút Quay lại
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.weight_input_back_content))
                         }
-                        Text(
-                            text = stringResource(R.string.weight_input_collapsed_title, totalWeightStr, liveBagCount),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                color = AppColors.RemainingHighlight
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.graphicsLayer {
-                                alpha = scrollFraction.coerceIn(0f, 1f)
-                            }
-                        )
-                    }
 
-                    IconButton(
-                        onClick = {
+                        // Khu vực căn giữa tiêu đề dịch chuyển động
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // 1. Tên thương lái (Mặc định) — fallback về tên nông dân nếu trader trống
+                            val displayName = card.traderName.ifBlank { card.name }
+                            Text(
+                                text = displayName,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = (1f - scrollFraction).coerceIn(0f, 1f)
+                                }
+                            )
+
+                            // 2. Chỉ số cân thu gọn (Khi cuộn lên)
+                            val totalWeightStr = remember(liveTotalWeight) {
+                                "%.1f".format(Locale.US, liveTotalWeight).replace(".", ",")
+                            }
+                            Text(
+                                text = stringResource(R.string.weight_input_collapsed_title, totalWeightStr, liveBagCount),
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = AppColors.RemainingHighlight
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = scrollFraction.coerceIn(0f, 1f)
+                                }
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                if (card.isLocked) {
+                                    viewModel.toggleCardLock(card.id)
+                                    HapticUtil.confirm(context)
+                                } else {
+                                    showLockConfirmDialog = true
+                                }
+                            }
+                        ) {
                             if (card.isLocked) {
-                                viewModel.toggleCardLock(card.id)
-                                HapticUtil.confirm(context)
+                                Icon(Icons.Default.Lock, stringResource(R.string.weight_input_unlock_content), tint = Color.Red)
                             } else {
-                                showLockConfirmDialog = true
+                                Icon(
+                                    Icons.Default.LockOpen,
+                                    stringResource(R.string.weight_input_lock_content),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
-                    ) {
-                        if (card.isLocked) {
-                            Icon(Icons.Default.Lock, stringResource(R.string.weight_input_unlock_content), tint = Color.Red)
-                        } else {
-                            Icon(Icons.Default.LockOpen, stringResource(R.string.weight_input_lock_content), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                    }
+
+                    if (!card.isLocked) {
+                        BluetoothScaleToolbar(
+                            connectionState = weightUiState.scaleConnectionState,
+                            captureMode = weightUiState.scaleCaptureMode,
+                            onOpenSheet = {
+                                HapticUtil.tick(context)
+                                showBluetoothSheet = true
+                            },
+                            onCaptureNow = {
+                                viewModel.captureCurrentScaleWeight()
+                            }
+                        )
                     }
                 }
             }
@@ -531,6 +568,152 @@ fun WeightInputScreenContent(
             shape = RoundedCornerShape(20.dp),
             containerColor = AppColors.Surface
         )
+    }
+
+    if (showBluetoothSheet) {
+        BluetoothScaleSheet(
+            connectionState = weightUiState.scaleConnectionState,
+            captureMode = weightUiState.scaleCaptureMode,
+            pairedDevices = weightUiState.pairedScaleDevices,
+            hasBluetoothPermission = weightUiState.hasBluetoothPermission,
+            isBluetoothEnabled = weightUiState.isBluetoothEnabled,
+            onRefreshDevices = { viewModel.refreshScaleStatus() },
+            onSelectCaptureMode = { mode -> viewModel.setScaleCaptureMode(mode) },
+            onConnectDevice = { device -> viewModel.connectToScale(device) },
+            onConnectMockScale = { mockName -> viewModel.connectMockScale(mockName) },
+            onDisconnect = { viewModel.disconnectScale() },
+            onCaptureNow = { viewModel.captureCurrentScaleWeight() },
+            onDismiss = { showBluetoothSheet = false }
+        )
+    }
+}
+
+@Composable
+private fun BluetoothScaleToolbar(
+    connectionState: ScaleConnectionState,
+    captureMode: ScaleCaptureMode,
+    onOpenSheet: () -> Unit,
+    onCaptureNow: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dotColor: Color
+    val containerColor: Color
+    val statusIcon: androidx.compose.ui.graphics.vector.ImageVector
+    val statusText: String
+
+    when (connectionState) {
+        ScaleConnectionState.Disconnected -> {
+            dotColor = AppColors.TextHint
+            containerColor = AppColors.SurfaceContainer
+            statusIcon = Icons.Default.Bluetooth
+            statusText = stringResource(R.string.scale_status_disconnected)
+        }
+
+        is ScaleConnectionState.Connecting -> {
+            dotColor = AppColors.Warning
+            containerColor = AppColors.Warning.copy(alpha = 0.12f)
+            statusIcon = Icons.Default.Bluetooth
+            statusText = stringResource(R.string.scale_status_connecting, connectionState.deviceName)
+        }
+
+        is ScaleConnectionState.Connected -> {
+            val weightText = "%.1f".format(Locale.US, connectionState.liveWeightKg).replace('.', ',')
+            dotColor = if (connectionState.isWaitingForZero) AppColors.Warning else AppColors.GreenPrimary
+            containerColor = AppColors.GreenSurface
+            statusIcon = Icons.Default.BluetoothConnected
+            statusText = when {
+                connectionState.isWaitingForZero -> stringResource(R.string.scale_status_waiting_zero)
+                connectionState.isStable -> stringResource(R.string.scale_status_live_stable, weightText)
+                else -> stringResource(R.string.scale_status_live_weight, weightText)
+            }
+        }
+
+        is ScaleConnectionState.Error -> {
+            dotColor = AppColors.Error
+            containerColor = AppColors.Error.copy(alpha = 0.1f)
+            statusIcon = Icons.Default.BluetoothDisabled
+            statusText = stringResource(R.string.scale_status_error_short)
+        }
+    }
+
+    val chipDescription = stringResource(R.string.scale_accessibility_chip, statusText)
+    val connectedState = connectionState as? ScaleConnectionState.Connected
+    val quickCaptureWeightKg = connectedState
+        ?.takeIf {
+            captureMode == ScaleCaptureMode.SEMI_AUTO &&
+                WeighValidation.isValidWeight(it.liveWeightKg)
+        }
+        ?.liveWeightKg
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            onClick = onOpenSheet,
+            shape = RoundedCornerShape(24.dp),
+            color = containerColor,
+            border = BorderStroke(1.dp, dotColor.copy(alpha = 0.35f)),
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 48.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = chipDescription
+                }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
+                Icon(
+                    imageVector = statusIcon,
+                    contentDescription = null,
+                    tint = if (connectionState is ScaleConnectionState.Disconnected) {
+                        AppColors.TextSecondary
+                    } else {
+                        dotColor
+                    },
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = AppColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        if (quickCaptureWeightKg != null) {
+            val weightText = "%.1f".format(Locale.US, quickCaptureWeightKg).replace('.', ',')
+            Button(
+                onClick = onCaptureNow,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = AppColors.OnGreenPrimary
+                ),
+                shape = RoundedCornerShape(24.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.scale_capture_button, weightText),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+            }
+        }
     }
 }
 
