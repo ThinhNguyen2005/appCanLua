@@ -22,7 +22,7 @@ appcompat = "1.7.1"
 firebaseBom = "34.15.0"
 firebaseRemoteConfig = "23.1.0"
 googleServices = "4.5.0"
-firebaseCrashlyticsPlugin = "3.0.7"
+firebaseCrashlyticsPlugin = "3.0.8"
 firebasePerfPlugin = "2.0.2"
 # Play Services
 playServicesAuth = "21.6.0"
