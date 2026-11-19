@@ -958,4 +958,41 @@
     <string name="profile_variety_chart_accessibility">ແຜນພູມການແຈກຢາຍແນວພັນເຂົ້າ: %1$s</string>
     <string name="profile_variety_chart_empty_accessibility">ແຜນພູມການແຈກຢາຍແນວພັນເຂົ້າ: ຍັງບໍ່ມີຂໍ້ມູນ</string>
 
+    <!-- Bluetooth Scale -->
+    <string name="scale_error_permission_required">ຕ້ອງອະນຸຍາດສິດ Bluetooth ເພື່ອເຊື່ອມຕໍ່ຊິງຊັ່ງດິຈິຕອນ</string>
+    <string name="scale_error_bluetooth_unsupported">ອຸປະກອນນີ້ບໍ່ຮອງຮັບ Bluetooth</string>
+    <string name="scale_error_bluetooth_disabled">Bluetooth ປິດຢູ່. ກະລຸນາເປີດ Bluetooth ແລ້ວລອງໃໝ່</string>
+    <string name="scale_error_device_not_found">ບໍ່ພົບຊິງຊັ່ງທີ່ເລືອກ</string>
+    <string name="scale_error_connection_failed">ເຊື່ອມຕໍ່ຊິງຊັ່ງບໍ່ໄດ້. ກວດເບິ່ງວ່າຊິງຊັ່ງເປີດຢູ່</string>
+    <string name="scale_error_connection_lost">ຂາດການເຊື່ອມຕໍ່ກັບຊິງຊັ່ງ Bluetooth</string>
+    <string name="scale_status_disconnected">ຊິງຊັ່ງ Bluetooth</string>
+    <string name="scale_status_connecting">ກຳລັງເຊື່ອມຕໍ່ %1$s…</string>
+    <string name="scale_status_waiting_zero">ກຳລັງລໍຖ້າກັບມາ 0 kg…</string>
+    <string name="scale_status_live_weight">%1$s kg</string>
+    <string name="scale_status_live_stable">%1$s kg · ຄົງທີ່</string>
+    <string name="scale_status_error_short">ຂໍ້ຜິດພາດເຊື່ອມຕໍ່ຊິງຊັ່ງ</string>
+    <string name="scale_capture_button">ບັນທຶກ %1$s kg</string>
+    <string name="scale_capture_button_idle">ວາງເປົາໃສ່ຊິງຊັ່ງ</string>
+    <string name="scale_sheet_title">ເຊື່ອມຕໍ່ຊິງຊັ່ງດິຈິຕອນ</string>
+    <string name="scale_sheet_subtitle">Bluetooth Classic (SPP) · ໃຊ້ຮ່ວມກັບການປ້ອນດ້ວຍມືໄດ້</string>
+    <string name="scale_sheet_permission_banner_title">ຕ້ອງການສິດ Bluetooth</string>
+    <string name="scale_sheet_permission_banner_desc">ອະນຸຍາດສິດອຸປະກອນໃກ້ຄຽງເພື່ອສະແດງຊິງຊັ່ງທີ່ຈັບຄູ່ແລ້ວ.</string>
+    <string name="scale_sheet_grant_permission">ອະນຸຍາດ</string>
+    <string name="scale_sheet_bt_off_banner">Bluetooth ປິດຢູ່ — ກະລຸນາເປີດ Bluetooth ໃນໂທລະສັບ.</string>
+    <string name="scale_mode_label">ໂໝດບັນທຶກ</string>
+    <string name="scale_mode_semi_auto">ເຄິ່ງອັດຕະໂນມັດ</string>
+    <string name="scale_mode_auto_capture">ບັນທຶກອັດຕະໂນມັດ</string>
+    <string name="scale_mode_semi_auto_desc">ສະແດງນ້ຳໜັກສົດ ແລ້ວກົດປຸ່ມເພື່ອບັນທຶກແຕ່ລະເປົາ.</string>
+    <string name="scale_mode_auto_desc">ບັນທຶກອັດຕະໂນມັດເມື່ອຄົງທີ່ (≥ 5 kg) ແລະ ລໍຖ້າ &lt; 2 kg ກ່ອນເປົາຕໍ່ໄປ.</string>
+    <string name="scale_connected_device_label">ເຊື່ອມຕໍ່ແລ້ວ: %1$s</string>
+    <string name="scale_mock_device_name">ຊິງຊັ່ງຈຳລອງ (Debug)</string>
+    <string name="scale_disconnect_button">ຕັດການເຊື່ອມຕໍ່</string>
+    <string name="scale_bonded_devices_title">ອຸປະກອນທີ່ຈັບຄູ່ແລ້ວ</string>
+    <string name="scale_refresh_devices">ໂຫຼດໃໝ່</string>
+    <string name="scale_bonded_devices_empty">ຍັງບໍ່ມີອຸປະກອນທີ່ຈັບຄູ່. ກະລຸນາຈັບຄູ່ໃນການຕັ້ງຄ່າ Bluetooth.</string>
+    <string name="scale_debug_mock_button">ໃຊ້ຊິງຊັ່ງຈຳລອງ (Debug)</string>
+    <string name="scale_debug_mock_desc">ຈຳລອງຮອບການຊັ່ງ 0 → 52.1 kg → 0 kg ເພື່ອທົດສອບໂດຍບໍ່ຕ້ອງມີຊິງຈິງ</string>
+    <string name="scale_accessibility_chip">ສະຖານະຊິງຊັ່ງ Bluetooth: %1$s</string>
+    <string name="scale_accessibility_connect_device">ເຊື່ອມຕໍ່ກັບ %1$s</string>
+
 </resources>

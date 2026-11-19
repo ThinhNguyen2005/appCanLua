@@ -958,5 +958,42 @@
     <string name="profile_variety_chart_accessibility">Rice variety distribution chart showing %1$s</string>
     <string name="profile_variety_chart_empty_accessibility">Rice variety distribution chart: no data yet</string>
 
+    <!-- Bluetooth Scale -->
+    <string name="scale_error_permission_required">Bluetooth permission is required to connect to a scale</string>
+    <string name="scale_error_bluetooth_unsupported">This device does not support Bluetooth</string>
+    <string name="scale_error_bluetooth_disabled">Bluetooth is turned off. Please enable Bluetooth and try again</string>
+    <string name="scale_error_device_not_found">Selected scale device could not be found</string>
+    <string name="scale_error_connection_failed">Could not connect to the scale. Check that it is powered on</string>
+    <string name="scale_error_connection_lost">Lost connection to Bluetooth scale</string>
+    <string name="scale_status_disconnected">Bluetooth Scale</string>
+    <string name="scale_status_connecting">Connecting to %1$s…</string>
+    <string name="scale_status_waiting_zero">Waiting for zero kg…</string>
+    <string name="scale_status_live_weight">%1$s kg</string>
+    <string name="scale_status_live_stable">%1$s kg · Stable</string>
+    <string name="scale_status_error_short">Scale connection error</string>
+    <string name="scale_capture_button">Capture %1$s kg</string>
+    <string name="scale_capture_button_idle">Place bag on scale</string>
+    <string name="scale_sheet_title">Connect Digital Scale</string>
+    <string name="scale_sheet_subtitle">Bluetooth Classic (SPP) · Works alongside manual keyboard entry</string>
+    <string name="scale_sheet_permission_banner_title">Bluetooth Permission Required</string>
+    <string name="scale_sheet_permission_banner_desc">Grant nearby device permission to list paired digital scales.</string>
+    <string name="scale_sheet_grant_permission">Grant Permission</string>
+    <string name="scale_sheet_bt_off_banner">Bluetooth is off — please enable Bluetooth on your phone.</string>
+    <string name="scale_mode_label">Capture Mode</string>
+    <string name="scale_mode_semi_auto">Semi-Auto</string>
+    <string name="scale_mode_auto_capture">Auto-Capture</string>
+    <string name="scale_mode_semi_auto_desc">Live weight displays continuously; tap Capture to save each bag.</string>
+    <string name="scale_mode_auto_desc">Auto-saves when stable (≥ 5 kg) and waits for &lt; 2 kg before next bag.</string>
+    <string name="scale_connected_device_label">Connected: %1$s</string>
+    <string name="scale_mock_device_name">Mock Scale (Debug)</string>
+    <string name="scale_disconnect_button">Disconnect</string>
+    <string name="scale_bonded_devices_title">Paired Devices</string>
+    <string name="scale_refresh_devices">Refresh</string>
+    <string name="scale_bonded_devices_empty">No paired Bluetooth devices found. Pair your scale in system Bluetooth Settings.</string>
+    <string name="scale_debug_mock_button">Use Mock Scale (Debug)</string>
+    <string name="scale_debug_mock_desc">Simulates 0 → 52.1 kg → 0 kg weighing cycles without physical hardware</string>
+    <string name="scale_accessibility_chip">Bluetooth scale status: %1$s</string>
+    <string name="scale_accessibility_connect_device">Connect to %1$s</string>
+
 </resources>
 

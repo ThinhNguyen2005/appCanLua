@@ -955,4 +955,41 @@
     <string name="profile_variety_chart_accessibility">ក្រាហ្វបង្ហាញការបែងចែកពូជស្រូវ៖ %1$s</string>
     <string name="profile_variety_chart_empty_accessibility">ក្រាហ្វបង្ហាញការបែងចែកពូជស្រូវ៖ មិនទាន់មានទិន្នន័យ</string>
 
+    <!-- Bluetooth Scale -->
+    <string name="scale_error_permission_required">ត្រូវការសិទ្ធិ Bluetooth ដើម្បីភ្ជាប់ជញ្ជីងអេឡិចត្រូនិក</string>
+    <string name="scale_error_bluetooth_unsupported">ឧបករណ៍នេះមិនគាំទ្រ Bluetooth ទេ</string>
+    <string name="scale_error_bluetooth_disabled">Bluetooth ត្រូវបានបិទ។ សូមបើក Bluetooth រួចព្យាយាមម្តងទៀត</string>
+    <string name="scale_error_device_not_found">រកមិនឃើញជញ្ជីងដែលបានជ្រើសរើសទេ</string>
+    <string name="scale_error_connection_failed">មិនអាចភ្ជាប់ជញ្ជីងបានទេ។ សូមពិនិត្យថាជញ្ជីងបើកភ្លើង</string>
+    <string name="scale_error_connection_lost">បាត់បង់ការតភ្ជាប់ជាមួយជញ្ជីង Bluetooth</string>
+    <string name="scale_status_disconnected">ជញ្ជីង Bluetooth</string>
+    <string name="scale_status_connecting">កំពុងភ្ជាប់ %1$s…</string>
+    <string name="scale_status_waiting_zero">កំពុងរង់ចាំត្រឡប់ទៅ 0 kg…</string>
+    <string name="scale_status_live_weight">%1$s kg</string>
+    <string name="scale_status_live_stable">%1$s kg · ថេរ</string>
+    <string name="scale_status_error_short">កំហុសតភ្ជាប់ជញ្ជីង</string>
+    <string name="scale_capture_button">កត់ត្រា %1$s kg</string>
+    <string name="scale_capture_button_idle">ដាក់ការ៉ុងលើជញ្ជីង</string>
+    <string name="scale_sheet_title">ភ្ជាប់ជញ្ជីងអេឡិចត្រូនិក</string>
+    <string name="scale_sheet_subtitle">Bluetooth Classic (SPP) · ប្រើរួមជាមួយក្តារចុចដោយដៃបាន</string>
+    <string name="scale_sheet_permission_banner_title">ត្រូវការសិទ្ធិ Bluetooth</string>
+    <string name="scale_sheet_permission_banner_desc">សូមផ្តល់សិទ្ធិឧបករណ៍ជិតខាងដើម្បីបង្ហាញជញ្ជីងដែលបានផ្គូផ្គង។</string>
+    <string name="scale_sheet_grant_permission">ផ្តល់សិទ្ធិ</string>
+    <string name="scale_sheet_bt_off_banner">Bluetooth កំពុងបិទ — សូមបើក Bluetooth លើទូរស័ព្ទ។</string>
+    <string name="scale_mode_label">របៀបកត់ត្រា</string>
+    <string name="scale_mode_semi_auto">ពាក់កណ្តាលស្វ័យប្រវត្តិ</string>
+    <string name="scale_mode_auto_capture">កត់ត្រាស្វ័យប្រវត្តិ</string>
+    <string name="scale_mode_semi_auto_desc">បង្ហាញទម្ងន់ផ្ទាល់ រួចចុចប៊ូតុងដើម្បីរក្សាទុកការ៉ុងនីមួយៗ។</string>
+    <string name="scale_mode_auto_desc">រក្សាទុកស្វ័យប្រវត្តិពេលថេរ (≥ 5 kg) និងរង់ចាំ &lt; 2 kg មុនការ៉ុងបន្ទាប់។</string>
+    <string name="scale_connected_device_label">បានភ្ជាប់៖ %1$s</string>
+    <string name="scale_mock_device_name">ជញ្ជីងសាកល្បង (Debug)</string>
+    <string name="scale_disconnect_button">ផ្តាច់ការតភ្ជាប់</string>
+    <string name="scale_bonded_devices_title">ឧបករណ៍ដែលបានផ្គូផ្គង</string>
+    <string name="scale_refresh_devices">ផ្ទុកឡើងវិញ</string>
+    <string name="scale_bonded_devices_empty">មិនទាន់មានឧបករណ៍ផ្គូផ្គងទេ។ សូមផ្គូផ្គងជញ្ជីងក្នុងការកំណត់ Bluetooth។</string>
+    <string name="scale_debug_mock_button">ប្រើជញ្ជីងសាកល្បង (Debug)</string>
+    <string name="scale_debug_mock_desc">សាកល្បងទិន្នន័យ 0 → 52.1 kg → 0 kg ដោយមិនចាំបាច់មានជញ្ជីងពិត</string>
+    <string name="scale_accessibility_chip">ស្ថានភាពជញ្ជីង Bluetooth៖ %1$s</string>
+    <string name="scale_accessibility_connect_device">ភ្ជាប់ទៅ %1$s</string>
+
 </resources>
