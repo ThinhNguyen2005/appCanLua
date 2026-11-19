@@ -45,7 +45,7 @@ mapsCompose = "8.3.0"
 accompanist = "0.37.3"
 # Networking
 okhttp = "5.4.0"
-gson = "2.14.0"
+gson = "2.15.0"
 # Markdown
 markwon = "4.6.2"
 # Coil
