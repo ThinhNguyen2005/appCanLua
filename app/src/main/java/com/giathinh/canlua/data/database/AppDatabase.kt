@@ -30,10 +30,13 @@ import com.giathinh.canlua.data.converter.DateConverter
         RicePrice::class,
         PricePoint::class,
         NewsArticle::class,
-        com.giathinh.canlua.data.model.DeletedCard::class
+        com.giathinh.canlua.data.model.DeletedCard::class,
+        com.giathinh.canlua.data.model.CardSyncState::class,
+        com.giathinh.canlua.data.model.MutationReceipt::class,
+        com.giathinh.canlua.data.model.SyncOutbox::class
     ],
-    version = 19,
-    exportSchema = false
+    version = 20,
+    exportSchema = true
 )
 @TypeConverters(DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -44,6 +47,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ricePriceDao(): RicePriceDao
     abstract fun newsArticleDao(): NewsArticleDao
     abstract fun deletedCardDao(): com.giathinh.canlua.data.dao.DeletedCardDao
+    abstract fun cardSyncStateDao(): com.giathinh.canlua.data.dao.CardSyncStateDao
+    abstract fun mutationReceiptDao(): com.giathinh.canlua.data.dao.MutationReceiptDao
+    abstract fun syncOutboxDao(): com.giathinh.canlua.data.dao.SyncOutboxDao
 
     companion object {
         @Volatile
@@ -73,7 +79,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_15_16,
                     MIGRATION_16_17,
                     MIGRATION_17_18,
-                    MIGRATION_18_19
+                    MIGRATION_18_19,
+                    MIGRATION_19_20
                 ).setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 INSTANCE = instance
@@ -394,6 +401,100 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_18_19 = object : Migration(18, 19) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE cards ADD COLUMN overpaidAmount REAL NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v19 → v20 — Atomic mutation + sync snapshot.
+         *
+         * Thêm revision/syncId cho Card, syncId/ordinal cho WeightEntry,
+         * syncId/operationId cho Transaction; backfill định danh logical từ
+         * firestoreId cũ hoặc UUID (randomblob — tương thích API24, không window
+         * function). Ordinal backfill theo thứ tự (timestamp, id) bằng correlated
+         * count. Tạo 3 bảng trạng thái sync. KHÔNG đổi dữ liệu nghiệp vụ cũ.
+         */
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // --- Cards ---
+                db.execSQL("ALTER TABLE cards ADD COLUMN revision INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE cards ADD COLUMN syncId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE cards SET syncId = COALESCE(firestoreId, lower(hex(randomblob(16)))) WHERE syncId = ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cards_syncId` ON `cards` (`syncId`)")
+
+                // --- Weight entries ---
+                db.execSQL("ALTER TABLE weight_entries ADD COLUMN syncId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE weight_entries ADD COLUMN ordinal INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE weight_entries SET syncId = COALESCE(firestoreId, lower(hex(randomblob(16)))) WHERE syncId = ''")
+                db.execSQL(
+                    """
+                    UPDATE weight_entries SET ordinal = (
+                        SELECT COUNT(*) FROM weight_entries w2
+                        WHERE w2.cardId = weight_entries.cardId
+                          AND (w2.timestamp < weight_entries.timestamp
+                               OR (w2.timestamp = weight_entries.timestamp AND w2.id < weight_entries.id))
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_cardId_ordinal` ON `weight_entries` (`cardId`, `ordinal`)")
+
+                // --- Transactions ---
+                db.execSQL("ALTER TABLE transactions ADD COLUMN syncId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN operationId TEXT")
+                db.execSQL("UPDATE transactions SET syncId = COALESCE(firestoreId, lower(hex(randomblob(16)))) WHERE syncId = ''")
+
+                // --- Card sync state (tồn tại sau khi xóa phiếu) ---
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `card_sync_state` (
+                        `syncId` TEXT NOT NULL,
+                        `ownerUid` TEXT NOT NULL,
+                        `localRevision` INTEGER NOT NULL,
+                        `baseRemoteRevision` TEXT,
+                        `ackedRemoteRevision` TEXT,
+                        `protocolState` TEXT NOT NULL,
+                        PRIMARY KEY(`syncId`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_card_sync_state_ownerUid` ON `card_sync_state` (`ownerUid`)")
+                db.execSQL(
+                    """
+                    INSERT INTO card_sync_state (syncId, ownerUid, localRevision, baseRemoteRevision, ackedRemoteRevision, protocolState)
+                    SELECT syncId, ownerUid, revision, NULL, NULL, 'LEGACY' FROM cards
+                    """.trimIndent()
+                )
+
+                // --- Mutation receipts (idempotency) ---
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `mutation_receipts` (
+                        `ownerUid` TEXT NOT NULL,
+                        `operationId` TEXT NOT NULL,
+                        `commandHash` TEXT NOT NULL,
+                        `createdCardId` INTEGER,
+                        `resultCode` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`ownerUid`, `operationId`)
+                    )
+                    """.trimIndent()
+                )
+
+                // --- Sync outbox (snapshot bất biến) ---
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `sync_outbox` (
+                        `ownerUid` TEXT NOT NULL,
+                        `syncId` TEXT NOT NULL,
+                        `localRevision` INTEGER NOT NULL,
+                        `sessionGeneration` INTEGER NOT NULL,
+                        `baseRemoteRevision` TEXT,
+                        `payload` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`ownerUid`, `syncId`, `localRevision`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_outbox_ownerUid` ON `sync_outbox` (`ownerUid`)")
             }
         }
     }

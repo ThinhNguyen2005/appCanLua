@@ -2,6 +2,7 @@ package com.giathinh.canlua.ui.viewmodel
 
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
+import com.giathinh.canlua.domain.CardMutationResult
 import com.giathinh.canlua.repository.SettingsRepository
 import com.giathinh.canlua.repository.SyncableCardRepository
 import com.giathinh.canlua.repository.WeighDefaults
@@ -88,89 +89,99 @@ class WeightInputViewModelTest {
     }
 
     @Test
-    fun `updateCardBagWeight calls repository update and recalc`() = runTest(testDispatcher) {
+    fun `updateCardBagWeight patches bag weight with recalc`() = runTest(testDispatcher) {
         val vm = createViewModel()
-        val slot = slot<Card>()
-        coEvery { repository.updateCard(capture(slot)) } coAnswers { }
+        val transform = slot<(Card) -> Card>()
+        coEvery { repository.patchCard(any(), any(), any(), capture(transform)) } returns CardMutationResult.Success(defaultCard)
 
         vm.updateCardBagWeight(1L, 1.2)
         advanceUntilIdle()
 
-        coVerify { repository.updateCard(any()) }
-        coVerify { repository.updateCardCalculations(1L) }
-        assertEquals(1.2, slot.captured.bagWeight, 0.001)
+        coVerify { repository.patchCard(1L, any(), true, any()) }
+        assertEquals(1.2, transform.captured(defaultCard).bagWeight, 0.001)
     }
 
     @Test
-    fun `updateCardBagMethod updates sampling method and recalcs`() = runTest(testDispatcher) {
+    fun `updateCardBagMethod sampling normalizes bagWeight and recalcs`() = runTest(testDispatcher) {
         val vm = createViewModel()
-        val slot = slot<Card>()
-        coEvery { repository.updateCard(capture(slot)) } coAnswers { }
+        val transform = slot<(Card) -> Card>()
+        coEvery { repository.patchCard(any(), any(), any(), capture(transform)) } returns CardMutationResult.Success(defaultCard)
 
         vm.updateCardBagMethod(1L, isSampling = true, sampleCount = 10, sampleTotalWeight = 11.5)
         advanceUntilIdle()
 
-        coVerify { repository.updateCard(any()) }
-        coVerify { repository.updateCardCalculations(1L) }
-        assertTrue(slot.captured.bagMethodIsSampling)
-        assertEquals(10, slot.captured.bagSampleCount)
-        assertEquals(11.5, slot.captured.bagSampleTotalWeight, 0.001)
+        coVerify { repository.patchCard(1L, any(), true, any()) }
+        val result = transform.captured(defaultCard)
+        assertTrue(result.bagMethodIsSampling)
+        assertEquals(10, result.bagSampleCount)
+        assertEquals(11.5, result.bagSampleTotalWeight, 0.001)
+        assertEquals(1.15, result.bagWeight, 0.0001)
     }
 
     @Test
-    fun `updateCardImpurityWeight updates impurity and recalcs`() = runTest(testDispatcher) {
+    fun `updateCardBagMethod non-sampling normalizes bagWeight to 1 over count`() = runTest(testDispatcher) {
         val vm = createViewModel()
-        val slot = slot<Card>()
-        coEvery { repository.updateCard(capture(slot)) } coAnswers { }
+        val transform = slot<(Card) -> Card>()
+        coEvery { repository.patchCard(any(), any(), any(), capture(transform)) } returns CardMutationResult.Success(defaultCard)
+
+        vm.updateCardBagMethod(1L, isSampling = false, sampleCount = 10, sampleTotalWeight = 999.0)
+        advanceUntilIdle()
+
+        val result = transform.captured(defaultCard)
+        assertEquals(0.1, result.bagWeight, 0.0001)
+        assertEquals(10, result.bagSampleCount)
+        assertFalse(result.bagMethodIsSampling)
+    }
+
+    @Test
+    fun `updateCardImpurityWeight patches impurity with recalc`() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        val transform = slot<(Card) -> Card>()
+        coEvery { repository.patchCard(any(), any(), any(), capture(transform)) } returns CardMutationResult.Success(defaultCard)
 
         vm.updateCardImpurityWeight(1L, 2.5)
         advanceUntilIdle()
 
-        coVerify { repository.updateCard(any()) }
-        coVerify { repository.updateCardCalculations(1L) }
-        assertEquals(2.5, slot.captured.impurityWeight, 0.001)
+        coVerify { repository.patchCard(1L, any(), true, any()) }
+        assertEquals(2.5, transform.captured(defaultCard).impurityWeight, 0.001)
     }
 
     @Test
-    fun `updateCardPricePerKg updates price and recalcs`() = runTest(testDispatcher) {
+    fun `updateCardPricePerKg patches price with recalc`() = runTest(testDispatcher) {
         val vm = createViewModel()
-        val slot = slot<Card>()
-        coEvery { repository.updateCard(capture(slot)) } coAnswers { }
+        val transform = slot<(Card) -> Card>()
+        coEvery { repository.patchCard(any(), any(), any(), capture(transform)) } returns CardMutationResult.Success(defaultCard)
 
         vm.updateCardPricePerKg(1L, 8500.0)
         advanceUntilIdle()
 
-        coVerify { repository.updateCard(any()) }
-        coVerify { repository.updateCardCalculations(1L) }
-        assertEquals(8500.0, slot.captured.pricePerKg, 0.001)
+        coVerify { repository.patchCard(1L, any(), true, any()) }
+        assertEquals(8500.0, transform.captured(defaultCard).pricePerKg, 0.001)
     }
 
     @Test
-    fun `updateCardMoisture updates moisture and recalcs`() = runTest(testDispatcher) {
+    fun `updateCardMoisture patches moisture with recalc`() = runTest(testDispatcher) {
         val vm = createViewModel()
-        val slot = slot<Card>()
-        coEvery { repository.updateCard(capture(slot)) } coAnswers { }
+        val transform = slot<(Card) -> Card>()
+        coEvery { repository.patchCard(any(), any(), any(), capture(transform)) } returns CardMutationResult.Success(defaultCard)
 
         vm.updateCardMoisture(1L, 15.0)
         advanceUntilIdle()
 
-        coVerify { repository.updateCard(any()) }
-        coVerify { repository.updateCardCalculations(1L) }
-        assertEquals(15.0, slot.captured.moisturePercent, 0.001)
+        coVerify { repository.patchCard(1L, any(), true, any()) }
+        assertEquals(15.0, transform.captured(defaultCard).moisturePercent, 0.001)
     }
 
     @Test
-    fun `toggleCardLock flips lock without recalculating`() = runTest(testDispatcher) {
+    fun `toggleCardLock uses explicit setCardLocked command`() = runTest(testDispatcher) {
         val vm = createViewModel()
-        val slot = slot<Card>()
-        coEvery { repository.updateCard(capture(slot)) } coAnswers { }
+        coEvery { repository.setCardLocked(any(), any(), any()) } returns CardMutationResult.Success(defaultCard.copy(isLocked = true))
 
         vm.toggleCardLock(1L)
         advanceUntilIdle()
 
-        coVerify { repository.updateCard(any()) }
+        coVerify { repository.setCardLocked(1L, defaultCard.revision, true) }
         coVerify(exactly = 0) { repository.updateCardCalculations(1L) }
-        assertTrue(slot.captured.isLocked)
     }
 
     @Test

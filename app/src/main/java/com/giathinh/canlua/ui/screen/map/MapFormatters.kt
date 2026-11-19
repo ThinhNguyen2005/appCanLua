@@ -16,7 +16,7 @@ internal object MapFormatters {
 
     fun number(value: Double): String =
         if (value % 1.0 == 0.0) numberFormat.format(value.toLong())
-        else "%.2f".format(value)
+        else "%.2f".format(Locale.US, value)
 
     fun date(date: Date): String = dateFormat.format(date)
 }

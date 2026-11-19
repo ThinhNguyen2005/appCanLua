@@ -4,6 +4,8 @@ import com.giathinh.canlua.R
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -230,6 +232,15 @@ fun FinancialSummaryCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .toggleable(
+                        value = isPaid,
+                        role = Role.Switch,
+                        enabled = !isLocked,
+                        onValueChange = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onPaidChange(it)
+                        }
+                    )
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -251,12 +262,7 @@ fun FinancialSummaryCard(
                 }
                 Switch(
                     checked = isPaid,
-                    onCheckedChange = {
-                        if (!isLocked) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onPaidChange(it)
-                        }
-                    },
+                    onCheckedChange = null,
                     enabled = !isLocked,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,

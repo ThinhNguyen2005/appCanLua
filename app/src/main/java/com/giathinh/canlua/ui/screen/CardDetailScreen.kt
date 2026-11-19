@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -254,7 +255,7 @@ fun CardDetailScreenContent(
                     onClick = { navController.popBackStack() },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AppColors.GreenPrimary,
-                        contentColor = Color.White
+                        contentColor = AppColors.OnGreenPrimary
                     ),
                     shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
                     modifier = Modifier
@@ -300,7 +301,7 @@ fun CardDetailScreenContent(
                         },
                         expanded = scrollDir.isScrollingUp || !scrollState.canScrollBackward,
                         containerColor = if (c.isLocked) AppColors.GoldDark else AppColors.GreenPrimary,
-                        contentColor = Color.White,
+                        contentColor = if (c.isLocked) Color.White else AppColors.OnGreenPrimary,
                         shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
                         elevation = FloatingActionButtonDefaults.elevation(
                             defaultElevation = 4.dp,
@@ -830,10 +831,13 @@ fun EditCardDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        // T09 (#15): chặn chiều cao tối đa 90% màn hình để footer (Hủy/Lưu) luôn
+        // hiển thị trên màn nhỏ / ngang / font chữ lớn. Body dùng weight + scroll.
+        val maxDialogHeight = LocalConfiguration.current.screenHeightDp.dp * 0.9f
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.97f)
-                .wrapContentHeight(),
+                .heightIn(max = maxDialogHeight),
             shape = RoundedCornerShape(24.dp),
             color = AppColors.CardBg,
             tonalElevation = 6.dp
@@ -926,9 +930,13 @@ fun EditCardDialog(
                 }
 
                 // ── Tab content ───────────────────────────────────────────────
+                // weight(1f, fill = false): chiếm phần còn lại khi nội dung dài
+                // (cuộn bên trong), nhưng co theo nội dung khi ngắn → footer không
+                // bị đẩy khỏi màn hình.
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -1237,10 +1245,14 @@ fun EditCardDialog(
                             onConfirm(updated)
                         },
                         enabled = isValid,
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
-                        shape = RoundedCornerShape(12.dp)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.GreenPrimary,
+                            contentColor = AppColors.OnGreenPrimary
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                     ) {
-                        Text(stringResource(R.string.card_detail_save_changes), color = Color.White)
+                        Text(stringResource(R.string.card_detail_save_changes), color = AppColors.OnGreenPrimary)
                     }
                 }
             }
@@ -1390,13 +1402,16 @@ fun EditWeightEntryDialog(
             Button(
                 onClick = { parsedWeight?.let(onConfirm) },
                 enabled = isValid,
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = AppColors.OnGreenPrimary
+                ),
                 shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
                 modifier = Modifier.heightIn(min = AppDimensions.TouchTargetMin)
             ) {
                 Text(
                     text = stringResource(R.string.card_detail_save_changes),
-                    color = Color.White,
+                    color = AppColors.OnGreenPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -1596,11 +1611,14 @@ fun AddPaymentDialog(
                     onConfirm(rawAmount, desc)
                 },
                 enabled = isValid,
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.GreenPrimary,
+                    contentColor = AppColors.OnGreenPrimary
+                ),
                 shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
                 modifier = Modifier.heightIn(min = AppDimensions.TouchTargetMin)
             ) {
-                Text("Xác nhận trả", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Xác nhận trả", color = AppColors.OnGreenPrimary, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

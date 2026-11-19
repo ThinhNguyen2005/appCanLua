@@ -14,6 +14,8 @@ import com.giathinh.canlua.data.model.VarietyStat
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.data.model.serialize
 import com.giathinh.canlua.data.model.deserializeCard
+import com.giathinh.canlua.domain.CardError
+import com.giathinh.canlua.domain.CardMutationResult
 import com.giathinh.canlua.util.RiceSettlement
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -40,13 +42,32 @@ class CardRepository @Inject constructor(
     private val weightEntryDao: WeightEntryDao,
     private val transactionDao: TransactionDao,
     private val deletedCardDao: com.giathinh.canlua.data.dao.DeletedCardDao,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val syncStateDao: com.giathinh.canlua.data.dao.CardSyncStateDao = db.cardSyncStateDao(),
+    private val receiptDao: com.giathinh.canlua.data.dao.MutationReceiptDao = db.mutationReceiptDao(),
+    private val outboxDao: com.giathinh.canlua.data.dao.SyncOutboxDao = db.syncOutboxDao()
 ) {
     /** Empty string khi chưa sign-in → DAO query trả empty (không match row nào). */
     private fun uid(): String = authManager.currentUser?.uid.orEmpty()
 
+    private fun newSyncId(): String = java.util.UUID.randomUUID().toString()
+
+    /** Đảm bảo tồn tại hàng trạng thái sync cho phiếu (idempotent). */
+    private suspend fun ensureSyncState(syncId: String, ownerUid: String, revision: Long, state: String) {
+        val existing = syncStateDao.getBySyncId(syncId)
+        if (existing == null) {
+            syncStateDao.insert(
+                com.giathinh.canlua.data.model.CardSyncState(
+                    syncId = syncId, ownerUid = ownerUid, localRevision = revision, protocolState = state
+                )
+            )
+        } else {
+            syncStateDao.update(existing.copy(localRevision = revision, protocolState = state))
+        }
+    }
+
     fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards(uid()).map { list ->
-        list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
+        list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd, it.ownerUid)) }
     }
 
     suspend fun getCardsWithDetails(uid: String = uid()): List<com.giathinh.canlua.data.model.CardWithDetails> {
@@ -62,18 +83,25 @@ class CardRepository @Inject constructor(
     ): Int = db.withTransaction {
         var count = 0
         for (wrapper in wrappers) {
+            // T06/T07: bản sao import mang định danh cloud MỚI (firestoreId=null,
+            // syncId mới) để không ghi đè phiếu gốc trên cloud; mã hóa CCCD tại chỗ.
+            val cardSyncId = newSyncId()
             val cardCopy = wrapper.card.copy(
                 id = 0,
                 ownerUid = ownerUid,
+                firestoreId = null,
+                syncId = cardSyncId,
+                revision = 1L,
                 cccd = CccdCrypto.encrypt(wrapper.card.cccd, ownerUid)
             )
             val newCardId = cardDao.insertCard(cardCopy)
-            for (entry in wrapper.entries) {
-                val entryCopy = entry.copy(id = 0, cardId = newCardId)
+            ensureSyncState(cardSyncId, ownerUid, 1L, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+            for ((idx, entry) in wrapper.entries.withIndex()) {
+                val entryCopy = entry.copy(id = 0, cardId = newCardId, firestoreId = null, syncId = newSyncId(), ordinal = idx)
                 weightEntryDao.insertWeightEntry(entryCopy)
             }
             for (tx in wrapper.transactions) {
-                val txCopy = tx.copy(id = 0, cardId = newCardId)
+                val txCopy = tx.copy(id = 0, cardId = newCardId, firestoreId = null, syncId = newSyncId())
                 transactionDao.insertTransaction(txCopy)
             }
             updateCardCalculations(newCardId)
@@ -96,29 +124,225 @@ class CardRepository @Inject constructor(
      */
     suspend fun insertCard(card: Card): Long {
         val now = System.currentTimeMillis()
+        val owner = card.ownerUid.ifBlank { uid() }
+        val syncId = card.syncId.ifBlank { newSyncId() }
         val owned = card.copy(
-            ownerUid = card.ownerUid.ifBlank { uid() },
+            ownerUid = owner,
+            syncId = syncId,
+            revision = if (card.revision <= 0L) 1L else card.revision,
             lastModifiedMs = if (card.lastModifiedMs == 0L) now else card.lastModifiedMs,
-            cccd = CccdCrypto.encrypt(card.cccd)
+            cccd = CccdCrypto.encrypt(card.cccd, owner)
         )
-        return cardDao.insertCard(owned)
+        return db.withTransaction {
+            val id = cardDao.insertCard(owned)
+            ensureSyncState(syncId, owner, owned.revision, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+            id
+        }
     }
 
     /**
-     * Update card. Tự stamp lại `lastModifiedMs` để conflict resolver biết
-     * bản local mới hơn cloud (cloud sẽ chỉ overwrite local nếu cloud mới hơn).
+     * Update card FULL snapshot — chỉ còn dùng nội bộ cho sync/legacy. Fail-closed:
+     * không tìm thấy phiếu thuộc owner hiện tại → không ghi (trước đây ghi theo PK
+     * kể cả khi lookup null). Chặn phiếu đã khóa; KHÔNG cho mở khóa qua đường này
+     * (mở khóa phải dùng [setCardLocked]). Đọc–kiểm–ghi trong một transaction và
+     * tăng revision để chống mất cập nhật.
      */
     suspend fun updateCard(card: Card) {
-        val existing = cardDao.getCardById(card.id, uid())
-        if (existing?.isLocked == true && card.isLocked) {
-            // Phiếu đã chốt và không phải là thao tác mở khoá -> chặn chỉnh sửa
-            return
+        db.withTransaction {
+            val u = uid()
+            val existing = cardDao.getCardById(card.id, u) ?: return@withTransaction
+            if (existing.isLocked) return@withTransaction
+            val now = System.currentTimeMillis()
+            val syncId = existing.syncId.ifBlank { newSyncId() }
+            cardDao.updateCard(
+                card.copy(
+                    ownerUid = existing.ownerUid,
+                    syncId = syncId,
+                    revision = existing.revision + 1,
+                    isLocked = existing.isLocked,
+                    lastModifiedMs = now,
+                    cccd = CccdCrypto.encrypt(card.cccd, existing.ownerUid)
+                )
+            )
+            ensureSyncState(syncId, existing.ownerUid, existing.revision + 1, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+        }
+    }
+
+    // =========================================================================
+    // T04 — Atomic command API (CAS revision + idempotency + typed errors)
+    // =========================================================================
+
+    /**
+     * Helper mutation trung tâm: đọc–kiểm tra–ghi trong MỘT transaction.
+     * - Fail-closed khi không tìm thấy phiếu thuộc owner ([CardError.NotFound]).
+     * - Chặn phiếu khóa trừ khi [allowLockChange] ( lệnh mở/khóa riêng).
+     * - Từ chối snapshot cũ khi [expectedRevision] lệch ([CardError.StaleRevision]).
+     * - Tăng revision, đóng dấu sync DIRTY, recalc tùy chọn.
+     * Ordinary mutation không được đổi trạng thái khóa (giữ [Card.isLocked] cũ).
+     */
+    private suspend fun mutateCard(
+        cardId: Long,
+        expectedRevision: Long? = null,
+        allowLockChange: Boolean = false,
+        recalculate: Boolean = true,
+        transform: (Card) -> Card
+    ): CardMutationResult = db.withTransaction {
+        val u = uid()
+        if (u.isBlank()) return@withTransaction CardMutationResult.Failure(CardError.SessionExpired)
+        val existing = cardDao.getCardById(cardId, u)
+            ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        if (expectedRevision != null && existing.revision != expectedRevision) {
+            return@withTransaction CardMutationResult.Failure(CardError.StaleRevision)
+        }
+        if (existing.isLocked && !allowLockChange) {
+            return@withTransaction CardMutationResult.Failure(CardError.Locked)
+        }
+        val transformed = transform(existing)
+        val now = System.currentTimeMillis()
+        val syncId = existing.syncId.ifBlank { newSyncId() }
+        val newRevision = existing.revision + 1
+        cardDao.updateCard(
+            transformed.copy(
+                id = existing.id,
+                ownerUid = existing.ownerUid,
+                syncId = syncId,
+                revision = newRevision,
+                isLocked = if (allowLockChange) transformed.isLocked else existing.isLocked,
+                lastModifiedMs = now,
+                cccd = CccdCrypto.encrypt(transformed.cccd, existing.ownerUid)
+            )
+        )
+        ensureSyncState(syncId, existing.ownerUid, newRevision, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+        if (recalculate) updateCardCalculations(cardId)
+        val final = cardDao.getCardById(cardId, u) ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        CardMutationResult.Success(final.copy(cccd = CccdCrypto.decrypt(final.cccd, final.ownerUid)))
+    }
+
+    /** Mở/khóa phiếu tường minh — không ghi đè field nghiệp vụ từ snapshot UI. */
+    suspend fun setCardLocked(cardId: Long, expectedRevision: Long?, locked: Boolean): CardMutationResult =
+        mutateCard(cardId, expectedRevision, allowLockChange = true, recalculate = false) {
+            it.copy(isLocked = locked)
+        }
+
+    /** Sửa field nghiệp vụ (không đổi khóa). Recalc mặc định để đồng bộ tổng. */
+    suspend fun patchCard(
+        cardId: Long,
+        expectedRevision: Long? = null,
+        recalculate: Boolean = true,
+        transform: (Card) -> Card
+    ): CardMutationResult = mutateCard(cardId, expectedRevision, recalculate = recalculate, transform = transform)
+
+    /**
+     * Thêm thanh toán ATOMIC + idempotent. Cùng [operationId] gửi lại trả kết quả
+     * cũ (không nhân đôi); cùng id khác payload → [CardError.Conflict]. Ghi ledger
+     * + recalc + bump revision + receipt trong một transaction.
+     */
+    suspend fun addPayment(
+        cardId: Long,
+        amount: Double,
+        description: String?,
+        operationId: String
+    ): CardMutationResult = db.withTransaction {
+        val u = uid()
+        if (u.isBlank()) return@withTransaction CardMutationResult.Failure(CardError.SessionExpired)
+        val hash = "pay|$cardId|$amount|${description.orEmpty()}"
+        val receipt = receiptDao.get(u, operationId)
+        if (receipt != null) {
+            if (receipt.commandHash != hash) return@withTransaction CardMutationResult.Failure(CardError.Conflict)
+            val card = cardDao.getCardById(cardId, u)
+                ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+            return@withTransaction CardMutationResult.Success(card.copy(cccd = CccdCrypto.decrypt(card.cccd, card.ownerUid)))
+        }
+        val existing = cardDao.getCardById(cardId, u)
+            ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        if (existing.isLocked) return@withTransaction CardMutationResult.Failure(CardError.Locked)
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidPositivePayment(amount)) {
+            return@withTransaction CardMutationResult.Failure(CardError.InvalidInput("Số tiền thanh toán phải dương"))
+        }
+        transactionDao.insertTransaction(
+            com.giathinh.canlua.data.model.Transaction(
+                cardId = cardId,
+                amount = amount,
+                type = com.giathinh.canlua.data.model.TransactionType.PAYMENT,
+                description = description ?: "Thanh toán thêm",
+                syncId = newSyncId(),
+                operationId = operationId
+            )
+        )
+        updateCardCalculations(cardId)
+        val newRevision = existing.revision + 1
+        cardDao.bumpRevision(cardId, u, newRevision, System.currentTimeMillis())
+        ensureSyncState(existing.syncId, u, newRevision, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+        receiptDao.insert(
+            com.giathinh.canlua.data.model.MutationReceipt(
+                ownerUid = u, operationId = operationId, commandHash = hash, createdCardId = cardId
+            )
+        )
+        val final = cardDao.getCardById(cardId, u) ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        CardMutationResult.Success(final.copy(cccd = CccdCrypto.decrypt(final.cccd, final.ownerUid)))
+    }
+
+    /**
+     * Tạo phiếu + cọc ATOMIC + idempotent. Location lookup làm ở NGOÀI (ViewModel)
+     * trước khi gọi — không giữ DB lock trong lúc chờ GPS/network.
+     */
+    suspend fun createCardWithDeposit(
+        card: Card,
+        depositAmount: Double,
+        operationId: String
+    ): CardMutationResult = db.withTransaction {
+        val u = uid()
+        if (u.isBlank()) return@withTransaction CardMutationResult.Failure(CardError.SessionExpired)
+        val hash = "create|${card.name}|$depositAmount|${card.pricePerKg}"
+        val receipt = receiptDao.get(u, operationId)
+        if (receipt != null) {
+            if (receipt.commandHash != hash) return@withTransaction CardMutationResult.Failure(CardError.Conflict)
+            val id = receipt.createdCardId
+            val cardExisting = if (id != null) cardDao.getCardById(id, u) else null
+            return@withTransaction if (cardExisting != null) {
+                CardMutationResult.Success(cardExisting.copy(cccd = CccdCrypto.decrypt(cardExisting.cccd, cardExisting.ownerUid)))
+            } else {
+                CardMutationResult.Failure(CardError.NotFound)
+            }
+        }
+        if (card.name.isBlank()) return@withTransaction CardMutationResult.Failure(CardError.InvalidInput("Tên phiếu trống"))
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidNonNegativeMoney(depositAmount)) {
+            return@withTransaction CardMutationResult.Failure(CardError.InvalidInput("Tiền cọc không hợp lệ"))
         }
         val now = System.currentTimeMillis()
-        cardDao.updateCard(card.copy(
-            lastModifiedMs = now,
-            cccd = CccdCrypto.encrypt(card.cccd)
-        ))
+        val syncId = newSyncId()
+        val newId = cardDao.insertCard(
+            card.copy(
+                id = 0L,
+                ownerUid = u,
+                syncId = syncId,
+                revision = 1L,
+                date = java.util.Date(),
+                lastModifiedMs = now,
+                cccd = CccdCrypto.encrypt(card.cccd, u)
+            )
+        )
+        ensureSyncState(syncId, u, 1L, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+        if (depositAmount > 0.0) {
+            transactionDao.insertTransaction(
+                com.giathinh.canlua.data.model.Transaction(
+                    cardId = newId,
+                    amount = depositAmount,
+                    type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT,
+                    description = "Tiền cọc",
+                    syncId = newSyncId(),
+                    operationId = operationId
+                )
+            )
+        }
+        updateCardCalculations(newId)
+        receiptDao.insert(
+            com.giathinh.canlua.data.model.MutationReceipt(
+                ownerUid = u, operationId = operationId, commandHash = hash, createdCardId = newId
+            )
+        )
+        val final = cardDao.getCardById(newId, u) ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        CardMutationResult.Success(final.copy(cccd = CccdCrypto.decrypt(final.cccd, final.ownerUid)))
     }
 
     /**
@@ -174,16 +398,24 @@ class CardRepository @Inject constructor(
         val tombstone = deletedCardDao.getById(tombstoneId) ?: return null
         val card = deserializeCard(tombstone.cardJson) ?: return null
         // Insert card mới — Room auto generate id mới (id cũ có thể đã collide).
-        // Reset firestoreId để push tạo doc mới (doc cũ đã bị delete sync).
+        // Reset firestoreId + syncId mới để push tạo doc mới, không ghi đè bản gốc.
         val now = System.currentTimeMillis()
-        val newId = cardDao.insertCard(
-            card.copy(
-                id = 0L,
-                firestoreId = null,
-                lastModifiedMs = now,
-                ownerUid = tombstone.ownerUid
+        val syncId = newSyncId()
+        val newId = db.withTransaction {
+            val id = cardDao.insertCard(
+                card.copy(
+                    id = 0L,
+                    firestoreId = null,
+                    syncId = syncId,
+                    revision = 1L,
+                    lastModifiedMs = now,
+                    ownerUid = tombstone.ownerUid,
+                    cccd = CccdCrypto.encrypt(card.cccd, tombstone.ownerUid)
+                )
             )
-        )
+            ensureSyncState(syncId, tombstone.ownerUid, 1L, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+            id
+        }
         deletedCardDao.purge(tombstoneId)
         return newId
     }
@@ -200,6 +432,63 @@ class CardRepository @Inject constructor(
 
     suspend fun purgeTombstone(id: Long) = deletedCardDao.purge(id)
 
+    /**
+     * Sửa phiếu từ edit dialog ATOMIC: cập nhật field nghiệp vụ + ghi ledger delta
+     * (cọc/đã trả) để đạt target + recalc, tất cả trong MỘT transaction. Không tin
+     * aggregate UI gửi lên — tổng luôn tính lại từ ledger. Chặn phiếu khóa.
+     */
+    suspend fun editCardFinancials(card: Card, operationId: String): CardMutationResult = db.withTransaction {
+        val u = uid()
+        if (u.isBlank()) return@withTransaction CardMutationResult.Failure(CardError.SessionExpired)
+        val old = cardDao.getCardById(card.id, u)
+            ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        if (old.isLocked) return@withTransaction CardMutationResult.Failure(CardError.Locked)
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidMoisture(card.moisturePercent)) {
+            return@withTransaction CardMutationResult.Failure(CardError.InvalidInput("Độ ẩm không hợp lệ"))
+        }
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidImpurity(card.impurityWeight, card.impurityIsPercent)) {
+            return@withTransaction CardMutationResult.Failure(CardError.InvalidInput("Tạp chất không hợp lệ"))
+        }
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidNonNegativeMoney(card.pricePerKg)) {
+            return@withTransaction CardMutationResult.Failure(CardError.InvalidInput("Đơn giá không hợp lệ"))
+        }
+        val now = System.currentTimeMillis()
+        val newRevision = old.revision + 1
+        val merged = old.copy(
+            name = card.name,
+            traderName = card.traderName,
+            riceVariety = card.riceVariety,
+            seasonLabel = card.seasonLabel,
+            moisturePercent = card.moisturePercent,
+            impurityWeight = card.impurityWeight,
+            impurityIsPercent = card.impurityIsPercent,
+            pricePerKg = card.pricePerKg,
+            traderPhone = card.traderPhone,
+            fieldAddress = card.fieldAddress,
+            cccd = CccdCrypto.encrypt(card.cccd, u),
+            isPaid = card.isPaid,
+            revision = newRevision,
+            lastModifiedMs = now
+        )
+        cardDao.updateCard(merged)
+        val depositDiff = card.depositAmount - old.depositAmount
+        if (depositDiff != 0.0) {
+            transactionDao.insertTransaction(
+                Transaction(cardId = card.id, amount = depositDiff, type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT, description = "Cập nhật tiền cọc", syncId = newSyncId())
+            )
+        }
+        val paidDiff = card.paidAmount - old.paidAmount
+        if (paidDiff != 0.0) {
+            transactionDao.insertTransaction(
+                Transaction(cardId = card.id, amount = paidDiff, type = com.giathinh.canlua.data.model.TransactionType.PAYMENT, description = "Cập nhật đã trả", syncId = newSyncId())
+            )
+        }
+        updateCardCalculations(card.id)
+        ensureSyncState(old.syncId, u, newRevision, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+        val final = cardDao.getCardById(card.id, u) ?: return@withTransaction CardMutationResult.Failure(CardError.NotFound)
+        CardMutationResult.Success(final.copy(cccd = CccdCrypto.decrypt(final.cccd, final.ownerUid)))
+    }
+
     // Weight Entry operations — không cần filter uid vì FK CASCADE qua cardId,
     // và caller chỉ truy cập sau khi đã có cardId từ getAllCards (đã filter).
     fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>> =
@@ -211,33 +500,83 @@ class CardRepository @Inject constructor(
      * hoặc null nếu card không tồn tại hoặc đã bị khoá.
      */
     suspend fun addWeightEntryAndRecalc(cardId: Long, weight: Double): Int? = db.withTransaction {
-        val card = cardDao.getCardById(cardId, uid()) ?: return@withTransaction null
+        val u = uid()
+        val card = cardDao.getCardById(cardId, u) ?: return@withTransaction null
         if (card.isLocked) return@withTransaction null
-        weightEntryDao.insertWeightEntry(WeightEntry(cardId = cardId, weight = weight))
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidWeight(weight)) return@withTransaction null
+        val nextOrdinal = (weightEntryDao.getMaxOrdinal(cardId) ?: -1) + 1
+        weightEntryDao.insertWeightEntry(
+            WeightEntry(cardId = cardId, weight = weight, syncId = newSyncId(), ordinal = nextOrdinal)
+        )
         updateCardCalculations(cardId)
+        bumpCardRevision(card, u)
         weightEntryDao.getWeightEntriesByCardIdSync(cardId).count { it.weight > 0.0 }
     }
 
     suspend fun insertWeightEntry(weightEntry: WeightEntry): Long = db.withTransaction {
-        val card = cardDao.getCardById(weightEntry.cardId, uid()) ?: return@withTransaction -1L
+        val u = uid()
+        val card = cardDao.getCardById(weightEntry.cardId, u) ?: return@withTransaction -1L
         if (card.isLocked) return@withTransaction -1L
-        val id = weightEntryDao.insertWeightEntry(weightEntry)
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidWeight(weightEntry.weight)) return@withTransaction -1L
+        val nextOrdinal = (weightEntryDao.getMaxOrdinal(weightEntry.cardId) ?: -1) + 1
+        val id = weightEntryDao.insertWeightEntry(
+            weightEntry.copy(
+                syncId = weightEntry.syncId.ifBlank { newSyncId() },
+                ordinal = if (weightEntry.ordinal > 0) weightEntry.ordinal else nextOrdinal
+            )
+        )
         updateCardCalculations(weightEntry.cardId)
+        bumpCardRevision(card, u)
         id
     }
 
     suspend fun updateWeightEntry(weightEntry: WeightEntry) = db.withTransaction {
-        val card = cardDao.getCardById(weightEntry.cardId, uid()) ?: return@withTransaction
+        val u = uid()
+        val card = cardDao.getCardById(weightEntry.cardId, u) ?: return@withTransaction
         if (card.isLocked) return@withTransaction
-        weightEntryDao.updateWeightEntry(weightEntry)
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidWeight(weightEntry.weight)) return@withTransaction
+        // Giữ syncId/ordinal ổn định của bản ghi đang sửa (không tin giá trị UI gửi lên).
+        val current = weightEntryDao.getByCardAndSyncId(weightEntry.cardId, weightEntry.syncId)
+            ?: weightEntryDao.getWeightEntriesByCardIdSync(weightEntry.cardId).firstOrNull { it.id == weightEntry.id }
+        val stable = weightEntry.copy(
+            syncId = current?.syncId ?: weightEntry.syncId.ifBlank { newSyncId() },
+            ordinal = current?.ordinal ?: weightEntry.ordinal
+        )
+        weightEntryDao.updateWeightEntry(stable)
         updateCardCalculations(weightEntry.cardId)
+        bumpCardRevision(card, u)
     }
 
     suspend fun deleteWeightEntry(weightEntry: WeightEntry) = db.withTransaction {
-        val card = cardDao.getCardById(weightEntry.cardId, uid()) ?: return@withTransaction
+        val u = uid()
+        val card = cardDao.getCardById(weightEntry.cardId, u) ?: return@withTransaction
         if (card.isLocked) return@withTransaction
         weightEntryDao.deleteWeightEntry(weightEntry)
         updateCardCalculations(weightEntry.cardId)
+        bumpCardRevision(card, u)
+    }
+
+    /** Tăng revision + đóng dấu sync DIRTY sau mutation dòng cân/giao dịch. */
+    private suspend fun bumpCardRevision(card: Card, u: String) {
+        val newRevision = card.revision + 1
+        cardDao.bumpRevision(card.id, u, newRevision, System.currentTimeMillis())
+        ensureSyncState(card.syncId, u, newRevision, com.giathinh.canlua.data.model.CardSyncState.STATE_DIRTY)
+    }
+
+    /**
+     * T06: Thay toàn bộ children của phiếu bằng snapshot cloud trong MỘT transaction.
+     * Chỉ gọi khi cloud THẮNG (Insert/Update) — không ghép parent mới với children cũ.
+     * Xóa children local vắng mặt trong snapshot → chống bao đã xóa hồi sinh / sửa không đồng bộ.
+     */
+    suspend fun replaceChildrenAtomic(
+        cardId: Long,
+        entries: List<WeightEntry>,
+        transactions: List<Transaction>
+    ) = db.withTransaction {
+        weightEntryDao.deleteWeightEntriesByCardId(cardId)
+        transactionDao.deleteTransactionsByCardId(cardId)
+        entries.forEach { weightEntryDao.insertWeightEntry(it.copy(id = 0L, cardId = cardId)) }
+        transactions.forEach { transactionDao.insertTransaction(it.copy(id = 0L, cardId = cardId)) }
     }
 
     // Transaction operations
@@ -286,21 +625,10 @@ class CardRepository @Inject constructor(
         val paidVnd    = (transactionDao.getTotalPaidAmountByCardId(cardId)    ?: 0.0).roundToLong()
         val depositVnd = (transactionDao.getTotalDepositAmountByCardId(cardId) ?: 0.0).roundToLong()
 
-        // ── Tính toán bằng RiceSettlement (nguồn duy nhất) ──────────────────
+        // ── Tính toán bằng RiceSettlement qua mapper chung (nguồn duy nhất) ──
+        // Dùng CardSettlement để preview (ViewModel) và quyết toán (DB) không lệch.
         val s = RiceSettlement.compute(
-            RiceSettlement.Input(
-                entryWeightsKg         = entries.map { it.weight },
-                bagWeightKg            = card.bagWeight,
-                bagMethodIsSampling    = card.bagMethodIsSampling,
-                bagSampleCount         = card.bagSampleCount,
-                bagSampleTotalWeightKg = card.bagSampleTotalWeight,
-                impurityValue          = card.impurityWeight,
-                impurityIsPercent      = card.impurityIsPercent,
-                moisturePercent        = card.moisturePercent,
-                pricePerKg             = card.pricePerKg,
-                paidVnd                = paidVnd,
-                depositVnd             = depositVnd
-            )
+            com.giathinh.canlua.domain.CardSettlement.toInput(card, entries, paidVnd, depositVnd)
         )
 
         // Kiểm tra bất biến — vi phạm = lỗi code, không phải lỗi user.

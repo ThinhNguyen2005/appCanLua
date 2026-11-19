@@ -34,6 +34,10 @@ interface CardDao {
     @Update
     suspend fun updateCard(card: Card)
 
+    /** Tăng revision CAS cho phiếu thuộc owner — dùng sau mutation atomic. */
+    @Query("UPDATE cards SET revision = :revision, lastModifiedMs = :now WHERE id = :cardId AND ownerUid = :uid")
+    suspend fun bumpRevision(cardId: Long, uid: String, revision: Long, now: Long): Int
+
     @Delete
     suspend fun deleteCard(card: Card)
 

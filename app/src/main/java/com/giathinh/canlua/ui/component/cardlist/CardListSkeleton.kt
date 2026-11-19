@@ -95,14 +95,14 @@ fun SummaryCardSkeleton(
         shape = RoundedCornerShape(20.dp),
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    ShimmerBlock(widthFraction = 0.34f, height = 12.dp, corner = 6.dp, colors = colors, progress = shimmerProgress)
+                    ShimmerBlock(widthFraction = 0.34f, height = 12.dp, corner = 8.dp, colors = colors, progress = shimmerProgress)
                     Spacer(Modifier.height(8.dp))
-                    ShimmerBlock(widthFraction = 0.52f, height = 18.dp, corner = 8.dp, colors = colors, progress = shimmerProgress)
+                    ShimmerBlock(widthFraction = 0.52f, height = 16.dp, corner = 8.dp, colors = colors, progress = shimmerProgress)
                 }
                 ShimmerBlock(widthFraction = 0.18f, height = 24.dp, corner = 12.dp, colors = colors, progress = shimmerProgress)
             }
@@ -111,18 +111,18 @@ fun SummaryCardSkeleton(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(colors.shimmerBase.copy(alpha = 0.38f))
-                            .padding(10.dp),
+                            .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         ShimmerBox(
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(24.dp),
                             cornerRadius = 8.dp,
                             colors = colors,
                             progress = shimmerProgress
                         )
-                        ShimmerBlock(widthFraction = 0.82f, height = 10.dp, corner = 5.dp, colors = colors, progress = shimmerProgress)
+                        ShimmerBlock(widthFraction = 0.82f, height = 12.dp, corner = 4.dp, colors = colors, progress = shimmerProgress)
                         ShimmerBlock(widthFraction = 0.7f, height = 16.dp, corner = 8.dp, colors = colors, progress = shimmerProgress)
                     }
                 }
@@ -144,18 +144,18 @@ fun SkeletonCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ShimmerBox(
                 modifier = Modifier.size(44.dp),
-                cornerRadius = 14.dp,
+                cornerRadius = 12.dp,
                 colors = colors,
                 progress = shimmerProgress
             )
@@ -164,10 +164,10 @@ fun SkeletonCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 ShimmerBlock(widthFraction = 0.72f, height = 16.dp, corner = 8.dp, colors = colors, progress = shimmerProgress)
-                ShimmerBlock(widthFraction = 0.46f, height = 12.dp, corner = 6.dp, colors = colors, progress = shimmerProgress)
+                ShimmerBlock(widthFraction = 0.46f, height = 12.dp, corner = 8.dp, colors = colors, progress = shimmerProgress)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ShimmerBlock(widthFraction = 0.32f, height = 26.dp, corner = 10.dp, colors = colors, progress = shimmerProgress)
-                    ShimmerBlock(widthFraction = 0.28f, height = 26.dp, corner = 10.dp, colors = colors, progress = shimmerProgress)
+                    ShimmerBlock(widthFraction = 0.32f, height = 24.dp, corner = 12.dp, colors = colors, progress = shimmerProgress)
+                    ShimmerBlock(widthFraction = 0.28f, height = 24.dp, corner = 12.dp, colors = colors, progress = shimmerProgress)
                 }
             }
             Column(
@@ -190,7 +190,7 @@ fun SkeletonList(
     Column(modifier = modifier) {
         repeat(count) {
             SkeletonCard(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 progress = sharedProgress
             )
         }

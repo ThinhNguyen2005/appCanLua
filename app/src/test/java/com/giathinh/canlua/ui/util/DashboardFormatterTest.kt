@@ -1,5 +1,6 @@
 package com.giathinh.canlua.ui.util
 
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -13,27 +14,22 @@ import java.util.Locale
  *
  * Lưu ý về locale:
  *  - `moneyFull` dùng `NumberFormat.getNumberInstance(vi-VN)` → output luôn dùng ".".
- *  - `money` / `weight` / `percent` dùng `String.format(...)` mà locale theo
- *    JVM default (KHÔNG hardcode vi-VN) → trên device thật thường là vi-VN
- *    nhưng trên JVM unit test có thể là khác.
- *  - Test này set `Locale.US` để JVM dùng "." làm decimal separator, khớp
- *    với behavior mong đợi trên thiết bị của user Việt Nam (vi-VN cũng dùng ",",
- *    nhưng ta test "." ở đây vì `String.format` mặc định theo JVM).
- *    Quan trọng: test phải ổn định bất kể máy dev nào.
- *
- * Edge cases cần cover:
- *  - Money compact: chuyển đổi đơn vị (đ → k → tr → tỷ) theo magnitude
- *  - Money: làm tròn đúng 1 chữ số thập phân cho "tr", 2 chữ số cho "tỷ"
- *  - Weight: < 1000kg → kg, ≥ 1000kg → tấn
- *  - deltaPercent: trả về null khi previous = 0 (chia cho 0)
- *  - formatDelta: hiển thị "+" với delta dương, "—" cho null
+ *  - `money` / `weight` / `percent` / `formatDelta` dùng `String.format(Locale.US, ...)`
+ *    tường minh để output ổn định qua mọi thiết bị và môi trường CI.
  */
 class DashboardFormatterTest {
 
+    private lateinit var originalLocale: Locale
+
     @Before
     fun setUp() {
-        // Pin JVM default locale để String.format output ổn định qua các máy dev.
+        originalLocale = Locale.getDefault()
         Locale.setDefault(Locale.US)
+    }
+
+    @After
+    fun tearDown() {
+        Locale.setDefault(originalLocale)
     }
 
     // === money ===
@@ -232,5 +228,15 @@ class DashboardFormatterTest {
     fun `formatDelta sub-percent positive rounds to plus zero`() {
         // 0.4 → %.0f → "0" → "+0%"
         assertEquals("+0%", DashboardFormatter.formatDelta(0.4))
+    }
+
+    @Test
+    fun `companion formatters ignore JVM default locale and keep dot decimal`() {
+        Locale.setDefault(Locale.forLanguageTag("vi-VN"))
+        assertEquals("1.5 tr", DashboardFormatter.money(1_500_000.0))
+        assertEquals("1.50 tỷ", DashboardFormatter.money(1_500_000_000.0))
+        assertEquals("1.5 tấn", DashboardFormatter.weight(1500.0))
+        assertEquals("12.5%", DashboardFormatter.percent(12.5))
+        assertEquals("+16%", DashboardFormatter.formatDelta(15.6))
     }
 }

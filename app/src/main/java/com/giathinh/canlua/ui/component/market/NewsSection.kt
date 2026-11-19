@@ -2,11 +2,9 @@ package com.giathinh.canlua.ui.component.market
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -30,20 +28,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material3.Text
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import com.giathinh.canlua.R
-import com.giathinh.canlua.util.HapticUtil
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,23 +49,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.giathinh.canlua.ui.component.shimmer
-import com.giathinh.canlua.util.CustomTabsLauncher
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.NewsArticle
 import com.giathinh.canlua.data.model.NewsTopic
+import com.giathinh.canlua.ui.component.shimmer
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.AppDimensions
+import com.giathinh.canlua.util.CustomTabsLauncher
+import com.giathinh.canlua.util.HapticUtil
 import java.util.concurrent.TimeUnit
 
 
@@ -239,35 +237,44 @@ private fun TopicFilterRow(
     ) {
         items(items, key = { it.first?.name ?: "_all" }) { (topic, label) ->
             val isSelected = selected == topic
-            val bgColor by animateColorAsState(
-                targetValue = if (isSelected) AppColors.GreenPrimary else AppColors.SurfaceContainer,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "topic_chip_bg"
-            )
-            val textColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White else AppColors.TextSecondary,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "topic_chip_text"
-            )
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .heightIn(min = 40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(bgColor)
-                    .clickable {
-                        HapticUtil.tick(context)
-                        onSelect(topic)
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    HapticUtil.tick(context)
+                    onSelect(topic)
+                },
+                label = {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
                     }
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = textColor
-                )
-            }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = AppColors.SurfaceContainer,
+                    labelColor = AppColors.TextSecondary,
+                    selectedContainerColor = AppColors.GreenPrimary,
+                    selectedLabelColor = Color.White,
+                    selectedLeadingIconColor = Color.White
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = Color.Transparent,
+                    selectedBorderColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.heightIn(min = 48.dp)
+            )
         }
     }
 }
@@ -304,7 +311,7 @@ private fun NewsCard(article: NewsArticle) {
                     toolbarColor = toolbarColor.toArgb()
                 )
             }
-            .padding(vertical = 14.dp, horizontal = 16.dp),
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
         Box(
@@ -351,7 +358,7 @@ private fun NewsCard(article: NewsArticle) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = getTopicDisplayName(article.topic),
@@ -467,7 +474,7 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(bottom = 8.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(AppColors.OfflineBg)
             .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -476,7 +483,7 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
             imageVector = Icons.Default.WifiOff,
             contentDescription = null,
             tint = AppColors.OfflineText,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(16.dp)
         )
         Spacer(Modifier.width(8.dp))
         Text(
@@ -509,7 +516,7 @@ private fun NewsCardSkeleton() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 14.dp, horizontal = 16.dp),
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
         Box(
@@ -520,11 +527,11 @@ private fun NewsCardSkeleton() {
                 .shimmer()
         )
         Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(14.dp)
+                    .height(16.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(AppColors.SurfaceContainer)
                     .shimmer()
@@ -532,16 +539,16 @@ private fun NewsCardSkeleton() {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
-                    .height(14.dp)
+                    .height(16.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(AppColors.SurfaceContainer)
                     .shimmer()
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.height(4.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.4f)
-                    .height(10.dp)
+                    .height(12.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(AppColors.SurfaceContainer)
                     .shimmer()

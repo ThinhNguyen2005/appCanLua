@@ -26,6 +26,14 @@ object AppColors {
             label = "GreenPrimary"
         ).value
     val GreenLight = Color(0xFF4CAF50)
+
+    /**
+     * T09: Chữ trên nền GreenPrimary theo cặp. Dark mode GreenPrimary là xanh nhạt
+     * (#A5D6A7) → phải dùng chữ đậm (không phải Trắng) để đạt tương phản AAA.
+     * Light mode nền #2E7D32 → chữ Trắng (đạt AA/AAA cho chữ lớn).
+     */
+    val OnGreenPrimary: Color
+        @Composable get() = if (isAppInDarkTheme) Color(0xFF0B2410) else Color.White
     val GreenSurface: Color
         @Composable get() = animateColorAsState(
             targetValue = if (isAppInDarkTheme) Dark.GreenSurface else Color(0xFFE8F5E9),

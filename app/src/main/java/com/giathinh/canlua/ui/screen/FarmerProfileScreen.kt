@@ -1,5 +1,6 @@
 package com.giathinh.canlua.ui.screen
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,11 +43,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.giathinh.canlua.R
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.giathinh.canlua.ui.navigation.BottomNavItem
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
+import com.giathinh.canlua.ui.component.dashboard.ChartMetric
 import com.giathinh.canlua.ui.component.dashboard.KpiGrid
 import com.giathinh.canlua.ui.component.dashboard.KpiGridItem
+import com.giathinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
+import com.giathinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.giathinh.canlua.ui.component.profile.FarmerProfileSkeleton
 import com.giathinh.canlua.ui.component.profile.GradientProfileHeader
 import com.giathinh.canlua.ui.component.profile.ProfileSectionTitle
@@ -104,19 +109,24 @@ fun FarmerProfileScreen(
         firebaseUser?.photoUrl?.toString()
     }
 
-    if (showSkeleton) {
-        FarmerProfileSkeleton()
-    } else {
-        FarmerProfileScreenContent(
-            navController = navController,
-            profile = profile,
-            dash = dash,
-            profileViewModel = profileViewModel,
-            dashboardViewModel = dashboardViewModel,
-            isGoogleLoggedIn = isGoogleLoggedIn,
-            googleAvatarUrl = googleAvatarUrl,
-            isGuestMode = isGuestMode
-        )
+    Crossfade(
+        targetState = showSkeleton,
+        label = "farmer_profile_crossfade"
+    ) { isSkeleton ->
+        if (isSkeleton) {
+            FarmerProfileSkeleton()
+        } else {
+            FarmerProfileScreenContent(
+                navController = navController,
+                profile = profile,
+                dash = dash,
+                profileViewModel = profileViewModel,
+                dashboardViewModel = dashboardViewModel,
+                isGoogleLoggedIn = isGoogleLoggedIn,
+                googleAvatarUrl = googleAvatarUrl,
+                isGuestMode = isGuestMode
+            )
+        }
     }
 }
 
@@ -131,6 +141,8 @@ fun FarmerProfileScreenContent(
     googleAvatarUrl: String?,
     isGuestMode: Boolean
 ) {
+    val context = LocalContext.current
+
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
     // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
     val lifetimeStats = dash.overallStats
@@ -149,20 +161,22 @@ fun FarmerProfileScreenContent(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ─── TIER 0: Gradient Hero Header ───
-            item {
-                GradientProfileHeader(
-                    name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_farmer_default_name),
-                    role = profile?.role ?: "FARMER",
-                    email = profile?.email.orEmpty(),
-                    isGoogleLoggedIn = isGoogleLoggedIn,
-                    googleAvatarUrl = googleAvatarUrl
-                )
+            item(key = "header") {
+                Box(modifier = Modifier.animateItem()) {
+                    GradientProfileHeader(
+                        name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_farmer_default_name),
+                        role = profile?.role ?: "FARMER",
+                        email = profile?.email.orEmpty(),
+                        isGoogleLoggedIn = isGoogleLoggedIn,
+                        googleAvatarUrl = googleAvatarUrl
+                    )
+                }
             }
 
             // ─── Guest Mode Login Card ───
             if (isGuestMode) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "guest_promo") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         GuestLoginPromoCard(onLoginClick = { profileViewModel.disableGuestMode() })
                     }
                 }
@@ -170,18 +184,20 @@ fun FarmerProfileScreenContent(
 
             // ─── TIER 1: Quick Stats Glass Grid ───
             // Luôn hiển thị (kể cả khi user mới, seasonsComparison rỗng → hiển thị 0)
-            item {
-                QuickStatsGlassGrid(
-                    seasonCount = lifetimeSeasonCount,
-                    totalNetWeight = lifetimeTotalNetWeight,
-                    totalRevenue = lifetimeTotalRevenue,
-                    revenueLabel = stringResource(R.string.profile_stats_revenue)
-                )
+            item(key = "quick_stats") {
+                Box(modifier = Modifier.animateItem()) {
+                    QuickStatsGlassGrid(
+                        seasonCount = lifetimeSeasonCount,
+                        totalNetWeight = lifetimeTotalNetWeight,
+                        totalRevenue = lifetimeTotalRevenue,
+                        revenueLabel = stringResource(R.string.profile_stats_revenue)
+                    )
+                }
             }
 
             // Section title cho phần thống kê mùa vụ
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            item(key = "season_section_title") {
+                Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                     ProfileSectionTitle(
                         title = stringResource(R.string.profile_season_stats_title),
                         subtitle = stringResource(R.string.profile_season_stats_subtitle)
@@ -189,12 +205,26 @@ fun FarmerProfileScreenContent(
                 }
             }
 
+            // ─── TIER 2: Season Selector Chips ───
+            if (dash.seasons.isNotEmpty()) {
+                item(key = "season_selector") {
+                    SeasonSelectorChip(
+                        seasons = dash.seasons,
+                        selectedSeason = dash.selectedSeason,
+                        onSelect = { season ->
+                            HapticUtil.tick(context)
+                            dashboardViewModel.selectSeason(season)
+                        },
+                        modifier = Modifier.animateItem()
+                    )
+                }
+            }
 
             // ─── TIER 3: Primary KPI Grid 2×2 or Empty Season Stats ───
             val stats = dash.currentStats
             if (stats != null && !stats.isEmpty) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "kpi_grid") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         FarmerPrimaryKpiGrid(
                             stats = stats,
                             previous = dash.previousStats,
@@ -205,8 +235,8 @@ fun FarmerProfileScreenContent(
                 }
 
                 // ─── TIER 4: Secondary Stats Pills ───
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "secondary_stats") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         SecondaryStatsRow(
                             avgMoisture = stats.avgMoisture,
                             totalImpurity = stats.totalImpurity,
@@ -216,9 +246,22 @@ fun FarmerProfileScreenContent(
                     }
                 }
 
+                // ─── TIER 5: Season Comparison Bar Chart ───
+                if (dash.seasonsComparison.isNotEmpty()) {
+                    item(key = "season_comparison_chart") {
+                        Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
+                            SeasonComparisonBarChart(
+                                seasons = dash.seasonsComparison,
+                                selectedSeason = dash.selectedSeason,
+                                metric = ChartMetric.WEIGHT
+                            )
+                        }
+                    }
+                }
+
                 // ─── TIER 6: AI Crop Insights ───
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "ai_insights") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         AiInsightsCard(
                             state = dash.aiAnalysis,
                             onAnalyze = dashboardViewModel::analyzeWithAi,
@@ -227,13 +270,18 @@ fun FarmerProfileScreenContent(
                     }
                 }
             } else {
-                item {
-                    val context = LocalContext.current
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "empty_season") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         EmptySeasonStatsCard(
                             onCreateSlip = {
                                 HapticUtil.tick(context)
-                                navController.navigate(BottomNavItem.SCALE.route)
+                                navController.navigate(BottomNavItem.SCALE.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         )
                     }
@@ -242,17 +290,16 @@ fun FarmerProfileScreenContent(
 
             // ─── TIER 7: Khối Tóm tắt Vụ mùa (thay thế cho Top thương lái mua) ───
             if (dash.seasonsComparison.isNotEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "season_summary") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         SeasonSummaryCard(dash = dash)
                     }
                 }
             }
 
             // ─── Premium card (active hoặc upsell) ───
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val context = LocalContext.current
+            item(key = "premium_card") {
+                Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                     val premiumInfo by com.giathinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
@@ -294,7 +341,7 @@ private fun EmptySeasonStatsCard(onCreateSlip: () -> Unit) {
                 .fillMaxWidth()
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -307,7 +354,7 @@ private fun EmptySeasonStatsCard(onCreateSlip: () -> Unit) {
                     imageVector = Icons.Outlined.Scale,
                     contentDescription = null,
                     tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Text(

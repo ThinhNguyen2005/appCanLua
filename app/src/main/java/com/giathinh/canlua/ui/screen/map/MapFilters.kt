@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
@@ -31,13 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.giathinh.canlua.ui.theme.AppColors
-
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
+import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.util.HapticUtil
 
 /**
@@ -59,13 +62,14 @@ internal fun SearchAndFilterBar(
     totalCount: Int
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(AppColors.CardBg.copy(alpha = 0.96f))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextField(
@@ -94,6 +98,8 @@ internal fun SearchAndFilterBar(
                     }
                 }
             },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
             singleLine = true,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -104,7 +110,7 @@ internal fun SearchAndFilterBar(
             ),
             modifier = Modifier
                 .weight(1f)
-                .height(54.dp)
+                .height(56.dp)
         )
 
         Box(
@@ -141,7 +147,7 @@ internal fun SearchAndFilterBar(
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.Black.copy(alpha = 0.55f))
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
             Text(
                 stringResource(R.string.map_match_count, matchCount, totalCount),
@@ -172,7 +178,7 @@ internal fun FilterChipsRow(
             stringResource(R.string.map_filter_price_header),
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.TextHint,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
         )
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(PriceFilter.entries.size, key = { PriceFilter.entries[it].name }) { idx ->
@@ -198,7 +204,7 @@ internal fun FilterChipsRow(
                 stringResource(R.string.map_filter_variety_header),
                 style = MaterialTheme.typography.labelSmall,
                 color = AppColors.TextHint,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(varieties.size + 1, key = { if (it == 0) "_all" else varieties[it - 1] }) { i ->

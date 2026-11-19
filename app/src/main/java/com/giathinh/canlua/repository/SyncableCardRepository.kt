@@ -3,6 +3,7 @@ package com.giathinh.canlua.repository
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.Transaction
 import com.giathinh.canlua.data.model.WeightEntry
+import com.giathinh.canlua.domain.CardMutationResult
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -84,5 +85,42 @@ class SyncableCardRepository @Inject constructor(
     suspend fun updateCardCalculations(cardId: Long) {
         cardRepository.updateCardCalculations(cardId)
         onLocalMutation()
+    }
+
+    // === T04: Atomic command wrappers — chỉ báo sync sau commit thành công ===
+
+    suspend fun setCardLocked(cardId: Long, expectedRevision: Long?, locked: Boolean): CardMutationResult {
+        val result = cardRepository.setCardLocked(cardId, expectedRevision, locked)
+        if (result.isSuccess) onLocalMutation()
+        return result
+    }
+
+    suspend fun patchCard(
+        cardId: Long,
+        expectedRevision: Long? = null,
+        recalculate: Boolean = true,
+        transform: (Card) -> Card
+    ): CardMutationResult {
+        val result = cardRepository.patchCard(cardId, expectedRevision, recalculate, transform)
+        if (result.isSuccess) onLocalMutation()
+        return result
+    }
+
+    suspend fun addPayment(cardId: Long, amount: Double, description: String?, operationId: String): CardMutationResult {
+        val result = cardRepository.addPayment(cardId, amount, description, operationId)
+        if (result.isSuccess) onLocalMutation()
+        return result
+    }
+
+    suspend fun createCardWithDeposit(card: Card, depositAmount: Double, operationId: String): CardMutationResult {
+        val result = cardRepository.createCardWithDeposit(card, depositAmount, operationId)
+        if (result.isSuccess) onLocalMutation()
+        return result
+    }
+
+    suspend fun editCardFinancials(card: Card, operationId: String): CardMutationResult {
+        val result = cardRepository.editCardFinancials(card, operationId)
+        if (result.isSuccess) onLocalMutation()
+        return result
     }
 }

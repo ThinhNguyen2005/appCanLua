@@ -1,39 +1,39 @@
 package com.giathinh.canlua.ui.component.weight
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
-import androidx.compose.ui.draw.clip
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -50,7 +50,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.util.HapticUtil
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +85,7 @@ fun WeighOptionsSheet(
     ) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
 
     var bagSampling by remember { mutableStateOf(bagMethodIsSampling) }
     var bagsPerKgText by remember {
@@ -100,6 +104,15 @@ fun WeighOptionsSheet(
     val fontOptions = listOf(FontScale.SMALL, FontScale.NORMAL, FontScale.LARGE, FontScale.XLARGE)
     var currentFontScale by remember { mutableStateOf(fontScale) }
     var sliderPosition by remember { mutableFloatStateOf(fontOptions.indexOf(fontScale).coerceAtLeast(0).toFloat()) }
+
+    val segmentedColors = SegmentedButtonDefaults.colors(
+        activeContainerColor = AppColors.GreenPrimary,
+        activeContentColor = Color.White,
+        activeBorderColor = AppColors.GreenPrimary,
+        inactiveContainerColor = AppColors.SurfaceContainer,
+        inactiveContentColor = AppColors.TextSecondary,
+        inactiveBorderColor = AppColors.Divider
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -124,7 +137,7 @@ fun WeighOptionsSheet(
 
             // === Card 1: Cá nhân hóa & hiển thị ===
             Text(
-                text = "CÁ NHÂN HÓA & HIỂN THỊ",
+                text = stringResource(R.string.weigh_options_section_personalize),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextSecondary,
@@ -141,8 +154,16 @@ fun WeighOptionsSheet(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Row 1: Đọc số khi nhập (TTS)
+                    // T09 (#13): cả hàng là toggleable role=Switch để TalkBack đọc
+                    // kèm nhãn "Đọc số khi nhập"; Switch con chỉ trang trí (null).
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = ttsLocal,
+                                role = Role.Switch,
+                                onValueChange = { ttsLocal = it }
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -174,7 +195,7 @@ fun WeighOptionsSheet(
                         Spacer(Modifier.width(12.dp))
                         Switch(
                             checked = ttsLocal,
-                            onCheckedChange = { ttsLocal = it },
+                            onCheckedChange = null,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AppColors.GreenPrimary,
@@ -191,20 +212,37 @@ fun WeighOptionsSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Tạp chất", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.weight(1f))
-                        listOf(false to "kg", true to "%").forEach { (isPercent, label) ->
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (impurityPercent == isPercent) AppColors.GreenPrimary else AppColors.SurfaceContainer,
-                                modifier = Modifier.clickable { impurityPercent = isPercent }
-                            ) {
-                                Text(
-                                    text = label,
-                                    color = if (impurityPercent == isPercent) Color.White else AppColors.TextSecondary,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                )
+                        Text(
+                            text = stringResource(R.string.weight_label_impurity),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val impurityOptions = listOf(
+                            false to stringResource(R.string.unit_kg),
+                            true to stringResource(R.string.unit_percent)
+                        )
+                        SingleChoiceSegmentedButtonRow {
+                            impurityOptions.forEachIndexed { index, (isPercent, label) ->
+                                SegmentedButton(
+                                    selected = impurityPercent == isPercent,
+                                    onClick = {
+                                        HapticUtil.tick(context)
+                                        impurityPercent = isPercent
+                                    },
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = impurityOptions.size
+                                    ),
+                                    colors = segmentedColors,
+                                    modifier = Modifier.heightIn(min = 48.dp)
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
+                                    )
+                                }
                             }
                         }
                     }
@@ -212,7 +250,7 @@ fun WeighOptionsSheet(
                     // Row 2: Cỡ chữ hiển thị
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -271,7 +309,7 @@ fun WeighOptionsSheet(
 
             // === Card 2: Hình thức trừ bao bì ===
             Text(
-                text = "HÌNH THỨC TRỪ BAO BÌ",
+                text = stringResource(R.string.weigh_options_section_bag_deduction),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextSecondary,
@@ -287,38 +325,32 @@ fun WeighOptionsSheet(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Segmented Control
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = AppColors.SurfaceContainer,
-                        modifier = Modifier.fillMaxWidth().height(44.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            val options = listOf(
-                                false to stringResource(R.string.weigh_options_bag_single),
-                                true to stringResource(R.string.weigh_options_bag_sample)
-                            )
-                            options.forEach { (isSample, label) ->
-                                val isSelected = bagSampling == isSample
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (isSelected) AppColors.GreenPrimary else Color.Transparent)
-                                        .clickable { bagSampling = isSample },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else AppColors.TextSecondary
-                                    )
-                                }
+                    val bagOptions = listOf(
+                        false to stringResource(R.string.weigh_options_bag_single),
+                        true to stringResource(R.string.weigh_options_bag_sample)
+                    )
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        bagOptions.forEachIndexed { index, (isSample, label) ->
+                            val isSelected = bagSampling == isSample
+                            SegmentedButton(
+                                selected = isSelected,
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    bagSampling = isSample
+                                },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = bagOptions.size
+                                ),
+                                colors = segmentedColors,
+                                modifier = Modifier.heightIn(min = 48.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
@@ -340,11 +372,11 @@ fun WeighOptionsSheet(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
-                                modifier = Modifier.padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Thông số trừ bao bì từng bao",
+                                    text = stringResource(R.string.weigh_options_bag_single_params_title),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.GreenDark
@@ -353,9 +385,9 @@ fun WeighOptionsSheet(
                                 OutlinedTextField(
                                     value = bagsPerKgText,
                                     onValueChange = { v -> bagsPerKgText = v.filter { it.isDigit() } },
-                                    label = { Text("Số bao trên 1 kg") },
-                                    placeholder = { Text("Mặc định: 8 bao = 1 kg") },
-                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    label = { Text(stringResource(R.string.weigh_options_bags_per_kg_label)) },
+                                    placeholder = { Text(stringResource(R.string.weigh_options_bags_per_kg_placeholder)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -373,11 +405,11 @@ fun WeighOptionsSheet(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
-                                modifier = Modifier.padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Thông số trừ bao bì",
+                                    text = stringResource(R.string.weigh_options_bag_sample_params_title),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.GreenDark
@@ -387,13 +419,13 @@ fun WeighOptionsSheet(
                                 if (useColumnLayout) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
                                         OutlinedTextField(
                                             value = sampleCountText,
                                             onValueChange = { v -> sampleCountText = v.filter { it.isDigit() } },
                                             label = { Text(stringResource(R.string.weigh_options_bag_sample_count)) },
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                             singleLine = true,
                                             modifier = Modifier.fillMaxWidth(),
                                             colors = OutlinedTextFieldDefaults.colors(
@@ -408,7 +440,7 @@ fun WeighOptionsSheet(
                                                     .replace(',', '.')
                                             },
                                             label = { Text(stringResource(R.string.weigh_options_bag_sample_weight)) },
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                             singleLine = true,
                                             modifier = Modifier.fillMaxWidth(),
                                             colors = OutlinedTextFieldDefaults.colors(
@@ -426,7 +458,7 @@ fun WeighOptionsSheet(
                                             value = sampleCountText,
                                             onValueChange = { v -> sampleCountText = v.filter { it.isDigit() } },
                                             label = { Text(stringResource(R.string.weigh_options_bag_sample_count)) },
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                             singleLine = true,
                                             modifier = Modifier.weight(1f),
                                             colors = OutlinedTextFieldDefaults.colors(
@@ -441,7 +473,7 @@ fun WeighOptionsSheet(
                                                     .replace(',', '.')
                                             },
                                             label = { Text(stringResource(R.string.weigh_options_bag_sample_weight)) },
-                                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                             singleLine = true,
                                             modifier = Modifier.weight(1f),
                                             colors = OutlinedTextFieldDefaults.colors(
@@ -459,7 +491,7 @@ fun WeighOptionsSheet(
 
             // === Card 3: Quy cách nhập cân ===
             Text(
-                text = "QUY CÁCH NHẬP CÂN",
+                text = stringResource(R.string.weigh_options_section_input_scale),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextSecondary,
@@ -475,38 +507,32 @@ fun WeighOptionsSheet(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Segmented Control
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = AppColors.SurfaceContainer,
-                        modifier = Modifier.fillMaxWidth().height(44.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            val options = listOf(
-                                "SMALL" to stringResource(R.string.weigh_options_input_small),
-                                "LARGE" to stringResource(R.string.weigh_options_input_large)
-                            )
-                            options.forEach { (mode, label) ->
-                                val isSelected = inputMode == mode
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (isSelected) AppColors.GreenPrimary else Color.Transparent)
-                                        .clickable { inputMode = mode },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else AppColors.TextSecondary
-                                    )
-                                }
+                    val scaleOptions = listOf(
+                        "SMALL" to stringResource(R.string.weigh_options_input_small),
+                        "LARGE" to stringResource(R.string.weigh_options_input_large)
+                    )
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        scaleOptions.forEachIndexed { index, (mode, label) ->
+                            val isSelected = inputMode == mode
+                            SegmentedButton(
+                                selected = isSelected,
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    inputMode = mode
+                                },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = scaleOptions.size
+                                ),
+                                colors = segmentedColors,
+                                modifier = Modifier.heightIn(min = 48.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
@@ -538,10 +564,15 @@ fun WeighOptionsSheet(
                     onSave(impurityPercent, bagSampling, n, w, inputMode, ttsLocal, currentFontScale)
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary)
             ) {
-                Text(stringResource(R.string.weigh_options_done), color = AppColors.CardBg, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.weigh_options_done),
+                    color = AppColors.CardBg,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }
@@ -559,9 +590,3 @@ private fun SectionHeader(icon: @Composable () -> Unit, title: String) {
         )
     }
 }
-
-@Composable
-private fun greenChipColors() = FilterChipDefaults.filterChipColors(
-    selectedContainerColor = AppColors.GreenPrimary,
-    selectedLabelColor = AppColors.CardBg
-)

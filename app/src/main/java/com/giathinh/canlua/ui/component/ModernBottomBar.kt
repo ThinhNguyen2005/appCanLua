@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,8 +42,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -50,7 +49,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.util.HapticUtil
 
@@ -61,7 +59,7 @@ import com.giathinh.canlua.util.HapticUtil
  * - Thiết kế Floating Pill (viên con nhộng lơ lửng) bo tròn hoàn toàn [CircleShape], có đổ bóng nhẹ chuẩn M3.
  * - Con trượt động (Sliding Animated Pill Indicator) lướt mượt mà giữa các tab qua spring physics.
  * - Icon & Text biến đổi màu sắc và tỉ lệ thu phóng (scale) mượt mà khi kích hoạt.
- * - Phản hồi rung xúc giác tinh tế ([HapticUtil.tick] và [HapticFeedbackType.TextHandleMove]).
+ * - Phản hồi rung xúc giác tinh tế ([HapticUtil.tick]).
  * - Không sử dụng hiệu ứng kính lỏng (liquid glass), giữ trọn vẹn phong cách thanh lịch, tốc độ cao của Material 3.
  * - Tương thích hoàn toàn 100% với cả Dark Mode và AMOLED.
  */
@@ -75,7 +73,6 @@ fun ModernBottomBar(
     if (items.isEmpty()) return
 
     val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
 
     val selectedIndex = remember(currentRoute, items) {
@@ -95,14 +92,14 @@ fun ModernBottomBar(
                 .fillMaxWidth()
                 .height(64.dp)
                 .shadow(
-                    elevation = 6.dp,
+                    elevation = 8.dp,
                     shape = CircleShape
                 ),
             shape = CircleShape,
             color = AppColors.CardBg,
             border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.55f)),
-            shadowElevation = 6.dp,
-            tonalElevation = 2.dp
+            shadowElevation = 8.dp,
+            tonalElevation = 4.dp
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -137,7 +134,7 @@ fun ModernBottomBar(
                         .graphicsLayer {
                             translationX = indicatorOffset.value
                         }
-                        .padding(horizontal = 2.dp, vertical = 2.dp)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
                         .background(
                             color = AppColors.GreenPrimary.copy(alpha = 0.14f),
                             shape = CircleShape
@@ -146,7 +143,9 @@ fun ModernBottomBar(
 
                 // Hàng chứa các tab điều hướng
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .selectableGroup(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     items.forEachIndexed { index, item ->
@@ -162,7 +161,6 @@ fun ModernBottomBar(
                                 .fillMaxHeight(),
                             onClick = {
                                 HapticUtil.tick(context)
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 onItemClick(item)
                             }
                         )
@@ -205,7 +203,7 @@ private fun ModernBottomTabItem(
                 role = Role.Tab,
                 onClick = onClick
             )
-            .semantics { selected = isSelected },
+            .semantics(mergeDescendants = true) { selected = isSelected },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -214,19 +212,18 @@ private fun ModernBottomTabItem(
                 scaleX = scale
                 scaleY = scale
             },
-            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = if (isSelected) item.selectedIcon else item.icon,
-                contentDescription = label,
+                contentDescription = null,
                 tint = activeColor,
                 modifier = Modifier.size(24.dp)
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.5.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 ),
                 color = activeColor,

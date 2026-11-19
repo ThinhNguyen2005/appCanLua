@@ -14,7 +14,11 @@ import java.util.Date
         // H-02: Composite index để tăng tốc getAllCards (ORDER BY date DESC per user)
         androidx.room.Index(value = ["ownerUid", "date"]),
         // H-02: Index cho getCardsByRiceVariety + getSuggestedRiceVarieties
-        androidx.room.Index(value = ["ownerUid", "riceVariety"])
+        androidx.room.Index(value = ["ownerUid", "riceVariety"]),
+        // Index firestoreId đã tồn tại từ migration 12→13; khai báo để khớp schema thực tế.
+        androidx.room.Index(value = ["firestoreId"]),
+        // v20: định danh logical ổn định cho sync snapshot (unique logic do UUID đảm nhận).
+        androidx.room.Index(value = ["syncId"])
     ]
 )
 data class Card(
@@ -102,5 +106,19 @@ data class Card(
      * - "SMALL" (default): auto-confirm sau 3 chữ số → div 10 (vd "503" → 50.3)
      * - "LARGE": auto-confirm sau 4 chữ số → div 10 (vd "1503" → 150.3)
      */
-    val weightInputMode: String = "SMALL"
+    val weightInputMode: String = "SMALL",
+
+    // === v20: Atomic mutation + sync snapshot ===
+    /**
+     * Revision nội bộ tăng mỗi lần ghi thành công (CAS). ViewModel giữ
+     * expectedRevision khi gửi command; repository từ chối ghi nếu revision đã
+     * đổi → chống mất cập nhật khi sửa nhiều trường song song / snapshot cũ.
+     */
+    val revision: Long = 1L,
+    /**
+     * Định danh logical ổn định xuyên thiết bị cho sync snapshot. Khác firestoreId
+     * (doc id hiện tại): syncId không đổi khi publish revision mới. Backfill từ
+     * firestoreId cũ hoặc UUID khi migration 19→20.
+     */
+    val syncId: String = ""
 )

@@ -146,11 +146,11 @@ private fun HeaderRow(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -185,7 +185,7 @@ private fun HeaderRow(
                 },
                 modifier = Modifier.heightIn(min = 40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 12.dp, vertical = 6.dp
+                    horizontal = 12.dp, vertical = 8.dp
                 )
             ) {
                 Text(stringResource(R.string.ai_insights_close), style = MaterialTheme.typography.labelMedium)
@@ -263,7 +263,7 @@ private fun ShimmerLine(width: Float, color: Color) {
         modifier = Modifier
             .fillMaxWidth(width)
             .height(12.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(
                 Brush.horizontalGradient(
                     colors = listOf(
@@ -296,7 +296,7 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.Error
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = {
                 HapticUtil.tick(context)

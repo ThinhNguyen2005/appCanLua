@@ -2,10 +2,13 @@ package com.giathinh.canlua.repository
 
 import android.util.Log
 import com.giathinh.canlua.data.dao.RicePriceDao
+import com.giathinh.canlua.data.firestore.FirestoreRicePrice
 import com.giathinh.canlua.data.model.PricePoint
 import com.giathinh.canlua.data.model.RicePrice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +36,30 @@ class MarketRepository @Inject constructor(
     private val refreshTtlMs = 10 * 60 * 1000L // 10 minutes
 
     fun getAllPrices(): Flow<List<RicePrice>> = ricePriceDao.getAllPrices()
+
+    /**
+     * Observe non-mock bids belonging to [traderId] from the Room cache.
+     */
+    fun observeMyBids(traderId: String?): Flow<List<FirestoreRicePrice>> {
+        if (traderId.isNullOrBlank()) return flowOf(emptyList())
+        return ricePriceDao.getPricesByTrader(traderId).map { prices ->
+            prices.map { price ->
+                FirestoreRicePrice(
+                    id = price.id,
+                    variety = price.variety,
+                    priceMin = price.priceMin,
+                    priceMax = price.priceMax,
+                    priceAvg7d = price.priceAvg7d,
+                    region = price.region,
+                    updatedAt = price.updatedAt,
+                    traderId = price.traderId.orEmpty(),
+                    traderName = price.traderName.orEmpty(),
+                    trend = price.trend,
+                    riceType = price.riceType
+                )
+            }
+        }
+    }
 
     fun getPriceByVariety(variety: String): Flow<RicePrice?> =
         ricePriceDao.getPriceByVariety(variety)

@@ -93,13 +93,13 @@ private fun SecondaryPill(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(tint.copy(alpha = 0.10f))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(26.dp)
+                .size(28.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(tint.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center
@@ -108,7 +108,7 @@ private fun SecondaryPill(
                 imageVector = icon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
         Column {
@@ -183,7 +183,7 @@ private fun SplitHalf(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

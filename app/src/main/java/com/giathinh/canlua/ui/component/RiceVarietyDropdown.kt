@@ -2,6 +2,8 @@ package com.giathinh.canlua.ui.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -35,6 +37,10 @@ fun RiceVarietyDropdown(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
     suggestions: List<String> = RiceVarieties.popular.take(5),
+    isError: Boolean = false,
+    supportingText: (@Composable () -> Unit)? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     shape: Shape = RoundedCornerShape(14.dp),
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -56,6 +62,10 @@ fun RiceVarietyDropdown(
             label = { Text(stringResource(R.string.detail_info_rice_variety)) },
             placeholder = { Text(stringResource(R.string.dropdown_rice_variety_placeholder)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            isError = isError,
+            supportingText = supportingText,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
                 .fillMaxWidth(),

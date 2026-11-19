@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 
 private const val ANIMATION_DURATION_MS = 150
 
@@ -34,6 +35,8 @@ fun AnimatedNumber(
     style: TextStyle = LocalTextStyle.current,
     color: Color = Color.Unspecified,
     fontWeight: FontWeight? = null,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     AnimatedContent(
         targetState = value,
@@ -59,6 +62,8 @@ fun AnimatedNumber(
             style = style,
             color = color,
             fontWeight = fontWeight,
+            maxLines = maxLines,
+            overflow = overflow,
         )
     }
 }
@@ -74,6 +79,8 @@ fun AnimatedNumber(
     style: TextStyle = LocalTextStyle.current,
     color: Color = Color.Unspecified,
     fontWeight: FontWeight? = null,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     AnimatedContent(
         targetState = value,
@@ -99,6 +106,8 @@ fun AnimatedNumber(
             style = style,
             color = color,
             fontWeight = fontWeight,
+            maxLines = maxLines,
+            overflow = overflow,
         )
     }
 }

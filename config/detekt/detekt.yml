@@ -1,0 +1,139 @@
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 18
+    ignoreSingleWhenExpression: true
+  LongMethod:
+    active: true
+    allowedLines: 80
+    ignoreAnnotated:
+      - 'Composable'
+  LongParameterList:
+    active: true
+    allowedFunctionParameters: 6
+    allowedConstructorParameters: 8
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+    ignoreAnnotated:
+      - 'Composable'
+  TooManyFunctions:
+    active: true
+    allowedFunctionsPerFile: 20
+    allowedFunctionsPerClass: 20
+    ignorePrivate: true
+    ignoreOverridden: true
+    ignoreAnnotatedFunctions:
+      - 'Composable'
+      - 'Preview'
+    excludes:
+      - '**/ui/**'
+      - '**/test/**'
+      - '**/androidTest/**'
+
+naming:
+  FunctionNaming:
+    active: true
+    ignoreAnnotated:
+      - 'Composable'
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
+
+style:
+  DestructuringDeclarationWithTooManyEntries:
+    active: true
+    maxDestructuringEntries: 3
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '100'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreNamedArgument: true
+    ignoreExtensionFunctions: true
+    ignoreAnnotated:
+      - 'Composable'
+      - 'Preview'
+    excludes:
+      - '**/ui/theme/**'
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.kts'
+  MaxLineLength:
+    active: true
+    maxLineLength: 140
+    excludePackageStatements: true
+    excludeImportStatements: true
+    excludeCommentStatements: true
+    excludeRawStrings: true
+  ReturnCount:
+    active: true
+    max: 4
+    excludeReturnFromLambda: true
+    excludeGuardClauses: true
+  UnusedPrivateFunction:
+    active: true
+    ignoreAnnotated:
+      - 'Preview'
+  UnusedParameter:
+    active: true
+    allowedNames: 'ignored|expected|_'
+  WildcardImport:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+    allowedExceptionNameRegex: '_|(ignore|expected|e|ex).*'
+
+Compose:
+  active: true
+  ComposableNaming:
+    active: true
+  ComposableParamOrder:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierMissing:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleEmitters:
+    active: true
+  MutableParams:
+    active: true
+  RememberMissing:
+    active: true
+  RememberContentMissing:
+    active: true
+  ViewModelForwarding:
+    active: true
+  ViewModelInjection:
+    active: true
+  Material2:
+    active: false
+  PreviewNaming:
+    active: false
+  UnstableCollections:
+    active: false
+  CompositionLocalAllowlist:
+    active: false

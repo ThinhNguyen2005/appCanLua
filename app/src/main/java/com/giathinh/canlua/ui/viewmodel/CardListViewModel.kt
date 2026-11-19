@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.repository.SyncableCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -91,7 +90,7 @@ class CardListViewModel @Inject constructor(
         impurityWeight: Double = 0.0,
         recordLocation: Boolean = false
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) return@launch
 
@@ -103,13 +102,12 @@ class CardListViewModel @Inject constructor(
             }.orEmpty()
 
             val defaults = settingsRepository.getWeighDefaults()
-            val computedBagWeight = if (defaults.bagMethodIsSampling && defaults.bagSampleCount > 0) {
-                defaults.bagSampleTotalWeight / defaults.bagSampleCount
-            } else if (defaults.bagSampleCount > 0) {
-                1.0 / defaults.bagSampleCount
-            } else {
-                1.0 / 8.0
-            }
+            val computedBagWeight = com.giathinh.canlua.domain.WeighDefaultsResolver.normalizeBagRule(
+                isSampling = defaults.bagMethodIsSampling,
+                sampleCount = defaults.bagSampleCount,
+                sampleTotalWeight = defaults.bagSampleTotalWeight,
+                fallbackBagWeight = 1.0 / 8.0
+            ).bagWeight
 
             val newCard = Card(
                 name = trimmedName,
@@ -133,24 +131,13 @@ class CardListViewModel @Inject constructor(
                 bagSampleTotalWeight = defaults.bagSampleTotalWeight,
                 weightInputMode = defaults.weightInputMode
             )
-            val cardId = repository.insertCard(newCard)
-            
-            if (depositAmount > 0) {
-                repository.insertTransaction(
-                    com.giathinh.canlua.data.model.Transaction(
-                        cardId = cardId,
-                        amount = depositAmount,
-                        type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT,
-                        description = "Tiền cọc"
-                    )
-                )
-                repository.updateCardCalculations(cardId)
-            }
+            // Tạo phiếu + cọc trong MỘT transaction (idempotent theo operationId).
+            repository.createCardWithDeposit(newCard, depositAmount, java.util.UUID.randomUUID().toString())
         }
     }
 
     fun deleteCard(card: Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val event = runCatching {
                 repository.deleteCard(card)
             }.fold(

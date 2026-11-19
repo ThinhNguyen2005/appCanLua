@@ -32,14 +32,14 @@ fun KpiGrid(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items.chunked(2).forEach { rowItems ->
             // IntrinsicSize.Max + fillMaxHeight → 2 card cùng hàng luôn đồng chiều cao
             // dù 1 card có delta pill còn card kia thì không.
             Row(
                 modifier = Modifier.height(IntrinsicSize.Max),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 rowItems.forEach { item ->
                     KpiCard(

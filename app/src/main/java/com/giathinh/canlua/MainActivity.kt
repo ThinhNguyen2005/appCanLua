@@ -4,6 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,6 +42,8 @@ private const val ROOT_ROUTE_SPLASH = "splash"
 private const val ROOT_ROUTE_LOGIN = "login"
 private const val ROOT_ROUTE_PROFILE_SETUP = "profile_setup"
 private const val ROOT_ROUTE_MAIN = "main?cardId={cardId}"
+private const val ROOT_ENTER_DURATION_MS = 320
+private const val ROOT_EXIT_DURATION_MS = 220
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -113,7 +121,19 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(
                         navController = rootNavController,
-                        startDestination = initialDestination
+                        startDestination = initialDestination,
+                        enterTransition = {
+                            fadeIn(animationSpec = tween(ROOT_ENTER_DURATION_MS)) + scaleIn(
+                                initialScale = 0.96f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            )
+                        },
+                        exitTransition = {
+                            fadeOut(animationSpec = tween(ROOT_EXIT_DURATION_MS))
+                        }
                     ) {
                         composable(ROOT_ROUTE_SPLASH) {
                             AppSplashScreen()

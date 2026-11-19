@@ -1,9 +1,6 @@
 package com.giathinh.canlua.ui.component.market
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,10 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -22,14 +28,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
@@ -37,6 +49,8 @@ import com.giathinh.canlua.data.firestore.FirestoreRicePrice
 import com.giathinh.canlua.ui.component.RiceVarietyDropdown
 import com.giathinh.canlua.ui.component.ThousandSeparatorTransformation
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.util.shake
+import com.giathinh.canlua.util.HapticUtil
 
 private data class RiceTypeOption(val key: String, val labelRes: Int)
 
@@ -81,19 +95,34 @@ fun BidEditorSheet(
     var note by remember { mutableStateOf(existing?.note.orEmpty()) }
     var riceType by remember { mutableStateOf(existing?.riceType ?: "lúa Khô") }
 
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    var showErrors by remember { mutableStateOf(false) }
+    var shakeTrigger by remember { mutableIntStateOf(0) }
+    val nextAction = remember(focusManager) {
+        KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) })
+    }
+
+    val priceMinVal = priceMinRaw.toDoubleOrNull() ?: 0.0
+    val priceMaxVal = priceMaxRaw.toDoubleOrNull() ?: 0.0
     val isValid = variety.isNotBlank() &&
             priceMinRaw.isNotBlank() &&
             priceMaxRaw.isNotBlank() &&
-            (priceMinRaw.toDoubleOrNull() ?: 0.0) > 0.0 &&
-            (priceMaxRaw.toDoubleOrNull() ?: 0.0) >=
-            (priceMinRaw.toDoubleOrNull() ?: 0.0)
+            priceMinVal > 0.0 &&
+            priceMaxVal >= priceMinVal
+    val isVarietyError = showErrors && variety.isBlank()
+    val isPriceMinError = showErrors && (priceMinRaw.isBlank() || priceMinVal <= 0.0)
+    val isPriceMaxBlankOrZero = showErrors && (priceMaxRaw.isBlank() || priceMaxVal <= 0.0)
+    val isPriceMaxLtMin = showErrors && !isPriceMaxBlankOrZero && priceMinVal > 0.0 && priceMaxVal < priceMinVal
+    val isPriceMaxError = isPriceMaxBlankOrZero || isPriceMaxLtMin
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
             .padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             text = if (existing == null) {
@@ -116,7 +145,18 @@ fun BidEditorSheet(
         RiceVarietyDropdown(
             selected = variety,
             onSelect = { variety = it },
-            modifier = Modifier.fillMaxWidth()
+            isError = isVarietyError,
+            supportingText = if (isVarietyError) {
+                { Text(stringResource(R.string.validation_variety_required)) }
+            } else null,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = nextAction,
+            modifier = Modifier
+                .fillMaxWidth()
+                .shake(if (isVarietyError) shakeTrigger else 0)
         )
 
         // Loại sản phẩm
@@ -153,11 +193,19 @@ fun BidEditorSheet(
                 },
                 label = { Text(stringResource(R.string.market_bid_price_min_label)) },
                 placeholder = { Text(stringResource(R.string.market_bid_price_min_placeholder), style = MaterialTheme.typography.bodySmall) },
+                isError = isPriceMinError,
+                supportingText = if (isPriceMinError) {
+                    { Text(stringResource(R.string.validation_price_min_required)) }
+                } else null,
                 visualTransformation = ThousandSeparatorTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                keyboardActions = nextAction,
                 singleLine = true,
-                modifier = Modifier.weight(1f).heightIn(min = 60.dp),
-                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 60.dp)
+                    .shake(if (isPriceMinError) shakeTrigger else 0),
+                shape = RoundedCornerShape(12.dp),
                 colors = sheetTextFieldColors()
             )
             OutlinedTextField(
@@ -168,11 +216,25 @@ fun BidEditorSheet(
                 },
                 label = { Text(stringResource(R.string.market_bid_price_max_label)) },
                 placeholder = { Text(stringResource(R.string.market_bid_price_max_placeholder), style = MaterialTheme.typography.bodySmall) },
+                isError = isPriceMaxError,
+                supportingText = when {
+                    isPriceMaxBlankOrZero -> {
+                        { Text(stringResource(R.string.validation_price_max_required)) }
+                    }
+                    isPriceMaxLtMin -> {
+                        { Text(stringResource(R.string.validation_price_max_lt_min)) }
+                    }
+                    else -> null
+                },
                 visualTransformation = ThousandSeparatorTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                keyboardActions = nextAction,
                 singleLine = true,
-                modifier = Modifier.weight(1f).heightIn(min = 60.dp),
-                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 60.dp)
+                    .shake(if (isPriceMaxError) shakeTrigger else 0),
+                shape = RoundedCornerShape(12.dp),
                 colors = sheetTextFieldColors()
             )
         }
@@ -182,9 +244,14 @@ fun BidEditorSheet(
             onValueChange = { region = it },
             label = { Text(stringResource(R.string.market_bid_region_label)) },
             placeholder = { Text(stringResource(R.string.market_bid_region_placeholder), style = MaterialTheme.typography.bodySmall) },
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = nextAction,
             singleLine = true,
             modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = sheetTextFieldColors()
         )
 
@@ -206,8 +273,14 @@ fun BidEditorSheet(
             onValueChange = { if (it.length <= 200) note = it },
             label = { Text(stringResource(R.string.market_bid_note_label)) },
             placeholder = { Text(stringResource(R.string.market_bid_note_placeholder), style = MaterialTheme.typography.bodySmall) },
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            maxLines = 3,
             modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = sheetTextFieldColors()
         )
 
@@ -223,18 +296,25 @@ fun BidEditorSheet(
             }
             Button(
                 onClick = {
-                    onSubmit(
-                        variety,
-                        priceMinRaw.toDoubleOrNull() ?: 0.0,
-                        priceMaxRaw.toDoubleOrNull() ?: 0.0,
-                        region,
-                        trend,
-                        note,
-                        riceType,
-                        existing?.id
-                    )
+                    if (!isValid) {
+                        showErrors = true
+                        shakeTrigger++
+                        HapticUtil.error(context)
+                    } else {
+                        HapticUtil.confirm(context)
+                        onSubmit(
+                            variety,
+                            priceMinVal,
+                            priceMaxVal,
+                            region,
+                            trend,
+                            note,
+                            riceType,
+                            existing?.id
+                        )
+                    }
                 },
-                enabled = isValid && !isSaving,
+                enabled = !isSaving,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.GreenPrimary,
                     disabledContainerColor = AppColors.GreenPrimary.copy(alpha = 0.5f)
@@ -264,47 +344,97 @@ private fun TypeChip(
     selected: String,
     onSelect: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val isSelected = key == selected
     val activeColor = AppColors.GreenPrimary
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) activeColor.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
-            .clickable { onSelect(key) }
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isSelected) activeColor else AppColors.TextSecondary
-        )
-    }
+    FilterChip(
+        selected = isSelected,
+        onClick = {
+            HapticUtil.tick(context)
+            onSelect(key)
+        },
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        leadingIcon = if (isSelected) {
+            {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        } else null,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = AppColors.SurfaceContainer,
+            labelColor = AppColors.TextSecondary,
+            selectedContainerColor = activeColor.copy(alpha = 0.18f),
+            selectedLabelColor = activeColor,
+            selectedLeadingIconColor = activeColor
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = isSelected,
+            borderColor = Color.Transparent,
+            selectedBorderColor = activeColor.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.heightIn(min = 48.dp)
+    )
 }
 
 @Composable
 private fun TrendChip(
     key: String,
     label: String,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     selected: String,
     onSelect: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val isSelected = key == selected
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) color.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
-            .clickable { onSelect(key) }
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isSelected) color else AppColors.TextSecondary
-        )
-    }
+    FilterChip(
+        selected = isSelected,
+        onClick = {
+            HapticUtil.tick(context)
+            onSelect(key)
+        },
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        leadingIcon = if (isSelected) {
+            {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        } else null,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = AppColors.SurfaceContainer,
+            labelColor = AppColors.TextSecondary,
+            selectedContainerColor = color.copy(alpha = 0.18f),
+            selectedLabelColor = color,
+            selectedLeadingIconColor = color
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = isSelected,
+            borderColor = Color.Transparent,
+            selectedBorderColor = color.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.heightIn(min = 48.dp)
+    )
 }
 
 @Composable

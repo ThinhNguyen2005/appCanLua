@@ -118,7 +118,7 @@ internal fun CardSummaryBottomSheet(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(AppColors.Info.copy(alpha = 0.12f))
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
                             stringResource(R.string.map_sheet_variety_badge, card.riceVariety),
@@ -133,7 +133,7 @@ internal fun CardSummaryBottomSheet(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(AppColors.GreenPrimary.copy(alpha = 0.14f))
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
                             stringResource(R.string.map_sheet_price_badge, MapFormatters.number(card.pricePerKg)),
@@ -171,9 +171,9 @@ internal fun CardSummaryBottomSheet(
                 HapticUtil.tick(context)
                 onWeighClick()
             },
-            modifier = Modifier.fillMaxWidth().height(54.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Filled.Scale, contentDescription = null)
             Spacer(Modifier.size(8.dp))
@@ -201,7 +201,7 @@ private fun MapStatBox(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = AppColors.TextHint, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.size(6.dp))
+            Spacer(Modifier.size(8.dp))
             Text(label, style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint)
         }
         Spacer(Modifier.height(4.dp))
@@ -226,19 +226,19 @@ private fun ContactInfoRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(AppColors.SurfaceContainer)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(34.dp)
+                .size(36.dp)
                 .clip(CircleShape)
                 .background(tint.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
+            Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
         }
-        Spacer(Modifier.size(10.dp))
+        Spacer(Modifier.size(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = AppColors.TextHint)
             Text(

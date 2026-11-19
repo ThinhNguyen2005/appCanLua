@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,7 +78,7 @@ fun RicePriceCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             // Header: variety name + trend badge + chevron
             Row(
@@ -96,12 +97,12 @@ fun RicePriceCard(
                     icon = trendIcon,
                     label = trendLabel
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = stringResource(R.string.market_card_chart_desc),
                     tint = AppColors.TextHint,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
@@ -110,23 +111,34 @@ fun RicePriceCard(
             // Meta row: rice type · region · updated (gọn 1 dòng)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val riceTypeBg = when {
-                    price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFFE3F2FD)
-                    price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFFF3E0)
-                    price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFFCE4EC)
-                    price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFFF3E5F5)
-                    price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFFE8F5E9)
-                    else -> Color(0xFFE0F2F1)
-                }
+                val isDark = AppColors.CardBg.luminance() < 0.5f
                 val riceTypeColor = when {
-                    price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFF1E88E5)
-                    price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFB8C00)
-                    price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFD81B60)
-                    price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFF8E24AA)
-                    price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFF43A047)
-                    else -> Color(0xFF00796B)
+                    price.riceType.contains("ướt", ignoreCase = true) ->
+                        if (isDark) Color(0xFF90CAF9) else Color(0xFF1565C0)
+                    price.riceType.contains("Khô", ignoreCase = true) ->
+                        if (isDark) Color(0xFFFFCC80) else Color(0xFFBF360C)
+                    price.riceType.contains("nếp", ignoreCase = true) ->
+                        if (isDark) Color(0xFFF48FB1) else Color(0xFFAD1457)
+                    price.riceType.contains("gạo", ignoreCase = true) ->
+                        if (isDark) Color(0xFFCE93D8) else Color(0xFF6A1B9A)
+                    price.riceType.contains("lúa", ignoreCase = true) ->
+                        if (isDark) Color(0xFFA5D6A7) else Color(0xFF1B5E20)
+                    else ->
+                        if (isDark) Color(0xFF80CBC4) else Color(0xFF00695C)
+                }
+                val riceTypeBg = if (isDark) {
+                    riceTypeColor.copy(alpha = 0.14f)
+                } else {
+                    when {
+                        price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFFE3F2FD)
+                        price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFFF3E0)
+                        price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFFCE4EC)
+                        price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFFF3E5F5)
+                        price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFFE8F5E9)
+                        else -> Color(0xFFE0F2F1)
+                    }
                 }
                 MetaBadge(
                     text = price.riceType,
@@ -155,7 +167,7 @@ fun RicePriceCard(
             // Price grid: 3 columns
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PriceColumn(
                     label = stringResource(R.string.market_price_min_label),
@@ -166,7 +178,7 @@ fun RicePriceCard(
                 PriceColumn(
                     label = stringResource(R.string.market_price_max_label),
                     value = formatPrice(price.priceMax),
-                    color = AppColors.GreenDark,
+                    color = AppColors.GreenPrimary,
                     isHighlight = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -193,7 +205,7 @@ private fun PriceColumn(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(if (isHighlight) AppColors.GreenSurface else AppColors.SurfaceContainer)
-            .padding(vertical = 10.dp, horizontal = 8.dp),
+            .padding(vertical = 12.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -226,7 +238,7 @@ private fun MetaBadge(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(background)
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
@@ -255,7 +267,7 @@ private fun TrendBadge(
             imageVector = icon,
             contentDescription = null,
             tint = color,
-            modifier = Modifier.size(14.dp)
+            modifier = Modifier.size(16.dp)
         )
         Spacer(Modifier.width(4.dp))
         Text(

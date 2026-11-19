@@ -16,104 +16,104 @@ class PremiumQuotaLogicTest {
     // === todayKey ===
 
     @Test
-    fun `todayKey formats yyyy-MM-dd with zero padding`() {
-        val cal = Calendar.getInstance().apply { set(2026, Calendar.MAY, 5) }
-        assertEquals("2026-05-05", PremiumQuotaLogic.todayKey(cal))
+    fun `todayKey formats yyyy-MM-dd with zero padding across boundary dates`() {
+        data class Case(val year: Int, val month: Int, val day: Int, val expected: String)
+        listOf(
+            Case(2026, Calendar.JANUARY, 1, "2026-01-01"),
+            Case(2024, Calendar.FEBRUARY, 29, "2024-02-29"),
+            Case(2024, Calendar.MARCH, 7, "2024-03-07"),
+            Case(2026, Calendar.MAY, 5, "2026-05-05"),
+            Case(2026, Calendar.DECEMBER, 31, "2026-12-31"),
+            Case(2099, Calendar.DECEMBER, 31, "2099-12-31")
+        ).forEach { (year, month, day, expected) ->
+            val cal = Calendar.getInstance().apply { set(year, month, day) }
+            val k1 = PremiumQuotaLogic.todayKey(cal)
+            val k2 = PremiumQuotaLogic.todayKey(cal)
+            assertEquals(expected, k1)
+            assertEquals("Idempotent cho cùng calendar", k1, k2)
+        }
     }
 
     @Test
-    fun `todayKey handles December correctly`() {
-        val cal = Calendar.getInstance().apply { set(2026, Calendar.DECEMBER, 31) }
-        assertEquals("2026-12-31", PremiumQuotaLogic.todayKey(cal))
-    }
-
-    @Test
-    fun `todayKey same calendar produces same key`() {
-        val cal = Calendar.getInstance().apply { set(2026, Calendar.JUNE, 15) }
-        // Idempotent — gọi nhiều lần cho cùng calendar phải trả cùng key.
-        val k1 = PremiumQuotaLogic.todayKey(cal)
-        val k2 = PremiumQuotaLogic.todayKey(cal)
-        assertEquals(k1, k2)
+    fun `todayKey no-arg uses system clock and produces valid yyyy-MM-dd format`() {
+        val key = PremiumQuotaLogic.todayKey()
+        assertTrue(
+            "Format phải là yyyy-MM-dd (got: $key)",
+            key.matches(Regex("""\d{4}-\d{2}-\d{2}"""))
+        )
     }
 
     // === rolloverDailyCount ===
 
     @Test
-    fun `rollover keeps count when saved date matches today`() {
-        val (count, date) = PremiumQuotaLogic.rolloverDailyCount(
-            savedDate = "2026-05-20",
-            savedCount = 3,
-            todayKey = "2026-05-20"
+    fun `rolloverDailyCount keeps count on same date and resets on mismatch or null`() {
+        data class Case(
+            val savedDate: String?,
+            val savedCount: Int,
+            val todayKey: String,
+            val expectedCount: Int
         )
-        assertEquals(3, count)
-        assertEquals("2026-05-20", date)
-    }
-
-    @Test
-    fun `rollover resets count when saved date differs from today`() {
-        val (count, date) = PremiumQuotaLogic.rolloverDailyCount(
-            savedDate = "2026-05-19",
-            savedCount = 99,
-            todayKey = "2026-05-20"
-        )
-        assertEquals(0, count)
-        assertEquals("2026-05-20", date)
-    }
-
-    @Test
-    fun `rollover handles null saved date as fresh install`() {
-        val (count, date) = PremiumQuotaLogic.rolloverDailyCount(
-            savedDate = null,
-            savedCount = 0,
-            todayKey = "2026-05-20"
-        )
-        assertEquals(0, count)
-        assertEquals("2026-05-20", date)
-    }
-
-    /**
-     * Edge case: user chỉnh giờ máy lùi về hôm qua → todayKey đổi → count
-     * bị reset. Đây là vector tấn công đã biết — sẽ chuyển counter lên server
-     * trong sprint sau (xem comment KEY_DAILY_COUNT trong PremiumState).
-     */
-    @Test
-    fun `rollover resets if user moves clock back to past day - documented attack`() {
-        val (count, _) = PremiumQuotaLogic.rolloverDailyCount(
-            savedDate = "2026-05-20",
-            savedCount = 3,
-            todayKey = "2026-05-19"  // user lùi clock
-        )
-        assertEquals(0, count) // Bug đã biết — phải fix server-side
+        listOf(
+            Case("2026-05-20", 3, "2026-05-20", 3),
+            Case("2026-06-14", 0, "2026-06-14", 0),
+            Case("2026-06-14", Int.MAX_VALUE, "2026-06-14", Int.MAX_VALUE),
+            Case("2026-05-19", 99, "2026-05-20", 0),
+            Case(null, 0, "2026-05-20", 0),
+            Case("", 5, "2026-06-14", 0),
+            // Documented client-clock attack vector (moved clock backward → resets)
+            Case("2026-05-20", 3, "2026-05-19", 0)
+        ).forEach { (savedDate, savedCount, todayKey, expectedCount) ->
+            val (newCount, persistedDate) = PremiumQuotaLogic.rolloverDailyCount(
+                savedDate = savedDate,
+                savedCount = savedCount,
+                todayKey = todayKey
+            )
+            assertEquals("savedDate=$savedDate savedCount=$savedCount today=$todayKey", expectedCount, newCount)
+            assertEquals(todayKey, persistedDate)
+        }
     }
 
     // === hasReachedFreeQuota ===
 
     @Test
-    fun `premium user never blocked even at high count`() {
-        assertFalse(PremiumQuotaLogic.hasReachedFreeQuota(currentCount = 999, isPremium = true, maxPerDay = 3))
+    fun `hasReachedFreeQuota enforces quota for free users and never blocks premium`() {
+        data class Case(val count: Int, val isPremium: Boolean, val maxPerDay: Int, val expectedBlocked: Boolean)
+        listOf(
+            Case(0, isPremium = true, maxPerDay = 3, expectedBlocked = false),
+            Case(999, isPremium = true, maxPerDay = 3, expectedBlocked = false),
+            Case(-1, isPremium = false, maxPerDay = 3, expectedBlocked = false),
+            Case(0, isPremium = false, maxPerDay = 1, expectedBlocked = false),
+            Case(1, isPremium = false, maxPerDay = 1, expectedBlocked = true),
+            Case(2, isPremium = false, maxPerDay = 3, expectedBlocked = false),
+            Case(3, isPremium = false, maxPerDay = 3, expectedBlocked = true),
+            // Delete-and-recreate scenario: monotonic counter stays >= limit
+            Case(5, isPremium = false, maxPerDay = 3, expectedBlocked = true),
+            Case(0, isPremium = false, maxPerDay = 0, expectedBlocked = true),
+            Case(1000, isPremium = false, maxPerDay = Int.MAX_VALUE, expectedBlocked = false)
+        ).forEach { (count, isPremium, maxPerDay, expectedBlocked) ->
+            val r1 = PremiumQuotaLogic.hasReachedFreeQuota(count, isPremium, maxPerDay)
+            val r2 = PremiumQuotaLogic.hasReachedFreeQuota(count, isPremium, maxPerDay)
+            assertEquals("count=$count isPremium=$isPremium max=$maxPerDay", expectedBlocked, r1)
+            assertEquals("Idempotent check", r1, r2)
+        }
     }
 
-    @Test
-    fun `free user blocked at exact quota`() {
-        assertTrue(PremiumQuotaLogic.hasReachedFreeQuota(currentCount = 3, isPremium = false, maxPerDay = 3))
-    }
+    // === Integration flows ===
 
     @Test
-    fun `free user not blocked below quota`() {
-        assertFalse(PremiumQuotaLogic.hasReachedFreeQuota(currentCount = 2, isPremium = false, maxPerDay = 3))
-    }
+    fun `full flow - fresh install to quota exceeded and next day reset`() {
+        val yesterday = "2026-06-13"
+        val today = "2026-06-14"
+        val maxPerDay = 3
 
-    @Test
-    fun `free user blocked above quota - delete-and-recreate attack scenario`() {
-        // User free đã tạo 5 phiếu → xoá 2 → còn 3 phiếu trong DB.
-        // Counter SharedPref = 5 (chỉ tăng, không trừ).
-        // Tạo phiếu mới → check: 5 >= 3 → block. Bug bypass đã đóng.
-        assertTrue(PremiumQuotaLogic.hasReachedFreeQuota(currentCount = 5, isPremium = false, maxPerDay = 3))
-    }
+        val (count0, _) = PremiumQuotaLogic.rolloverDailyCount(null, 0, yesterday)
+        assertFalse(PremiumQuotaLogic.hasReachedFreeQuota(count0, isPremium = false, maxPerDay = maxPerDay))
+        assertFalse(PremiumQuotaLogic.hasReachedFreeQuota(1, isPremium = false, maxPerDay = maxPerDay))
+        assertFalse(PremiumQuotaLogic.hasReachedFreeQuota(2, isPremium = false, maxPerDay = maxPerDay))
+        assertTrue(PremiumQuotaLogic.hasReachedFreeQuota(3, isPremium = false, maxPerDay = maxPerDay))
 
-    @Test
-    fun `quota of zero blocks immediately`() {
-        // Edge case: future config có thể đặt 0 phiếu cho 1 tier.
-        assertTrue(PremiumQuotaLogic.hasReachedFreeQuota(currentCount = 0, isPremium = false, maxPerDay = 0))
+        val (resetCount, _) = PremiumQuotaLogic.rolloverDailyCount(yesterday, 3, today)
+        assertEquals(0, resetCount)
+        assertFalse(PremiumQuotaLogic.hasReachedFreeQuota(resetCount, isPremium = false, maxPerDay = maxPerDay))
     }
 }

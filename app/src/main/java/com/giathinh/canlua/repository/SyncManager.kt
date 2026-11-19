@@ -41,7 +41,8 @@ class SyncManager @Inject constructor(
     private val transactionDao: TransactionDao,
     @param:ApplicationContext private val context: Context,
     private val auth: FirebaseAuth,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val sessionCoordinator: SyncSessionCoordinator = SyncSessionCoordinator(auth)
 ) {
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
@@ -153,12 +154,24 @@ class SyncManager @Inject constructor(
             )
         }
 
+        // T05: chụp phiên bất biến lúc bắt đầu — mọi bước sau dùng session.uid,
+        // không đọc lại currentUid (tránh đổi chủ giữa chừng).
+        val session = sessionCoordinator.currentSession()
+        if (session == null) {
+            _syncStatus.value = SyncStatus.Error("Yêu cầu đăng nhập để đồng bộ")
+            return@withContext Result.failure(Exception("No user signed in"))
+        }
+
         return@withContext try {
             _syncStatus.value = SyncStatus.Syncing
             val startedAt = System.currentTimeMillis()
 
             val cloudCardsResult = firestoreRepository.getAllCards()
-            val cloudCards = cloudCardsResult.getOrDefault(emptyList())
+            val cloudCards = cloudCardsResult.getOrElse {
+                // T11: không nuốt lỗi cloud thành danh sách rỗng (sẽ push nhầm mọi phiếu).
+                _syncStatus.value = SyncStatus.Error("Không tải được dữ liệu cloud")
+                return@withContext Result.failure(it)
+            }
             val cloudCardMap = cloudCards.associateBy({ it.id }, { it.lastModifiedMs })
 
             val localCards = cardRepository.getAllCards().first()
@@ -194,6 +207,23 @@ class SyncManager @Inject constructor(
                     val weightEntries = cardRepository.getWeightEntriesByCardId(card.id).first()
                     val transactions = cardRepository.getTransactionsByCardId(card.id).first()
 
+                    // T06: phiếu dirty đã sync — xóa remote children không còn ở local
+                    // (bao/giao dịch đã xóa) để chúng không bị pull hồi sinh lại.
+                    if (!isNewCard && !fsCardId.isNullOrEmpty()) {
+                        val localEntryIds = weightEntries.mapNotNull { it.firestoreId }.toSet()
+                        val localTxIds = transactions.mapNotNull { it.firestoreId }.toSet()
+                        val remoteEntries = firestoreRepository.getWeightEntriesByCardId(fsCardId)
+                            .getOrElse { errorCount++; emptyList() }
+                        val remoteTxs = firestoreRepository.getTransactionsByCardId(fsCardId)
+                            .getOrElse { errorCount++; emptyList() }
+                        remoteEntries.filter { it.id.isNotBlank() && it.id !in localEntryIds }.forEach {
+                            if (firestoreRepository.deleteWeightEntry(it.id).isFailure) errorCount++
+                        }
+                        remoteTxs.filter { it.id.isNotBlank() && it.id !in localTxIds }.forEach {
+                            if (firestoreRepository.deleteTransaction(it.id).isFailure) errorCount++
+                        }
+                    }
+
                     val cardOps = 1 + weightEntries.size + transactions.size
 
                     if (currentOpCount > 0 && currentOpCount + cardOps > 400) {
@@ -201,7 +231,8 @@ class SyncManager @Inject constructor(
                             cards = batchCards,
                             weightEntries = batchEntries,
                             transactions = batchTxs,
-                            newCardsCount = batchNewCardsCount
+                            newCardsCount = batchNewCardsCount,
+                            ownerUid = session.uid
                         )
                         if (batchResult.isSuccess) {
                             batchCardIdMappings.forEach { (localId, fsId) ->
@@ -263,7 +294,8 @@ class SyncManager @Inject constructor(
                         cards = batchCards,
                         weightEntries = batchEntries,
                         transactions = batchTxs,
-                        newCardsCount = batchNewCardsCount
+                        newCardsCount = batchNewCardsCount,
+                        ownerUid = session.uid
                     )
                     if (batchResult.isSuccess) {
                         batchCardIdMappings.forEach { (localId, fsId) ->
@@ -286,7 +318,17 @@ class SyncManager @Inject constructor(
                 }
             }
 
-            pullAllForCurrentUser()
+            // T05: không apply/ack nếu phiên đã đổi giữa chừng.
+            if (!sessionCoordinator.isValid(session)) {
+                _syncStatus.value = SyncStatus.Error("Phiên đăng nhập đã thay đổi")
+                return@withContext Result.failure(Exception("Stale sync session"))
+            }
+            // T11: truyền lỗi pull ra ngoài, không bỏ qua rồi báo Success.
+            val pullResult = pullAllForCurrentUser()
+            if (pullResult.isFailure) {
+                _syncStatus.value = SyncStatus.Error("Không đồng bộ được dữ liệu cloud")
+                return@withContext pullResult
+            }
 
             if (errorCount > 0 && syncedCount == 0) {
                 _syncStatus.value = SyncStatus.Error("Không thể đồng bộ dữ liệu. Vui lòng thử lại.")
@@ -326,7 +368,9 @@ class SyncManager @Inject constructor(
                 return@withContext Result.failure(it)
             }
 
-            val firestoreToLocalId = mutableMapOf<String, Long>()
+            // T06: chỉ reconcile children khi cloud THẮNG (Insert/Update). Khi local
+            // mới hơn (Skip) giữ nguyên children local — không ghép parent/children lệch.
+            val cloudWonCards = mutableMapOf<String, Long>()
 
             firestoreCards.forEach { fsCard ->
                 if (fsCard.id.isNotBlank() &&
@@ -343,9 +387,11 @@ class SyncManager @Inject constructor(
                         totalWeight = fsCard.totalWeight
                     )
                 }
-                val localId = when (action) {
+                when (action) {
                     is PullDedupResolver.Action.Insert ->
-                        cardDao.insertCard(action.fsCard.toLocalCard(currentUid, existingId = 0L))
+                        cardDao.insertCard(action.fsCard.toLocalCard(currentUid, existingId = 0L)).also {
+                            if (fsCard.id.isNotBlank() && it > 0) cloudWonCards[fsCard.id] = it
+                        }
 
                     is PullDedupResolver.Action.Update -> {
                         cardDao.updateCard(
@@ -354,54 +400,52 @@ class SyncManager @Inject constructor(
                         if (action.reason == PullDedupResolver.Reason.COMPOSITE_KEY_MATCH) {
                             AnalyticsHelper.breadcrumb("pull_dedup_composite cardId=${action.localId}")
                         }
+                        if (fsCard.id.isNotBlank() && action.localId > 0) cloudWonCards[fsCard.id] = action.localId
                         action.localId
                     }
 
                     is PullDedupResolver.Action.Skip -> action.localId
                 }
-                if (fsCard.id.isNotBlank() && localId > 0) {
-                    firestoreToLocalId[fsCard.id] = localId
-                }
+                Unit
             }
 
-            val allWeightEntries = firestoreRepository.getAllWeightEntries().getOrDefault(emptyList())
-            val allTransactions = firestoreRepository.getAllTransactions().getOrDefault(emptyList())
+            // T11: truyền lỗi fetch children, không nuốt thành rỗng.
+            val allWeightEntries = firestoreRepository.getAllWeightEntries().getOrElse {
+                return@withContext Result.failure(it)
+            }
+            val allTransactions = firestoreRepository.getAllTransactions().getOrElse {
+                return@withContext Result.failure(it)
+            }
 
             val weightEntriesByCard = allWeightEntries.groupBy { it.cardId }
             val transactionsByCard = allTransactions.groupBy { it.cardId }
 
+            // T11: chỉ ack tombstone khi MỌI lệnh xóa cloud thành công (không getOrNull).
             cardRepository.getPendingCloudDeletes(currentUid).forEach { tomb ->
                 val fsId = tomb.firestoreId ?: return@forEach
-                val ok = runCatching {
-                    weightEntriesByCard[fsId].orEmpty()
-                        .forEach { e -> if (e.id.isNotBlank()) firestoreRepository.deleteWeightEntry(e.id) }
-                    transactionsByCard[fsId].orEmpty()
-                        .forEach { t -> if (t.id.isNotBlank()) firestoreRepository.deleteTransaction(t.id) }
-                    firestoreRepository.deleteCard(fsId).getOrNull()
-                }.isSuccess
+                var ok = true
+                weightEntriesByCard[fsId].orEmpty().forEach { e ->
+                    if (e.id.isNotBlank() && firestoreRepository.deleteWeightEntry(e.id).isFailure) ok = false
+                }
+                transactionsByCard[fsId].orEmpty().forEach { t ->
+                    if (t.id.isNotBlank() && firestoreRepository.deleteTransaction(t.id).isFailure) ok = false
+                }
+                if (firestoreRepository.deleteCard(fsId).isFailure) ok = false
                 if (ok) cardRepository.markTombstoneCloudDeleted(tomb.id)
             }
 
-            firestoreToLocalId.forEach { (fsCardId, localCardId) ->
+            // T06: thay toàn bộ children của phiếu cloud-thắng bằng snapshot cloud
+            // (atomic). Bao đã xóa vắng mặt → không hồi sinh; bao đã sửa → cập nhật đúng.
+            cloudWonCards.forEach { (fsCardId, localCardId) ->
                 val entries = weightEntriesByCard[fsCardId].orEmpty()
-                    .sortedByDescending { it.timestamp }
-                entries.forEach { fsEntry ->
-                    if (fsEntry.id.isBlank()) return@forEach
-                    val existing = weightEntryDao.getByFirestoreId(fsEntry.id)
-                    if (existing == null) {
-                        weightEntryDao.insertWeightEntry(fsEntry.toLocalEntry(localCardId))
-                    }
-                }
-
+                    .filter { it.id.isNotBlank() }
+                    .sortedWith(compareBy({ it.timestamp }, { it.id }))
+                    .mapIndexed { idx, e -> e.toLocalEntry(localCardId, ordinal = idx) }
                 val transactions = transactionsByCard[fsCardId].orEmpty()
-                    .sortedByDescending { it.date }
-                transactions.forEach { fsTx ->
-                    if (fsTx.id.isBlank()) return@forEach
-                    val existing = transactionDao.getByFirestoreId(fsTx.id)
-                    if (existing == null) {
-                        transactionDao.insertTransaction(fsTx.toLocalTransaction(localCardId))
-                    }
-                }
+                    .filter { it.id.isNotBlank() }
+                    .map { it.toLocalTransaction(localCardId) }
+                cardRepository.replaceChildrenAtomic(localCardId, entries, transactions)
+                cardRepository.updateCardCalculations(localCardId)
             }
 
             _lastSyncTime.value = System.currentTimeMillis()
@@ -483,9 +527,11 @@ class SyncManager @Inject constructor(
             id = existingId,
             ownerUid = ownerUid,
             firestoreId = this.id,
+            syncId = this.id,
             lastModifiedMs = this.lastModifiedMs,
             name = this.name,
-            cccd = this.cccd,
+            // T07: cloud lưu CCCD plaintext → mã hóa lại trước khi ghi local.
+            cccd = com.giathinh.canlua.util.CccdCrypto.encrypt(this.cccd, ownerUid),
             traderName = this.traderName,
             date = this.date,
             totalWeight = this.totalWeight,
@@ -517,11 +563,13 @@ class SyncManager @Inject constructor(
         )
     }
 
-    private fun FirestoreWeightEntry.toLocalEntry(localCardId: Long): WeightEntry {
+    private fun FirestoreWeightEntry.toLocalEntry(localCardId: Long, ordinal: Int = 0): WeightEntry {
         return WeightEntry(
             id = 0,
             cardId = localCardId,
             firestoreId = this.id,
+            syncId = this.id,
+            ordinal = ordinal,
             weight = this.weight,
             bagWeight = this.bagWeight,
             impurityWeight = this.impurityWeight,
@@ -537,6 +585,7 @@ class SyncManager @Inject constructor(
             id = 0,
             cardId = localCardId,
             firestoreId = this.id,
+            syncId = this.id,
             amount = this.amount,
             type = txType,
             description = this.description,

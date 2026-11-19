@@ -909,4 +909,50 @@
     <!-- values-km -->
     <string name="ai_error_no_data">រដូវកាលនេះមិនទាន់មានវិក្កយបត្រថ្លឹងសម្រាប់វិភាគទេ។</string>
     <string name="ai_error_failed">មិនអាចតភ្ជាប់ AI បានទេ។ សូមព្យាយាមម្តងទៀត។</string>
+
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">សូមជ្រើសរើស ឬបញ្ចូលពូជស្រូវ</string>
+    <string name="validation_counterparty_required">សូមបញ្ចូលឈ្មោះ %1$s</string>
+    <string name="validation_cccd_length">លេខអត្តសញ្ញាណប័ណ្ណត្រូវមាន 12 ខ្ទង់ (ឬទុកទទេ)</string>
+    <string name="validation_price_min_required">សូមបញ្ចូលតម្លៃទាបបំផុតឱ្យបានត្រឹមត្រូវ (&gt; 0)</string>
+    <string name="validation_price_max_required">សូមបញ្ចូលតម្លៃខ្ពស់បំផុតឱ្យបានត្រឹមត្រូវ (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">តម្លៃខ្ពស់មិនអាចតូចជាងតម្លៃទាបទេ</string>
+
+    <!-- Phase 3 i18n strings -->
+    <string name="create_card_cccd_help_content_desc">ពន្យល់លេខអត្តសញ្ញាណប័ណ្ណ</string>
+    <string name="create_card_impurity_help_content_desc">ពន្យល់ភាពមិនបរិសុទ្ធ</string>
+    <string name="create_card_moisture_help_content_desc">ពន្យល់សំណើម</string>
+    <string name="create_card_gps_title">រក្សាទុកទីតាំង GPS វាលស្រែ</string>
+    <string name="create_card_gps_subtitle">កត់ត្រាទីតាំងដើម្បីបង្ហាញលើផែនទីស្រូវ</string>
+
+    <string name="weigh_options_section_personalize">ការកំណត់ផ្ទាល់ខ្លួន &amp; ការបង្ហាញ</string>
+    <string name="weigh_options_section_bag_deduction">វិធីកាត់ទម្ងន់ការ៉ុង</string>
+    <string name="weigh_options_bag_single_params_title">ព័ត៌មានកាត់ទម្ងន់តាមការ៉ុងនីមួយៗ</string>
+    <string name="weigh_options_bags_per_kg_label">ចំនួនការ៉ុងក្នុង 1 គីឡូក្រាម</string>
+    <string name="weigh_options_bags_per_kg_placeholder">លំនាំដើម៖ 8 ការ៉ុង = 1 kg</string>
+    <string name="weigh_options_bag_sample_params_title">ព័ត៌មានកាត់ទម្ងន់ការ៉ុង</string>
+    <string name="weigh_options_section_input_scale">របៀបបញ្ចូលទម្ងន់</string>
+
+    <string name="help_section_quick_tips">គន្លឹះប្រើប្រាស់រហ័ស</string>
+    <string name="help_section_resources">ធនធាន</string>
+    <string name="help_feedback_subtitle">រាយការណ៍កំហុស ឬស្នើមុខងារថ្មី</string>
+    <string name="help_badge_new">ថ្មី</string>
+    <string name="help_tutorial_subtitle">វីដេអូណែនាំការប្រើប្រាស់តាមជំហាន</string>
+    <string name="help_web_subtitle">ឯកសារ ការអាប់ដេត និងព័ត៌មានថ្មីៗ</string>
+
+    <string name="market_prices_filtered_empty_title">រកមិនឃើញតម្លៃសមស្របទេ</string>
+    <string name="market_prices_filtered_empty_subtitle">សូមសាកល្បងលុបតម្រងដើម្បីមើលតម្លៃស្រូវទីផ្សារទាំងអស់។</string>
+    <string name="market_refresh_error">មិនអាចផ្ទុកតម្លៃថ្មីបានទេ៖ %1$s</string>
+    <string name="market_connection_error">កំហុសការតភ្ជាប់</string>
+
+    <string name="ai_chat_guest_required">សូមចូលគណនីដើម្បីជជែកជាមួយជំនួយការ AI កសិកម្ម។</string>
+    <string name="ai_chat_quota_exhausted_premium">ដែនកំណត់ជជែក AI ថ្ងៃនេះបានអស់ហើយ។ សូមត្រឡប់មកវិញនៅថ្ងៃស្អែក។</string>
+    <string name="ai_chat_quota_exhausted_free">អ្នកបានប្រើអស់ 3 ដងជជែក AI ឥតគិតថ្លៃថ្ងៃនេះហើយ។ សូមដំឡើងទៅ Premium ដើម្បីជជែកគ្មានដែនកំណត់។</string>
+    <string name="ai_chat_error_unavailable">AI មិនអាចឆ្លើយតបបានបណ្តោះអាសន្ន។ សូមព្យាយាមម្តងទៀតពេលក្រោយ។</string>
+    <string name="ai_chat_welcome_trader">សួស្តី! ខ្ញុំជា **អ្នកជំនាញទីផ្សារស្រូវអង្ករ** របស់អ្នក។ សួរខ្ញុំអំពី **តម្លៃទិញ** ការត្រួតពិនិត្យសំណើម/ភាពមិនបរិសុទ្ធ ការដឹកជញ្ជូន កម្រៃចំណេញ ឬការចរចាជាមួយកសិករ។</string>
+    <string name="ai_chat_welcome_farmer">សួស្តី! ខ្ញុំជាជំនួយការកសិកម្មរបស់អ្នក។ ខ្ញុំស្គាល់ឈ្មោះ និងតំបន់របស់អ្នកដើម្បីផ្តល់យោបល់ត្រឹមត្រូវជាងមុន។ សួរខ្ញុំអំពី **តម្លៃស្រូវ** សត្វល្អិត កាលវិភាគដាក់ជី ឬបច្ចេកទេសដាំដុះ។</string>
+
+    <string name="profile_variety_chart_accessibility">ក្រាហ្វបង្ហាញការបែងចែកពូជស្រូវ៖ %1$s</string>
+    <string name="profile_variety_chart_empty_accessibility">ក្រាហ្វបង្ហាញការបែងចែកពូជស្រូវ៖ មិនទាន់មានទិន្នន័យ</string>
+
 </resources>

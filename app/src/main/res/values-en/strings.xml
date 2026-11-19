@@ -913,5 +913,50 @@
     <string name="ai_error_no_data">This season has no weighing slips to analyze.</string>
     <string name="ai_error_failed">Unable to reach the AI. Please try again.</string>
 
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">Please select or enter a rice variety</string>
+    <string name="validation_counterparty_required">Please enter %1$s name</string>
+    <string name="validation_cccd_length">Citizen ID must be 12 digits (or leave blank)</string>
+    <string name="validation_price_min_required">Please enter a valid minimum price (&gt; 0)</string>
+    <string name="validation_price_max_required">Please enter a valid maximum price (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">Maximum price cannot be less than minimum price</string>
+
+    <!-- Phase 3 i18n strings -->
+    <string name="create_card_cccd_help_content_desc">Explain Citizen ID</string>
+    <string name="create_card_impurity_help_content_desc">Explain impurity</string>
+    <string name="create_card_moisture_help_content_desc">Explain moisture</string>
+    <string name="create_card_gps_title">Save field GPS location</string>
+    <string name="create_card_gps_subtitle">Record coordinates to show on the rice map</string>
+
+    <string name="weigh_options_section_personalize">PERSONALIZATION &amp; DISPLAY</string>
+    <string name="weigh_options_section_bag_deduction">BAG TARE METHOD</string>
+    <string name="weigh_options_bag_single_params_title">Per-bag tare settings</string>
+    <string name="weigh_options_bags_per_kg_label">Bags per 1 kg</string>
+    <string name="weigh_options_bags_per_kg_placeholder">Default: 8 bags = 1 kg</string>
+    <string name="weigh_options_bag_sample_params_title">Bag tare settings</string>
+    <string name="weigh_options_section_input_scale">WEIGHT INPUT MODE</string>
+
+    <string name="help_section_quick_tips">QUICK TIPS</string>
+    <string name="help_section_resources">RESOURCES</string>
+    <string name="help_feedback_subtitle">Report a bug or suggest a new feature</string>
+    <string name="help_badge_new">NEW</string>
+    <string name="help_tutorial_subtitle">Step-by-step video guide</string>
+    <string name="help_web_subtitle">Documentation, updates, and latest news</string>
+
+    <string name="market_prices_filtered_empty_title">No matching prices found</string>
+    <string name="market_prices_filtered_empty_subtitle">Try clearing the filters to see all market rice prices.</string>
+    <string name="market_refresh_error">Unable to load new prices: %1$s</string>
+    <string name="market_connection_error">Connection error</string>
+
+    <string name="ai_chat_guest_required">Please sign in to chat with the agricultural AI assistant.</string>
+    <string name="ai_chat_quota_exhausted_premium">Today\'s AI chat limit has been reached to prevent spam. Please come back tomorrow.</string>
+    <string name="ai_chat_quota_exhausted_free">You have used all 3 free AI chats today. Upgrade to Premium for unlimited chat.</string>
+    <string name="ai_chat_error_unavailable">AI is temporarily unavailable. Please try again later.</string>
+    <string name="ai_chat_welcome_trader">Hello! I am your **Rice Market Specialist**. Ask me about **purchase prices**, moisture/impurity inspection, barge logistics, profit margins, or farmer negotiations.</string>
+    <string name="ai_chat_welcome_farmer">Hello! I am your Agricultural Assistant. I know your name and region so I can give more tailored advice. Ask me about **rice prices**, pests, fertilization schedules, or farming techniques.</string>
+
+    <string name="profile_variety_chart_accessibility">Rice variety distribution chart showing %1$s</string>
+    <string name="profile_variety_chart_empty_accessibility">Rice variety distribution chart: no data yet</string>
+
 </resources>
 

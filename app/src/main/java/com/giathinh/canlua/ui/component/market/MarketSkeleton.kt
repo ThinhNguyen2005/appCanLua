@@ -45,16 +45,16 @@ fun MarketSkeleton(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(42.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(colors.surface)
                     .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 repeat(2) {
                     ShimmerBox(
-                        modifier = Modifier.weight(1f).height(42.dp),
-                        cornerRadius = 18.dp,
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        cornerRadius = 16.dp,
                         colors = colors,
                         progress = sharedProgress
                     )
@@ -82,14 +82,14 @@ fun MarketRowSkeleton(
         modifier = Modifier
             .fillMaxWidth()
             .height(if (isPriceRow) 84.dp else 96.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(colors.surface)
-            .padding(14.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ShimmerBox(
-            modifier = Modifier.size(if (isPriceRow) 38.dp else 52.dp),
+            modifier = Modifier.size(if (isPriceRow) 40.dp else 52.dp),
             cornerRadius = if (isPriceRow) 12.dp else 0.dp,
             colors = colors,
             progress = progress,
@@ -100,21 +100,21 @@ fun MarketRowSkeleton(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ShimmerBox(
-                modifier = Modifier.fillMaxWidth(0.74f).height(15.dp),
+                modifier = Modifier.fillMaxWidth(0.74f).height(16.dp),
                 cornerRadius = 8.dp,
                 colors = colors,
                 progress = progress
             )
             ShimmerBox(
                 modifier = Modifier.fillMaxWidth(if (isPriceRow) 0.46f else 0.9f).height(12.dp),
-                cornerRadius = 6.dp,
+                cornerRadius = 8.dp,
                 colors = colors,
                 progress = progress
             )
             if (!isPriceRow) {
                 ShimmerBox(
                     modifier = Modifier.fillMaxWidth(0.38f).height(12.dp),
-                    cornerRadius = 6.dp,
+                    cornerRadius = 8.dp,
                     colors = colors,
                     progress = progress
                 )

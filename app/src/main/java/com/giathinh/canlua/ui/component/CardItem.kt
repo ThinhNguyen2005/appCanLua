@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.R
@@ -74,6 +78,7 @@ fun CardItem(
 ) {
     val context = LocalContext.current
     val displayBagWeight = totalDisplayBagWeight(card)
+    val deleteActionLabel = stringResource(R.string.card_item_delete_content)
 
     @Suppress("DEPRECATION")
     val dismissState = rememberSwipeToDismissBoxState(
@@ -95,6 +100,17 @@ fun CardItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics {
+                    if (!card.isLocked) {
+                        customActions = listOf(
+                            CustomAccessibilityAction(label = deleteActionLabel) {
+                                HapticUtil.error(context)
+                                onDelete(card)
+                                true
+                            }
+                        )
+                    }
+                }
                 .clickable {
                     HapticUtil.tick(context)
                     onClick(card.id)
@@ -126,7 +142,7 @@ fun CardItem(
                                 tint = AppColors.LockedText,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(8.dp))
                         }
                         Text(
                             text = card.name,
@@ -148,7 +164,7 @@ fun CardItem(
                             imageVector = Icons.Filled.ChevronRight,
                             contentDescription = stringResource(R.string.card_item_view_detail),
                             tint = AppColors.TextHint,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -156,7 +172,7 @@ fun CardItem(
                 // Rice variety + moisture + bag + impurity row — wrap nếu nhiều chip
                 if (card.riceVariety.isNotBlank() || card.moisturePercent > 0 ||
                     displayBagWeight > 0 || card.impurityWeight > 0) {
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -166,7 +182,7 @@ fun CardItem(
                                 Icon(
                                     Icons.Outlined.Grass,
                                     contentDescription = stringResource(R.string.detail_info_rice_variety),
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(16.dp),
                                     tint = AppColors.GreenPrimary
                                 )
                                 Spacer(Modifier.width(4.dp))
@@ -183,7 +199,7 @@ fun CardItem(
                                 Icon(
                                     Icons.Outlined.WaterDrop,
                                     contentDescription = stringResource(R.string.detail_info_moisture),
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(16.dp),
                                     tint = AppColors.Info
                                 )
                                 Spacer(Modifier.width(4.dp))
@@ -202,7 +218,7 @@ fun CardItem(
                                 Icon(
                                     Icons.Outlined.Inventory2,
                                     contentDescription = stringResource(R.string.detail_info_bag_weight),
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(16.dp),
                                     tint = AppColors.TextSecondary
                                 )
                                 Spacer(Modifier.width(4.dp))
@@ -221,7 +237,7 @@ fun CardItem(
                                 Icon(
                                     Icons.Outlined.Scale,
                                     contentDescription = stringResource(R.string.detail_info_impurity),
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(16.dp),
                                     tint = AppColors.TextSecondary
                                 )
                                 Spacer(Modifier.width(4.dp))
@@ -238,7 +254,7 @@ fun CardItem(
                     }
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
                 // Weight + Amount row
                 Row(
@@ -291,7 +307,7 @@ fun CardItem(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
                                 .background(AppColors.GreenPrimary)
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.card_item_paid_in_full),
@@ -316,8 +332,7 @@ fun CardItem(
             backgroundContent = {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
+                        .fillMaxSize()
                         .clip(RoundedCornerShape(AppDimensions.CornerRadiusLg))
                         .background(AppColors.Error.copy(alpha = 0.9f))
                         .padding(end = 24.dp),

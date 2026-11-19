@@ -1,5 +1,6 @@
 package com.giathinh.canlua.ui.screen.trader
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.giathinh.canlua.ui.component.dashboard.ChartMetric
@@ -108,18 +110,23 @@ fun TraderProfileScreen(
         firebaseUser?.photoUrl?.toString()
     }
 
-    if (showSkeleton) {
-        TraderProfileSkeleton()
-    } else {
-        TraderProfileScreenContent(
-            navController = navController,
-            profileViewModel = profileViewModel,
-            dashboardViewModel = dashboardViewModel,
-            traderTransactionsViewModel = traderTransactionsViewModel,
-            isGoogleLoggedIn = isGoogleLoggedIn,
-            googleAvatarUrl = googleAvatarUrl,
-            isGuestMode = isGuestMode
-        )
+    Crossfade(
+        targetState = showSkeleton,
+        label = "trader_profile_crossfade"
+    ) { isSkeleton ->
+        if (isSkeleton) {
+            TraderProfileSkeleton()
+        } else {
+            TraderProfileScreenContent(
+                navController = navController,
+                profileViewModel = profileViewModel,
+                dashboardViewModel = dashboardViewModel,
+                traderTransactionsViewModel = traderTransactionsViewModel,
+                isGoogleLoggedIn = isGoogleLoggedIn,
+                googleAvatarUrl = googleAvatarUrl,
+                isGuestMode = isGuestMode
+            )
+        }
     }
 }
 
@@ -159,20 +166,22 @@ fun TraderProfileScreenContent(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ─── TIER 0: Gradient Hero Header ───
-            item {
-                GradientProfileHeader(
-                    name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_trader_default_name),
-                    role = profile?.role ?: "TRADER",
-                    email = profile?.email.orEmpty(),
-                    isGoogleLoggedIn = isGoogleLoggedIn,
-                    googleAvatarUrl = googleAvatarUrl
-                )
+            item(key = "header") {
+                Box(modifier = Modifier.animateItem()) {
+                    GradientProfileHeader(
+                        name = profile?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_trader_default_name),
+                        role = profile?.role ?: "TRADER",
+                        email = profile?.email.orEmpty(),
+                        isGoogleLoggedIn = isGoogleLoggedIn,
+                        googleAvatarUrl = googleAvatarUrl
+                    )
+                }
             }
 
             // ─── Guest Mode Login Card ───
             if (isGuestMode) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "guest_promo") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         GuestLoginPromoCard(onLoginClick = {
                             HapticUtil.tick(context)
                             profileViewModel.disableGuestMode()
@@ -182,18 +191,20 @@ fun TraderProfileScreenContent(
             }
 
             // ─── TIER 1: Quick Stats Glass Grid ───
-            item {
-                QuickStatsGlassGrid(
-                    seasonCount = lifetimeStats.cardCount,
-                    totalNetWeight = lifetimeStats.totalNetWeight,
-                    totalRevenue = lifetimeStats.totalPaid,
-                    revenueLabel = stringResource(R.string.profile_stats_paid)
-                )
+            item(key = "quick_stats") {
+                Box(modifier = Modifier.animateItem()) {
+                    QuickStatsGlassGrid(
+                        seasonCount = dash.seasons.size,
+                        totalNetWeight = lifetimeStats.totalNetWeight,
+                        totalRevenue = lifetimeStats.totalPaid,
+                        revenueLabel = stringResource(R.string.profile_stats_paid)
+                    )
+                }
             }
 
             // Section title
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            item(key = "season_section_title") {
+                Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                     ProfileSectionTitle(
                         title = stringResource(R.string.profile_trader_season_book_title),
                         subtitle = stringResource(R.string.profile_trader_season_book_subtitle)
@@ -203,14 +214,15 @@ fun TraderProfileScreenContent(
 
             // ─── TIER 2: Season Selector Chips ───
             if (dash.seasons.isNotEmpty()) {
-                item {
+                item(key = "season_selector") {
                     SeasonSelectorChip(
                         seasons = dash.seasons,
                         selectedSeason = dash.selectedSeason,
                         onSelect = { season ->
                             HapticUtil.tick(context)
                             dashboardViewModel.selectSeason(season)
-                        }
+                        },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -218,19 +230,25 @@ fun TraderProfileScreenContent(
             // ─── TIER 3: Primary KPI Grid 2×2 / Empty Season Stats ───
             val currentStats = dash.currentStats
             if (currentStats == null || currentStats.isEmpty) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "empty_season") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         EmptyTraderSeasonStatsCard(
                             onCreateSlip = {
                                 HapticUtil.tick(context)
-                                navController.navigate(BottomNavItem.SCALE.route)
+                                navController.navigate(BottomNavItem.SCALE.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         )
                     }
                 }
             } else {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "kpi_grid") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         TraderPrimaryKpiGrid(
                             stats = currentStats,
                             previous = dash.previousStats
@@ -239,8 +257,8 @@ fun TraderProfileScreenContent(
                 }
 
                 // ─── TIER 4: Secondary Stats Pills ───
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "secondary_stats") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         SecondaryStatsRow(
                             avgMoisture = currentStats.avgMoisture,
                             totalImpurity = currentStats.totalImpurity,
@@ -252,8 +270,8 @@ fun TraderProfileScreenContent(
 
                 // ─── TIER 5: Season Comparison Bar Chart ───
                 if (dash.seasonsComparison.isNotEmpty()) {
-                    item {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    item(key = "season_comparison_chart") {
+                        Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                             SeasonComparisonBarChart(
                                 seasons = dash.seasonsComparison,
                                 selectedSeason = dash.selectedSeason,
@@ -264,8 +282,8 @@ fun TraderProfileScreenContent(
                 }
 
                 // ─── TIER 6: AI Crop Insights ───
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "ai_insights") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         AiInsightsCard(
                             state = dash.aiAnalysis,
                             onAnalyze = {
@@ -283,15 +301,15 @@ fun TraderProfileScreenContent(
 
             // ─── TIER 7: Variety Pie Chart (Trader-specific) + Sổ giao dịch ───
             if (dash.varieties.isNotEmpty()) {
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "variety_pie_chart") {
+                    Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                         VarietyPieChart(items = dash.varieties)
                     }
                 }
             }
 
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            item(key = "transaction_ledger") {
+                Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                     ProfileNavigationRow(
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         title = stringResource(R.string.profile_transaction_ledger),
@@ -308,8 +326,8 @@ fun TraderProfileScreenContent(
             }
 
             // ─── TIER 8: Account Operations ───
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            item(key = "premium_card") {
+                Box(modifier = Modifier.animateItem().padding(horizontal = 16.dp)) {
                     val premiumInfo by com.giathinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(
@@ -351,7 +369,7 @@ private fun EmptyTraderSeasonStatsCard(onCreateSlip: () -> Unit) {
                 .fillMaxWidth()
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -364,7 +382,7 @@ private fun EmptyTraderSeasonStatsCard(onCreateSlip: () -> Unit) {
                     imageVector = Icons.Outlined.Scale,
                     contentDescription = null,
                     tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Text(

@@ -5,10 +5,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,26 +62,27 @@ fun QuickStatsGlassGrid(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Max)
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         GlassStatCard(
             icon = Icons.Outlined.Eco,
             value = seasonCount.toString(),
             label = stringResource(R.string.profile_stats_seasons),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).fillMaxHeight()
         )
         GlassStatCard(
             icon = Icons.Outlined.Scale,
             value = DashboardFormatter.weight(totalNetWeight),
             label = stringResource(R.string.profile_stats_yield),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).fillMaxHeight()
         )
         GlassStatCard(
             icon = Icons.Outlined.AccountBalanceWallet,
             value = DashboardFormatter.money(totalRevenue),
             label = resolvedRevenueLabel,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).fillMaxHeight()
         )
     }
 }
@@ -92,25 +96,26 @@ private fun GlassStatCard(
 ) {
     Box(
         modifier = modifier
-            .height(104.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .heightIn(min = 104.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(AppColors.SurfaceContainer)
             .border(
                 width = 1.dp,
                 color = AppColors.Divider,
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(16.dp)
             )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight()
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
-                    .clip(RoundedCornerShape(9.dp))
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(AppColors.GreenSurface),
                 contentAlignment = Alignment.Center
             ) {
@@ -122,6 +127,8 @@ private fun GlassStatCard(
                 )
             }
 
+            Spacer(Modifier.height(8.dp))
+
             Column {
                 Text(
                     text = value,
@@ -131,7 +138,7 @@ private fun GlassStatCard(
                     ),
                     maxLines = 1
                 )
-                Spacer(Modifier.size(2.dp))
+                Spacer(Modifier.size(4.dp))
                 Text(
                     text = label,
                     color = AppColors.TextSecondary,

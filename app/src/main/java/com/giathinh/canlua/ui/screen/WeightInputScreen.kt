@@ -29,6 +29,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.giathinh.canlua.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -123,6 +125,7 @@ fun WeightInputScreenContent(
     var showLockConfirmDialog by remember { mutableStateOf(false) }
 
     val tables by viewModel.tables.collectAsStateWithLifecycle()
+    val settlement by viewModel.settlement.collectAsStateWithLifecycle()
 
     // === STABLE STATE REFS (rememberUpdatedState) ===
     // Cho phép lambda onCellWeightEntered được tạo một lần duy nhất (remember {})
@@ -177,34 +180,9 @@ fun WeightInputScreenContent(
 
     val liveTotalWeight = remember(weightEntries) { weightEntries.sumOf { it.weight } }
     val liveBagCount = weightEntries.size
-    val calcParams = remember(liveTotalWeight, liveBagCount, currentCard) {
-        CalcParams(
-            totalRaw = liveTotalWeight,
-            bagCount = liveBagCount,
-            bagWeight = currentCard?.bagWeight ?: 0.0,
-            bagMethodIsSampling = currentCard?.bagMethodIsSampling ?: false,
-            bagSampleCount = currentCard?.bagSampleCount ?: 0,
-            bagSampleTotalWeight = currentCard?.bagSampleTotalWeight ?: 0.0,
-            impurityValue = currentCard?.impurityWeight ?: 0.0,
-            moisturePercent = currentCard?.moisturePercent ?: 0.0
-        )
-    }
-    val liveNetWeight = remember(calcParams) {
-        RiceCalculator.calcNetWeightWithModes(
-            totalRaw = calcParams.totalRaw,
-            bagCount = calcParams.bagCount,
-            bagWeight = calcParams.bagWeight,
-            bagMethodIsSampling = calcParams.bagMethodIsSampling,
-            bagSampleCount = calcParams.bagSampleCount,
-            bagSampleTotalWeight = calcParams.bagSampleTotalWeight,
-            impurityValue = calcParams.impurityValue,
-            impurityIsPercent = currentCard?.impurityIsPercent ?: false,
-            moisturePercent = calcParams.moisturePercent
-        )
-    }
-    val liveTotalAmount = remember(liveNetWeight, currentCard?.pricePerKg) {
-        liveNetWeight * (currentCard?.pricePerKg ?: 0.0)
-    }
+    // T02/T08: preview lấy từ settlement (trọng lượng thật, tính off-main) — khớp DB.
+    val liveNetWeight = settlement?.totalNetKg ?: 0.0
+    val liveTotalAmount = settlement?.totalAmountVnd?.toDouble() ?: 0.0
 
     val lazyListState = rememberLazyListState()
 
@@ -287,7 +265,7 @@ fun WeightInputScreenContent(
                         onClick = { navController.popBackStack() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.GreenPrimary,
-                            contentColor = Color.White
+                            contentColor = AppColors.OnGreenPrimary
                         ),
                         shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
                         modifier = Modifier
@@ -447,7 +425,7 @@ fun WeightInputScreenContent(
                                 },
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = AppColors.GreenPrimary,
-                                    contentColor = Color.White
+                                    contentColor = AppColors.OnGreenPrimary
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
@@ -591,8 +569,8 @@ private fun WeightTableCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.weight_input_table_title, tableIndex), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
-                Text("${"%.1f".format(tableTotal)} " + stringResource(R.string.unit_kg), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
+                Text(stringResource(R.string.weight_input_table_title, tableIndex), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = AppColors.OnGreenPrimary))
+                Text("${"%.1f".format(tableTotal)} " + stringResource(R.string.unit_kg), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = AppColors.OnGreenPrimary))
             }
 
             Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -641,6 +619,8 @@ private fun WeightTableCard(
                                 focusRequester = focusRequesters[rowIdx][colIdx],
                                 isLocked = isLocked,
                                 weightInputMode = weightInputMode,
+                                bagNumber = entryIdx + 1,
+                                tableNumber = tableIndex,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -668,11 +648,21 @@ private fun GridCell(
     focusRequester: FocusRequester,
     isLocked: Boolean,
     weightInputMode: String,
+    bagNumber: Int,
+    tableNumber: Int,
     modifier: Modifier
 ) {
     val displayValue = value?.let {
         "%.1f".format(it)
     } ?: ""
+    // T09 (#13): nhãn vị trí bao cho TalkBack — người dùng khiếm thị biết đang
+    // nhập ô nào (bao thứ mấy, bảng mấy) thay vì chỉ nghe con số trống trơn.
+    val cellLabel = stringResource(R.string.weight_input_cell_label, bagNumber, tableNumber)
+    val cellState = if (value != null) {
+        stringResource(R.string.weight_input_cell_filled, cellLabel, displayValue)
+    } else {
+        stringResource(R.string.weight_input_cell_empty, cellLabel)
+    }
     var text by remember(value) { mutableStateOf(displayValue) }
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -726,10 +716,14 @@ private fun GridCell(
                         text = input
                         if (input.length == maxLen) {
                             parseWeightInput(input)?.let {
-                                if (it > 0) {
+                                // T08: chỉ xóa + chuyển focus khi giá trị hợp lệ; nếu vượt
+                                // 200kg giữ nguyên chữ và báo lỗi (không im lặng đánh rơi).
+                                if (com.giathinh.canlua.domain.WeighValidation.isValidWeight(it)) {
                                     text = ""
                                     onValueEntered(it)
                                     onNextFocus()
+                                } else if (it > 0) {
+                                    appToast.warning(context.getString(R.string.weight_input_invalid_weight))
                                 }
                             }
                         }
@@ -738,6 +732,7 @@ private fun GridCell(
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentHeight(Alignment.CenterVertically)
+                    .semantics { contentDescription = cellLabel }
                     .focusRequester(focusRequester)
                     .onFocusChanged { state ->
                         val wasFocused = isFocused
@@ -753,7 +748,9 @@ private fun GridCell(
                         if (!state.isFocused && wasFocused && text.isNotEmpty()) {
                             val entered = text
                             text = ""
-                            parseWeightInput(entered)?.let { if (it > 0) onValueEntered(it) }
+                            parseWeightInput(entered)?.let {
+                                if (com.giathinh.canlua.domain.WeighValidation.isValidWeight(it)) onValueEntered(it)
+                            }
                         }
                     },
                 textStyle = MaterialTheme.typography.headlineSmall.copy(
@@ -764,14 +761,29 @@ private fun GridCell(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = {
                     val entered = text
-                    text = ""
-                    parseWeightInput(entered)?.let { if (it > 0) onValueEntered(it) }
-                    onNextFocus()
+                    val parsed = parseWeightInput(entered)
+                    when {
+                        parsed == null -> onNextFocus()
+                        com.giathinh.canlua.domain.WeighValidation.isValidWeight(parsed) -> {
+                            text = ""
+                            onValueEntered(parsed)
+                            onNextFocus()
+                        }
+                        else -> appToast.warning(context.getString(R.string.weight_input_invalid_weight))
+                    }
                 }),
                 singleLine = true
             )
         } else {
-            Text(displayValue, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+            Text(
+                displayValue,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = cellState
+                }
+            )
         }
     }
 }
@@ -829,17 +841,6 @@ private fun calculateColumnTotals(tableData: List<List<Double?>>): List<Double> 
     }
     return totals
 }
-
-private data class CalcParams(
-    val totalRaw: Double,
-    val bagCount: Int,
-    val bagWeight: Double,
-    val bagMethodIsSampling: Boolean,
-    val bagSampleCount: Int,
-    val bagSampleTotalWeight: Double,
-    val impurityValue: Double,
-    val moisturePercent: Double
-)
 
 // ImmutableTableData dùng PersistentList<PersistentList<Double?>> — kiểu dữ liệu này
 // được Compose Compiler nhận diện NATIVELY là Stable mà không cần @Immutable.

@@ -30,8 +30,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.VarietyStat
@@ -86,15 +88,28 @@ fun VarietyPieChart(
             Spacer(Modifier.height(16.dp))
 
             if (total == 0.0 || items.isEmpty()) {
-                EmptyChartHint(stringResource(R.string.profile_variety_distribution_empty))
+                val emptyDesc = stringResource(R.string.profile_variety_chart_empty_accessibility)
+                EmptyChartHint(
+                    message = stringResource(R.string.profile_variety_distribution_empty),
+                    modifier = Modifier.semantics { contentDescription = emptyDesc }
+                )
             } else {
+                val chartSummary = remember(items, total) {
+                    items.joinToString(", ") { item ->
+                        val pct = DashboardFormatter.percent(item.weight / total * 100.0)
+                        "${item.variety} ${DashboardFormatter.weight(item.weight)} ($pct)"
+                    }
+                }
+                val chartDesc = stringResource(R.string.profile_variety_chart_accessibility, chartSummary)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Donut chart
                     Box(
-                        modifier = Modifier.size(140.dp),
+                        modifier = Modifier
+                            .size(140.dp)
+                            .semantics(mergeDescendants = true) { contentDescription = chartDesc },
                         contentAlignment = Alignment.Center
                     ) {
                         Canvas(modifier = Modifier.size(140.dp)) {
@@ -175,8 +190,8 @@ private fun LegendItem(color: Color, name: String, weight: Double, percent: Doub
     ) {
         Box(
             modifier = Modifier
-                .size(10.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .size(12.dp)
+                .clip(RoundedCornerShape(4.dp))
                 .background(color)
         )
         Spacer(Modifier.width(8.dp))
@@ -198,9 +213,9 @@ private fun LegendItem(color: Color, name: String, weight: Double, percent: Doub
 }
 
 @Composable
-private fun EmptyChartHint(message: String) {
+private fun EmptyChartHint(message: String, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(120.dp),
         contentAlignment = Alignment.Center

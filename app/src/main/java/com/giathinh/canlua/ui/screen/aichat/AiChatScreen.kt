@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -60,10 +61,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
@@ -84,10 +90,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.AiMarkdownText
+import com.giathinh.canlua.ui.util.shake
 import com.giathinh.canlua.ui.viewmodel.AiChatViewModel
 import com.giathinh.canlua.ui.viewmodel.UiMessage
 import com.giathinh.canlua.ui.viewmodel.VoiceState
 import com.giathinh.canlua.util.HapticUtil
+import com.giathinh.canlua.util.PremiumState
 import com.giathinh.canlua.util.TrackScreenRender
 import com.giathinh.canlua.util.SpeechRecognizerHelper
 
@@ -101,7 +109,8 @@ private val PRESET_RES_IDS = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AiChatScreen(
-    viewModel: AiChatViewModel = hiltViewModel()
+    viewModel: AiChatViewModel = hiltViewModel(),
+    onUpgradeClick: (() -> Unit)? = null
 ) {
     TrackScreenRender("ai_chat")
     val context = LocalContext.current
@@ -110,10 +119,27 @@ fun AiChatScreen(
     val listState = rememberLazyListState()
     val imeVisible = WindowInsets.isImeVisible
     val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
+    val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
 
     if (isGuestMode) {
         AiChatLockedScreen(onLoginClick = viewModel::disableGuestMode)
     } else {
+        var inputShakeTrigger by remember { mutableIntStateOf(0) }
+        var prevErrorMsg by remember { mutableStateOf<String?>(null) }
+        var prevRateLimited by remember { mutableStateOf(false) }
+
+        LaunchedEffect(state.errorMessage, state.rateLimitSeconds > 0) {
+            val isRateLimited = state.rateLimitSeconds > 0
+            val hasNewError = state.errorMessage != null && state.errorMessage != prevErrorMsg
+            val startedRateLimit = isRateLimited && !prevRateLimited
+            if (hasNewError || startedRateLimit) {
+                inputShakeTrigger++
+                HapticUtil.error(context)
+            }
+            prevErrorMsg = state.errorMessage
+            prevRateLimited = isRateLimited
+        }
+
         // Auto-scroll xuống tin nhắn cuối khi list grow hoặc khi keyboard mở/đóng.
         // Thêm imeVisible vào key để khi user bắt đầu gõ, list tự cuộn lại đúng vị trí
         // (không bị input bar che mất tin nhắn vừa gửi).
@@ -161,7 +187,10 @@ fun AiChatScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(state.messages, key = { it.id }) { msg ->
-                MessageBubble(msg)
+                MessageBubble(
+                    msg = msg,
+                    modifier = Modifier.animateItem()
+                )
             }
             if (state.isStreaming) {
                 item { TypingIndicator() }
@@ -174,6 +203,24 @@ fun AiChatScreen(
                 message = voice.error.orEmpty(),
                 onDismiss = viewModel::clearVoiceError
             )
+        }
+
+        // Error / daily quota banner
+        AnimatedVisibility(visible = state.errorMessage != null) {
+            ChatErrorBanner(
+                message = state.errorMessage.orEmpty(),
+                showUpgrade = !isPremium && onUpgradeClick != null,
+                onUpgrade = {
+                    HapticUtil.tick(context)
+                    onUpgradeClick?.invoke()
+                },
+                onDismiss = viewModel::clearError
+            )
+        }
+
+        // Cooldown countdown banner
+        AnimatedVisibility(visible = state.rateLimitSeconds > 0) {
+            RateLimitBanner(seconds = state.rateLimitSeconds)
         }
 
         // Khi IME đóng, BottomBar overlay (capsule + nav inset) đang chiếm đáy →
@@ -192,8 +239,17 @@ fun AiChatScreen(
                 value = state.input,
                 partial = voice.partial,
                 voice = voice,
+                shakeTrigger = inputShakeTrigger,
                 onValueChange = viewModel::onInputChange,
-                onSend = viewModel::send,
+                onSend = {
+                    if (state.rateLimitSeconds > 0 || state.errorMessage != null) {
+                        inputShakeTrigger++
+                        HapticUtil.error(context)
+                    } else {
+                        HapticUtil.tick(context)
+                        viewModel.send()
+                    }
+                },
                 onStartVoice = viewModel::startVoice,
                 onStopVoice = viewModel::stopVoice,
                 onCancelVoice = viewModel::cancelVoice,
@@ -209,11 +265,11 @@ fun AiChatScreen(
 private fun PresetChip(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(AppColors.GreenSurface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -226,10 +282,13 @@ private fun PresetChip(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MessageBubble(msg: UiMessage) {
+private fun MessageBubble(
+    msg: UiMessage,
+    modifier: Modifier = Modifier
+) {
     val isUser = msg.role == "user"
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     ) {
         Box(
@@ -237,10 +296,10 @@ private fun MessageBubble(msg: UiMessage) {
                 .widthIn(max = 320.dp)
                 .clip(
                     RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (isUser) 18.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 18.dp
+                        topStart = 20.dp,
+                        topEnd = 20.dp,
+                        bottomStart = if (isUser) 20.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 20.dp
                     )
                 )
                 .background(
@@ -250,7 +309,7 @@ private fun MessageBubble(msg: UiMessage) {
                         else -> AppColors.CardBg
                     }
                 )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             val textColor = when {
                 msg.isError -> AppColors.Error
@@ -284,16 +343,16 @@ private fun TypingIndicator() {
         Row(
             modifier = Modifier
                 .widthIn(max = 320.dp)
-                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp))
                 .background(AppColors.CardBg)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CircularProgressIndicator(
                 color = AppColors.GreenPrimary,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
             Text(
                 stringResource(R.string.ai_chat_typing_status),
@@ -320,7 +379,7 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
             Icons.Filled.Mic,
             contentDescription = null,
             tint = AppColors.Error,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.size(8.dp))
         Text(
@@ -331,15 +390,100 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
         )
         IconButton(
             onClick = onDismiss,
-            modifier = Modifier.size(44.dp)
+            modifier = Modifier.size(48.dp)
         ) {
             Icon(
                 Icons.Filled.Close,
                 contentDescription = stringResource(R.string.ai_chat_action_close),
                 tint = AppColors.Error,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun ChatErrorBanner(
+    message: String,
+    showUpgrade: Boolean,
+    onUpgrade: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            if (showUpgrade) {
+                TextButton(
+                    onClick = onUpgrade,
+                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.premium_banner_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.ai_chat_action_close),
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RateLimitBanner(seconds: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(AppColors.Warning.copy(alpha = 0.14f))
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = null,
+            tint = AppColors.TextPrimary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = stringResource(R.string.rate_limit_wait_message, seconds),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.TextPrimary,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -348,6 +492,7 @@ private fun InputBar(
     value: String,
     partial: String,
     voice: VoiceState,
+    shakeTrigger: Int,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     onStartVoice: () -> Unit,
@@ -386,6 +531,7 @@ private fun InputBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.Surface)
+            .shake(shakeTrigger)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -413,6 +559,13 @@ private fun InputBar(
                 imeAction = ImeAction.Send,
                 capitalization = KeyboardCapitalization.Sentences
             ),
+            keyboardActions = KeyboardActions(
+                onSend = {
+                    if (!isStreaming && value.isNotBlank()) {
+                        onSend()
+                    }
+                }
+            ),
             maxLines = 4,
             readOnly = isListening
         )
@@ -427,10 +580,7 @@ private fun InputBar(
             onMic = ::requestVoice,
             onStop = onStopVoice,
             onCancel = onCancelVoice,
-            onSend = {
-                HapticUtil.tick(context)
-                onSend()
-            }
+            onSend = onSend
         )
     }
 }
@@ -576,7 +726,7 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(14.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -585,7 +735,7 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
                         tint = AppColors.GreenPrimary,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.ai_chat_early_adopter_promo),
                         style = MaterialTheme.typography.bodySmall,
@@ -644,7 +794,7 @@ private fun ComparisonTable() {
                 Text(text = stringResource(R.string.ai_chat_col_early_promo), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Khách Row
             Row(
