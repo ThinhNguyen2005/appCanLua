@@ -1,5 +1,8 @@
 package com.giathinh.canlua.ui.viewmodel
 
+import com.giathinh.canlua.data.bluetooth.PairedScaleDevice
+import com.giathinh.canlua.data.bluetooth.ScaleCaptureMode
+import com.giathinh.canlua.data.bluetooth.ScaleConnectionState
 import com.giathinh.canlua.util.RiceCalculator
 
 data class WeightInputUiState(
@@ -7,7 +10,12 @@ data class WeightInputUiState(
     val bagWeight: String = "0",
     val impurityWeight: String = "0",
     val isLocked: Boolean = false,
-    val moisturePercent: Double = 0.0
+    val moisturePercent: Double = 0.0,
+    val scaleConnectionState: ScaleConnectionState = ScaleConnectionState.Disconnected,
+    val scaleCaptureMode: ScaleCaptureMode = ScaleCaptureMode.SEMI_AUTO,
+    val pairedScaleDevices: List<PairedScaleDevice> = emptyList(),
+    val hasBluetoothPermission: Boolean = false,
+    val isBluetoothEnabled: Boolean = false
 ) {
     val totalWeight: Double
         get() = currentWeight.toDoubleOrNull() ?: 0.0

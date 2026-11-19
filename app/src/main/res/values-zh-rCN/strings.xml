@@ -957,4 +957,41 @@
     <string name="profile_variety_chart_accessibility">稻谷品种分布图，包含：%1$s</string>
     <string name="profile_variety_chart_empty_accessibility">稻谷品种分布图：暂无数据</string>
 
+    <!-- Bluetooth Scale -->
+    <string name="scale_error_permission_required">需要授予蓝牙权限才能连接电子秤</string>
+    <string name="scale_error_bluetooth_unsupported">此设备不支持蓝牙</string>
+    <string name="scale_error_bluetooth_disabled">蓝牙已关闭，请开启蓝牙后重试</string>
+    <string name="scale_error_device_not_found">未找到所选电子秤设备</string>
+    <string name="scale_error_connection_failed">无法连接电子秤，请检查电子秤电源是否开启</string>
+    <string name="scale_error_connection_lost">与蓝牙电子秤的连接已断开</string>
+    <string name="scale_status_disconnected">蓝牙电子秤</string>
+    <string name="scale_status_connecting">正在连接 %1$s…</string>
+    <string name="scale_status_waiting_zero">等待秤台归零…</string>
+    <string name="scale_status_live_weight">%1$s 公斤</string>
+    <string name="scale_status_live_stable">%1$s 公斤 · 稳定</string>
+    <string name="scale_status_error_short">电子秤连接出错</string>
+    <string name="scale_capture_button">记录 %1$s 公斤</string>
+    <string name="scale_capture_button_idle">请将稻谷放上秤台</string>
+    <string name="scale_sheet_title">连接电子秤</string>
+    <string name="scale_sheet_subtitle">蓝牙经典模式 (SPP) · 可与手动键盘输入同时使用</string>
+    <string name="scale_sheet_permission_banner_title">需要蓝牙权限</string>
+    <string name="scale_sheet_permission_banner_desc">请授予附近设备权限以显示已配对的电子秤列表。</string>
+    <string name="scale_sheet_grant_permission">授予权限</string>
+    <string name="scale_sheet_bt_off_banner">蓝牙未开启 — 请先打开手机蓝牙。</string>
+    <string name="scale_mode_label">记录模式</string>
+    <string name="scale_mode_semi_auto">半自动</string>
+    <string name="scale_mode_auto_capture">自动记录</string>
+    <string name="scale_mode_semi_auto_desc">实时显示重量，点击记录按钮保存每一袋。</string>
+    <string name="scale_mode_auto_desc">数值稳定（≥ 5 公斤）后自动保存，归零（&lt; 2 公斤）后再计下一袋。</string>
+    <string name="scale_connected_device_label">已连接：%1$s</string>
+    <string name="scale_mock_device_name">模拟电子秤 (Debug)</string>
+    <string name="scale_disconnect_button">断开连接</string>
+    <string name="scale_bonded_devices_title">已配对设备</string>
+    <string name="scale_refresh_devices">刷新</string>
+    <string name="scale_bonded_devices_empty">暂无已配对蓝牙设备，请先在系统蓝牙设置中完成配对。</string>
+    <string name="scale_debug_mock_button">使用模拟电子秤 (Debug)</string>
+    <string name="scale_debug_mock_desc">模拟 0 → 52.1 公斤 → 0 公斤称重流程，无需真实硬件即可测试</string>
+    <string name="scale_accessibility_chip">蓝牙电子秤状态：%1$s</string>
+    <string name="scale_accessibility_connect_device">连接到 %1$s</string>
+
 </resources>
