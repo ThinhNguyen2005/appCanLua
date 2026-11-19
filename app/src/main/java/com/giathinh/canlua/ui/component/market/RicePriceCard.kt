@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -112,21 +113,32 @@ fun RicePriceCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                val riceTypeBg = when {
-                    price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFFE3F2FD)
-                    price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFFF3E0)
-                    price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFFCE4EC)
-                    price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFFF3E5F5)
-                    price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFFE8F5E9)
-                    else -> Color(0xFFE0F2F1)
-                }
+                val isDark = AppColors.CardBg.luminance() < 0.5f
                 val riceTypeColor = when {
-                    price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFF1E88E5)
-                    price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFB8C00)
-                    price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFD81B60)
-                    price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFF8E24AA)
-                    price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFF43A047)
-                    else -> Color(0xFF00796B)
+                    price.riceType.contains("ướt", ignoreCase = true) ->
+                        if (isDark) Color(0xFF90CAF9) else Color(0xFF1565C0)
+                    price.riceType.contains("Khô", ignoreCase = true) ->
+                        if (isDark) Color(0xFFFFCC80) else Color(0xFFBF360C)
+                    price.riceType.contains("nếp", ignoreCase = true) ->
+                        if (isDark) Color(0xFFF48FB1) else Color(0xFFAD1457)
+                    price.riceType.contains("gạo", ignoreCase = true) ->
+                        if (isDark) Color(0xFFCE93D8) else Color(0xFF6A1B9A)
+                    price.riceType.contains("lúa", ignoreCase = true) ->
+                        if (isDark) Color(0xFFA5D6A7) else Color(0xFF1B5E20)
+                    else ->
+                        if (isDark) Color(0xFF80CBC4) else Color(0xFF00695C)
+                }
+                val riceTypeBg = if (isDark) {
+                    riceTypeColor.copy(alpha = 0.14f)
+                } else {
+                    when {
+                        price.riceType.contains("ướt", ignoreCase = true) -> Color(0xFFE3F2FD)
+                        price.riceType.contains("Khô", ignoreCase = true) -> Color(0xFFFFF3E0)
+                        price.riceType.contains("nếp", ignoreCase = true) -> Color(0xFFFCE4EC)
+                        price.riceType.contains("gạo", ignoreCase = true) -> Color(0xFFF3E5F5)
+                        price.riceType.contains("lúa", ignoreCase = true) -> Color(0xFFE8F5E9)
+                        else -> Color(0xFFE0F2F1)
+                    }
                 }
                 MetaBadge(
                     text = price.riceType,
@@ -166,7 +178,7 @@ fun RicePriceCard(
                 PriceColumn(
                     label = stringResource(R.string.market_price_max_label),
                     value = formatPrice(price.priceMax),
-                    color = AppColors.GreenDark,
+                    color = AppColors.GreenPrimary,
                     isHighlight = true,
                     modifier = Modifier.weight(1f)
                 )

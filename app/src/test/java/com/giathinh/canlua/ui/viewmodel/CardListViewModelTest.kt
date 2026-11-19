@@ -152,10 +152,12 @@ class CardListViewModelTest {
     }
 
     @Test
-    fun `createNewCard inserts card and handles deposit transaction`() = runTest(testDispatcher) {
+    fun `createNewCard uses atomic createCardWithDeposit`() = runTest(testDispatcher) {
         val vm = createViewModel()
         val cardSlot = slot<Card>()
-        coEvery { repository.insertCard(capture(cardSlot)) } returns 99L
+        val depositSlot = slot<Double>()
+        coEvery { repository.createCardWithDeposit(capture(cardSlot), capture(depositSlot), any()) } returns
+            com.giathinh.canlua.domain.CardMutationResult.Success(card1)
 
         vm.createNewCard(
             name = "Chú 7 Bến Lức",
@@ -169,12 +171,11 @@ class CardListViewModelTest {
         )
         advanceUntilIdle()
 
-        coVerify { repository.insertCard(any()) }
-        coVerify { repository.insertTransaction(any()) }
-        coVerify { repository.updateCardCalculations(99L) }
+        coVerify { repository.createCardWithDeposit(any(), 5_000_000.0, any()) }
+        coVerify(exactly = 0) { repository.insertTransaction(any()) }
         assertEquals("Chú 7 Bến Lức", cardSlot.captured.name)
         assertEquals(8500.0, cardSlot.captured.pricePerKg, 0.001)
-        assertEquals(5_000_000.0, cardSlot.captured.depositAmount, 0.001)
+        assertEquals(5_000_000.0, depositSlot.captured, 0.001)
     }
 }
 

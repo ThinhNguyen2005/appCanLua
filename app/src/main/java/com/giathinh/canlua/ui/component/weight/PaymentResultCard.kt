@@ -3,6 +3,8 @@ package com.giathinh.canlua.ui.component.weight
 import com.giathinh.canlua.R
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -149,20 +151,26 @@ fun PaymentResultCard(
             }
 
             // Switch thanh toán đủ
+            // T09 (#13): hàng toggleable role=Switch để TalkBack đọc kèm nhãn.
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = isPaidFull,
+                        role = Role.Switch,
+                        enabled = !isLocked,
+                        onValueChange = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onPaidFullToggle(it)
+                        }
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.weight_payment_paid_full_toggle), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 Switch(
                     checked = isPaidFull,
-                    onCheckedChange = {
-                        if (!isLocked) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onPaidFullToggle(it)
-                        }
-                    },
+                    onCheckedChange = null,
                     enabled = !isLocked,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = AppColors.CardBg,

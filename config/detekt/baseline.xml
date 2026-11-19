@@ -1,0 +1,430 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:CardItem.kt:card.riceVariety.isNotBlank() || card.moisturePercent &gt; 0 || displayBagWeight &gt; 0 || card.impurityWeight &gt; 0</ID>
+    <ID>ComplexCondition:NewsRepository.kt:NewsRepository$src.length &gt; 50 &amp;&amp; !src.contains("logo", ignoreCase = true) &amp;&amp; !src.contains("banner", ignoreCase = true) &amp;&amp; !src.contains("ads", ignoreCase = true) &amp;&amp; !src.contains("tracking", ignoreCase = true)</ID>
+    <ID>ComposableParamOrder:AppNavHost.kt:@Composable fun AppNavHost</ID>
+    <ID>ComposableParamOrder:BagEntriesCard.kt:@Composable private fun BagCell</ID>
+    <ID>ComposableParamOrder:BagEntriesCard.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun BagEntryActionSheet</ID>
+    <ID>ComposableParamOrder:BidEditorSheet.kt:@Composable fun BidEditorSheet</ID>
+    <ID>ComposableParamOrder:CardInfoCard.kt:@Composable fun CardInfoCard</ID>
+    <ID>ComposableParamOrder:CardListSkeleton.kt:@Composable fun SkeletonList</ID>
+    <ID>ComposableParamOrder:CreateCardDialog.kt:@Composable private fun FormTextField</ID>
+    <ID>ComposableParamOrder:CustomHeader.kt:@Composable fun CustomHeader</ID>
+    <ID>ComposableParamOrder:GradientProfileHeader.kt:@Composable fun GradientProfileHeader</ID>
+    <ID>ComposableParamOrder:HelpBottomSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HelpBottomSheet</ID>
+    <ID>ComposableParamOrder:MarkdownText.kt:@Composable fun AiMarkdownText</ID>
+    <ID>ComposableParamOrder:MarketScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable private fun PricesPage</ID>
+    <ID>ComposableParamOrder:PermissionRationaleDialog.kt:@Composable fun PermissionRationaleDialog</ID>
+    <ID>ComposableParamOrder:ProfileSetupScreen.kt:@Composable fun RoleSelectionCard</ID>
+    <ID>ComposableParamOrder:SeasonComparisonBarChart.kt:@Composable fun SeasonComparisonBarChart</ID>
+    <ID>ComposableParamOrder:WeightSummaryCard.kt:@Composable fun WeightSummaryCard</ID>
+    <ID>ConstructorParameterNaming:NewsRepository.kt:NewsArticleDto$@SerializedName("cached_at") val cached_at: Long = 0L</ID>
+    <ID>ConstructorParameterNaming:NewsRepository.kt:NewsArticleDto$@SerializedName("published_at") val published_at: Long = 0L</ID>
+    <ID>ConstructorParameterNaming:OpenRouterApi.kt:OpenRouterRequest$val max_tokens: Int = 1500</ID>
+    <ID>ConstructorParameterNaming:OpenRouterApi.kt:OpenRouterResponse.Choice$val finish_reason: String? = null</ID>
+    <ID>ConstructorParameterNaming:SupabasePriceRepository.kt:RicePriceDto$@SerializedName("price_avg7d") val price_avg7d: Double = 0.0</ID>
+    <ID>ConstructorParameterNaming:SupabasePriceRepository.kt:RicePriceDto$@SerializedName("price_max") val price_max: Double = 0.0</ID>
+    <ID>ConstructorParameterNaming:SupabasePriceRepository.kt:RicePriceDto$@SerializedName("price_min") val price_min: Double = 0.0</ID>
+    <ID>ConstructorParameterNaming:SupabasePriceRepository.kt:RicePriceDto$@SerializedName("rice_type") val rice_type: String = "lúa khô"</ID>
+    <ID>ConstructorParameterNaming:SupabasePriceRepository.kt:RicePriceDto$@SerializedName("updated_at") val updated_at: Long = 0L</ID>
+    <ID>CyclomaticComplexMethod:AuthScreen.kt:@Composable private fun AuthEmailForm</ID>
+    <ID>CyclomaticComplexMethod:BidEditorSheet.kt:@Composable fun BidEditorSheet</ID>
+    <ID>CyclomaticComplexMethod:CardDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun CardDetailScreenContent</ID>
+    <ID>CyclomaticComplexMethod:CardDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun EditCardDialog</ID>
+    <ID>CyclomaticComplexMethod:CardItem.kt:@Composable fun CardItem</ID>
+    <ID>CyclomaticComplexMethod:CardListScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class) @Composable fun CardListScreenContent</ID>
+    <ID>CyclomaticComplexMethod:CardSerialization.kt:fun deserializeCard: Card?</ID>
+    <ID>CyclomaticComplexMethod:CreateCardDialog.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun CreateCardBottomSheet</ID>
+    <ID>CyclomaticComplexMethod:KpiCard.kt:@Composable private fun DeltaPill</ID>
+    <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
+    <ID>CyclomaticComplexMethod:MainScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun MainScreen</ID>
+    <ID>CyclomaticComplexMethod:NewsSource.kt:NewsSource.Companion$fun classify: NewsTopic</ID>
+    <ID>CyclomaticComplexMethod:PdfExporter.kt:PdfExporter$fun export: File</ID>
+    <ID>CyclomaticComplexMethod:RiceMapScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class) @Composable fun RiceMapScreen</ID>
+    <ID>CyclomaticComplexMethod:RicePriceCard.kt:@Composable fun RicePriceCard</ID>
+    <ID>CyclomaticComplexMethod:RiceSettlement.kt:RiceSettlement$fun compute: Settlement</ID>
+    <ID>CyclomaticComplexMethod:RssFetcher.kt:RssFetcher$private fun parseItem: RssItem?</ID>
+    <ID>CyclomaticComplexMethod:SeasonComparisonBarChart.kt:@Composable fun SeasonComparisonBarChart</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SettingsScreen</ID>
+    <ID>CyclomaticComplexMethod:SyncManager.kt:SyncManager$suspend fun pullAllForCurrentUser: Result&lt;Unit&gt;</ID>
+    <ID>CyclomaticComplexMethod:SyncManager.kt:SyncManager$suspend fun syncAll: Result&lt;Unit&gt;</ID>
+    <ID>CyclomaticComplexMethod:SyncStatusScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SyncStatusScreen</ID>
+    <ID>CyclomaticComplexMethod:TextToSpeechManager.kt:TextToSpeechManager$private fun numberToVietnamese: String</ID>
+    <ID>CyclomaticComplexMethod:WeighOptionsSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun WeighOptionsSheet</ID>
+    <ID>CyclomaticComplexMethod:WeightInputScreen.kt:@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class) @Composable private fun GridCell</ID>
+    <ID>CyclomaticComplexMethod:WeightMetricsCard.kt:@Composable fun WeightMetricsCard</ID>
+    <ID>EmptyFunctionBlock:SpeechRecognizerHelper.kt:SpeechRecognizerHelper.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:TextToSpeechManager.kt:TextToSpeechManager.&lt;no name provided&gt;${}</ID>
+    <ID>LambdaParameterEventTrailing:ModernBottomBar.kt:onClick: () -&gt; Unit</ID>
+    <ID>LambdaParameterEventTrailing:PriceTrendChart.kt:onTimeRangeChange: (Int) -&gt; Unit</ID>
+    <ID>LambdaParameterInRestartableEffect:AppNavHost.kt:onDeeplinkConsumed: () -&gt; Unit = {}</ID>
+    <ID>LambdaParameterInRestartableEffect:AuthScreen.kt:onSuccess: () -&gt; Unit</ID>
+    <ID>LambdaParameterInRestartableEffect:WeightMetricsCard.kt:onImpurityWeightChange: (Double) -&gt; Unit</ID>
+    <ID>LambdaParameterInRestartableEffect:WeightMetricsCard.kt:onMoistureChange: (Double) -&gt; Unit</ID>
+    <ID>LongMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
+    <ID>LongMethod:PdfExporter.kt:PdfExporter$fun export: File</ID>
+    <ID>LongMethod:SyncManager.kt:SyncManager$suspend fun pullAllForCurrentUser: Result&lt;Unit&gt;</ID>
+    <ID>LongMethod:SyncManager.kt:SyncManager$suspend fun syncAll: Result&lt;Unit&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:NewsRepository.kt:NewsRepository$while</ID>
+    <ID>MagicNumber:AiChatRepository.kt:AiChatRepository$200</ID>
+    <ID>MagicNumber:AiChatRepository.kt:AiChatRepository$24</ID>
+    <ID>MagicNumber:AiChatRepository.kt:AiChatRepository$60</ID>
+    <ID>MagicNumber:AiChatRepository.kt:AiChatRepository$8</ID>
+    <ID>MagicNumber:AuthViewModel.kt:AuthViewModel$10</ID>
+    <ID>MagicNumber:AuthViewModel.kt:AuthViewModel$11</ID>
+    <ID>MagicNumber:AuthViewModel.kt:AuthViewModel$12</ID>
+    <ID>MagicNumber:AuthViewModel.kt:AuthViewModel$13</ID>
+    <ID>MagicNumber:AuthViewModel.kt:AuthViewModel$9</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$1000</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$1_000</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$1e3</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$1e6</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$1e9</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$999.5</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$999_500</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter$999_950_000</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter.Companion$1_000.0</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter.Companion$1_000_000.0</ID>
+    <ID>MagicNumber:DashboardFormatter.kt:DashboardFormatter.Companion$1_000_000_000.0</ID>
+    <ID>MagicNumber:DashboardViewModel.kt:DashboardViewModel$3</ID>
+    <ID>MagicNumber:FarmerProfileSkeleton.kt:0.114f</ID>
+    <ID>MagicNumber:FarmerProfileSkeleton.kt:0.299f</ID>
+    <ID>MagicNumber:FarmerProfileSkeleton.kt:0.587f</ID>
+    <ID>MagicNumber:FarmerProfileSkeleton.kt:300f</ID>
+    <ID>MagicNumber:FarmerProfileSkeleton.kt:600f</ID>
+    <ID>MagicNumber:FontScale.kt:FontScale.LARGE$1.1f</ID>
+    <ID>MagicNumber:FontScale.kt:FontScale.SMALL$0.9f</ID>
+    <ID>MagicNumber:FontScale.kt:FontScale.XLARGE$1.2f</ID>
+    <ID>MagicNumber:HapticUtil.kt:HapticUtil$10</ID>
+    <ID>MagicNumber:HapticUtil.kt:HapticUtil$20</ID>
+    <ID>MagicNumber:HapticUtil.kt:HapticUtil$50</ID>
+    <ID>MagicNumber:HapticUtil.kt:HapticUtil$60</ID>
+    <ID>MagicNumber:HttpClient.kt:HttpClient$301</ID>
+    <ID>MagicNumber:HttpClient.kt:HttpClient$302</ID>
+    <ID>MagicNumber:HttpClient.kt:HttpClient$303</ID>
+    <ID>MagicNumber:HttpClient.kt:HttpClient$307</ID>
+    <ID>MagicNumber:HttpClient.kt:HttpClient$308</ID>
+    <ID>MagicNumber:HttpClient.kt:HttpClient$500</ID>
+    <ID>MagicNumber:KnowledgeBaseRepository.kt:KnowledgeBaseRepository$5</ID>
+    <ID>MagicNumber:MarketRepository.kt:MarketRepository$30</ID>
+    <ID>MagicNumber:MarketRepository.kt:MarketRepository$50</ID>
+    <ID>MagicNumber:MarketRepository.kt:MarketRepository$50.0</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$10</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$1000L</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$15</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$400</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$408</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$499</ID>
+    <ID>MagicNumber:NetworkModule.kt:NetworkModule$90</ID>
+    <ID>MagicNumber:NewsRepository.kt:NewsRepository$30</ID>
+    <ID>MagicNumber:NewsRepository.kt:NewsRepository$300</ID>
+    <ID>MagicNumber:NewsRepository.kt:NewsRepository$399</ID>
+    <ID>MagicNumber:NewsRepository.kt:NewsRepository$405</ID>
+    <ID>MagicNumber:NewsRepository.kt:NewsRepository$50</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$104f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$10f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$11f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$12f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$130f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$13f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$14f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$150f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$16f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$170f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$18f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$20f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$22f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$245f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$340f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$35f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$45f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$48f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$53f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$6f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$70f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$78f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$82f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$86f</ID>
+    <ID>MagicNumber:PdfExporter.kt:PdfExporter$87f</ID>
+    <ID>MagicNumber:PerformanceTracker.kt:PerformanceTracker$16</ID>
+    <ID>MagicNumber:PerformanceTracker.kt:PerformanceTracker$700</ID>
+    <ID>MagicNumber:PerformanceTracker.kt:PerformanceTracker$80</ID>
+    <ID>MagicNumber:PriceTrendChart.kt:1000</ID>
+    <ID>MagicNumber:PriceTrendChart.kt:1000.0</ID>
+    <ID>MagicNumber:RssFetcher.kt:RssFetcher$7</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$11</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$12</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$3</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$4</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$5</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$6</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$7</ID>
+    <ID>MagicNumber:SeasonStats.kt:SeasonHelper$8</ID>
+    <ID>MagicNumber:SupabaseClient.kt:SupabaseClient$200</ID>
+    <ID>MagicNumber:SyncManager.kt:SyncManager$400</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$10</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$150</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$3</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$4</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$5</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$6</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$7</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$8</ID>
+    <ID>MagicNumber:TextToSpeechManager.kt:TextToSpeechManager$9</ID>
+    <ID>MagicNumber:TraderTransactionsScreen.kt:1_000</ID>
+    <ID>MagicNumber:TraderTransactionsScreen.kt:1_000_000</ID>
+    <ID>MagicNumber:TraderTransactionsScreen.kt:1_000_000_000</ID>
+    <ID>MagicNumber:VarietyPieChart.kt:0xFF00838F</ID>
+    <ID>MagicNumber:VarietyPieChart.kt:0xFF2E7D32</ID>
+    <ID>MagicNumber:VarietyPieChart.kt:0xFF6A1B9A</ID>
+    <ID>MagicNumber:VarietyPieChart.kt:0xFF8D6E63</ID>
+    <ID>MagicNumber:VarietyPieChart.kt:0xFFE65100</ID>
+    <ID>MagicNumber:VarietyPieChart.kt:0xFFF9A825</ID>
+    <ID>MagicNumber:WeightInputScreen.kt:10</ID>
+    <ID>MagicNumber:WeightInputScreen.kt:3</ID>
+    <ID>MagicNumber:WeightInputScreen.kt:4</ID>
+    <ID>MagicNumber:WeightInputViewModel.kt:5</ID>
+    <ID>MatchingDeclarationName:KpiCard.kt:TrendSentiment</ID>
+    <ID>MatchingDeclarationName:KpiGrid.kt:KpiGridItem</ID>
+    <ID>MatchingDeclarationName:PremiumScreen.kt:PremiumPackage</ID>
+    <ID>MatchingDeclarationName:ProfileSetupScreen.kt:UserRole</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_col_ads), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_col_backup), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_col_early_promo), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_col_qa), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_col_type), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_tier_guest), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_tier_premium), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = AppColors.GreenPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_tier_standard), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = AppColors.TextSecondary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_activated), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_export_json), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_free_questions), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Blue)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_gift_pre), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_locked), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.Error)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_no), modifier = Modifier.weight(1.1f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_no), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextHint)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_no_ads), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.GreenPrimary, fontWeight = FontWeight.Medium)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_premium_questions), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = AppColors.GreenPrimary)</ID>
+    <ID>MaxLineLength:AiChatScreen.kt:Text(text = stringResource(R.string.ai_chat_val_yes), modifier = Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall, color = AppColors.TextSecondary)</ID>
+    <ID>MaxLineLength:AppDatabase.kt:AppDatabase.Companion.&lt;no name provided&gt;$"CREATE TABLE IF NOT EXISTS `profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT NOT NULL, `region` TEXT NOT NULL, `note` TEXT NOT NULL, `role` TEXT NOT NULL)"</ID>
+    <ID>MaxLineLength:AuthViewModel.kt:AuthViewModel$exception?.message?.contains("email address is already in use", ignoreCase = true) == true -&gt; "Email này đã được sử dụng. Vui lòng đăng nhập."</ID>
+    <ID>MaxLineLength:AuthViewModel.kt:AuthViewModel$exception?.message?.contains("email address is badly formatted", ignoreCase = true) == true -&gt; "Định dạng email không hợp lệ."</ID>
+    <ID>MaxLineLength:AuthViewModel.kt:AuthViewModel$exception?.message?.contains("incorrect, malformed or has expired", ignoreCase = true) == true -&gt; "Email hoặc mật khẩu không chính xác."</ID>
+    <ID>MaxLineLength:AuthViewModel.kt:AuthViewModel$exception?.message?.contains("no user record", ignoreCase = true) == true -&gt; "Tài khoản không tồn tại. Vui lòng đăng ký."</ID>
+    <ID>MaxLineLength:AuthViewModel.kt:AuthViewModel$exception?.message?.contains("password should be at least", ignoreCase = true) == true -&gt; "Mật khẩu phải có ít nhất 6 ký tự."</ID>
+    <ID>MaxLineLength:BagEntriesCard.kt:if (isActive) BorderStroke(borderWidth, AppColors.GreenPrimary) else BorderStroke(0.dp, Color.Transparent)</ID>
+    <ID>MaxLineLength:BidEditorSheet.kt:placeholder = { Text(stringResource(R.string.market_bid_price_max_placeholder), style = MaterialTheme.typography.bodySmall) }</ID>
+    <ID>MaxLineLength:BidEditorSheet.kt:placeholder = { Text(stringResource(R.string.market_bid_price_min_placeholder), style = MaterialTheme.typography.bodySmall) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(20.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.Payments, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:leadingIcon = { Icon(Icons.Outlined.WaterDrop, contentDescription = null, modifier = Modifier.size(18.dp)) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:placeholder = { Text(stringResource(R.string.card_detail_farmer_name_placeholder), color = AppColors.TextHint) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:placeholder = { Text(stringResource(R.string.card_detail_season_placeholder), color = AppColors.TextHint) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:placeholder = { Text(stringResource(R.string.card_detail_trader_name_placeholder), color = AppColors.TextHint) }</ID>
+    <ID>MaxLineLength:CardDetailScreen.kt:placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), color = AppColors.TextHint) }</ID>
+    <ID>MaxLineLength:CardListScreen.kt:onCreate</ID>
+    <ID>MaxLineLength:CardRepository.kt:CardRepository$Transaction(cardId = card.id, amount = depositDiff, type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT, description = "Cập nhật tiền cọc", syncId = newSyncId())</ID>
+    <ID>MaxLineLength:CardRepository.kt:CardRepository$Transaction(cardId = card.id, amount = paidDiff, type = com.giathinh.canlua.data.model.TransactionType.PAYMENT, description = "Cập nhật đã trả", syncId = newSyncId())</ID>
+    <ID>MaxLineLength:CardRepositoryTest.kt:CardRepositoryTest$val unlockedCard = Card(id = 400L, name = "Active Farmer", date = Date(0L), ownerUid = "user-123", isLocked = false, pricePerKg = 7000.0)</ID>
+    <ID>MaxLineLength:CardSyncStateDao.kt:CardSyncStateDao$@Query("UPDATE card_sync_state SET baseRemoteRevision = :base, ackedRemoteRevision = :acked, protocolState = :state WHERE syncId = :syncId")</ID>
+    <ID>MaxLineLength:CreateCardDialog.kt:placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodyMedium) }</ID>
+    <ID>MaxLineLength:CreateCardDialog.kt:placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodyMedium) }</ID>
+    <ID>MaxLineLength:CreateCardDialog.kt:placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodyMedium) }</ID>
+    <ID>MaxLineLength:CreateCardDialog.kt:placeholder = { Text(stringResource(R.string.create_card_impurity_weight_placeholder), style = MaterialTheme.typography.bodyMedium) }</ID>
+    <ID>MaxLineLength:CreateCardDialog.kt:placeholder = { Text(stringResource(R.string.create_card_moisture_placeholder), style = MaterialTheme.typography.bodyMedium) }</ID>
+    <ID>MaxLineLength:CreateCardDialog.kt:placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodyMedium) }</ID>
+    <ID>MaxLineLength:MainScreen.kt:val showTopBar = (currentRoute in navItems.map { it.route } &amp;&amp; currentRoute != BottomNavItem.MARKET.route) || currentRoute == "trader_transactions"</ID>
+    <ID>MaxLineLength:MarketScreen.kt:text = "${numberFormat.format(bid.priceMin.toLong())} – ${numberFormat.format(bid.priceMax.toLong())} " + stringResource(R.string.market_price_unit)</ID>
+    <ID>MaxLineLength:MarketScreen.kt:text = if (isFiltered) "Hãy thử bỏ bộ lọc để xem toàn bộ giá lúa thị trường." else stringResource(R.string.market_prices_empty_subtitle)</ID>
+    <ID>MaxLineLength:MarketScreen.kt:title = if (isOffline) stringResource(R.string.market_prices_my_bids_offline_title) else stringResource(R.string.market_prices_my_bids_title)</ID>
+    <ID>MaxLineLength:MarketScreen.kt:val priceRange = "${bidNumberFormat.format(bid.priceMin.toLong())} – ${bidNumberFormat.format(bid.priceMax.toLong())} ${stringResource(R.string.market_price_unit)}"</ID>
+    <ID>MaxLineLength:NativeAdLoaderManager.kt:NativeAdLoaderManager$android.util.Log.d("NativeAdLoader", "MobileAds SDK not ready yet (state=${consentProvider.sdkState.value}); deferring ad load.")</ID>
+    <ID>MaxLineLength:NetworkModule.kt:NetworkModule$.</ID>
+    <ID>MaxLineLength:NewsRepository.kt:NewsRepository$.</ID>
+    <ID>MaxLineLength:NewsSection.kt:clean.contains("thanh niên") || clean.contains("thanh nien") -&gt; "https://upload.wikimedia.org/wikipedia/commons/7/77/Logo-bao-thanh-nien.png"</ID>
+    <ID>MaxLineLength:NewsSection.kt:clean.contains("tuổi trẻ") || clean.contains("tuoi tre") -&gt; "https://upload.wikimedia.org/wikipedia/commons/e/ea/Logo_B%C3%A1o_Tu%E1%BB%95i_Tr%E1%BA%BB.png"</ID>
+    <ID>MaxLineLength:NewsSource.kt:NewsSource.GOOGLE_MEKONG$rssUrl = "https://news.google.com/rss/search?q=%22%C4%90BSCL%22+OR+%22%C4%91%E1%BB%93ng+b%E1%BA%B1ng+s%C3%B4ng+C%E1%BB%ADu+Long%22+n%C3%B4ng&amp;hl=vi&amp;gl=VN&amp;ceid=VN:vi"</ID>
+    <ID>MaxLineLength:PaymentResultCard.kt:Text(stringResource(R.string.weight_payment_paid_full_toggle), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)</ID>
+    <ID>MaxLineLength:PaymentResultCard.kt:Text(stringResource(R.string.weight_payment_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:PerformanceTracker.kt:PerformanceTracker$Log.d(TAG, "[$traceKey] Total: $totalFrames | Slow: $slowFrames (${String.format(java.util.Locale.US, "%.1f", slowPercent)}%) | Frozen: $frozenFrames")</ID>
+    <ID>MaxLineLength:ProfileComponents.kt:"TRADER" -&gt; RoleVisual(Icons.Filled.Storefront, stringResource(R.string.profile_trader_account), AppColors.GoldDark, AppColors.GoldLight)</ID>
+    <ID>MaxLineLength:ProfileComponents.kt:else -&gt; RoleVisual(Icons.Filled.Agriculture, stringResource(R.string.profile_farmer_account), AppColors.GreenDark, AppColors.GreenSurface)</ID>
+    <ID>MaxLineLength:ProfileSetupScreen.kt:Text(stringResource(R.string.profile_setup_complete), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:RssFetcher.kt:RssFetcher$.</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:appToast.error(context.getString(R.string.settings_import_error, e.message ?: context.getString(R.string.settings_file_invalid)))</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:contentDescription = if (isExpanded) stringResource(R.string.settings_collapse) else stringResource(R.string.settings_expand)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:text = if (isGuest) stringResource(R.string.settings_role_guest_locked) else stringResource(R.string.profile_user_role_subtitle)</ID>
+    <ID>MaxLineLength:SpeechRecognizerHelper.kt:SpeechRecognizerHelper$_errorMessage.value = "Không thể khởi chạy nhận dạng giọng nói. Bà con vui lòng cài đặt/bật Google Speech Services hoặc gõ phím để chat."</ID>
+    <ID>MaxLineLength:SyncStatusScreen.kt:color = if (backupStatus is com.giathinh.canlua.repository.BackupStatus.Error) AppColors.Error else AppColors.TextSecondary</ID>
+    <ID>MaxLineLength:SyncStatusScreen.kt:is com.giathinh.canlua.repository.BackupStatus.Error -&gt; "Lỗi sao lưu: ${(backupStatus as com.giathinh.canlua.repository.BackupStatus.Error).message}"</ID>
+    <ID>MaxLineLength:WeighOptionsSheet.kt:Text(stringResource(R.string.weigh_options_done), color = AppColors.CardBg, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)</ID>
+    <ID>MaxLineLength:WeighOptionsSheet.kt:keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal)</ID>
+    <ID>MaxLineLength:WeighOptionsSheet.kt:keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number)</ID>
+    <ID>MaxLineLength:WeightInputScreen.kt:Icon(Icons.Default.LockOpen, stringResource(R.string.weight_input_lock_content), tint = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:WeightInputScreen.kt:Text("${"%.1f".format(tableTotal)} " + stringResource(R.string.unit_kg), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = AppColors.OnGreenPrimary))</ID>
+    <ID>MaxLineLength:WeightInputScreen.kt:Text(stringResource(R.string.weight_input_add_table), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold))</ID>
+    <ID>MaxLineLength:WeightInputScreen.kt:Text(stringResource(R.string.weight_input_column_totals), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = AppColors.GoldDark))</ID>
+    <ID>MaxLineLength:WeightInputScreen.kt:Text(stringResource(R.string.weight_input_table_title, tableIndex), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = AppColors.OnGreenPrimary))</ID>
+    <ID>MaxLineLength:WeightInputScreen.kt:style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, color = AppColors.TextPrimary)</ID>
+    <ID>ModifierComposed:SkeletonPrimitives.kt:fun Modifier.shimmer: Modifier</ID>
+    <ID>ModifierComposed:SkeletonPrimitives.kt:fun Modifier.shimmerEffect: Modifier</ID>
+    <ID>ModifierMissing:AiChatScreen.kt:@OptIn(ExperimentalLayoutApi::class) @Composable fun AiChatScreen</ID>
+    <ID>ModifierMissing:AppSplashScreen.kt:@Composable fun AppSplashScreen</ID>
+    <ID>ModifierMissing:AppToast.kt:@Composable fun AppToastHost</ID>
+    <ID>ModifierMissing:AuthScreen.kt:@Composable fun AuthScreen</ID>
+    <ID>ModifierMissing:BagEntriesCard.kt:@Composable fun BagEntriesCard</ID>
+    <ID>ModifierMissing:BidEditorSheet.kt:@Composable fun BidEditorSheet</ID>
+    <ID>ModifierMissing:CardDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun CardDetailScreenContent</ID>
+    <ID>ModifierMissing:CardListScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class) @Composable fun CardListScreenContent</ID>
+    <ID>ModifierMissing:CardListSkeleton.kt:@Composable fun CardListSkeleton</ID>
+    <ID>ModifierMissing:DeletedCardsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun DeletedCardsScreenContent</ID>
+    <ID>ModifierMissing:FarmerProfileScreen.kt:@Composable fun FarmerProfileScreenContent</ID>
+    <ID>ModifierMissing:FarmerProfileSkeleton.kt:@Composable fun FarmerProfileSkeleton</ID>
+    <ID>ModifierMissing:FeedbackScreen.kt:@Composable fun AdminReplyBubble</ID>
+    <ID>ModifierMissing:FeedbackScreen.kt:@Composable fun UserFeedbackBubble</ID>
+    <ID>ModifierMissing:FeedbackScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun FeedbackScreen</ID>
+    <ID>ModifierMissing:LotInfoCard.kt:@Composable fun LotInfoCard</ID>
+    <ID>ModifierMissing:MainScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun MainScreen</ID>
+    <ID>ModifierMissing:MarketScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class) @Composable fun MarketScreenContent</ID>
+    <ID>ModifierMissing:MarketSkeleton.kt:@Composable fun MarketRowSkeleton</ID>
+    <ID>ModifierMissing:OfflineStatusBanner.kt:@Composable fun OfflineStatusBanner</ID>
+    <ID>ModifierMissing:PaymentResultCard.kt:@Composable fun PaymentResultCard</ID>
+    <ID>ModifierMissing:PremiumScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun PremiumScreen</ID>
+    <ID>ModifierMissing:ProfileComponents.kt:@Composable fun PersonalInfoCard</ID>
+    <ID>ModifierMissing:ProfileComponents.kt:@Composable fun PremiumStatusCard</ID>
+    <ID>ModifierMissing:ProfileComponents.kt:@Composable fun PremiumUpsellCard</ID>
+    <ID>ModifierMissing:ProfileComponents.kt:@Composable fun ProfileHeader</ID>
+    <ID>ModifierMissing:ProfileComponents.kt:@Composable fun RoleSwitcher</ID>
+    <ID>ModifierMissing:ProfileSetupScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ProfileSetupScreen</ID>
+    <ID>ModifierMissing:RiceMapScreen.kt:@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class) @Composable fun RiceMapScreen</ID>
+    <ID>ModifierMissing:SettingsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SettingsScreen</ID>
+    <ID>ModifierMissing:SyncStatusScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SyncStatusScreen</ID>
+    <ID>ModifierMissing:TraderComingSoonScreen.kt:@Composable fun TraderComingSoonScreen</ID>
+    <ID>ModifierMissing:TraderHistoryScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TraderHistoryScreenContent</ID>
+    <ID>ModifierMissing:TraderProfileScreen.kt:@Composable fun TraderProfileScreenContent</ID>
+    <ID>ModifierMissing:TraderProfileSkeleton.kt:@Composable fun TraderProfileSkeleton</ID>
+    <ID>ModifierMissing:TraderTransactionsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TraderTransactionsScreenContent</ID>
+    <ID>ModifierMissing:WeightInputScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun WeightInputScreenContent</ID>
+    <ID>ModifierWithoutDefault:WeightInputScreen.kt:modifier: Modifier</ID>
+    <ID>MultipleEmitters:AuthScreen.kt:@Composable private fun AuthEmailForm</ID>
+    <ID>MultipleEmitters:MapFilters.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable internal fun SearchAndFilterBar</ID>
+    <ID>NestedBlockDepth:CccdCrypto.kt:CccdCrypto$fun decrypt: String?</ID>
+    <ID>NestedBlockDepth:NewsRepository.kt:NewsRepository$private fun resolveRedirect: String</ID>
+    <ID>NestedBlockDepth:RssFetcher.kt:RssFetcher$private fun parseItem: RssItem?</ID>
+    <ID>NewLineAtEndOfFile:AppColors.kt:com.giathinh.canlua.ui.theme.AppColors.kt</ID>
+    <ID>NewLineAtEndOfFile:AppDimensions.kt:com.giathinh.canlua.ui.theme.AppDimensions.kt</ID>
+    <ID>NewLineAtEndOfFile:AppSplashScreen.kt:com.giathinh.canlua.ui.screen.AppSplashScreen.kt</ID>
+    <ID>NewLineAtEndOfFile:AuthScreen.kt:com.giathinh.canlua.ui.screen.AuthScreen.kt</ID>
+    <ID>NewLineAtEndOfFile:CanLuaApplication.kt:com.giathinh.canlua.CanLuaApplication.kt</ID>
+    <ID>NewLineAtEndOfFile:CardListScreen.kt:com.giathinh.canlua.ui.screen.CardListScreen.kt</ID>
+    <ID>NewLineAtEndOfFile:CardMutation.kt:com.giathinh.canlua.domain.CardMutation.kt</ID>
+    <ID>NewLineAtEndOfFile:CardSerializationTest.kt:com.giathinh.canlua.data.model.CardSerializationTest.kt</ID>
+    <ID>NewLineAtEndOfFile:CardSettlement.kt:com.giathinh.canlua.domain.CardSettlement.kt</ID>
+    <ID>NewLineAtEndOfFile:CardSyncState.kt:com.giathinh.canlua.data.model.CardSyncState.kt</ID>
+    <ID>NewLineAtEndOfFile:CardSyncStateDao.kt:com.giathinh.canlua.data.dao.CardSyncStateDao.kt</ID>
+    <ID>NewLineAtEndOfFile:Color.kt:com.giathinh.canlua.ui.theme.Color.kt</ID>
+    <ID>NewLineAtEndOfFile:DashboardFormatter.kt:com.giathinh.canlua.ui.util.DashboardFormatter.kt</ID>
+    <ID>NewLineAtEndOfFile:ExampleUnitTest.kt:com.giathinh.canlua.ExampleUnitTest.kt</ID>
+    <ID>NewLineAtEndOfFile:FabScrollBehavior.kt:com.giathinh.canlua.ui.util.FabScrollBehavior.kt</ID>
+    <ID>NewLineAtEndOfFile:MainActivity.kt:com.giathinh.canlua.MainActivity.kt</ID>
+    <ID>NewLineAtEndOfFile:MarkdownText.kt:com.giathinh.canlua.ui.util.MarkdownText.kt</ID>
+    <ID>NewLineAtEndOfFile:MoneyFormatter.kt:com.giathinh.canlua.util.MoneyFormatter.kt</ID>
+    <ID>NewLineAtEndOfFile:MutationReceipt.kt:com.giathinh.canlua.data.model.MutationReceipt.kt</ID>
+    <ID>NewLineAtEndOfFile:MutationReceiptDao.kt:com.giathinh.canlua.data.dao.MutationReceiptDao.kt</ID>
+    <ID>NewLineAtEndOfFile:PromptFormat.kt:com.giathinh.canlua.util.PromptFormat.kt</ID>
+    <ID>NewLineAtEndOfFile:RefreshRateEffect.kt:com.giathinh.canlua.ui.util.RefreshRateEffect.kt</ID>
+    <ID>NewLineAtEndOfFile:SettingsRepository.kt:com.giathinh.canlua.repository.SettingsRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:SettingsScreen.kt:com.giathinh.canlua.ui.screen.SettingsScreen.kt</ID>
+    <ID>NewLineAtEndOfFile:SettingsViewModel.kt:com.giathinh.canlua.ui.viewmodel.SettingsViewModel.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncManager.kt:com.giathinh.canlua.repository.SyncManager.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncOutbox.kt:com.giathinh.canlua.data.model.SyncOutbox.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncOutboxDao.kt:com.giathinh.canlua.data.dao.SyncOutboxDao.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncSessionCoordinator.kt:com.giathinh.canlua.repository.SyncSessionCoordinator.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncSessionCoordinatorTest.kt:com.giathinh.canlua.repository.SyncSessionCoordinatorTest.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncableCardRepository.kt:com.giathinh.canlua.repository.SyncableCardRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:Theme.kt:com.giathinh.canlua.ui.theme.Theme.kt</ID>
+    <ID>NewLineAtEndOfFile:Type.kt:com.giathinh.canlua.ui.theme.Type.kt</ID>
+    <ID>NewLineAtEndOfFile:WeighDefaultsResolver.kt:com.giathinh.canlua.domain.WeighDefaultsResolver.kt</ID>
+    <ID>NewLineAtEndOfFile:WeighDomainTest.kt:com.giathinh.canlua.domain.WeighDomainTest.kt</ID>
+    <ID>NewLineAtEndOfFile:WeighValidation.kt:com.giathinh.canlua.domain.WeighValidation.kt</ID>
+    <ID>NewLineAtEndOfFile:WeightInputViewModelTest.kt:com.giathinh.canlua.ui.viewmodel.WeightInputViewModelTest.kt</ID>
+    <ID>ParameterNaming:AppNavHost.kt:onDeeplinkConsumed: () -&gt; Unit = {}</ID>
+    <ID>ParameterNaming:BagEntriesCard.kt:onTableSelected: (Int) -&gt; Unit</ID>
+    <ID>ParameterNaming:MapContent.kt:onCardSelected: (Card) -&gt; Unit</ID>
+    <ID>ParameterNaming:WeightInputScreen.kt:onValueEntered: (Double) -&gt; Unit</ID>
+    <ID>ParameterNaming:WeightInputScreen.kt:onWeightEntered: (Int, Double) -&gt; Unit</ID>
+    <ID>PrintStackTrace:FeedbackRepository.kt:FeedbackRepository$e</ID>
+    <ID>PrintStackTrace:PremiumState.kt:PremiumState$clearEx</ID>
+    <ID>PrintStackTrace:PremiumState.kt:SafeEncryptedSharedPreferences$ex</ID>
+    <ID>PrintStackTrace:SpeechRecognizerHelper.kt:SpeechRecognizerHelper$e</ID>
+    <ID>PrintStackTrace:TextToSpeechManager.kt:TextToSpeechManager$e</ID>
+    <ID>SwallowedException:ApiKeyObfuscator.kt:ApiKeyObfuscator$e: Exception</ID>
+    <ID>SwallowedException:CccdCrypto.kt:CccdCrypto$e: Exception</ID>
+    <ID>SwallowedException:CreateCardDialog.kt:ThousandSeparatorTransformation$e: Exception</ID>
+    <ID>SwallowedException:FeedbackRepository.kt:FeedbackRepository$e: Exception</ID>
+    <ID>SwallowedException:FirebaseRemoteConfigManager.kt:FirebaseRemoteConfigManager$e: Exception</ID>
+    <ID>SwallowedException:GoogleSignInHelper.kt:GoogleSignInHelper$e: Exception</ID>
+    <ID>SwallowedException:HttpClient.kt:HttpClient$e: JsonSyntaxException</ID>
+    <ID>SwallowedException:KnowledgeBaseRepository.kt:KnowledgeBaseRepository$e: Exception</ID>
+    <ID>SwallowedException:MarkdownText.kt:e: Exception</ID>
+    <ID>SwallowedException:PremiumState.kt:PremiumState$e: Exception</ID>
+    <ID>SwallowedException:PremiumState.kt:PremiumState$fallbackEx: Exception</ID>
+    <ID>SwallowedException:TextToSpeechManager.kt:TextToSpeechManager$e: Exception</ID>
+    <ID>SwallowedException:TraderHistoryScreen.kt:e: Exception</ID>
+    <ID>SwallowedException:TtsHelper.kt:TtsHelper$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PremiumState.kt:PremiumState$clearEx: Exception</ID>
+    <ID>TooGenericExceptionCaught:PremiumState.kt:PremiumState$fallbackEx: Exception</ID>
+    <ID>TooManyFunctions:AnalyticsHelper.kt:AnalyticsHelper</ID>
+    <ID>TooManyFunctions:CardDao.kt:CardDao</ID>
+    <ID>TooManyFunctions:CardRepository.kt:CardRepository</ID>
+    <ID>TooManyFunctions:DatabaseModule.kt:DatabaseModule</ID>
+    <ID>TooManyFunctions:SyncableCardRepository.kt:SyncableCardRepository</ID>
+    <ID>TooManyFunctions:WeightEntryDao.kt:WeightEntryDao</ID>
+    <ID>UnusedParameter:AiChatScreen.kt:onCancel: () -&gt; Unit</ID>
+    <ID>UnusedParameter:CardInfoCard.kt:isLocked: Boolean = false</ID>
+    <ID>UnusedParameter:CardListEmptyState.kt:onSyncClick: (() -&gt; Unit)? = null</ID>
+    <ID>UnusedParameter:CardListEmptyState.kt:syncing: Boolean = false</ID>
+    <ID>UnusedParameter:CardListSummaryCard.kt:syncStatus: SyncStatus</ID>
+    <ID>UnusedParameter:CardRepository.kt:CardRepository$operationId: String</ID>
+    <ID>UnusedParameter:CustomHeader.kt:collapseFraction: Float = 0f</ID>
+    <ID>UnusedParameter:CustomHeader.kt:lastEntryTime: Long? = null</ID>
+    <ID>UnusedParameter:CustomHeader.kt:onAdd: () -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:FinancialSummaryCard.kt:numberFormat: NumberFormat</ID>
+    <ID>UnusedParameter:FirebaseRemoteConfigManager.kt:FirebaseRemoteConfigManager$context: Context</ID>
+    <ID>UnusedParameter:LocaleUtil.kt:LocaleUtil$context: Context</ID>
+    <ID>UnusedParameter:MarketScreen.kt:onFilterVariety: (String?) -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:NewsSection.kt:message: String</ID>
+    <ID>UnusedParameter:RssFetcher.kt:RssFetcher$isGoogleNews: Boolean</ID>
+    <ID>UnusedParameter:WeightInputScreen.kt:onCreateQr: () -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:WeightInputScreen.kt:onDeleteCard: () -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:WeightInputScreen.kt:onEditCard: () -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:WeightInputScreen.kt:onScanQr: () -&gt; Unit = {}</ID>
+    <ID>UnusedParameter:WeightMetricsCard.kt:onBagWeightChange: (Double) -&gt; Unit</ID>
+    <ID>UnusedParameter:WeightMetricsCard.kt:onPriceChange: (Double) -&gt; Unit</ID>
+    <ID>ViewModelForwarding:AuthScreen.kt:AuthEmailForm( uiState = uiState, viewModel = viewModel, snackbarHostState = snackbarHostState, scope = scope, activity = activity )</ID>
+    <ID>ViewModelInjection:CardDetailScreen.kt:val viewModel: CardDetailViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:CardListScreen.kt:val profileViewModel: ProfileViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:CardListScreen.kt:val syncViewModel: SyncViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:CardListScreen.kt:val viewModel: CardListViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:DeletedCardsScreen.kt:val viewModel: DeletedCardsViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:FarmerProfileScreen.kt:val dashboardViewModel: DashboardViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:FarmerProfileScreen.kt:val profileViewModel: ProfileViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:MarketScreen.kt:val bidsViewModel: TraderBidsViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:MarketScreen.kt:val newsViewModel: NewsViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:MarketScreen.kt:val profileViewModel: ProfileViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:MarketScreen.kt:val viewModel: MarketViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:TraderHistoryScreen.kt:val profileViewModel: ProfileViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:TraderProfileScreen.kt:val dashboardViewModel: DashboardViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:TraderProfileScreen.kt:val profileViewModel: ProfileViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:TraderProfileScreen.kt:val traderTransactionsViewModel: TraderTransactionsViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:TraderTransactionsScreen.kt:val viewModel: TraderTransactionsViewModel = hiltViewModel()</ID>
+    <ID>ViewModelInjection:WeightInputScreen.kt:val viewModel: WeightInputViewModel = hiltViewModel()</ID>
+  </CurrentIssues>
+</SmellBaseline>

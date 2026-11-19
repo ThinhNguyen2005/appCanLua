@@ -37,6 +37,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.R
@@ -74,6 +77,7 @@ fun CardItem(
 ) {
     val context = LocalContext.current
     val displayBagWeight = totalDisplayBagWeight(card)
+    val deleteActionLabel = stringResource(R.string.card_item_delete_content)
 
     @Suppress("DEPRECATION")
     val dismissState = rememberSwipeToDismissBoxState(
@@ -95,6 +99,17 @@ fun CardItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics {
+                    if (!card.isLocked) {
+                        customActions = listOf(
+                            CustomAccessibilityAction(label = deleteActionLabel) {
+                                HapticUtil.error(context)
+                                onDelete(card)
+                                true
+                            }
+                        )
+                    }
+                }
                 .clickable {
                     HapticUtil.tick(context)
                     onClick(card.id)

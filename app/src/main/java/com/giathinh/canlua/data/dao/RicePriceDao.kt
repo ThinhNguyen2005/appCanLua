@@ -14,6 +14,9 @@ interface RicePriceDao {
     @Query("SELECT * FROM rice_prices ORDER BY updatedAt DESC")
     fun getAllPrices(): Flow<List<RicePrice>>
 
+    @Query("SELECT * FROM rice_prices WHERE traderId = :traderId AND id NOT LIKE 'mock_%' ORDER BY updatedAt DESC")
+    fun getPricesByTrader(traderId: String): Flow<List<RicePrice>>
+
     @Query("SELECT * FROM rice_prices WHERE variety = :variety LIMIT 1")
     fun getPriceByVariety(variety: String): Flow<RicePrice?>
 

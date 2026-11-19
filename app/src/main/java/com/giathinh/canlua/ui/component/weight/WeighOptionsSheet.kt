@@ -17,6 +17,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Card
@@ -141,8 +143,16 @@ fun WeighOptionsSheet(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Row 1: Đọc số khi nhập (TTS)
+                    // T09 (#13): cả hàng là toggleable role=Switch để TalkBack đọc
+                    // kèm nhãn "Đọc số khi nhập"; Switch con chỉ trang trí (null).
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = ttsLocal,
+                                role = Role.Switch,
+                                onValueChange = { ttsLocal = it }
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -174,7 +184,7 @@ fun WeighOptionsSheet(
                         Spacer(Modifier.width(12.dp))
                         Switch(
                             checked = ttsLocal,
-                            onCheckedChange = { ttsLocal = it },
+                            onCheckedChange = null,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AppColors.GreenPrimary,

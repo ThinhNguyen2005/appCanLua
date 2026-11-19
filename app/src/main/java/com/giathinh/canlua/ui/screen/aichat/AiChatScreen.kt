@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -60,6 +61,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -88,6 +90,7 @@ import com.giathinh.canlua.ui.viewmodel.AiChatViewModel
 import com.giathinh.canlua.ui.viewmodel.UiMessage
 import com.giathinh.canlua.ui.viewmodel.VoiceState
 import com.giathinh.canlua.util.HapticUtil
+import com.giathinh.canlua.util.PremiumState
 import com.giathinh.canlua.util.TrackScreenRender
 import com.giathinh.canlua.util.SpeechRecognizerHelper
 
@@ -101,7 +104,8 @@ private val PRESET_RES_IDS = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AiChatScreen(
-    viewModel: AiChatViewModel = hiltViewModel()
+    viewModel: AiChatViewModel = hiltViewModel(),
+    onUpgradeClick: (() -> Unit)? = null
 ) {
     TrackScreenRender("ai_chat")
     val context = LocalContext.current
@@ -110,6 +114,7 @@ fun AiChatScreen(
     val listState = rememberLazyListState()
     val imeVisible = WindowInsets.isImeVisible
     val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
+    val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
 
     if (isGuestMode) {
         AiChatLockedScreen(onLoginClick = viewModel::disableGuestMode)
@@ -174,6 +179,24 @@ fun AiChatScreen(
                 message = voice.error.orEmpty(),
                 onDismiss = viewModel::clearVoiceError
             )
+        }
+
+        // Error / daily quota banner
+        AnimatedVisibility(visible = state.errorMessage != null) {
+            ChatErrorBanner(
+                message = state.errorMessage.orEmpty(),
+                showUpgrade = !isPremium && onUpgradeClick != null,
+                onUpgrade = {
+                    HapticUtil.tick(context)
+                    onUpgradeClick?.invoke()
+                },
+                onDismiss = viewModel::clearError
+            )
+        }
+
+        // Cooldown countdown banner
+        AnimatedVisibility(visible = state.rateLimitSeconds > 0) {
+            RateLimitBanner(seconds = state.rateLimitSeconds)
         }
 
         // Khi IME đóng, BottomBar overlay (capsule + nav inset) đang chiếm đáy →
@@ -344,6 +367,91 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
 }
 
 @Composable
+private fun ChatErrorBanner(
+    message: String,
+    showUpgrade: Boolean,
+    onUpgrade: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            if (showUpgrade) {
+                TextButton(
+                    onClick = onUpgrade,
+                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.premium_banner_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.ai_chat_action_close),
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RateLimitBanner(seconds: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(AppColors.Warning.copy(alpha = 0.14f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = null,
+            tint = AppColors.TextPrimary,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = stringResource(R.string.rate_limit_wait_message, seconds),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.TextPrimary,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
 private fun InputBar(
     value: String,
     partial: String,
@@ -412,6 +520,14 @@ private fun InputBar(
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Send,
                 capitalization = KeyboardCapitalization.Sentences
+            ),
+            keyboardActions = KeyboardActions(
+                onSend = {
+                    if (!isStreaming && value.isNotBlank()) {
+                        HapticUtil.tick(context)
+                        onSend()
+                    }
+                }
             ),
             maxLines = 4,
             readOnly = isListening

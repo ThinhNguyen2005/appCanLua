@@ -43,6 +43,9 @@ class CanLuaApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var settingsRepository: SettingsRepository
 
+    @Inject
+    lateinit var sessionCoordinator: com.giathinh.canlua.repository.SyncSessionCoordinator
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override val workManagerConfiguration: Configuration
@@ -74,6 +77,23 @@ class CanLuaApplication : Application(), Configuration.Provider {
         }
         scheduleOrphanClaim()
         observeAutoSyncPreference()
+        observeAuthSession()
+    }
+
+    /**
+     * T05: Theo dõi MỌI thay đổi auth (kể cả null lúc logout) để tăng generation
+     * phiên sync. Khi logout, hủy sync đã lên lịch — không để job cũ chạy sang
+     * tài khoản khác. Không dùng filterNotNull ở đây (sẽ bỏ sót logout).
+     */
+    private fun observeAuthSession() {
+        appScope.launch {
+            authManager.authStateFlow.collect { user ->
+                sessionCoordinator.onAuthChanged(user?.uid)
+                if (user == null) {
+                    syncManager.get().cancelScheduledSync()
+                }
+            }
+        }
     }
 
     private fun applyEarlyAdopterPremiumSync() {

@@ -103,13 +103,12 @@ class CardListViewModel @Inject constructor(
             }.orEmpty()
 
             val defaults = settingsRepository.getWeighDefaults()
-            val computedBagWeight = if (defaults.bagMethodIsSampling && defaults.bagSampleCount > 0) {
-                defaults.bagSampleTotalWeight / defaults.bagSampleCount
-            } else if (defaults.bagSampleCount > 0) {
-                1.0 / defaults.bagSampleCount
-            } else {
-                1.0 / 8.0
-            }
+            val computedBagWeight = com.giathinh.canlua.domain.WeighDefaultsResolver.normalizeBagRule(
+                isSampling = defaults.bagMethodIsSampling,
+                sampleCount = defaults.bagSampleCount,
+                sampleTotalWeight = defaults.bagSampleTotalWeight,
+                fallbackBagWeight = 1.0 / 8.0
+            ).bagWeight
 
             val newCard = Card(
                 name = trimmedName,
@@ -133,19 +132,8 @@ class CardListViewModel @Inject constructor(
                 bagSampleTotalWeight = defaults.bagSampleTotalWeight,
                 weightInputMode = defaults.weightInputMode
             )
-            val cardId = repository.insertCard(newCard)
-            
-            if (depositAmount > 0) {
-                repository.insertTransaction(
-                    com.giathinh.canlua.data.model.Transaction(
-                        cardId = cardId,
-                        amount = depositAmount,
-                        type = com.giathinh.canlua.data.model.TransactionType.DEPOSIT,
-                        description = "Tiền cọc"
-                    )
-                )
-                repository.updateCardCalculations(cardId)
-            }
+            // Tạo phiếu + cọc trong MỘT transaction (idempotent theo operationId).
+            repository.createCardWithDeposit(newCard, depositAmount, java.util.UUID.randomUUID().toString())
         }
     }
 

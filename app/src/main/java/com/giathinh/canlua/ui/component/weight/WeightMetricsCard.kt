@@ -23,10 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -95,13 +96,26 @@ fun WeightMetricsCard(
         if (cur != pricePerKg) priceText = if (pricePerKg > 0) "%.0f".format(pricePerKg) else ""
     }
 
-    // Debounce write về DB sau 500ms khi user ngừng gõ
+    // Debounce write về DB sau 500ms khi user ngừng gõ.
+    // T07/T08: chấp nhận dấu phẩy/chấm; dữ liệu sai KHÔNG ép thành 0 (giữ nguyên DB).
     LaunchedEffect(impText, impurityWeight) {
-        val curNum = impText.toDoubleOrNull() ?: 0.0
+        val parsed = com.giathinh.canlua.domain.WeighValidation.parseNumber(impText)
+        val curNum = when (parsed) {
+            is com.giathinh.canlua.domain.WeighValidation.ParsedNumber.Value -> parsed.value
+            com.giathinh.canlua.domain.WeighValidation.ParsedNumber.Blank -> 0.0
+            com.giathinh.canlua.domain.WeighValidation.ParsedNumber.Invalid -> return@LaunchedEffect
+        }
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidImpurity(curNum, impurityIsPercent)) return@LaunchedEffect
         if (curNum != impurityWeight) { delay(500L); onImpurityWeightChange(curNum) }
     }
     LaunchedEffect(moistureText, moisturePercent) {
-        val curNum = moistureText.toDoubleOrNull() ?: 0.0
+        val parsed = com.giathinh.canlua.domain.WeighValidation.parseNumber(moistureText)
+        val curNum = when (parsed) {
+            is com.giathinh.canlua.domain.WeighValidation.ParsedNumber.Value -> parsed.value
+            com.giathinh.canlua.domain.WeighValidation.ParsedNumber.Blank -> 0.0
+            com.giathinh.canlua.domain.WeighValidation.ParsedNumber.Invalid -> return@LaunchedEffect
+        }
+        if (!com.giathinh.canlua.domain.WeighValidation.isValidMoisture(curNum)) return@LaunchedEffect
         if (curNum != moisturePercent) { delay(500L); onMoistureChange(curNum) }
     }
 
@@ -236,9 +250,15 @@ fun WeightMetricsCard(
             }
 
             // ── Dòng 1: Bao bì (Trừ bì) ─────────────────────────────
+            // T09 (#14): bỏ overlay matchParentSize().clickable phủ lên trên
+            // OutlinedTextField — overlay đó chặn 2 nút Info/Settings ở trailingIcon
+            // và tạo node clickable không nhãn cho TalkBack. Outer Box đã clickable
+            // sẵn; các IconButton con tự tiêu thụ touch nên vẫn bấm được bình thường.
+            val bagFieldLabel = stringResource(R.string.weight_metrics_setup_bag)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .semantics { contentDescription = bagFieldLabel }
                     .clickable(enabled = !isLocked) { showBagDialog = true }
             ) {
                 OutlinedTextField(
@@ -281,12 +301,6 @@ fun WeightMetricsCard(
                     shape = RoundedCornerShape(10.dp),
                     colors = lockedAwareTextFieldColors(),
                     interactionSource = remember { MutableInteractionSource() }
-                )
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.Transparent)
-                        .clickable(enabled = !isLocked) { showBagDialog = true }
                 )
             }
 
@@ -614,7 +628,7 @@ private fun BagMethodOption(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(18.dp),
-        color = if (selected) AppColors.GreenSurface else Color(0xFFF8F9FA),
+        color = if (selected) AppColors.GreenSurface else AppColors.SurfaceContainer,
         tonalElevation = if (selected) 2.dp else 0.dp,
         modifier = Modifier.fillMaxWidth()
     ) {

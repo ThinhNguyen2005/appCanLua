@@ -72,6 +72,19 @@ class WeightInputViewModel @Inject constructor(
     val weighDefaults = settingsRepository.weighDefaults
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), settingsRepository.getWeighDefaults())
 
+    /**
+     * T02/T08: Preview tính từ TRỌNG LƯỢNG THẬT từng bao qua [CardSettlement],
+     * chạy trên Default dispatcher (không chặn main thread). UI đọc totalNetKg và
+     * totalAmountVnd từ cùng kết quả — khớp tuyệt đối với quyết toán trong DB.
+     */
+    val settlement: StateFlow<com.giathinh.canlua.util.RiceSettlement.Settlement?> =
+        combine(currentCard, weightEntries) { card, entries ->
+            if (card == null) null
+            else withContext(Dispatchers.Default) {
+                com.giathinh.canlua.domain.CardSettlement.preview(card, entries)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     fun loadCardById(cardId: Long) {
         if (_cardId.value != cardId) {
             _isLoading.value = true
@@ -177,11 +190,8 @@ class WeightInputViewModel @Inject constructor(
 
     private fun updateCardField(cardId: Long, recalculate: Boolean = true, transform: (Card) -> Card) {
         viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId) ?: return@launch
-            repository.updateCard(transform(card))
-            if (recalculate) {
-                repository.updateCardCalculations(cardId)
-            }
+            // patchCard đọc–kiểm–ghi trong 1 transaction (chống lost-update), tự recalc.
+            repository.patchCard(cardId, recalculate = recalculate, transform = transform)
         }
     }
 
@@ -190,10 +200,17 @@ class WeightInputViewModel @Inject constructor(
 
     fun updateCardBagMethod(cardId: Long, isSampling: Boolean, sampleCount: Int, sampleTotalWeight: Double) =
         updateCardField(cardId) {
+            val rule = com.giathinh.canlua.domain.WeighDefaultsResolver.normalizeBagRule(
+                isSampling = isSampling,
+                sampleCount = sampleCount,
+                sampleTotalWeight = sampleTotalWeight,
+                fallbackBagWeight = it.bagWeight
+            )
             it.copy(
-                bagMethodIsSampling = isSampling,
-                bagSampleCount = sampleCount,
-                bagSampleTotalWeight = sampleTotalWeight
+                bagWeight = rule.bagWeight,
+                bagMethodIsSampling = rule.isSampling,
+                bagSampleCount = rule.sampleCount,
+                bagSampleTotalWeight = rule.sampleTotalWeight
             )
         }
 
@@ -206,8 +223,12 @@ class WeightInputViewModel @Inject constructor(
     fun updateCardMoisture(cardId: Long, moisturePercent: Double) =
         updateCardField(cardId) { it.copy(moisturePercent = moisturePercent) }
 
-    fun toggleCardLock(cardId: Long) =
-        updateCardField(cardId, recalculate = false) { it.copy(isLocked = !it.isLocked) }
+    fun toggleCardLock(cardId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val card = repository.getCardById(cardId) ?: return@launch
+            repository.setCardLocked(cardId, card.revision, !card.isLocked)
+        }
+    }
 
     override fun onCleared() {
         ttsManager.stop()

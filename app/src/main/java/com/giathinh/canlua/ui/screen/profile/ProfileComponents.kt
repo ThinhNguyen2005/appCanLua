@@ -473,9 +473,9 @@ fun PremiumStatusCard(
             .background(
                 Brush.linearGradient(
                     colors = if (isEarlyAdopter) {
-                        listOf(AppColors.GoldAccent, AppColors.GoldDark)
+                        listOf(Color(0xFFB45309), Color(0xFF78350F))
                     } else {
-                        listOf(AppColors.GreenPrimary, AppColors.GreenDark)
+                        listOf(Color(0xFF2E7D32), AppColors.GreenDark)
                     }
                 )
             )
@@ -522,7 +522,7 @@ fun PremiumStatusCard(
                                 else R.string.settings_premium_active
                             ),
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isEarlyAdopter) AppColors.GoldDark else Color.White,
+                            color = if (isEarlyAdopter) Color(0xFF78350F) else Color(0xFF1A1C1A),
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -530,20 +530,20 @@ fun PremiumStatusCard(
                 Text(
                     text = plan?.takeIf { it.isNotBlank() } ?: stringResource(R.string.profile_premium_active_plan),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.95f),
+                    color = Color.White,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = sinceLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.75f)
+                    color = Color.White.copy(alpha = 0.92f)
                 )
                 if (isEarlyAdopter) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.profile_premium_early_adopter_thanks),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = Color.White.copy(alpha = 0.92f),
                         fontWeight = FontWeight.Medium
                     )
                 }

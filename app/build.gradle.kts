@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.firebase.perf)
+    alias(libs.plugins.detekt)
 }
 
 // Load API keys từ local.properties (không commit). Fallback empty string nếu chưa cấu hình.
@@ -120,6 +121,12 @@ android {
     }
 }
 
+// Room schema export (v20+) — phục vụ migration test và review schema.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -226,11 +233,15 @@ dependencies {
     testImplementation(libs.org.json)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    detektPlugins(libs.compose.rules.detekt)
 }
 
 // Guard: bản release KHÔNG được build với AdMob ID thiếu/placeholder/test ID.
@@ -264,4 +275,22 @@ tasks.matching { it.name.startsWith("assembleRelease") || it.name.startsWith("bu
 
 tasks.withType<Test> {
     jvmArgs("-XX:+EnableDynamicAgentLoading")
+}
+
+detekt {
+    buildUponDefaultConfig.set(true)
+    allRules.set(false)
+    parallel.set(true)
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    baseline.set(rootProject.file("config/detekt/baseline.xml"))
+    basePath.set(rootProject.layout.projectDirectory)
+}
+
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    reports {
+        html.required.set(true)
+        checkstyle.required.set(false)
+        sarif.required.set(false)
+        markdown.required.set(false)
+    }
 }

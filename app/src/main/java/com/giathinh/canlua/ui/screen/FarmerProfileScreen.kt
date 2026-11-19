@@ -42,11 +42,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.giathinh.canlua.R
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.giathinh.canlua.ui.navigation.BottomNavItem
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
+import com.giathinh.canlua.ui.component.dashboard.ChartMetric
 import com.giathinh.canlua.ui.component.dashboard.KpiGrid
 import com.giathinh.canlua.ui.component.dashboard.KpiGridItem
+import com.giathinh.canlua.ui.component.dashboard.SeasonComparisonBarChart
+import com.giathinh.canlua.ui.component.dashboard.SeasonSelectorChip
 import com.giathinh.canlua.ui.component.profile.FarmerProfileSkeleton
 import com.giathinh.canlua.ui.component.profile.GradientProfileHeader
 import com.giathinh.canlua.ui.component.profile.ProfileSectionTitle
@@ -131,6 +135,8 @@ fun FarmerProfileScreenContent(
     googleAvatarUrl: String?,
     isGuestMode: Boolean
 ) {
+    val context = LocalContext.current
+
     // Lifetime stats cho QuickStatsGlassGrid (tổng tất cả vụ, không lọc theo season chip)
     // Luôn tính giá trị — hiển thị 0 cho tài khoản mới thay vì ẩn hoàn toàn grid
     val lifetimeStats = dash.overallStats
@@ -189,6 +195,19 @@ fun FarmerProfileScreenContent(
                 }
             }
 
+            // ─── TIER 2: Season Selector Chips ───
+            if (dash.seasons.isNotEmpty()) {
+                item {
+                    SeasonSelectorChip(
+                        seasons = dash.seasons,
+                        selectedSeason = dash.selectedSeason,
+                        onSelect = { season ->
+                            HapticUtil.tick(context)
+                            dashboardViewModel.selectSeason(season)
+                        }
+                    )
+                }
+            }
 
             // ─── TIER 3: Primary KPI Grid 2×2 or Empty Season Stats ───
             val stats = dash.currentStats
@@ -216,6 +235,19 @@ fun FarmerProfileScreenContent(
                     }
                 }
 
+                // ─── TIER 5: Season Comparison Bar Chart ───
+                if (dash.seasonsComparison.isNotEmpty()) {
+                    item {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            SeasonComparisonBarChart(
+                                seasons = dash.seasonsComparison,
+                                selectedSeason = dash.selectedSeason,
+                                metric = ChartMetric.WEIGHT
+                            )
+                        }
+                    }
+                }
+
                 // ─── TIER 6: AI Crop Insights ───
                 item {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -228,12 +260,17 @@ fun FarmerProfileScreenContent(
                 }
             } else {
                 item {
-                    val context = LocalContext.current
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         EmptySeasonStatsCard(
                             onCreateSlip = {
                                 HapticUtil.tick(context)
-                                navController.navigate(BottomNavItem.SCALE.route)
+                                navController.navigate(BottomNavItem.SCALE.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         )
                     }
@@ -252,7 +289,6 @@ fun FarmerProfileScreenContent(
             // ─── Premium card (active hoặc upsell) ───
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val context = LocalContext.current
                     val premiumInfo by com.giathinh.canlua.util.PremiumState.info.collectAsStateWithLifecycle()
                     if (premiumInfo.isActive) {
                         PremiumStatusCard(

@@ -6,11 +6,20 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WeightEntryDao {
-    @Query("SELECT * FROM weight_entries WHERE cardId = :cardId ORDER BY timestamp ASC")
+    @Query("SELECT * FROM weight_entries WHERE cardId = :cardId ORDER BY timestamp ASC, id ASC")
     fun getWeightEntriesByCardId(cardId: Long): Flow<List<WeightEntry>>
 
-    @Query("SELECT * FROM weight_entries WHERE cardId = :cardId")
+    @Query("SELECT * FROM weight_entries WHERE cardId = :cardId ORDER BY timestamp ASC, id ASC")
     suspend fun getWeightEntriesByCardIdSync(cardId: Long): List<WeightEntry>
+
+    @Query("SELECT MAX(ordinal) FROM weight_entries WHERE cardId = :cardId")
+    suspend fun getMaxOrdinal(cardId: Long): Int?
+
+    @Query("SELECT * FROM weight_entries WHERE cardId = :cardId AND syncId = :syncId LIMIT 1")
+    suspend fun getByCardAndSyncId(cardId: Long, syncId: String): WeightEntry?
+
+    @Query("DELETE FROM weight_entries WHERE cardId = :cardId AND syncId = :syncId")
+    suspend fun deleteByCardAndSyncId(cardId: Long, syncId: String)
 
     @Insert
     suspend fun insertWeightEntry(weightEntry: WeightEntry): Long

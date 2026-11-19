@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+language: "vi-VN"
+
+reviews:
+  profile: "chill"
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/build/**"
+    - "!**/.qoder/**"
+    - "!**/docs/**"
+    - "!**/*.json"
+    - "!**/*.xml"
+    - "**/AndroidManifest.xml"
+  path_instructions:
+    - path: "app/src/main/java/**/ui/**"
+      instructions: |
+        Kiểm tra nghiêm ngặt các chuẩn Android Jetpack Compose & Material 3:
+        - Tuân thủ Material 3 tokens (MaterialTheme.colorScheme / typography), kiểm tra độ tương phản Dark Mode, tránh hardcode màu làm mờ chữ trên nền tối.
+        - Mọi vùng chạm tương tác (Button, IconButton, Clickable card/row) phải đạt tối thiểu >= 48.dp.
+        - Tuyệt đối không hardcode chuỗi hiển thị tiếng Việt trong code UI — bắt buộc dùng stringResource(...) từ strings.xml.
+        - Không đặt logic tính toán nghiệp vụ, truy cập database/network hoặc I/O trực tiếp trong @Composable; đẩy về ViewModel/domain/use-case.
+    - path: "app/src/main/java/**/repository/**"
+      instructions: |
+        Kiểm tra độ an toàn dữ liệu và đồng bộ:
+        - Kiểm tra chặt chẽ xử lý lỗi, retry, idempotency, conflict/dedup và tránh mất dữ liệu người dùng trong SyncManager, SyncSessionCoordinator và các Repository.
+        - Đảm bảo tính toàn vẹn khi thao tác Room DB và Firestore (không nuốt exception quan trọng, không để race condition).
+        - Mọi format số/tiền/ngày tháng phải truyền Locale tường minh (không phụ thuộc Locale.getDefault() ngầm gây sai dấu thập phân/phân cách).
+    - path: "app/src/main/java/**/util/**"
+      instructions: |
+        Kiểm tra độ chính xác tính toán tài chính & cân lúa:
+        - Soát kỹ công thức tính khối lượng, trừ bì, tạp chất, tiền thanh toán trong RiceCalculator và RiceSettlement (làm tròn, tràn số, biên 0/âm/NaN/Infinity, đơn vị kg/tấn/VNĐ).
+        - Mọi thao tác format số/tiền/ngày tháng bắt buộc truyền Locale tường minh, tránh lỗi định dạng theo thiết bị.
+    - path: "app/src/main/java/**/domain/**"
+      instructions: |
+        Kiểm tra logic nghiệp vụ cốt lõi (CardSettlement, CardMutation, WeighValidation, WeighDefaultsResolver):
+        - Đảm bảo tính toán tiền/khối lượng an toàn ở các giá trị biên (0, âm, số rất lớn, làm tròn) và truyền Locale tường minh nếu có format.
+    - path: "app/src/test/**"
+      instructions: |
+        Phát hiện và cảnh báo các dấu hiệu "vibe-code test" kém chất lượng:
+        - Test gương (mirror test): copy nguyên công thức/logic từ code production sang file test rồi tự so sánh với chính nó thay vì dùng expected value độc lập.
+        - Sửa assertEquals / expected value cho khớp bug thay vì sửa lỗi trong production code.
+        - Over-mocking bằng spyk(...) hoặc verify(...) các lời gọi nội bộ quá chi tiết khiến test giòn và không kiểm chứng hành vi thực tế.
+        - Flaky test lệ thuộc môi trường: Locale mặc định (Locale.getDefault()), múi giờ mặc định, hoặc thời gian thực System.currentTimeMillis() / Date() không được inject Clock/fixed timestamp.

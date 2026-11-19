@@ -60,53 +60,14 @@ class CardDetailViewModel @Inject constructor(
 
     private fun updateCardField(cardId: Long, recalculate: Boolean = true, transform: (Card) -> Card) {
         viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId) ?: return@launch
-            repository.updateCard(transform(card))
-            if (recalculate) {
-                repository.updateCardCalculations(cardId)
-            }
+            repository.patchCard(cardId, recalculate = recalculate, transform = transform)
         }
     }
 
     fun updateCard(card: Card) {
         viewModelScope.launch(Dispatchers.IO) {
-            val oldCard = repository.getCardById(card.id) ?: return@launch
-            repository.updateCard(card)
-
-            var needRecalc = false
-            val depositDiff = card.depositAmount - oldCard.depositAmount
-            if (depositDiff != 0.0) {
-                repository.insertTransaction(
-                    Transaction(
-                        cardId = card.id,
-                        amount = depositDiff,
-                        type = TransactionType.DEPOSIT,
-                        description = "Cập nhật tiền cọc"
-                    )
-                )
-                needRecalc = true
-            }
-
-            val paidDiff = card.paidAmount - oldCard.paidAmount
-            if (paidDiff != 0.0) {
-                repository.insertTransaction(
-                    Transaction(
-                        cardId = card.id,
-                        amount = paidDiff,
-                        type = TransactionType.PAYMENT,
-                        description = "Cập nhật đã trả"
-                    )
-                )
-                needRecalc = true
-            }
-
-            if (needRecalc ||
-                oldCard.pricePerKg != card.pricePerKg ||
-                oldCard.impurityWeight != card.impurityWeight ||
-                oldCard.moisturePercent != card.moisturePercent
-            ) {
-                repository.updateCardCalculations(card.id)
-            }
+            // Atomic: field nghiệp vụ + ledger delta (cọc/đã trả) + recalc trong 1 transaction.
+            repository.editCardFinancials(card, java.util.UUID.randomUUID().toString())
         }
     }
 
@@ -162,22 +123,17 @@ class CardDetailViewModel @Inject constructor(
 
     fun addPayment(cardId: Long, amount: Double, description: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
-            val card = repository.getCardById(cardId) ?: return@launch
-            if (card.isLocked) return@launch
-            repository.insertTransaction(
-                Transaction(
-                    cardId = cardId,
-                    amount = amount,
-                    type = TransactionType.PAYMENT,
-                    description = description ?: "Thanh toán thêm"
-                )
-            )
-            repository.updateCardCalculations(cardId)
+            // Atomic + idempotent: ledger + recalc + revision trong 1 transaction.
+            repository.addPayment(cardId, amount, description, java.util.UUID.randomUUID().toString())
         }
     }
 
-    fun toggleCardLock(cardId: Long) =
-        updateCardField(cardId, recalculate = false) { it.copy(isLocked = !it.isLocked) }
+    fun toggleCardLock(cardId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val card = repository.getCardById(cardId) ?: return@launch
+            repository.setCardLocked(cardId, card.revision, !card.isLocked)
+        }
+    }
 
     fun updateCardWeighOptions(
         cardId: Long,
@@ -187,11 +143,18 @@ class CardDetailViewModel @Inject constructor(
         bagSampleTotalWeight: Double,
         weightInputMode: String
     ) = updateCardField(cardId) {
+        val rule = com.giathinh.canlua.domain.WeighDefaultsResolver.normalizeBagRule(
+            isSampling = bagMethodIsSampling,
+            sampleCount = bagSampleCount,
+            sampleTotalWeight = bagSampleTotalWeight,
+            fallbackBagWeight = it.bagWeight
+        )
         it.copy(
             impurityIsPercent = impurityIsPercent,
-            bagMethodIsSampling = bagMethodIsSampling,
-            bagSampleCount = bagSampleCount,
-            bagSampleTotalWeight = bagSampleTotalWeight,
+            bagWeight = rule.bagWeight,
+            bagMethodIsSampling = rule.isSampling,
+            bagSampleCount = rule.sampleCount,
+            bagSampleTotalWeight = rule.sampleTotalWeight,
             weightInputMode = weightInputMode
         )
     }

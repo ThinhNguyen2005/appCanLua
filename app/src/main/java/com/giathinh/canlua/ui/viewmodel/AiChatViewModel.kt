@@ -255,6 +255,9 @@ class AiChatViewModel @Inject constructor(
     fun stopVoice() { stt.stop() }
     fun cancelVoice() { stt.cancel() }
     fun clearVoiceError() { stt.clearError() }
+    fun clearError() {
+        _state.value = _state.value.copy(errorMessage = null)
+    }
 
     override fun onCleared() {
         stt.release()

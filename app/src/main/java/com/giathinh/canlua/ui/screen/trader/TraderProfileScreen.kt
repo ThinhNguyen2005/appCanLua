@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.component.dashboard.AiInsightsCard
 import com.giathinh.canlua.ui.component.dashboard.ChartMetric
@@ -184,7 +185,7 @@ fun TraderProfileScreenContent(
             // ─── TIER 1: Quick Stats Glass Grid ───
             item {
                 QuickStatsGlassGrid(
-                    seasonCount = lifetimeStats.cardCount,
+                    seasonCount = dash.seasons.size,
                     totalNetWeight = lifetimeStats.totalNetWeight,
                     totalRevenue = lifetimeStats.totalPaid,
                     revenueLabel = stringResource(R.string.profile_stats_paid)
@@ -223,7 +224,13 @@ fun TraderProfileScreenContent(
                         EmptyTraderSeasonStatsCard(
                             onCreateSlip = {
                                 HapticUtil.tick(context)
-                                navController.navigate(BottomNavItem.SCALE.route)
+                                navController.navigate(BottomNavItem.SCALE.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         )
                     }

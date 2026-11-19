@@ -90,7 +90,7 @@ fun AppNavHost(
 
         // === Tab 3: AI Chat ===
         composable(BottomNavItem.AI_CHAT.route) {
-            AiChatScreen()
+            AiChatScreen(onUpgradeClick = { navController.navigate("premium") })
         }
 
         // === Tab 4: Tài khoản (FARMER) ===

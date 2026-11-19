@@ -1,0 +1,1064 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 20,
+    "identityHash": "34c47a7434c724fa397d4ecdddf9f7d7",
+    "entities": [
+      {
+        "tableName": "cards",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ownerUid` TEXT NOT NULL, `name` TEXT NOT NULL, `cccd` TEXT, `traderName` TEXT NOT NULL, `date` INTEGER NOT NULL, `totalWeight` REAL NOT NULL, `bagWeight` REAL NOT NULL, `impurityWeight` REAL NOT NULL, `netWeight` REAL NOT NULL, `depositAmount` REAL NOT NULL, `pricePerKg` REAL NOT NULL, `totalAmount` REAL NOT NULL, `paidAmount` REAL NOT NULL, `remainingAmount` REAL NOT NULL, `overpaidAmount` REAL NOT NULL, `bagCount` INTEGER NOT NULL, `isLocked` INTEGER NOT NULL, `riceVariety` TEXT NOT NULL, `moisturePercent` REAL NOT NULL, `seasonLabel` TEXT NOT NULL, `qrToken` TEXT, `lockedByTraderId` TEXT, `latitude` REAL, `longitude` REAL, `traderPhone` TEXT NOT NULL, `fieldAddress` TEXT NOT NULL, `firestoreId` TEXT, `lastModifiedMs` INTEGER NOT NULL, `isPaid` INTEGER NOT NULL, `impurityIsPercent` INTEGER NOT NULL, `bagMethodIsSampling` INTEGER NOT NULL, `bagSampleCount` INTEGER NOT NULL, `bagSampleTotalWeight` REAL NOT NULL, `weightInputMode` TEXT NOT NULL, `revision` INTEGER NOT NULL, `syncId` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerUid",
+            "columnName": "ownerUid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cccd",
+            "columnName": "cccd",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "traderName",
+            "columnName": "traderName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalWeight",
+            "columnName": "totalWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bagWeight",
+            "columnName": "bagWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impurityWeight",
+            "columnName": "impurityWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "netWeight",
+            "columnName": "netWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "depositAmount",
+            "columnName": "depositAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pricePerKg",
+            "columnName": "pricePerKg",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidAmount",
+            "columnName": "paidAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remainingAmount",
+            "columnName": "remainingAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overpaidAmount",
+            "columnName": "overpaidAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bagCount",
+            "columnName": "bagCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isLocked",
+            "columnName": "isLocked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "riceVariety",
+            "columnName": "riceVariety",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "moisturePercent",
+            "columnName": "moisturePercent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seasonLabel",
+            "columnName": "seasonLabel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "qrToken",
+            "columnName": "qrToken",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lockedByTraderId",
+            "columnName": "lockedByTraderId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "traderPhone",
+            "columnName": "traderPhone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fieldAddress",
+            "columnName": "fieldAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firestoreId",
+            "columnName": "firestoreId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastModifiedMs",
+            "columnName": "lastModifiedMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPaid",
+            "columnName": "isPaid",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impurityIsPercent",
+            "columnName": "impurityIsPercent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bagMethodIsSampling",
+            "columnName": "bagMethodIsSampling",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bagSampleCount",
+            "columnName": "bagSampleCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bagSampleTotalWeight",
+            "columnName": "bagSampleTotalWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightInputMode",
+            "columnName": "weightInputMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cards_ownerUid",
+            "unique": false,
+            "columnNames": [
+              "ownerUid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cards_ownerUid` ON `${TABLE_NAME}` (`ownerUid`)"
+          },
+          {
+            "name": "index_cards_ownerUid_date",
+            "unique": false,
+            "columnNames": [
+              "ownerUid",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cards_ownerUid_date` ON `${TABLE_NAME}` (`ownerUid`, `date`)"
+          },
+          {
+            "name": "index_cards_ownerUid_riceVariety",
+            "unique": false,
+            "columnNames": [
+              "ownerUid",
+              "riceVariety"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cards_ownerUid_riceVariety` ON `${TABLE_NAME}` (`ownerUid`, `riceVariety`)"
+          },
+          {
+            "name": "index_cards_firestoreId",
+            "unique": false,
+            "columnNames": [
+              "firestoreId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cards_firestoreId` ON `${TABLE_NAME}` (`firestoreId`)"
+          },
+          {
+            "name": "index_cards_syncId",
+            "unique": false,
+            "columnNames": [
+              "syncId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cards_syncId` ON `${TABLE_NAME}` (`syncId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "weight_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `cardId` INTEGER NOT NULL, `weight` REAL NOT NULL, `bagWeight` REAL NOT NULL, `impurityWeight` REAL NOT NULL, `netWeight` REAL NOT NULL, `timestamp` INTEGER NOT NULL, `firestoreId` TEXT, `syncId` TEXT NOT NULL, `ordinal` INTEGER NOT NULL, FOREIGN KEY(`cardId`) REFERENCES `cards`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardId",
+            "columnName": "cardId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weight",
+            "columnName": "weight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bagWeight",
+            "columnName": "bagWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "impurityWeight",
+            "columnName": "impurityWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "netWeight",
+            "columnName": "netWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firestoreId",
+            "columnName": "firestoreId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordinal",
+            "columnName": "ordinal",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_weight_entries_cardId",
+            "unique": false,
+            "columnNames": [
+              "cardId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_weight_entries_cardId` ON `${TABLE_NAME}` (`cardId`)"
+          },
+          {
+            "name": "index_weight_entries_firestoreId",
+            "unique": false,
+            "columnNames": [
+              "firestoreId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_weight_entries_firestoreId` ON `${TABLE_NAME}` (`firestoreId`)"
+          },
+          {
+            "name": "index_weight_entries_cardId_ordinal",
+            "unique": false,
+            "columnNames": [
+              "cardId",
+              "ordinal"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_weight_entries_cardId_ordinal` ON `${TABLE_NAME}` (`cardId`, `ordinal`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cards",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cardId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "transactions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `cardId` INTEGER NOT NULL, `amount` REAL NOT NULL, `type` TEXT NOT NULL, `description` TEXT, `date` INTEGER NOT NULL, `firestoreId` TEXT, `syncId` TEXT NOT NULL, `operationId` TEXT, FOREIGN KEY(`cardId`) REFERENCES `cards`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardId",
+            "columnName": "cardId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firestoreId",
+            "columnName": "firestoreId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationId",
+            "columnName": "operationId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_transactions_cardId",
+            "unique": false,
+            "columnNames": [
+              "cardId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_cardId` ON `${TABLE_NAME}` (`cardId`)"
+          },
+          {
+            "name": "index_transactions_firestoreId",
+            "unique": false,
+            "columnNames": [
+              "firestoreId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_firestoreId` ON `${TABLE_NAME}` (`firestoreId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cards",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cardId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT NOT NULL, `region` TEXT NOT NULL, `note` TEXT NOT NULL, `role` TEXT NOT NULL, `cccd` TEXT NOT NULL, `username` TEXT NOT NULL, `email` TEXT NOT NULL, `roleGrantedBy` TEXT NOT NULL, `roleGrantedAt` INTEGER NOT NULL, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cccd",
+            "columnName": "cccd",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roleGrantedBy",
+            "columnName": "roleGrantedBy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roleGrantedAt",
+            "columnName": "roleGrantedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        }
+      },
+      {
+        "tableName": "rice_prices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `variety` TEXT NOT NULL, `priceMin` REAL NOT NULL, `priceMax` REAL NOT NULL, `priceAvg7d` REAL NOT NULL, `region` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, `traderId` TEXT, `traderName` TEXT, `trend` TEXT NOT NULL, `riceType` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "variety",
+            "columnName": "variety",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceMin",
+            "columnName": "priceMin",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceMax",
+            "columnName": "priceMax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceAvg7d",
+            "columnName": "priceAvg7d",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "traderId",
+            "columnName": "traderId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "traderName",
+            "columnName": "traderName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trend",
+            "columnName": "trend",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "riceType",
+            "columnName": "riceType",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "price_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `variety` TEXT NOT NULL, `date` INTEGER NOT NULL, `priceMin` REAL NOT NULL, `priceMax` REAL NOT NULL, `priceAvg` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "variety",
+            "columnName": "variety",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceMin",
+            "columnName": "priceMin",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceMax",
+            "columnName": "priceMax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priceAvg",
+            "columnName": "priceAvg",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "news_articles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `link` TEXT NOT NULL, `source` TEXT NOT NULL, `thumbnail` TEXT, `publishedAt` INTEGER NOT NULL, `topic` TEXT NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "link",
+            "columnName": "link",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thumbnail",
+            "columnName": "thumbnail",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publishedAt",
+            "columnName": "publishedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topic",
+            "columnName": "topic",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "idx_news_topic_published",
+            "unique": false,
+            "columnNames": [
+              "topic",
+              "publishedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_news_topic_published` ON `${TABLE_NAME}` (`topic`, `publishedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "deleted_cards",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `ownerUid` TEXT NOT NULL, `firestoreId` TEXT, `localId` INTEGER, `cardJson` TEXT NOT NULL, `deletedAt` INTEGER NOT NULL, `name` TEXT NOT NULL, `traderName` TEXT NOT NULL, `totalWeight` REAL NOT NULL, `totalAmount` REAL NOT NULL, `cardDate` INTEGER NOT NULL, `seasonLabel` TEXT NOT NULL, `riceVariety` TEXT NOT NULL, `cloudDeleted` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerUid",
+            "columnName": "ownerUid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firestoreId",
+            "columnName": "firestoreId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localId",
+            "columnName": "localId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cardJson",
+            "columnName": "cardJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "traderName",
+            "columnName": "traderName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalWeight",
+            "columnName": "totalWeight",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardDate",
+            "columnName": "cardDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seasonLabel",
+            "columnName": "seasonLabel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "riceVariety",
+            "columnName": "riceVariety",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cloudDeleted",
+            "columnName": "cloudDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_deleted_cards_ownerUid",
+            "unique": false,
+            "columnNames": [
+              "ownerUid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_deleted_cards_ownerUid` ON `${TABLE_NAME}` (`ownerUid`)"
+          },
+          {
+            "name": "index_deleted_cards_firestoreId",
+            "unique": false,
+            "columnNames": [
+              "firestoreId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_deleted_cards_firestoreId` ON `${TABLE_NAME}` (`firestoreId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "card_sync_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`syncId` TEXT NOT NULL, `ownerUid` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `baseRemoteRevision` TEXT, `ackedRemoteRevision` TEXT, `protocolState` TEXT NOT NULL, PRIMARY KEY(`syncId`))",
+        "fields": [
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerUid",
+            "columnName": "ownerUid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseRemoteRevision",
+            "columnName": "baseRemoteRevision",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ackedRemoteRevision",
+            "columnName": "ackedRemoteRevision",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "protocolState",
+            "columnName": "protocolState",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "syncId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_card_sync_state_ownerUid",
+            "unique": false,
+            "columnNames": [
+              "ownerUid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_card_sync_state_ownerUid` ON `${TABLE_NAME}` (`ownerUid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "mutation_receipts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUid` TEXT NOT NULL, `operationId` TEXT NOT NULL, `commandHash` TEXT NOT NULL, `createdCardId` INTEGER, `resultCode` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`ownerUid`, `operationId`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUid",
+            "columnName": "ownerUid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationId",
+            "columnName": "operationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commandHash",
+            "columnName": "commandHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdCardId",
+            "columnName": "createdCardId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "resultCode",
+            "columnName": "resultCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUid",
+            "operationId"
+          ]
+        }
+      },
+      {
+        "tableName": "sync_outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ownerUid` TEXT NOT NULL, `syncId` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `sessionGeneration` INTEGER NOT NULL, `baseRemoteRevision` TEXT, `payload` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`ownerUid`, `syncId`, `localRevision`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUid",
+            "columnName": "ownerUid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncId",
+            "columnName": "syncId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionGeneration",
+            "columnName": "sessionGeneration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseRemoteRevision",
+            "columnName": "baseRemoteRevision",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payload",
+            "columnName": "payload",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ownerUid",
+            "syncId",
+            "localRevision"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sync_outbox_ownerUid",
+            "unique": false,
+            "columnNames": [
+              "ownerUid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sync_outbox_ownerUid` ON `${TABLE_NAME}` (`ownerUid`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '34c47a7434c724fa397d4ecdddf9f7d7')"
+    ]
+  }
+}

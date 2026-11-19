@@ -40,8 +40,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PriceChange
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -54,6 +57,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -160,7 +164,7 @@ fun MarketScreenContent(
     val isTrader = profile?.role == "TRADER"
     val isPremium by PremiumState.isPremium.collectAsStateWithLifecycle()
     val nativeAdState by viewModel.nativeAdState.collectAsStateWithLifecycle()
-    val myBids: List<Nothing> = emptyList()
+    val myBids by bidsViewModel.myBids.collectAsStateWithLifecycle()
     val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -194,6 +198,7 @@ fun MarketScreenContent(
 
     var showEditor by remember { mutableStateOf(false) }
     var editingBid by remember { mutableStateOf<FirestoreRicePrice?>(null) }
+    var deletingBidId by remember { mutableStateOf<String?>(null) }
 
     val onSubmitBid = remember(bidsViewModel) {
         { variety: String, pMin: Double, pMax: Double, region: String, trend: String, note: String, riceType: String, existingId: String? ->
@@ -298,7 +303,7 @@ fun MarketScreenContent(
                     showEditor = true
                 }
             }
-            val onDeleteBid = remember { { id: String -> bidsViewModel.deleteBid(id) } }
+            val onDeleteBid = remember { { id: String -> deletingBidId = id } }
 
             HorizontalPager(
                 state = pagerState,
@@ -384,6 +389,67 @@ fun MarketScreenContent(
                 onDismiss = onDismissEditor
             )
         }
+    }
+
+    deletingBidId?.let { targetId ->
+        val targetBid = myBids.firstOrNull { it.id == targetId }
+        val bidNumberFormat = remember {
+            java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN"))
+        }
+        AlertDialog(
+            onDismissRequest = { deletingBidId = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = AppColors.Error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.market_bid_delete_action),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = targetBid?.let { bid ->
+                {
+                    val variety = bid.variety.ifBlank { stringResource(R.string.market_bid_unknown_variety) }
+                    val priceRange = "${bidNumberFormat.format(bid.priceMin.toLong())} – ${bidNumberFormat.format(bid.priceMax.toLong())} ${stringResource(R.string.market_price_unit)}"
+                    Text(
+                        text = "$variety · $priceRange",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextPrimary
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deletingBidId = null
+                        bidsViewModel.deleteBid(targetId)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Error)
+                ) {
+                    Text(
+                        text = stringResource(R.string.card_detail_delete_confirm),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingBidId = null }) {
+                    Text(
+                        text = stringResource(R.string.action_cancel),
+                        color = AppColors.TextSecondary
+                    )
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = AppColors.Surface
+        )
     }
 }
 

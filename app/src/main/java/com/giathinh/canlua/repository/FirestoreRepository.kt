@@ -46,12 +46,15 @@ class FirestoreRepository @Inject constructor(
         cards: List<FirestoreCard>,
         weightEntries: List<FirestoreWeightEntry>,
         transactions: List<FirestoreTransaction>,
-        newCardsCount: Int
+        newCardsCount: Int,
+        ownerUid: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val batch = firestore.batch()
             val now = System.currentTimeMillis()
-            val currentUid = userId
+            // T05: dùng UID đã chụp lúc bắt đầu phiên sync, KHÔNG đọc lại currentUid
+            // (tránh stamp dữ liệu của A sang B khi đổi tài khoản giữa chừng).
+            val currentUid = ownerUid
 
             // Add cards
             cards.forEach { card ->
@@ -72,7 +75,7 @@ class FirestoreRepository @Inject constructor(
             }
 
             // Increment profile cardCount if there are new cards
-            if (newCardsCount > 0 && currentUid != null) {
+            if (newCardsCount > 0) {
                 val profileRef = firestore.collection("profiles").document(currentUid)
                 batch.update(profileRef, "cardCount", com.google.firebase.firestore.FieldValue.increment(newCardsCount.toLong()))
             }

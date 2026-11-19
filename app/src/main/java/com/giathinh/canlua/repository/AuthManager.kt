@@ -11,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthManager @Inject constructor(
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val sessionCoordinator: SyncSessionCoordinator
 ) {
     val currentUser: FirebaseUser?
         get() = auth.currentUser
@@ -68,6 +69,9 @@ class AuthManager @Inject constructor(
     }
 
     fun signOut() {
+        // Vô hiệu hóa phiên sync TRƯỚC khi đổi auth state để job đang chạy không
+        // kịp stamp dữ liệu sang tài khoản khác.
+        sessionCoordinator.invalidate()
         auth.signOut()
     }
 }

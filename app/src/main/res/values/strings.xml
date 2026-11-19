@@ -194,6 +194,9 @@
     <string name="weight_input_column_header">C%1$d</string>
     <string name="weight_input_column_totals">TỔNG CỘT</string>
     <string name="weight_input_unlock_before_edit">Vui lòng mở khóa bảng trước khi chỉnh sửa</string>
+    <string name="weight_input_cell_label">Bao thứ %1$d, bảng %2$d</string>
+    <string name="weight_input_cell_filled">%1$s, %2$s kg</string>
+    <string name="weight_input_cell_empty">%1$s, ô trống</string>
     <string name="weight_input_lock_dialog_title">Chốt giao dịch (Khóa phiếu)?</string>
     <string name="weight_input_lock_dialog_message">CẢNH BÁO: Phiếu cân sau khi khóa sẽ KHÔNG thể chỉnh sửa khối lượng hay đơn giá nữa để bảo mật giao dịch, chống sửa lén số liệu lúa. Bạn có chắc chắn toàn bộ thông số đã chính xác?</string>
     <string name="weight_input_lock_confirm">Đồng ý Khóa</string>
@@ -678,6 +681,7 @@
 
     <!-- Weight Input & Weight Metrics Polish -->
     <string name="weight_input_fill_consecutive_warning">Vui lòng nhập lần lượt từ ô trống kế tiếp</string>
+    <string name="weight_input_invalid_weight">Khối lượng một bao phải lớn hơn 0 và không vượt 200 kg</string>
     <string name="action_apply">Áp dụng</string>
     <string name="weight_metrics_deducting_bag">Đang trừ %1$s kg bao bì</string>
     <string name="weight_metrics_setup_bag">Thiết lập bao bì</string>

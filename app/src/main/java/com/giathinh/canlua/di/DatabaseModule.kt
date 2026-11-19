@@ -63,6 +63,21 @@ object DatabaseModule {
     }
 
     @Provides
+    fun provideCardSyncStateDao(database: AppDatabase): com.giathinh.canlua.data.dao.CardSyncStateDao {
+        return database.cardSyncStateDao()
+    }
+
+    @Provides
+    fun provideMutationReceiptDao(database: AppDatabase): com.giathinh.canlua.data.dao.MutationReceiptDao {
+        return database.mutationReceiptDao()
+    }
+
+    @Provides
+    fun provideSyncOutboxDao(database: AppDatabase): com.giathinh.canlua.data.dao.SyncOutboxDao {
+        return database.syncOutboxDao()
+    }
+
+    @Provides
     @Singleton
     fun provideTextToSpeechManager(@ApplicationContext context: Context): TextToSpeechManager {
         return TextToSpeechManager(context)
