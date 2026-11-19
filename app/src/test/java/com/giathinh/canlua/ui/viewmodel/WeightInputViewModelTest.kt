@@ -1,5 +1,15 @@
 package com.giathinh.canlua.ui.viewmodel
 
+import com.giathinh.canlua.R
+import com.giathinh.canlua.data.bluetooth.MockScaleClient
+import com.giathinh.canlua.data.bluetooth.PairedScaleDevice
+import com.giathinh.canlua.data.bluetooth.ScaleCaptureMode
+import com.giathinh.canlua.data.bluetooth.ScaleClock
+import com.giathinh.canlua.data.bluetooth.ScaleConnectionException
+import com.giathinh.canlua.data.bluetooth.ScaleConnectionState
+import com.giathinh.canlua.data.bluetooth.ScaleDataSource
+import com.giathinh.canlua.data.bluetooth.ScaleReading
+import com.giathinh.canlua.data.bluetooth.ScaleReadingStabilizer
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.domain.CardMutationResult
@@ -14,7 +24,9 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -38,6 +50,10 @@ class WeightInputViewModelTest {
     private val repository = mockk<SyncableCardRepository>(relaxed = true)
     private val ttsManager = mockk<TextToSpeechManager>(relaxed = true)
     private val settingsRepository = mockk<SettingsRepository>(relaxed = true)
+    private val scaleDataSource = mockk<ScaleDataSource>(relaxed = true)
+    private val mockScaleClient = mockk<MockScaleClient>(relaxed = true)
+    private var fakeClockMs = 0L
+    private lateinit var scaleStabilizer: ScaleReadingStabilizer
 
     private val defaultCard = Card(
         id = 1L,
@@ -53,6 +69,8 @@ class WeightInputViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        fakeClockMs = 0L
+        scaleStabilizer = ScaleReadingStabilizer(clock = ScaleClock { fakeClockMs })
         every { settingsRepository.ttsEnabled } returns flowOf(false)
         every { settingsRepository.isTtsEnabled() } returns false
         every { settingsRepository.weighDefaults } returns flowOf(WeighDefaults())
@@ -71,7 +89,10 @@ class WeightInputViewModelTest {
         return WeightInputViewModel(
             repository = repository,
             ttsManager = ttsManager,
-            settingsRepository = settingsRepository
+            settingsRepository = settingsRepository,
+            scaleDataSource = scaleDataSource,
+            mockScaleClient = mockScaleClient,
+            scaleStabilizer = scaleStabilizer
         )
     }
 
@@ -236,5 +257,64 @@ class WeightInputViewModelTest {
         // Clear
         vm.clearWeightInput()
         assertEquals("", vm.weightInputState.value.currentWeight)
+    }
+
+    @Test
+    fun `scale connection supports semi-auto manual capture and auto capture without duplicates`() =
+        runTest(testDispatcher) {
+            val scaleStream = MutableSharedFlow<ScaleReading>()
+            val device = PairedScaleDevice(name = "Cân XK3190", address = "AA:BB:CC:DD:EE:FF")
+            every { scaleDataSource.connect(device) } returns scaleStream
+            coEvery { repository.addWeightEntryAndRecalc(1L, any()) } returns 1
+
+            val vm = createViewModel()
+            val capturedEvents = mutableListOf<Double>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                vm.scaleCaptureEvents.collect { capturedEvents.add(it) }
+            }
+            vm.loadCardById(1L)
+            vm.connectToScale(device)
+            advanceUntilIdle()
+            assertEquals(ScaleConnectionState.Connecting(device.name), vm.weightInputState.value.scaleConnectionState)
+
+            // Semi-auto mode: updates live weight, captures only on manual button press
+            scaleStream.emit(ScaleReading(52.1, true, "ST,GS,+ 52.10kg"))
+            advanceUntilIdle()
+            val semiState = vm.weightInputState.value.scaleConnectionState as ScaleConnectionState.Connected
+            assertEquals(52.1, semiState.liveWeightKg, 0.001)
+            assertTrue(semiState.isStable)
+            coVerify(exactly = 0) { repository.addWeightEntryAndRecalc(any(), any()) }
+
+            vm.captureCurrentScaleWeight()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { repository.addWeightEntryAndRecalc(1L, 52.1) }
+
+            // Switch to Auto-Capture -> records once, waits for < 2.0 before next bag
+            vm.setScaleCaptureMode(ScaleCaptureMode.AUTO_CAPTURE)
+            scaleStream.emit(ScaleReading(53.4, true, "ST,GS,+ 53.40kg"))
+            scaleStream.emit(ScaleReading(53.4, true, "ST,GS,+ 53.40kg"))
+            advanceUntilIdle()
+            coVerify(exactly = 1) { repository.addWeightEntryAndRecalc(1L, 53.4) }
+            assertEquals(listOf(52.1, 53.4), capturedEvents)
+
+            vm.disconnectScale()
+            assertEquals(ScaleConnectionState.Disconnected, vm.weightInputState.value.scaleConnectionState)
+        }
+
+    @Test
+    fun `scale connection surfaces typed error resource when stream fails`() = runTest(testDispatcher) {
+        val device = PairedScaleDevice(name = "Cân lỗi", address = "11:22:33:44:55:66")
+        every { scaleDataSource.connect(device) } returns flow {
+            throw ScaleConnectionException(R.string.scale_error_connection_failed)
+        }
+
+        val vm = createViewModel()
+        vm.connectToScale(device)
+        advanceUntilIdle()
+
+        assertEquals(
+            ScaleConnectionState.Error(R.string.scale_error_connection_failed),
+            vm.weightInputState.value.scaleConnectionState
+        )
     }
 }
