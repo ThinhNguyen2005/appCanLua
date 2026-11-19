@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload Static Analysis HTML Reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: static-analysis-reports
           if-no-files-found: ignore
@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload Unit Test HTML Report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-reports
           if-no-files-found: ignore
