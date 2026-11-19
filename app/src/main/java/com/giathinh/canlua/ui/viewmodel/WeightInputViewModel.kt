@@ -109,7 +109,7 @@ class WeightInputViewModel @Inject constructor(
 
     fun addWeightEntryDirectly(cardId: Long, weight: Double) {
         if (!weight.isFinite() || weight <= 0.0 || weight > MAX_BAG_KG) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val count = repository.addWeightEntryAndRecalc(cardId, weight) ?: return@launch
 
             val completes = (count % 5 == 0)
@@ -124,14 +124,14 @@ class WeightInputViewModel @Inject constructor(
     }
 
     fun updateWeightEntry(weightEntry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.updateWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
         }
     }
 
     fun deleteWeightEntry(weightEntry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.deleteWeightEntry(weightEntry)
             repository.updateCardCalculations(weightEntry.cardId)
         }
@@ -170,7 +170,7 @@ class WeightInputViewModel @Inject constructor(
             currentWeight = current + digit
         )
 
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch {
             val ttsEnabled = ttsEnabledState.value
             ttsManager.setEnabled(ttsEnabled)
             if (ttsEnabled && ttsManager.isEnabled()) {
@@ -189,7 +189,7 @@ class WeightInputViewModel @Inject constructor(
     }
 
     private fun updateCardField(cardId: Long, recalculate: Boolean = true, transform: (Card) -> Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             // patchCard đọc–kiểm–ghi trong 1 transaction (chống lost-update), tự recalc.
             repository.patchCard(cardId, recalculate = recalculate, transform = transform)
         }
@@ -224,7 +224,7 @@ class WeightInputViewModel @Inject constructor(
         updateCardField(cardId) { it.copy(moisturePercent = moisturePercent) }
 
     fun toggleCardLock(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val card = repository.getCardById(cardId) ?: return@launch
             repository.setCardLocked(cardId, card.revision, !card.isLocked)
         }

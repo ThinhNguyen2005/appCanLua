@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.repository.SyncableCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -91,7 +90,7 @@ class CardListViewModel @Inject constructor(
         impurityWeight: Double = 0.0,
         recordLocation: Boolean = false
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val trimmedName = name.trim()
             if (trimmedName.isBlank()) return@launch
 
@@ -138,7 +137,7 @@ class CardListViewModel @Inject constructor(
     }
 
     fun deleteCard(card: Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val event = runCatching {
                 repository.deleteCard(card)
             }.fold(

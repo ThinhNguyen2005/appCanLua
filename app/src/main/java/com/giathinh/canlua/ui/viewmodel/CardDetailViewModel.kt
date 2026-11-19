@@ -9,7 +9,6 @@ import com.giathinh.canlua.data.model.TransactionType
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.repository.SyncableCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,20 +58,20 @@ class CardDetailViewModel @Inject constructor(
     }
 
     private fun updateCardField(cardId: Long, recalculate: Boolean = true, transform: (Card) -> Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.patchCard(cardId, recalculate = recalculate, transform = transform)
         }
     }
 
     fun updateCard(card: Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             // Atomic: field nghiệp vụ + ledger delta (cọc/đã trả) + recalc trong 1 transaction.
             repository.editCardFinancials(card, java.util.UUID.randomUUID().toString())
         }
     }
 
     fun deleteCard(card: Card) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.deleteCard(card)
         }
     }
@@ -107,7 +106,7 @@ class CardDetailViewModel @Inject constructor(
         updateCardField(cardId, recalculate = false) { it.copy(fieldAddress = address.trim()) }
 
     fun refreshFieldLocation(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val geo = runCatching { locationProvider.getCurrentLocation(forceFresh = true) }.getOrNull() ?: return@launch
             val address = runCatching { locationProvider.reverseGeocode(geo.lat, geo.lon) }.getOrNull().orEmpty()
             val card = repository.getCardById(cardId) ?: return@launch
@@ -122,14 +121,14 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun addPayment(cardId: Long, amount: Double, description: String? = null) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             // Atomic + idempotent: ledger + recalc + revision trong 1 transaction.
             repository.addPayment(cardId, amount, description, java.util.UUID.randomUUID().toString())
         }
     }
 
     fun toggleCardLock(cardId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val card = repository.getCardById(cardId) ?: return@launch
             repository.setCardLocked(cardId, card.revision, !card.isLocked)
         }
@@ -160,14 +159,14 @@ class CardDetailViewModel @Inject constructor(
     }
 
     fun updateWeightEntry(entry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.updateWeightEntry(entry)
             repository.updateCardCalculations(entry.cardId)
         }
     }
 
     fun deleteWeightEntry(entry: WeightEntry) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             repository.deleteWeightEntry(entry)
             repository.updateCardCalculations(entry.cardId)
         }
