@@ -58,9 +58,9 @@ class DashboardFormatter(private val res: Resources? = null) {
         fun money(amount: Double): String {
             val abs = abs(amount)
             return when {
-                abs >= 1_000_000_000.0 -> "%.2f tỷ".format(amount / 1_000_000_000.0)
-                abs >= 1_000_000.0 -> "%.1f tr".format(amount / 1_000_000.0)
-                abs >= 1_000.0 -> "%.0fk".format(amount / 1_000.0)
+                abs >= 1_000_000_000.0 -> "%.2f tỷ".format(Locale.US, amount / 1_000_000_000.0)
+                abs >= 1_000_000.0 -> "%.1f tr".format(Locale.US, amount / 1_000_000.0)
+                abs >= 1_000.0 -> "%.0fk".format(Locale.US, amount / 1_000.0)
                 else -> "${viNumber.format(amount.toLong())}đ"
             }
         }
@@ -73,14 +73,14 @@ class DashboardFormatter(private val res: Resources? = null) {
         /** Cân nặng: < 1000kg → kg, ≥ 1000kg → tấn. */
         fun weight(kg: Double): String {
             return if (kg >= 1_000.0) {
-                "%.1f tấn".format(kg / 1_000.0)
+                "%.1f tấn".format(Locale.US, kg / 1_000.0)
             } else {
-                "%.0f kg".format(kg)
+                "%.0f kg".format(Locale.US, kg)
             }
         }
 
         /** Tỉ lệ phần trăm với 1 chữ số sau dấu phẩy. */
-        fun percent(value: Double): String = "%.1f%%".format(value)
+        fun percent(value: Double): String = "%.1f%%".format(Locale.US, value)
 
         /**
          * Tính delta % giữa current và previous.
@@ -95,7 +95,7 @@ class DashboardFormatter(private val res: Resources? = null) {
         fun formatDelta(delta: Double?): String {
             if (delta == null) return "—"
             val sign = if (delta >= 0) "+" else ""
-            return "$sign%.0f%%".format(delta)
+            return "$sign%.0f%%".format(Locale.US, delta)
         }
     }
 }

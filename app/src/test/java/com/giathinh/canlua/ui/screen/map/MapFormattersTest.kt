@@ -1,5 +1,6 @@
 package com.giathinh.canlua.ui.screen.map
 
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -12,6 +13,7 @@ import java.util.Locale
  *
  * MapFormatters là `internal object` — có thể test từ cùng module (test source set).
  * NumberFormat dùng vi-VN locale (dấu "." làm thousand separator).
+ * Phần số thập phân dùng `String.format(Locale.US, ...)` để ổn định trên mọi locale.
  * SimpleDateFormat dùng vi-VN locale → output ngày dạng dd/MM/yyyy.
  *
  * Lưu ý: `MapFormatters.date` phụ thuộc timezone của JVM test runner.
@@ -19,10 +21,17 @@ import java.util.Locale
  */
 class MapFormattersTest {
 
+    private lateinit var originalLocale: Locale
+
     @Before
     fun setUp() {
-        // Đảm bảo String.format locale ổn định trên máy CI / dev khác nhau.
+        originalLocale = Locale.getDefault()
         Locale.setDefault(Locale.US)
+    }
+
+    @After
+    fun tearDown() {
+        Locale.setDefault(originalLocale)
     }
 
     // === number: integer values ===
@@ -151,5 +160,12 @@ class MapFormattersTest {
         assertEquals("Phải có 3 phần dd/MM/yyyy", 3, parts.size)
         assertTrue("Ngày phải có đúng 2 chữ số", parts[0].length == 2)
         assertTrue("Tháng phải có đúng 2 chữ số", parts[1].length == 2)
+    }
+
+    @Test
+    fun `number decimal ignores JVM default locale and keeps dot decimal`() {
+        Locale.setDefault(Locale.forLanguageTag("vi-VN"))
+        assertEquals("874.40", MapFormatters.number(874.4))
+        assertEquals("1.000", MapFormatters.number(1000.0))
     }
 }

@@ -71,8 +71,13 @@ object RiceCalculator {
     }
 
     /**
-     * Tạp chất luôn là kg trực tiếp. `isPercent` chỉ còn là tham số legacy để
-     * giữ tương thích dữ liệu/caller cũ; UI mới không còn cho chọn theo %.
+     * Tính tổng trọng lượng tạp chất (kg) theo chế độ đã chọn:
+     *
+     * - `isPercent = false`: `impurityValue` là số kg tạp chất cố định.
+     * - `isPercent = true`: `impurityValue` là tỷ lệ `%` trên khối lượng sau khi trừ bì
+     *   (`rawAfterBag * impurityValue / 100.0`).
+     *
+     * Giá trị âm được chuẩn hóa về `0.0`.
      */
     fun calcTotalImpurity(
         rawAfterBag: Double,

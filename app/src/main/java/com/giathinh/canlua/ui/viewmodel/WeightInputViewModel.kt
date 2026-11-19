@@ -243,9 +243,9 @@ class WeightInputViewModel @Inject constructor(
     }
 }
 
-private fun organizeIntoTables(entries: List<WeightEntry>, manualCount: Int): List<List<List<Double?>>> {
+internal fun organizeIntoTables(entries: List<WeightEntry>, manualCount: Int): List<List<List<Double?>>> {
     val totalEntries = entries.size
-    val calculatedNumTables = (totalEntries / 25) + 1
+    val calculatedNumTables = ((totalEntries - 1).coerceAtLeast(0) / 25) + 1
     val numTables = (calculatedNumTables + manualCount).coerceAtLeast(1)
 
     val tables = mutableListOf<List<List<Double?>>>()
