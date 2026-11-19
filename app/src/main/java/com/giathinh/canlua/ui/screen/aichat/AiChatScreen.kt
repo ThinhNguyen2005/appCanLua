@@ -66,6 +66,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
@@ -86,6 +90,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.AiMarkdownText
+import com.giathinh.canlua.ui.util.shake
 import com.giathinh.canlua.ui.viewmodel.AiChatViewModel
 import com.giathinh.canlua.ui.viewmodel.UiMessage
 import com.giathinh.canlua.ui.viewmodel.VoiceState
@@ -119,6 +124,22 @@ fun AiChatScreen(
     if (isGuestMode) {
         AiChatLockedScreen(onLoginClick = viewModel::disableGuestMode)
     } else {
+        var inputShakeTrigger by remember { mutableIntStateOf(0) }
+        var prevErrorMsg by remember { mutableStateOf<String?>(null) }
+        var prevRateLimited by remember { mutableStateOf(false) }
+
+        LaunchedEffect(state.errorMessage, state.rateLimitSeconds > 0) {
+            val isRateLimited = state.rateLimitSeconds > 0
+            val hasNewError = state.errorMessage != null && state.errorMessage != prevErrorMsg
+            val startedRateLimit = isRateLimited && !prevRateLimited
+            if (hasNewError || startedRateLimit) {
+                inputShakeTrigger++
+                HapticUtil.error(context)
+            }
+            prevErrorMsg = state.errorMessage
+            prevRateLimited = isRateLimited
+        }
+
         // Auto-scroll xuống tin nhắn cuối khi list grow hoặc khi keyboard mở/đóng.
         // Thêm imeVisible vào key để khi user bắt đầu gõ, list tự cuộn lại đúng vị trí
         // (không bị input bar che mất tin nhắn vừa gửi).
@@ -166,7 +187,10 @@ fun AiChatScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(state.messages, key = { it.id }) { msg ->
-                MessageBubble(msg)
+                MessageBubble(
+                    msg = msg,
+                    modifier = Modifier.animateItem()
+                )
             }
             if (state.isStreaming) {
                 item { TypingIndicator() }
@@ -215,8 +239,17 @@ fun AiChatScreen(
                 value = state.input,
                 partial = voice.partial,
                 voice = voice,
+                shakeTrigger = inputShakeTrigger,
                 onValueChange = viewModel::onInputChange,
-                onSend = viewModel::send,
+                onSend = {
+                    if (state.rateLimitSeconds > 0 || state.errorMessage != null) {
+                        inputShakeTrigger++
+                        HapticUtil.error(context)
+                    } else {
+                        HapticUtil.tick(context)
+                        viewModel.send()
+                    }
+                },
                 onStartVoice = viewModel::startVoice,
                 onStopVoice = viewModel::stopVoice,
                 onCancelVoice = viewModel::cancelVoice,
@@ -249,10 +282,13 @@ private fun PresetChip(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MessageBubble(msg: UiMessage) {
+private fun MessageBubble(
+    msg: UiMessage,
+    modifier: Modifier = Modifier
+) {
     val isUser = msg.role == "user"
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     ) {
         Box(
@@ -456,6 +492,7 @@ private fun InputBar(
     value: String,
     partial: String,
     voice: VoiceState,
+    shakeTrigger: Int,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     onStartVoice: () -> Unit,
@@ -494,6 +531,7 @@ private fun InputBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.Surface)
+            .shake(shakeTrigger)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -524,7 +562,6 @@ private fun InputBar(
             keyboardActions = KeyboardActions(
                 onSend = {
                     if (!isStreaming && value.isNotBlank()) {
-                        HapticUtil.tick(context)
                         onSend()
                     }
                 }
@@ -543,10 +580,7 @@ private fun InputBar(
             onMic = ::requestVoice,
             onStop = onStopVoice,
             onCancel = onCancelVoice,
-            onSend = {
-                HapticUtil.tick(context)
-                onSend()
-            }
+            onSend = onSend
         )
     }
 }

@@ -913,4 +913,12 @@
     <string name="ai_error_no_data">ລະດູການນີ້ຍັງບໍ່ມີໃບຊັ່ງເພື່ອວິເຄາະ.</string>
     <string name="ai_error_failed">ບໍ່ສາມາດເຊື່ອມຕໍ່ AI ໄດ້. ກະລຸນາລອງໃໝ່.</string>
 
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">ກະລຸນາເລືອກ ຫຼື ປ້ອນແນວພັນເຂົ້າ</string>
+    <string name="validation_counterparty_required">ກະລຸນາປ້ອນຊື່ %1$s</string>
+    <string name="validation_cccd_length">ເລກບັດປະຊາຊົນຕ້ອງມີ 12 ຕົວເລກ (ຫຼື ປະວ່າງໄວ້)</string>
+    <string name="validation_price_min_required">ກະລຸນາປ້ອນລາຄາຕ່ຳສຸດທີ່ຖືກຕ້ອງ (&gt; 0)</string>
+    <string name="validation_price_max_required">ກະລຸນາປ້ອນລາຄາສູງສຸດທີ່ຖືກຕ້ອງ (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">ລາຄາສູງສຸດຕ້ອງບໍ່ໜ້ອຍກວ່າລາຄາຕ່ຳສຸດ</string>
+
 </resources>

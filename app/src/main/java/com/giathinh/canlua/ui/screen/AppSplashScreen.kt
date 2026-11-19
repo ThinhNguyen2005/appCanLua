@@ -1,6 +1,6 @@
 package com.giathinh.canlua.ui.screen
 
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -50,7 +50,7 @@ fun AppSplashScreen() {
         initialValue = 0.75f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
+            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "icon_alpha"

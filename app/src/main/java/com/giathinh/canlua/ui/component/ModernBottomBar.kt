@@ -41,8 +41,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -61,7 +59,7 @@ import com.giathinh.canlua.util.HapticUtil
  * - Thiết kế Floating Pill (viên con nhộng lơ lửng) bo tròn hoàn toàn [CircleShape], có đổ bóng nhẹ chuẩn M3.
  * - Con trượt động (Sliding Animated Pill Indicator) lướt mượt mà giữa các tab qua spring physics.
  * - Icon & Text biến đổi màu sắc và tỉ lệ thu phóng (scale) mượt mà khi kích hoạt.
- * - Phản hồi rung xúc giác tinh tế ([HapticUtil.tick] và [HapticFeedbackType.TextHandleMove]).
+ * - Phản hồi rung xúc giác tinh tế ([HapticUtil.tick]).
  * - Không sử dụng hiệu ứng kính lỏng (liquid glass), giữ trọn vẹn phong cách thanh lịch, tốc độ cao của Material 3.
  * - Tương thích hoàn toàn 100% với cả Dark Mode và AMOLED.
  */
@@ -75,7 +73,6 @@ fun ModernBottomBar(
     if (items.isEmpty()) return
 
     val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
 
     val selectedIndex = remember(currentRoute, items) {
@@ -162,7 +159,6 @@ fun ModernBottomBar(
                                 .fillMaxHeight(),
                             onClick = {
                                 HapticUtil.tick(context)
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 onItemClick(item)
                             }
                         )

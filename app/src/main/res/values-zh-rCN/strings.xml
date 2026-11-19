@@ -912,4 +912,12 @@
     <string name="ai_error_no_data">本季暂无称重单可供分析。</string>
     <string name="ai_error_failed">无法连接 AI，请重试。</string>
 
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">请选择或输入稻谷品种</string>
+    <string name="validation_counterparty_required">请输入%1$s姓名</string>
+    <string name="validation_cccd_length">身份证号必须为12位数字（或留空）</string>
+    <string name="validation_price_min_required">请输入有效的最低价 (&gt; 0)</string>
+    <string name="validation_price_max_required">请输入有效的最高价 (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">最高价不能低于最低价</string>
+
 </resources>

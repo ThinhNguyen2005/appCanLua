@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
 import com.giathinh.canlua.repository.SyncStatus
+import com.giathinh.canlua.ui.component.AnimatedNumber
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.theme.AppDimensions
 import java.text.NumberFormat
@@ -113,25 +114,52 @@ fun CardListSummaryCard(
                 ) {
                     SummaryMetric(
                         label = titlePrefix,
-                        value = numberFormat.format(cardCount),
                         icon = Icons.AutoMirrored.Outlined.ReceiptLong,
                         tint = AppColors.GreenPrimary,
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        AnimatedNumber(
+                            value = cardCount,
+                            formatter = { numberFormat.format(it) },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AppColors.TextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     SummaryMetric(
                         label = stringResource(R.string.card_list_summary_yield),
-                        value = "${numberFormat.format(totalKg)} kg",
                         icon = Icons.Outlined.Scale,
                         tint = AppColors.GoldAccent,
                         modifier = Modifier.weight(1.12f)
-                    )
+                    ) {
+                        AnimatedNumber(
+                            value = totalKg,
+                            formatter = { "${numberFormat.format(it)} kg" },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AppColors.TextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     SummaryMetric(
                         label = amountLabel,
-                        value = "${numberFormat.format(totalAmount.toLong())}đ",
                         icon = Icons.Outlined.Payments,
                         tint = AppColors.Success,
                         modifier = Modifier.weight(1.25f)
-                    )
+                    ) {
+                        AnimatedNumber(
+                            value = totalAmount,
+                            formatter = { "${numberFormat.format(it.toLong())}đ" },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AppColors.TextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
                 // Row 2: chỉ số phụ — chỉ hiện khi có data thực, tránh layout trống gây rối.
@@ -172,10 +200,10 @@ fun CardListSummaryCard(
 @Composable
 private fun SummaryMetric(
     label: String,
-    value: String,
     icon: ImageVector,
     tint: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    valueContent: @Composable () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -198,14 +226,7 @@ private fun SummaryMetric(
                 modifier = Modifier.size(17.dp)
             )
         }
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold,
-            color = AppColors.TextPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        valueContent()
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,

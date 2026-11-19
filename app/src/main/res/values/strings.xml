@@ -951,5 +951,13 @@
     <string name="ai_error_no_data">Vụ này chưa có phiếu cân nào để phân tích.</string>
     <string name="ai_error_failed">Không thể kết nối AI. Vui lòng thử lại.</string>
 
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">Vui lòng chọn hoặc nhập giống lúa</string>
+    <string name="validation_counterparty_required">Vui lòng nhập tên %1$s</string>
+    <string name="validation_cccd_length">Số CCCD phải gồm đúng 12 chữ số (hoặc để trống)</string>
+    <string name="validation_price_min_required">Vui lòng nhập giá thấp hợp lệ (&gt; 0)</string>
+    <string name="validation_price_max_required">Vui lòng nhập giá cao hợp lệ (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">Giá cao không được nhỏ hơn giá thấp</string>
+
 </resources>
 

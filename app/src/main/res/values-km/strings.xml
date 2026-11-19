@@ -909,4 +909,13 @@
     <!-- values-km -->
     <string name="ai_error_no_data">រដូវកាលនេះមិនទាន់មានវិក្កយបត្រថ្លឹងសម្រាប់វិភាគទេ។</string>
     <string name="ai_error_failed">មិនអាចតភ្ជាប់ AI បានទេ។ សូមព្យាយាមម្តងទៀត។</string>
+
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">សូមជ្រើសរើស ឬបញ្ចូលពូជស្រូវ</string>
+    <string name="validation_counterparty_required">សូមបញ្ចូលឈ្មោះ %1$s</string>
+    <string name="validation_cccd_length">លេខអត្តសញ្ញាណប័ណ្ណត្រូវមាន 12 ខ្ទង់ (ឬទុកទទេ)</string>
+    <string name="validation_price_min_required">សូមបញ្ចូលតម្លៃទាបបំផុតឱ្យបានត្រឹមត្រូវ (&gt; 0)</string>
+    <string name="validation_price_max_required">សូមបញ្ចូលតម្លៃខ្ពស់បំផុតឱ្យបានត្រឹមត្រូវ (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">តម្លៃខ្ពស់មិនអាចតូចជាងតម្លៃទាបទេ</string>
+
 </resources>

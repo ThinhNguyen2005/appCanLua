@@ -913,5 +913,13 @@
     <string name="ai_error_no_data">This season has no weighing slips to analyze.</string>
     <string name="ai_error_failed">Unable to reach the AI. Please try again.</string>
 
+    <!-- Validation inline errors -->
+    <string name="validation_variety_required">Please select or enter a rice variety</string>
+    <string name="validation_counterparty_required">Please enter %1$s name</string>
+    <string name="validation_cccd_length">Citizen ID must be 12 digits (or leave blank)</string>
+    <string name="validation_price_min_required">Please enter a valid minimum price (&gt; 0)</string>
+    <string name="validation_price_max_required">Please enter a valid maximum price (&gt; 0)</string>
+    <string name="validation_price_max_lt_min">Maximum price cannot be less than minimum price</string>
+
 </resources>
 

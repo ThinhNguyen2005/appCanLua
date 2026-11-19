@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,15 +45,20 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -61,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.util.shake
 import com.giathinh.canlua.util.HapticUtil
 import java.util.Locale
 
@@ -219,9 +226,19 @@ fun CreateCardBottomSheet(
     }
 
     // Validation: Yêu cầu tối thiểu tên counterparty, giống lúa. CCCD phải trống hoặc đúng 12 chữ số.
-    val isValid = counterpartyName.isNotBlank() && 
-                  riceVariety.isNotBlank() && 
+    val focusManager = LocalFocusManager.current
+    var showErrors by remember { mutableStateOf(false) }
+    var shakeTrigger by remember { mutableIntStateOf(0) }
+    val isValid = counterpartyName.isNotBlank() &&
+                  riceVariety.isNotBlank() &&
                   (cccd.isEmpty() || cccd.length == 12)
+    val isVarietyError = showErrors && riceVariety.isBlank()
+    val isNameError = showErrors && counterpartyName.isBlank()
+    val isCccdError = showErrors && cccd.isNotEmpty() && cccd.length != 12
+
+    val nextAction = remember(focusManager) {
+        KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+    }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -291,13 +308,29 @@ fun CreateCardBottomSheet(
                         selected = riceVariety,
                         onSelect = { riceVariety = it },
                         suggestions = combinedSuggestions,
-                        modifier = Modifier.fillMaxWidth()
+                        isError = isVarietyError,
+                        supportingText = if (isVarietyError) {
+                            { Text(stringResource(R.string.validation_variety_required)) }
+                        } else null,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = nextAction,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shake(if (isVarietyError) shakeTrigger else 0)
                     )
 
                     // Vụ mùa ▼
                     SeasonDropdown(
                         selected = seasonLabel,
                         onSelect = { seasonLabel = it },
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = nextAction,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -307,7 +340,18 @@ fun CreateCardBottomSheet(
                         onValueChange = { counterpartyName = it },
                         label = stringResource(R.string.create_card_counterparty_name_label, counterpartyLabel),
                         placeholder = stringResource(R.string.create_card_counterparty_name_placeholder, counterpartyLabel),
-                        modifier = Modifier.fillMaxWidth()
+                        isError = isNameError,
+                        supportingText = if (isNameError) {
+                            { Text(stringResource(R.string.validation_counterparty_required, counterpartyLabel)) }
+                        } else null,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = nextAction,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shake(if (isNameError) shakeTrigger else 0)
                     )
 
                     // Row 2.1: SĐT counterparty — có nút liên hệ bên phải
@@ -319,7 +363,8 @@ fun CreateCardBottomSheet(
                         },
                         label = { Text(stringResource(R.string.create_card_counterparty_phone_label, counterpartyLabel)) },
                         placeholder = { Text(stringResource(R.string.create_card_counterparty_phone_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+                        keyboardActions = nextAction,
                         singleLine = true,
                         trailingIcon = {
                             val hasPermission = ContextCompat.checkSelfPermission(
@@ -357,6 +402,10 @@ fun CreateCardBottomSheet(
                         },
                         label = { Text(stringResource(R.string.create_card_cccd_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_cccd_placeholder), style = MaterialTheme.typography.bodyMedium) },
+                        isError = isCccdError,
+                        supportingText = if (isCccdError) {
+                            { Text(stringResource(R.string.validation_cccd_length)) }
+                        } else null,
                         trailingIcon = {
                             IconButton(
                                 onClick = {
@@ -372,9 +421,13 @@ fun CreateCardBottomSheet(
                                 )
                             }
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardActions = nextAction,
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 60.dp)
+                            .shake(if (isCccdError) shakeTrigger else 0),
                         shape = RoundedCornerShape(14.dp),
                         colors = dialogTextFieldColors()
                     )
@@ -416,7 +469,8 @@ fun CreateCardBottomSheet(
                                 )
                             }
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+                        keyboardActions = nextAction,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -447,7 +501,8 @@ fun CreateCardBottomSheet(
                                 )
                             }
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
+                        keyboardActions = nextAction,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -464,7 +519,8 @@ fun CreateCardBottomSheet(
                         label = { Text(stringResource(R.string.create_card_price_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         visualTransformation = ThousandSeparatorTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        keyboardActions = nextAction,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -481,7 +537,8 @@ fun CreateCardBottomSheet(
                         label = { Text(stringResource(R.string.create_card_deposit_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodyMedium) },
                         visualTransformation = ThousandSeparatorTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -556,25 +613,29 @@ fun CreateCardBottomSheet(
                     }
                     Button(
                         onClick = {
-                            HapticUtil.confirm(context)
-                            onCreate(
-                                counterpartyName.trim(),
-                                counterpartyPhone.trim(),
-                                riceVariety,
-                                seasonLabel.trim(),
-                                moistureRaw.toDoubleOrNull() ?: 0.0,
-                                priceRaw.toDoubleOrNull() ?: 0.0,
-                                depositRaw.toDoubleOrNull() ?: 0.0,
-                                cccd.trim().takeIf { it.isNotEmpty() },
-                                impurityWeightRaw.toDoubleOrNull() ?: 0.0,
-                                recordLocation
-                            )
-                            onDismiss()
+                            if (!isValid) {
+                                showErrors = true
+                                shakeTrigger++
+                                HapticUtil.error(context)
+                            } else {
+                                HapticUtil.confirm(context)
+                                onCreate(
+                                    counterpartyName.trim(),
+                                    counterpartyPhone.trim(),
+                                    riceVariety,
+                                    seasonLabel.trim(),
+                                    moistureRaw.toDoubleOrNull() ?: 0.0,
+                                    priceRaw.toDoubleOrNull() ?: 0.0,
+                                    depositRaw.toDoubleOrNull() ?: 0.0,
+                                    cccd.trim().takeIf { it.isNotEmpty() },
+                                    impurityWeightRaw.toDoubleOrNull() ?: 0.0,
+                                    recordLocation
+                                )
+                                onDismiss()
+                            }
                         },
-                        enabled = isValid,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.GreenPrimary,
-                            disabledContainerColor = AppColors.GreenPrimary.copy(alpha = 0.5f)
+                            containerColor = AppColors.GreenPrimary
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -680,6 +741,10 @@ private fun FormTextField(
     onValueChange: (String) -> Unit,
     label: String,
     placeholder: String = "",
+    isError: Boolean = false,
+    supportingText: (@Composable () -> Unit)? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -687,6 +752,10 @@ private fun FormTextField(
         onValueChange = onValueChange,
         label = { Text(label) },
         placeholder = { Text(placeholder, style = MaterialTheme.typography.bodyMedium) },
+        isError = isError,
+        supportingText = supportingText,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
         singleLine = true,
         modifier = modifier.heightIn(min = 60.dp),
         shape = RoundedCornerShape(14.dp),

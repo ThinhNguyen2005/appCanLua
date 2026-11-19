@@ -4,6 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -113,7 +119,19 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(
                         navController = rootNavController,
-                        startDestination = initialDestination
+                        startDestination = initialDestination,
+                        enterTransition = {
+                            fadeIn(animationSpec = tween(320)) + scaleIn(
+                                initialScale = 0.96f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            )
+                        },
+                        exitTransition = {
+                            fadeOut(animationSpec = tween(220))
+                        }
                     ) {
                         composable(ROOT_ROUTE_SPLASH) {
                             AppSplashScreen()

@@ -2,6 +2,8 @@ package com.giathinh.canlua.ui.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -41,6 +43,8 @@ fun SeasonDropdown(
     options: List<SeasonOption> = remember(date.time / 86400000L) {
         SeasonUtil.currentSeasonOptions(date)
     },
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     shape: Shape = RoundedCornerShape(14.dp)
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -59,6 +63,8 @@ fun SeasonDropdown(
             label = { Text(stringResource(R.string.weight_lot_season_label)) },
             placeholder = { Text(stringResource(R.string.dropdown_season_placeholder)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
                 .fillMaxWidth(),

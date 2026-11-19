@@ -1,6 +1,7 @@
 package com.giathinh.canlua.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -237,170 +238,181 @@ fun CardListScreenContent(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             val pullState = rememberPullToRefreshState()
-            if (showSkeleton) {
-                CardListSkeleton(count = 3, listState = listState)
-            } else {
-                PullToRefreshBox(
-                    isRefreshing = manualRefreshing,
-                    onRefresh = {
-                        manualRefreshing = true
-                        viewModel.refreshCards()
-                        syncViewModel.syncAll()
-                    },
-                    state = pullState,
-                    modifier = Modifier.fillMaxSize(),
-                    indicator = {
-                        PullToRefreshDefaults.Indicator(
-                            state = pullState,
-                            isRefreshing = manualRefreshing,
-                            color = AppColors.GreenPrimary,
-                            containerColor = AppColors.GreenSurface,
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .graphicsLayer {
-                                    val p = pullState.distanceFraction.coerceIn(0f, 1f)
-                                    scaleX = p
-                                    scaleY = p
-                                    alpha = p
-                                }
-                        )
-                    }
-                ) {
-                    LazyColumn(
-                        state = listState,
+            Crossfade(
+                targetState = showSkeleton,
+                label = "card_list_crossfade"
+            ) { isSkeleton ->
+                if (isSkeleton) {
+                    CardListSkeleton(count = 3, listState = listState)
+                } else {
+                    PullToRefreshBox(
+                        isRefreshing = manualRefreshing,
+                        onRefresh = {
+                            manualRefreshing = true
+                            viewModel.refreshCards()
+                            syncViewModel.syncAll()
+                        },
+                        state = pullState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = AppDimensions.SpacingMd,
-                            end = AppDimensions.SpacingMd,
-                            top = AppDimensions.SpacingXs,
-                            bottom = AppDimensions.BottomBarHeight + AppDimensions.SpacingMd
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(AppDimensions.SpacingXs)
-                    ) {
-                        item(key = KEY_SUMMARY_HEADER) {
-                            CardListSummaryCard(
-                                cardCount = summaryCards.size,
-                                totalKg = summaryTotalKg,
-                                totalAmount = summaryTotalAmount,
-                                syncStatus = syncStatus,
-                                showSyncStatus = false,
-                                avgPricePerKg = summaryAvgPricePerKg,
-                                bagCount = summaryBagCount,
-                                titlePrefix = summaryTitlePrefix
+                        indicator = {
+                            PullToRefreshDefaults.Indicator(
+                                state = pullState,
+                                isRefreshing = manualRefreshing,
+                                color = AppColors.GreenPrimary,
+                                containerColor = AppColors.GreenSurface,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .graphicsLayer {
+                                        val p = pullState.distanceFraction.coerceIn(0f, 1f)
+                                        scaleX = p
+                                        scaleY = p
+                                        alpha = p
+                                    }
                             )
                         }
-
-                        if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
-                            item(key = KEY_FILTER_BAR) {
-                                CardListFilterBar(
-                                    selectedSeason = selectedSeason,
-                                    selectedVariety = selectedFilter,
-                                    onOpenFilter = { showFilterSheet = true },
-                                    onClearSeason = { viewModel.setSeasonFilter(null) },
-                                    onClearVariety = { viewModel.setVarietyFilter(null) },
-                                    onClearAll = viewModel::clearFilters,
-                                    modifier = Modifier.fillMaxWidth()
+                    ) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = AppDimensions.SpacingMd,
+                                end = AppDimensions.SpacingMd,
+                                top = AppDimensions.SpacingXs,
+                                bottom = AppDimensions.BottomBarHeight + AppDimensions.SpacingMd
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(AppDimensions.SpacingXs)
+                        ) {
+                            item(key = KEY_SUMMARY_HEADER) {
+                                CardListSummaryCard(
+                                    cardCount = summaryCards.size,
+                                    totalKg = summaryTotalKg,
+                                    totalAmount = summaryTotalAmount,
+                                    syncStatus = syncStatus,
+                                    showSyncStatus = false,
+                                    avgPricePerKg = summaryAvgPricePerKg,
+                                    bagCount = summaryBagCount,
+                                    titlePrefix = summaryTitlePrefix,
+                                    modifier = Modifier.animateItem()
                                 )
                             }
-                        }
 
-                        if (cards.isEmpty()) {
-                            val isFiltered = selectedFilter != null || selectedSeason != null
-                            item(key = KEY_EMPTY) {
-                                if (isFiltered) {
-                                    CardListEmptyState(
-                                        icon = Icons.Default.Info,
-                                        title = stringResource(R.string.card_list_empty_filter_title),
-                                        subtitle = stringResource(R.string.card_list_empty_filter_subtitle),
-                                        onSyncClick = null,
-                                        actionButtonText = stringResource(R.string.card_list_clear_filter_action),
-                                        onActionClick = viewModel::clearFilters
-                                    )
-                                } else {
-                                    CardListEmptyState(
-                                        onSyncClick = if (syncViewModel.isUserSignedIn && lastSyncTime == null) {
-                                            { syncViewModel.syncAll() }
-                                        } else {
-                                            null
-                                        },
-                                        syncing = syncStatus is SyncStatus.Syncing,
-                                        actionButtonText = stringResource(R.string.card_list_create_card_action),
-                                        onActionClick = {
-                                            if (!isPremium && cardsToday >= PremiumState.FREE_CARDS_PER_DAY) {
-                                                showPremiumGate = true
-                                                AnalyticsHelper.premiumGateShown(cardsToday)
-                                            } else {
-                                                showCreateDialog = true
-                                            }
-                                        }
+                            if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
+                                item(key = KEY_FILTER_BAR) {
+                                    CardListFilterBar(
+                                        selectedSeason = selectedSeason,
+                                        selectedVariety = selectedFilter,
+                                        onOpenFilter = { showFilterSheet = true },
+                                        onClearSeason = { viewModel.setSeasonFilter(null) },
+                                        onClearVariety = { viewModel.setVarietyFilter(null) },
+                                        onClearAll = viewModel::clearFilters,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .animateItem()
                                     )
                                 }
                             }
-                        } else {
-                            groupedCards.forEach { (date, cardsInDay) ->
-                                stickyHeader(key = "header_$date") {
-                                    val friendlyDateLabel = when (date) {
-                                        todayDateStr -> stringResource(R.string.card_list_date_today_prefix, date)
-                                        yesterdayDateStr -> stringResource(R.string.card_list_date_yesterday_prefix, date)
-                                        else -> date
-                                    }
-                                    val dayTotalKg = remember(cardsInDay) { cardsInDay.sumOf { it.totalWeight } }
-                                    val formattedDayKg = remember(dayTotalKg) { numberFormat.format(dayTotalKg) }
 
-                                    // Phân cấp rõ tiêu đề nhóm ngày + số lượng phiếu + tổng kg + hỗ trợ TalkBack heading
-                                    // Surface với background opaque để khi cuộn không bị card bên dưới lọt qua chữ
-                                    Surface(
-                                        color = AppColors.Surface,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(
-                                                    top = AppDimensions.SpacingSm,
-                                                    bottom = AppDimensions.SpacingXxs
-                                                )
-                                                .semantics { heading() },
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
+                            if (cards.isEmpty()) {
+                                val isFiltered = selectedFilter != null || selectedSeason != null
+                                item(key = KEY_EMPTY) {
+                                    if (isFiltered) {
+                                        CardListEmptyState(
+                                            icon = Icons.Default.Info,
+                                            title = stringResource(R.string.card_list_empty_filter_title),
+                                            subtitle = stringResource(R.string.card_list_empty_filter_subtitle),
+                                            onSyncClick = null,
+                                            actionButtonText = stringResource(R.string.card_list_clear_filter_action),
+                                            onActionClick = viewModel::clearFilters,
+                                            modifier = Modifier.animateItem()
+                                        )
+                                    } else {
+                                        CardListEmptyState(
+                                            onSyncClick = if (syncViewModel.isUserSignedIn && lastSyncTime == null) {
+                                                { syncViewModel.syncAll() }
+                                            } else {
+                                                null
+                                            },
+                                            syncing = syncStatus is SyncStatus.Syncing,
+                                            actionButtonText = stringResource(R.string.card_list_create_card_action),
+                                            onActionClick = {
+                                                if (!isPremium && cardsToday >= PremiumState.FREE_CARDS_PER_DAY) {
+                                                    showPremiumGate = true
+                                                    AnalyticsHelper.premiumGateShown(cardsToday)
+                                                } else {
+                                                    showCreateDialog = true
+                                                }
+                                            },
+                                            modifier = Modifier.animateItem()
+                                        )
+                                    }
+                                }
+                            } else {
+                                groupedCards.forEach { (date, cardsInDay) ->
+                                    stickyHeader(key = "header_$date") {
+                                        val friendlyDateLabel = when (date) {
+                                            todayDateStr -> stringResource(R.string.card_list_date_today_prefix, date)
+                                            yesterdayDateStr -> stringResource(R.string.card_list_date_yesterday_prefix, date)
+                                            else -> date
+                                        }
+                                        val dayTotalKg = remember(cardsInDay) { cardsInDay.sumOf { it.totalWeight } }
+                                        val formattedDayKg = remember(dayTotalKg) { numberFormat.format(dayTotalKg) }
+
+                                        // Phân cấp rõ tiêu đề nhóm ngày + số lượng phiếu + tổng kg + hỗ trợ TalkBack heading
+                                        // Surface với background opaque để khi cuộn không bị card bên dưới lọt qua chữ
+                                        Surface(
+                                            color = AppColors.Surface,
+                                            modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            Text(
-                                                text = friendlyDateLabel,
-                                                style = MaterialTheme.typography.titleSmall,
-                                                color = AppColors.TextPrimary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Surface(
-                                                shape = RoundedCornerShape(AppDimensions.CornerRadiusSm),
-                                                color = AppColors.SurfaceContainer
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(
+                                                        top = AppDimensions.SpacingSm,
+                                                        bottom = AppDimensions.SpacingXxs
+                                                    )
+                                                    .semantics { heading() },
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = stringResource(
-                                                        R.string.card_list_day_summary_yield,
-                                                        cardsInDay.size,
-                                                        formattedDayKg
-                                                    ),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = AppColors.TextSecondary,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    modifier = Modifier.padding(
-                                                        horizontal = AppDimensions.SpacingXs,
-                                                        vertical = 2.dp
-                                                    )
+                                                    text = friendlyDateLabel,
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    color = AppColors.TextPrimary,
+                                                    fontWeight = FontWeight.Bold
                                                 )
+                                                Surface(
+                                                    shape = RoundedCornerShape(AppDimensions.CornerRadiusSm),
+                                                    color = AppColors.SurfaceContainer
+                                                ) {
+                                                    Text(
+                                                        text = stringResource(
+                                                            R.string.card_list_day_summary_yield,
+                                                            cardsInDay.size,
+                                                            formattedDayKg
+                                                        ),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = AppColors.TextSecondary,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        modifier = Modifier.padding(
+                                                            horizontal = AppDimensions.SpacingXs,
+                                                            vertical = 2.dp
+                                                        )
+                                                    )
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                items(
-                                    items = cardsInDay,
-                                    key = { it.id }
-                                ) { card ->
-                                    CardItem(
-                                        card = card,
-                                        onClick = onCardClick,
-                                        onDelete = onCardDelete
-                                    )
+                                    items(
+                                        items = cardsInDay,
+                                        key = { it.id }
+                                    ) { card ->
+                                        CardItem(
+                                            card = card,
+                                            onClick = onCardClick,
+                                            onDelete = onCardDelete,
+                                            modifier = Modifier.animateItem()
+                                        )
+                                    }
                                 }
                             }
                         }

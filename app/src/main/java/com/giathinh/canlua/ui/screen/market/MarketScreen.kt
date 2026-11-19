@@ -1,6 +1,7 @@
 package com.giathinh.canlua.ui.screen.market
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -119,15 +120,20 @@ fun MarketScreen() {
     val newsArticles by newsViewModel.articles.collectAsStateWithLifecycle()
     val showSkeleton = isLoading && prices.isEmpty() && newsArticles.isEmpty()
 
-    if (showSkeleton) {
-        MarketSkeleton()
-    } else {
-        MarketScreenContent(
-            viewModel = viewModel,
-            newsViewModel = newsViewModel,
-            profileViewModel = profileViewModel,
-            bidsViewModel = bidsViewModel
-        )
+    Crossfade(
+        targetState = showSkeleton,
+        label = "market_crossfade"
+    ) { isSkeleton ->
+        if (isSkeleton) {
+            MarketSkeleton()
+        } else {
+            MarketScreenContent(
+                viewModel = viewModel,
+                newsViewModel = newsViewModel,
+                profileViewModel = profileViewModel,
+                bidsViewModel = bidsViewModel
+            )
+        }
     }
 }
 
@@ -607,7 +613,8 @@ private fun PricesPage(
                     MyBidCard(
                         bid = bid,
                         onEdit = { onEditBid(bid) },
-                        onDelete = { onDeleteBid(bid.id) }
+                        onDelete = { onDeleteBid(bid.id) },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -642,7 +649,8 @@ private fun PricesPage(
                 items(prices, key = { it.id }) { price ->
                     RicePriceCard(
                         price = price,
-                        onClick = { onSelectVariety(price.variety) }
+                        onClick = { onSelectVariety(price.variety) },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -888,7 +896,8 @@ private fun FilterChipsRow(
 private fun MyBidCard(
     bid: FirestoreRicePrice,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val numberFormat = remember { java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")) }
@@ -903,7 +912,7 @@ private fun MyBidCard(
         else -> stringResource(R.string.market_bid_trend_stable)
     }
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(AppColors.GreenSurface)
