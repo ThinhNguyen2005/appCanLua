@@ -2,7 +2,6 @@ package com.giathinh.canlua.ui.screen.market
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -11,7 +10,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,13 +39,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.PriceChange
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -482,7 +485,7 @@ fun GoogleNewsPlaceholder(modifier: Modifier = Modifier) {
             // Biểu tượng tờ báo giả lập
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Khối màu xanh làm điểm nhấn thương hiệu giống Google News
                 Box(
@@ -491,14 +494,14 @@ fun GoogleNewsPlaceholder(modifier: Modifier = Modifier) {
                         .clip(RoundedCornerShape(4.dp))
                         .background(Color(0xFF4285F4))
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(modifier = Modifier.size(width = 32.dp, height = 4.dp).background(Color(0xFF5F6368)))
                     Box(modifier = Modifier.size(width = 20.dp, height = 4.dp).background(Color(0xFF5F6368)))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
             // Các đường line giả văn bản bên dưới tờ báo
-            Box(modifier = Modifier.size(width = 58.dp, height = 4.dp).background(Color(0xFF9AA0A6)))
+            Box(modifier = Modifier.size(width = 56.dp, height = 4.dp).background(Color(0xFF9AA0A6)))
             Spacer(modifier = Modifier.height(4.dp))
             Box(modifier = Modifier.size(width = 44.dp, height = 4.dp).background(Color(0xFFBDC1C6)))
         }
@@ -683,7 +686,7 @@ private fun MarketTabRow(
                 modifier = Modifier.tabIndicatorOffset(selectedTab),
                 width = 48.dp,
                 color = AppColors.GreenPrimary,
-                shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
             )
         }
     ) {
@@ -699,14 +702,14 @@ private fun MarketTabRow(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(vertical = 14.dp)
+                modifier = Modifier.padding(vertical = 12.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Article,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.market_tab_news),
                     fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium,
@@ -726,14 +729,14 @@ private fun MarketTabRow(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(vertical = 14.dp)
+                modifier = Modifier.padding(vertical = 12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.PriceChange,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.market_tab_prices),
                     fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
@@ -759,7 +762,7 @@ private fun SectionTitle(
             fontWeight = FontWeight.Bold,
             color = AppColors.TextPrimary
         )
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(4.dp))
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
@@ -787,7 +790,7 @@ private fun FooterNote() {
 }
 
 /**
- * Filter chips cải tiến với phản hồi xúc giác nhẹ nhàng khi nhấn và thiết kế thanh lịch hơn.
+ * Filter chips chuẩn Material 3 cho xu hướng giá và nút xóa bộ lọc.
  */
 @Composable
 private fun FilterChipsRow(
@@ -809,82 +812,79 @@ private fun FilterChipsRow(
     ) {
         if (hasActiveFilter && onClearFilters != null) {
             item {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(AppColors.Error.copy(alpha = 0.12f))
-                        .border(
-                            width = 1.dp,
-                            color = AppColors.Error,
-                            shape = RoundedCornerShape(24.dp)
+                AssistChip(
+                    onClick = {
+                        HapticUtil.tick(context)
+                        onClearFilters()
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.action_clear_filter),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
                         )
-                        .clickable {
-                            HapticUtil.tick(context)
-                            onClearFilters()
-                        }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.action_clear_filter),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppColors.Error
-                    )
-                }
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = AppColors.Error.copy(alpha = 0.12f),
+                        labelColor = AppColors.Error,
+                        leadingIconContentColor = AppColors.Error
+                    ),
+                    border = AssistChipDefaults.assistChipBorder(
+                        enabled = true,
+                        borderColor = AppColors.Error
+                    ),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
             }
         }
         items(options) { (key, label, color) ->
             val selected = selectedTrend == key
-            val animatedBorderColor by animateColorAsState(
-                targetValue = if (selected) color else AppColors.Divider,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "trend_chip_border"
-            )
-            val animatedBgColor by animateColorAsState(
-                targetValue = if (selected) color.copy(alpha = 0.12f) else Color.Transparent,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "trend_chip_bg"
-            )
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(animatedBgColor)
-                    .border(
-                        width = 1.dp,
-                        color = animatedBorderColor,
-                        shape = RoundedCornerShape(24.dp)
-                    )
-                    .clickable {
-                        HapticUtil.tick(context)
-                        onSelectTrend(key)
-                    }
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    if (selected) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                    }
+            FilterChip(
+                selected = selected,
+                onClick = {
+                    HapticUtil.tick(context)
+                    onSelectTrend(key)
+                },
+                label = {
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (selected) color else AppColors.TextSecondary
+                        fontWeight = FontWeight.SemiBold
                     )
-                }
-            }
+                },
+                leadingIcon = if (selected) {
+                    {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color.Transparent,
+                    labelColor = AppColors.TextSecondary,
+                    selectedContainerColor = color.copy(alpha = 0.12f),
+                    selectedLabelColor = color
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = selected,
+                    borderColor = AppColors.Divider,
+                    selectedBorderColor = color
+                ),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.heightIn(min = 48.dp)
+            )
         }
     }
 }
@@ -965,7 +965,7 @@ private fun MyBidCard(
                 )
             }
             if (bid.note.isNotBlank()) {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = bid.note,
                     style = MaterialTheme.typography.bodySmall,
@@ -1030,14 +1030,22 @@ private fun MarketPricesEmptyState(
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = if (isFiltered) "Không tìm thấy giá phù hợp" else stringResource(R.string.market_prices_empty_title),
+            text = if (isFiltered) {
+                stringResource(R.string.market_prices_filtered_empty_title)
+            } else {
+                stringResource(R.string.market_prices_empty_title)
+            },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = AppColors.TextPrimary
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = if (isFiltered) "Hãy thử bỏ bộ lọc để xem toàn bộ giá lúa thị trường." else stringResource(R.string.market_prices_empty_subtitle),
+            text = if (isFiltered) {
+                stringResource(R.string.market_prices_filtered_empty_subtitle)
+            } else {
+                stringResource(R.string.market_prices_empty_subtitle)
+            },
             style = MaterialTheme.typography.bodySmall,
             color = AppColors.TextSecondary,
             textAlign = TextAlign.Center

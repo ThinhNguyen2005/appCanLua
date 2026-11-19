@@ -265,11 +265,11 @@ fun AiChatScreen(
 private fun PresetChip(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(AppColors.GreenSurface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -296,10 +296,10 @@ private fun MessageBubble(
                 .widthIn(max = 320.dp)
                 .clip(
                     RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (isUser) 18.dp else 4.dp,
-                        bottomEnd = if (isUser) 4.dp else 18.dp
+                        topStart = 20.dp,
+                        topEnd = 20.dp,
+                        bottomStart = if (isUser) 20.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 20.dp
                     )
                 )
                 .background(
@@ -309,7 +309,7 @@ private fun MessageBubble(
                         else -> AppColors.CardBg
                     }
                 )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             val textColor = when {
                 msg.isError -> AppColors.Error
@@ -343,16 +343,16 @@ private fun TypingIndicator() {
         Row(
             modifier = Modifier
                 .widthIn(max = 320.dp)
-                .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp))
                 .background(AppColors.CardBg)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CircularProgressIndicator(
                 color = AppColors.GreenPrimary,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
             Text(
                 stringResource(R.string.ai_chat_typing_status),
@@ -379,7 +379,7 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
             Icons.Filled.Mic,
             contentDescription = null,
             tint = AppColors.Error,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.size(8.dp))
         Text(
@@ -390,13 +390,13 @@ private fun VoiceErrorBanner(message: String, onDismiss: () -> Unit) {
         )
         IconButton(
             onClick = onDismiss,
-            modifier = Modifier.size(44.dp)
+            modifier = Modifier.size(48.dp)
         ) {
             Icon(
                 Icons.Filled.Close,
                 contentDescription = stringResource(R.string.ai_chat_action_close),
                 tint = AppColors.Error,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -422,7 +422,7 @@ private fun ChatErrorBanner(
             imageVector = Icons.Outlined.Info,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onErrorContainer,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.size(8.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -454,7 +454,7 @@ private fun ChatErrorBanner(
                 imageVector = Icons.Filled.Close,
                 contentDescription = stringResource(R.string.ai_chat_action_close),
                 tint = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -468,14 +468,14 @@ private fun RateLimitBanner(seconds: Int) {
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(AppColors.Warning.copy(alpha = 0.14f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Outlined.Info,
             contentDescription = null,
             tint = AppColors.TextPrimary,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.size(8.dp))
         Text(
@@ -726,7 +726,7 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(14.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -735,7 +735,7 @@ private fun AiChatLockedScreen(onLoginClick: () -> Unit) {
                         tint = AppColors.GreenPrimary,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.ai_chat_early_adopter_promo),
                         style = MaterialTheme.typography.bodySmall,
@@ -794,7 +794,7 @@ private fun ComparisonTable() {
                 Text(text = stringResource(R.string.ai_chat_col_early_promo), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Khách Row
             Row(

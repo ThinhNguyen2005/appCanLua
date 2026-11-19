@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Agriculture
@@ -49,6 +50,7 @@ import com.giathinh.canlua.BuildConfig
 import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.AppLanguage
 import com.giathinh.canlua.data.model.AppThemeMode
+import com.giathinh.canlua.data.model.FontScale
 import com.giathinh.canlua.data.model.Profile
 import com.giathinh.canlua.ui.feedback.LocalAppToast
 import com.giathinh.canlua.ui.screen.profile.PersonalInfoCard
@@ -89,6 +91,8 @@ fun SettingsScreen(
 
     val language by viewModel.language.collectAsStateWithLifecycle()
     val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
+    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
+    val isTtsEnabled by viewModel.isTtsEnabled.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val traderHistory by profileViewModel.traderHistory.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -101,6 +105,7 @@ fun SettingsScreen(
     var showRestartConfirm by remember { mutableStateOf(false) }
     var themeExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
+    var fontScaleExpanded by remember { mutableStateOf(false) }
 
     // State preservation for user inputs across configuration changes / process kill
     var editing by rememberSaveable { mutableStateOf(false) }
@@ -319,6 +324,43 @@ fun SettingsScreen(
                         HapticUtil.tick(context)
                         viewModel.setLanguage(it)
                         languageExpanded = false
+                    }
+                )
+
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                FontScaleExpandableRow(
+                    isExpanded = fontScaleExpanded,
+                    onToggle = {
+                        HapticUtil.tick(context)
+                        fontScaleExpanded = !fontScaleExpanded
+                    },
+                    selectedFontScale = fontScale,
+                    onSelect = {
+                        HapticUtil.tick(context)
+                        viewModel.setFontScale(it)
+                        fontScaleExpanded = false
+                    }
+                )
+
+                HorizontalDivider(
+                    color = AppColors.Divider.copy(alpha = 0.4f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                ToggleRow(
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    title = stringResource(R.string.settings_tts_title),
+                    subtitle = stringResource(R.string.settings_tts_subtitle),
+                    checked = isTtsEnabled,
+                    onCheckedChange = {
+                        HapticUtil.tick(context)
+                        viewModel.setTtsEnabled(it)
                     }
                 )
             }
@@ -974,6 +1016,70 @@ private fun LanguageExpandableRow(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun FontScaleExpandableRow(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    selectedFontScale: FontScale,
+    onSelect: (FontScale) -> Unit
+) {
+    val context = LocalContext.current
+    ExpandableRowContent(
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        icon = Icons.Outlined.TextFields,
+        title = stringResource(R.string.settings_font_size_title),
+        selectedValue = stringResource(selectedFontScale.labelRes),
+        optionsContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                FontScale.entries.forEach { scale ->
+                    val isSelected = scale == selectedFontScale
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) AppColors.GreenSurface else Color.Transparent,
+                        onClick = {
+                            HapticUtil.tick(context)
+                            onSelect(scale)
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(scale.labelRes),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                color = if (isSelected) AppColors.GreenDark else AppColors.TextPrimary
+                            )
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = {
+                                    HapticUtil.tick(context)
+                                    onSelect(scale)
+                                },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = AppColors.GreenPrimary,
+                                    unselectedColor = AppColors.TextHint
+                                )
+                            )
                         }
                     }
                 }

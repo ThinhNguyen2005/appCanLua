@@ -73,7 +73,7 @@ fun KpiCard(
     sentiment: TrendSentiment = if (isPositiveGood) TrendSentiment.POSITIVE_IS_GOOD else TrendSentiment.NEGATIVE_IS_GOOD,
     reserveDeltaSpace: Boolean = false
 ) {
-    val padding = if (highlight) AppDimensions.SpacingMd else 14.dp
+    val padding = if (highlight) AppDimensions.SpacingMd else 12.dp
     val valueStyle = if (highlight) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge
 
     Card(
@@ -90,10 +90,10 @@ fun KpiCard(
             // Icon hàng riêng với background shape trực tiếp
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .background(
                         color = accentColor.copy(alpha = 0.14f),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -101,11 +101,11 @@ fun KpiCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = accentColor,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Label cố định minLines = 2, maxLines = 2 để baseline của value bên dưới luôn thẳng hàng
             Text(
@@ -135,15 +135,15 @@ fun KpiCard(
 
             val hasDelta = deltaPercent != null || deltaLabel != null
             if (hasDelta) {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
                 DeltaPill(
                     deltaPercent = deltaPercent,
                     deltaLabel = deltaLabel,
                     sentiment = sentiment
                 )
             } else if (reserveDeltaSpace) {
-                // Giữ chỗ cho khoảng cách 6dp + chiều cao pill 24dp để bằng chiều cao card có delta
-                Spacer(Modifier.height(30.dp))
+                // Giữ chỗ cho khoảng cách 8dp + chiều cao pill 24dp để bằng chiều cao card có delta
+                Spacer(Modifier.height(32.dp))
             }
         }
     }

@@ -403,7 +403,7 @@ fun PremiumUpsellCard(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.linearGradient(
                     colors = listOf(AppColors.GoldLight, AppColors.GoldAccent)
@@ -427,7 +427,7 @@ fun PremiumUpsellCard(onClick: () -> Unit) {
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(Modifier.size(14.dp))
+            Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.upgrade_to_premium),
@@ -469,7 +469,7 @@ fun PremiumStatusCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.linearGradient(
                     colors = if (isEarlyAdopter) {
@@ -497,7 +497,7 @@ fun PremiumStatusCard(
                     modifier = Modifier.size(28.dp)
                 )
             }
-            Spacer(Modifier.size(14.dp))
+            Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -509,12 +509,12 @@ fun PremiumStatusCard(
                     Spacer(Modifier.size(8.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .background(
                                 if (isEarlyAdopter) Color.White
                                 else AppColors.GoldAccent
                             )
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = stringResource(
@@ -565,7 +565,7 @@ fun GuestLoginPromoCard(
         border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

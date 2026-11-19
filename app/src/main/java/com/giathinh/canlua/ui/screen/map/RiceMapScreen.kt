@@ -8,13 +8,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -294,20 +293,18 @@ fun RiceMapScreen(
                 }
 
                 if (filtered.isEmpty()) {
+                    val bottomBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
                     EmptyMapHint(
                         permissionGranted = permissionState.allPermissionsGranted,
                         hasFilters = query.isNotBlank() ||
                             priceFilter != PriceFilter.ALL ||
                             varietyFilter != null,
                         modifier = Modifier
-                            .padding(16.dp)
+                            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = bottomBarHeight + 16.dp)
                             .align(Alignment.BottomCenter)
                     )
                 }
             }
-            androidx.compose.foundation.layout.Spacer(
-                modifier = Modifier.height(80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 8.dp)
-            )
         }
     }
 

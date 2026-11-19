@@ -920,4 +920,41 @@
     <string name="validation_price_max_required">请输入有效的最高价 (&gt; 0)</string>
     <string name="validation_price_max_lt_min">最高价不能低于最低价</string>
 
+    <!-- Phase 3 i18n strings -->
+    <string name="create_card_cccd_help_content_desc">解释身份证号</string>
+    <string name="create_card_impurity_help_content_desc">解释杂质</string>
+    <string name="create_card_moisture_help_content_desc">解释水分</string>
+    <string name="create_card_gps_title">保存农田 GPS 位置</string>
+    <string name="create_card_gps_subtitle">记录坐标以在稻谷地图上显示</string>
+
+    <string name="weigh_options_section_personalize">个性化与显示</string>
+    <string name="weigh_options_section_bag_deduction">扣袋方式</string>
+    <string name="weigh_options_bag_single_params_title">按单个袋子扣重参数</string>
+    <string name="weigh_options_bags_per_kg_label">每公斤袋数</string>
+    <string name="weigh_options_bags_per_kg_placeholder">默认：8 袋 = 1 kg</string>
+    <string name="weigh_options_bag_sample_params_title">扣袋参数</string>
+    <string name="weigh_options_section_input_scale">称重输入规格</string>
+
+    <string name="help_section_quick_tips">快速使用技巧</string>
+    <string name="help_section_resources">资源</string>
+    <string name="help_feedback_subtitle">反馈问题或建议新功能</string>
+    <string name="help_badge_new">新</string>
+    <string name="help_tutorial_subtitle">分步使用视频教程</string>
+    <string name="help_web_subtitle">文档、更新及最新资讯</string>
+
+    <string name="market_prices_filtered_empty_title">未找到匹配的价格</string>
+    <string name="market_prices_filtered_empty_subtitle">请尝试清除筛选条件以查看全部市场稻价。</string>
+    <string name="market_refresh_error">无法加载最新价格：%1$s</string>
+    <string name="market_connection_error">连接错误</string>
+
+    <string name="ai_chat_guest_required">请登录后再与农业 AI 助手对话。</string>
+    <string name="ai_chat_quota_exhausted_premium">今日 AI 对话次数已达上限，请明天再来。</string>
+    <string name="ai_chat_quota_exhausted_free">今日 3 次免费 AI 对话已用完，请升级 Premium 享受无限对话。</string>
+    <string name="ai_chat_error_unavailable">AI 暂时无法回复，请稍后重试。</string>
+    <string name="ai_chat_welcome_trader">您好！我是您的**稻米市场专家**。您可以向我咨询**收购价格**、水分/杂质检测、驳船物流、利润率或与农户谈判技巧。</string>
+    <string name="ai_chat_welcome_farmer">您好！我是您的农业助手。我已了解您的姓名和地区，可提供更精准的建议。欢迎咨询**稻谷价格**、病虫害、施肥计划或种植技术。</string>
+
+    <string name="profile_variety_chart_accessibility">稻谷品种分布图，包含：%1$s</string>
+    <string name="profile_variety_chart_empty_accessibility">稻谷品种分布图：暂无数据</string>
+
 </resources>

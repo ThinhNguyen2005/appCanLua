@@ -921,4 +921,41 @@
     <string name="validation_price_max_required">ກະລຸນາປ້ອນລາຄາສູງສຸດທີ່ຖືກຕ້ອງ (&gt; 0)</string>
     <string name="validation_price_max_lt_min">ລາຄາສູງສຸດຕ້ອງບໍ່ໜ້ອຍກວ່າລາຄາຕ່ຳສຸດ</string>
 
+    <!-- Phase 3 i18n strings -->
+    <string name="create_card_cccd_help_content_desc">ອະທິບາຍບັດປະຊາຊົນ</string>
+    <string name="create_card_impurity_help_content_desc">ອະທິບາຍສິ່ງເຈືອປົນ</string>
+    <string name="create_card_moisture_help_content_desc">ອະທິບາຍຄວາມຊຸ່ມ</string>
+    <string name="create_card_gps_title">ບັນທຶກພິກັດ GPS ທົ່ງນາ</string>
+    <string name="create_card_gps_subtitle">ບັນທຶກພິກັດເພື່ອສະແດງເທິງແຜນທີ່ເຂົ້າ</string>
+
+    <string name="weigh_options_section_personalize">ການປັບແຕ່ງ &amp; ການສະແດງຜົນ</string>
+    <string name="weigh_options_section_bag_deduction">ວິທີຫັກນ້ຳໜັກຖົງ</string>
+    <string name="weigh_options_bag_single_params_title">ຂໍ້ມູນການຫັກນ້ຳໜັກແຕ່ລະຖົງ</string>
+    <string name="weigh_options_bags_per_kg_label">ຈຳນວນຖົງຕໍ່ 1 kg</string>
+    <string name="weigh_options_bags_per_kg_placeholder">ຄ່າເລີ່ມຕົ້ນ: 8 ຖົງ = 1 kg</string>
+    <string name="weigh_options_bag_sample_params_title">ຂໍ້ມູນການຫັກນ້ຳໜັກຖົງ</string>
+    <string name="weigh_options_section_input_scale">ຮູບແບບການປ້ອນນ້ຳໜັກ</string>
+
+    <string name="help_section_quick_tips">ຄຳແນະນຳດ່ວນ</string>
+    <string name="help_section_resources">ແຫຼ່ງຂໍ້ມູນ</string>
+    <string name="help_feedback_subtitle">ລາຍງານຂໍ້ຜິດພາດ ຫຼື ສະເໜີຄຸນສົມບັດໃໝ່</string>
+    <string name="help_badge_new">ໃໝ່</string>
+    <string name="help_tutorial_subtitle">ວິດີໂອແນະນຳການນຳໃຊ້ເທື່ອລະຂັ້ນ</string>
+    <string name="help_web_subtitle">ເອກະສານ, ການອັບເດດ ແລະ ຂ່າວສານຫຼ້າສຸດ</string>
+
+    <string name="market_prices_filtered_empty_title">ບໍ່ພົບລາຄາທີ່ກົງກັນ</string>
+    <string name="market_prices_filtered_empty_subtitle">ລອງລຶບຕົວກອງອອກເພື່ອເບິ່ງລາຄາເຂົ້າຕະຫຼາດທັງໝົດ.</string>
+    <string name="market_refresh_error">ບໍ່ສາມາດໂຫຼດລາຄາໃໝ່ໄດ້: %1$s</string>
+    <string name="market_connection_error">ຂໍ້ຜິດພາດການເຊື່ອມຕໍ່</string>
+
+    <string name="ai_chat_guest_required">ກະລຸນາເຂົ້າສູ່ລະບົບເພື່ອສົນທະນາກັບຜູ້ຊ່ວຍ AI ກະສິກຳ.</string>
+    <string name="ai_chat_quota_exhausted_premium">ໂຄຕ້າສົນທະນາ AI ມື້ນີ້ໝົດແລ້ວ. ກະລຸນາກັບມາໃໝ່ມື້ອື່ນ.</string>
+    <string name="ai_chat_quota_exhausted_free">ທ່ານໄດ້ໃຊ້ສິດສົນທະນາ AI ຟຣີ 3 ຄັ້ງມື້ນີ້ແລ້ວ. ອັບເກຣດເປັນ Premium ເພື່ອໃຊ້ບໍ່ຈຳກັດ.</string>
+    <string name="ai_chat_error_unavailable">AI ບໍ່ສາມາດຕອບໄດ້ຊົ່ວຄາວ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ.</string>
+    <string name="ai_chat_welcome_trader">ສະບາຍດີ! ຂ້ອຍແມ່ນ **ຜູ້ຊ່ຽວຊານຕະຫຼາດເຂົ້າ** ຂອງທ່ານ. ຖາມຂ້ອຍກ່ຽວກັບ **ລາຄາຮັບຊື້**, ການກວດຄວາມຊຸ່ມ/ສິ່ງເຈືອປົນ, ການຂົນສົ່ງ, ກຳໄລ ຫຼື ການເຈລະຈາກັບຊາວກະສິກອນ.</string>
+    <string name="ai_chat_welcome_farmer">ສະບາຍດີ! ຂ້ອຍແມ່ນຜູ້ຊ່ວຍກະສິກຳຂອງທ່ານ. ຂ້ອຍຮູ້ຊື່ ແລະ ພື້ນທີ່ຂອງທ່ານແລ້ວ ເພື່ອໃຫ້ຄຳແນະນຳທີ່ຖືກຕ້ອງຂຶ້ນ. ຖາມຂ້ອຍກ່ຽວກັບ **ລາຄາເຂົ້າ**, ສັດຕູພືດ, ຕາຕະລາງໃສ່ປຸ໋ຍ ຫຼື ເຕັກນິກການປູກຝັງ.</string>
+
+    <string name="profile_variety_chart_accessibility">ແຜນພູມການແຈກຢາຍແນວພັນເຂົ້າ: %1$s</string>
+    <string name="profile_variety_chart_empty_accessibility">ແຜນພູມການແຈກຢາຍແນວພັນເຂົ້າ: ຍັງບໍ່ມີຂໍ້ມູນ</string>
+
 </resources>

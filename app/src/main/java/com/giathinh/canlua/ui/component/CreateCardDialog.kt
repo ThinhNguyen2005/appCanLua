@@ -1,11 +1,17 @@
 package com.giathinh.canlua.ui.component
 
-import android.content.pm.PackageManager
 import android.Manifest
+import android.content.pm.PackageManager
 import android.provider.ContactsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,23 +31,25 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -138,7 +146,11 @@ fun CreateCardBottomSheet(
             recordLocation = true
         } else {
             recordLocation = false
-            Toast.makeText(context, "Cần cấp quyền vị trí để định vị ruộng", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                context,
+                context.getString(R.string.card_detail_location_denied),
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -245,7 +257,6 @@ fun CreateCardBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = null,
         containerColor = AppColors.CardBg
     ) {
         Column(
@@ -271,8 +282,8 @@ fun CreateCardBottomSheet(
                         
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.padding(top = 6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Person,
@@ -297,7 +308,7 @@ fun CreateCardBottomSheet(
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
 
                     // Section: Thông tin lô hàng
@@ -317,6 +328,7 @@ fun CreateCardBottomSheet(
                             imeAction = ImeAction.Next
                         ),
                         keyboardActions = nextAction,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .shake(if (isVarietyError) shakeTrigger else 0)
@@ -331,6 +343,7 @@ fun CreateCardBottomSheet(
                             imeAction = ImeAction.Next
                         ),
                         keyboardActions = nextAction,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -389,7 +402,7 @@ fun CreateCardBottomSheet(
                             }
                         },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
                     )
 
@@ -410,12 +423,12 @@ fun CreateCardBottomSheet(
                             IconButton(
                                 onClick = {
                                     HapticUtil.tick(context)
-                                    showCccdHelp = true
+                                    showCccdHelp = !showCccdHelp
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích CCCD",
+                                    contentDescription = stringResource(R.string.create_card_cccd_help_content_desc),
                                     tint = AppColors.GreenPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -428,8 +441,15 @@ fun CreateCardBottomSheet(
                             .fillMaxWidth()
                             .heightIn(min = 60.dp)
                             .shake(if (isCccdError) shakeTrigger else 0),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
+                    )
+
+                    InlineFieldHelpHint(
+                        visible = showCccdHelp,
+                        title = stringResource(R.string.create_card_cccd_help_title),
+                        description = stringResource(R.string.create_card_cccd_help_description),
+                        onDismiss = { showCccdHelp = false }
                     )
 
                     Spacer(Modifier.height(4.dp))
@@ -458,14 +478,14 @@ fun CreateCardBottomSheet(
                             IconButton(
                                 onClick = {
                                     HapticUtil.tick(context)
-                                    showImpurityHelp = true
+                                    showImpurityHelp = !showImpurityHelp
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích tạp chất",
+                                    contentDescription = stringResource(R.string.create_card_impurity_help_content_desc),
                                     tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
@@ -473,8 +493,15 @@ fun CreateCardBottomSheet(
                         keyboardActions = nextAction,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
+                    )
+
+                    InlineFieldHelpHint(
+                        visible = showImpurityHelp,
+                        title = stringResource(R.string.create_card_impurity_help_title),
+                        description = stringResource(R.string.create_card_impurity_help_description),
+                        onDismiss = { showImpurityHelp = false }
                     )
 
                     // Độ ẩm % (1 dòng)
@@ -490,14 +517,14 @@ fun CreateCardBottomSheet(
                             IconButton(
                                 onClick = {
                                     HapticUtil.tick(context)
-                                    showMoistureHelp = true
+                                    showMoistureHelp = !showMoistureHelp
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Info,
-                                    contentDescription = "Giải thích độ ẩm",
+                                    contentDescription = stringResource(R.string.create_card_moisture_help_content_desc),
                                     tint = AppColors.GreenPrimary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
@@ -505,8 +532,15 @@ fun CreateCardBottomSheet(
                         keyboardActions = nextAction,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
+                    )
+
+                    InlineFieldHelpHint(
+                        visible = showMoistureHelp,
+                        title = stringResource(R.string.create_card_moisture_help_title),
+                        description = stringResource(R.string.create_card_moisture_help_description),
+                        onDismiss = { showMoistureHelp = false }
                     )
 
                     // Đơn giá đ/kg (1 dòng)
@@ -523,7 +557,7 @@ fun CreateCardBottomSheet(
                         keyboardActions = nextAction,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
                     )
 
@@ -541,7 +575,7 @@ fun CreateCardBottomSheet(
                         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
                     )
 
@@ -578,13 +612,13 @@ fun CreateCardBottomSheet(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "Lưu vị trí GPS ruộng",
+                                text = stringResource(R.string.create_card_gps_title),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = AppColors.TextPrimary
                             )
                             Text(
-                                text = "Ghi lại tọa độ để hiển thị trên bản đồ lúa",
+                                text = stringResource(R.string.create_card_gps_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.TextSecondary
                             )
@@ -647,29 +681,64 @@ fun CreateCardBottomSheet(
                     }
                 }
             }
+    }
+}
 
-        // Help Dialogs (rendered inside Dialog window so they show on top of it)
-        ExplainingDialog(
-            visible = showCccdHelp,
-            title = stringResource(R.string.create_card_cccd_help_title),
-            description = stringResource(R.string.create_card_cccd_help_description),
-            onDismiss = { showCccdHelp = false }
-        )
-
-        ExplainingDialog(
-            visible = showImpurityHelp,
-            title = stringResource(R.string.create_card_impurity_help_title),
-            description = stringResource(R.string.create_card_impurity_help_description),
-            onDismiss = { showImpurityHelp = false }
-        )
-
-
-        ExplainingDialog(
-            visible = showMoistureHelp,
-            title = stringResource(R.string.create_card_moisture_help_title),
-            description = stringResource(R.string.create_card_moisture_help_description),
-            onDismiss = { showMoistureHelp = false }
-        )
+@Composable
+private fun InlineFieldHelpHint(
+    visible: Boolean,
+    title: String,
+    description: String,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = AppColors.GreenSurface,
+            border = BorderStroke(1.dp, AppColors.GreenPrimary.copy(alpha = 0.25f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenPrimary
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.TextSecondary
+                    )
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.popover_close),
+                        tint = AppColors.TextSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -758,7 +827,7 @@ private fun FormTextField(
         keyboardActions = keyboardActions,
         singleLine = true,
         modifier = modifier.heightIn(min = 60.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = dialogTextFieldColors()
     )
 }

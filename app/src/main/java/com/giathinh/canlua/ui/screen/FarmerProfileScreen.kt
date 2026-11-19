@@ -341,7 +341,7 @@ private fun EmptySeasonStatsCard(onCreateSlip: () -> Unit) {
                 .fillMaxWidth()
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -354,7 +354,7 @@ private fun EmptySeasonStatsCard(onCreateSlip: () -> Unit) {
                     imageVector = Icons.Outlined.Scale,
                     contentDescription = null,
                     tint = AppColors.GreenPrimary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Text(

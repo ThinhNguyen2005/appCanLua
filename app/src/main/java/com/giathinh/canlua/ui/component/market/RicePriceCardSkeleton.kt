@@ -39,18 +39,18 @@ fun RicePriceCardSkeleton(modifier: Modifier = Modifier) {
                 AppColors.Divider.copy(alpha = 0.5f),
                 RoundedCornerShape(16.dp)
             )
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Header row: title + trend + chevron
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ShimmerBlock(width = 140.dp, height = 18.dp)
+                ShimmerBlock(width = 140.dp, height = 20.dp)
                 Spacer(Modifier.weight(1f))
-                ShimmerBlock(width = 56.dp, height = 18.dp, shape = RoundedCornerShape(8.dp))
-                ShimmerBlock(size = 18.dp, shape = RoundedCornerShape(4.dp))
+                ShimmerBlock(width = 56.dp, height = 20.dp, shape = RoundedCornerShape(8.dp))
+                ShimmerBlock(size = 20.dp, shape = RoundedCornerShape(4.dp))
             }
             // Meta row: rice type + region + updated
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -58,10 +58,10 @@ fun RicePriceCardSkeleton(modifier: Modifier = Modifier) {
                 Spacer(Modifier.width(8.dp))
                 ShimmerBlock(width = 52.dp, height = 16.dp, shape = RoundedCornerShape(8.dp))
                 Spacer(Modifier.width(8.dp))
-                ShimmerBlock(width = 90.dp, height = 12.dp)
+                ShimmerBlock(width = 88.dp, height = 12.dp)
             }
             // Price grid: 3 columns
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ShimmerBlock(modifier = Modifier.weight(1f), height = 64.dp, shape = RoundedCornerShape(12.dp))
                 ShimmerBlock(modifier = Modifier.weight(1f), height = 64.dp, shape = RoundedCornerShape(12.dp))
                 ShimmerBlock(modifier = Modifier.weight(1f), height = 64.dp, shape = RoundedCornerShape(12.dp))

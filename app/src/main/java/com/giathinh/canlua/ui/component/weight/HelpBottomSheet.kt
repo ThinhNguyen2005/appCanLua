@@ -89,7 +89,7 @@ fun HelpBottomSheet(
 
             // ── Section: Mẹo sử dụng nhanh ────────────────────────────
             SectionLabel(
-                label = "MẸO SỬ DỤNG NHANH",
+                label = stringResource(R.string.help_section_quick_tips),
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
 
@@ -146,13 +146,13 @@ fun HelpBottomSheet(
 
             // ── Section: Liên hệ & tài nguyên ─────────────────────────
             SectionLabel(
-                label = "TÀI NGUYÊN",
+                label = stringResource(R.string.help_section_resources),
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
 
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Phản hồi — nổi bật nhất (màu vàng + badge)
                 ActionCard(
@@ -160,8 +160,8 @@ fun HelpBottomSheet(
                     iconBg = AppColors.GoldAccent.copy(alpha = 0.15f),
                     iconTint = AppColors.GoldAccent,
                     title = stringResource(R.string.help_btn_feedback),
-                    subtitle = "Báo lỗi hoặc đề xuất tính năng mới",
-                    badge = if (hasUnreadFeedback) "MỚI" else null,
+                    subtitle = stringResource(R.string.help_feedback_subtitle),
+                    badge = if (hasUnreadFeedback) stringResource(R.string.help_badge_new) else null,
                     onClick = {
                         onFeedbackClick()
                         onDismiss()
@@ -174,7 +174,7 @@ fun HelpBottomSheet(
                     iconBg = AppColors.GreenSurface,
                     iconTint = AppColors.GreenPrimary,
                     title = stringResource(R.string.help_btn_tutorial),
-                    subtitle = "Video hướng dẫn từng bước sử dụng",
+                    subtitle = stringResource(R.string.help_tutorial_subtitle),
                     onClick = { openUrl(tutorialUrl) }
                 )
 
@@ -184,7 +184,7 @@ fun HelpBottomSheet(
                     iconBg = AppColors.SurfaceContainer,
                     iconTint = AppColors.TextSecondary,
                     title = stringResource(R.string.help_btn_web),
-                    subtitle = "Tài liệu, cập nhật và tin tức mới nhất",
+                    subtitle = stringResource(R.string.help_web_subtitle),
                     onClick = { openUrl(websiteUrl) }
                 )
             }
@@ -213,13 +213,13 @@ private fun HelpHeader() {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Icon circle lớn
             Box(
                 modifier = Modifier
                     .size(52.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(AppColors.GreenPrimary),
                 contentAlignment = Alignment.Center
             ) {
@@ -242,7 +242,7 @@ private fun HelpHeader() {
                     text = stringResource(R.string.help_sheet_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.TextSecondary,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
@@ -294,15 +294,15 @@ private fun TipAccordionRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Icon tile
             Box(
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
@@ -326,7 +326,7 @@ private fun TipAccordionRow(
                 contentDescription = null,
                 tint = AppColors.TextHint,
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(20.dp)
                     .rotate(chevronAngle)
             )
         }
@@ -340,7 +340,7 @@ private fun TipAccordionRow(
                 lineHeight = 20.sp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 68.dp, end = 16.dp, bottom = 14.dp)
+                    .padding(start = 68.dp, end = 16.dp, bottom = 12.dp)
             )
         }
 
@@ -372,13 +372,13 @@ private fun ActionCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(AppColors.CardBg)
-            .border(0.5.dp, AppColors.Divider, RoundedCornerShape(14.dp))
+            .border(0.5.dp, AppColors.Divider, RoundedCornerShape(16.dp))
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Icon tile
         Box(
@@ -388,7 +388,7 @@ private fun ActionCard(
                 .background(iconBg),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
+            Icon(icon, null, tint = iconTint, modifier = Modifier.size(24.dp))
         }
 
         // Text column
@@ -408,7 +408,7 @@ private fun ActionCard(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
                             .background(AppColors.Error)
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = badge,
@@ -424,7 +424,7 @@ private fun ActionCard(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.TextHint,
-                modifier = Modifier.padding(top = 2.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 

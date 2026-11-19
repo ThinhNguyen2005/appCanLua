@@ -116,7 +116,7 @@ fun GradientProfileHeader(
                     // Role badge — nhỏ gọn, tint xanh lá nông nghiệp
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(AppColors.GreenSurface)
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically

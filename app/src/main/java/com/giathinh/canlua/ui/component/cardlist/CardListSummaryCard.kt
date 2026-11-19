@@ -209,12 +209,12 @@ private fun SummaryMetric(
         modifier = modifier
             .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
             .background(AppColors.SurfaceContainer)
-            .padding(horizontal = 10.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(30.dp)
+                .size(32.dp)
                 .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
                 .background(tint.copy(alpha = 0.14f)),
             contentAlignment = Alignment.Center
@@ -223,7 +223,7 @@ private fun SummaryMetric(
                 imageVector = icon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(17.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
         valueContent()
@@ -247,8 +247,8 @@ private fun SecondaryMetric(
         modifier = modifier
             .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
             .background(AppColors.SurfaceContainer)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text = label,

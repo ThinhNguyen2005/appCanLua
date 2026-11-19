@@ -1,30 +1,30 @@
 package com.giathinh.canlua.ui.component.cardlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import com.giathinh.canlua.R
 import androidx.compose.ui.unit.dp
+import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 
 @Composable
@@ -34,8 +34,8 @@ fun CardListFilterBar(
     onOpenFilter: () -> Unit,
     onClearSeason: () -> Unit,
     onClearVariety: () -> Unit,
-    onClearAll: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClearAll: (() -> Unit)? = null
 ) {
     val activeCount = (if (selectedSeason != null) 1 else 0) +
             (if (selectedVariety != null) 1 else 0)
@@ -47,6 +47,7 @@ fun CardListFilterBar(
     ) {
         AssistChip(
             onClick = onOpenFilter,
+            modifier = Modifier.heightIn(min = 48.dp),
             label = {
                 Text(
                     text = if (activeCount > 0) {
@@ -59,7 +60,7 @@ fun CardListFilterBar(
             },
             leadingIcon = {
                 Icon(
-                    Icons.Outlined.Tune,
+                    Icons.Outlined.FilterList,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
@@ -91,29 +92,34 @@ fun CardListFilterBar(
 
 @Composable
 private fun ActiveFilterChip(label: String, onClear: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.GreenPrimary)
-            .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = AppColors.CardBg
-        )
-        IconButton(
-            onClick = onClear,
-            modifier = Modifier.size(28.dp)
-        ) {
-            Icon(
-                Icons.Default.Close,
-                contentDescription = stringResource(R.string.card_list_clear_named_filter, label),
-                tint = AppColors.CardBg,
-                modifier = Modifier.size(16.dp)
+    InputChip(
+        selected = true,
+        onClick = onClear,
+        modifier = Modifier.heightIn(min = 48.dp),
+        shape = RoundedCornerShape(16.dp),
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
             )
-        }
-    }
+        },
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.card_list_clear_named_filter, label),
+                modifier = Modifier.size(InputChipDefaults.IconSize)
+            )
+        },
+        colors = InputChipDefaults.inputChipColors(
+            selectedContainerColor = AppColors.GreenPrimary,
+            selectedLabelColor = AppColors.CardBg,
+            selectedTrailingIconColor = AppColors.CardBg
+        ),
+        border = InputChipDefaults.inputChipBorder(
+            enabled = true,
+            selected = true,
+            selectedBorderColor = Color.Transparent
+        )
+    )
 }

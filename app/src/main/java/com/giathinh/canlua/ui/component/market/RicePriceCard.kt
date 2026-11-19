@@ -78,7 +78,7 @@ fun RicePriceCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             // Header: variety name + trend badge + chevron
             Row(
@@ -97,12 +97,12 @@ fun RicePriceCard(
                     icon = trendIcon,
                     label = trendLabel
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = stringResource(R.string.market_card_chart_desc),
                     tint = AppColors.TextHint,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
@@ -111,7 +111,7 @@ fun RicePriceCard(
             // Meta row: rice type · region · updated (gọn 1 dòng)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val isDark = AppColors.CardBg.luminance() < 0.5f
                 val riceTypeColor = when {
@@ -167,7 +167,7 @@ fun RicePriceCard(
             // Price grid: 3 columns
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 PriceColumn(
                     label = stringResource(R.string.market_price_min_label),
@@ -205,7 +205,7 @@ private fun PriceColumn(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(if (isHighlight) AppColors.GreenSurface else AppColors.SurfaceContainer)
-            .padding(vertical = 10.dp, horizontal = 8.dp),
+            .padding(vertical = 12.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -238,7 +238,7 @@ private fun MetaBadge(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(background)
-            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
@@ -267,7 +267,7 @@ private fun TrendBadge(
             imageVector = icon,
             contentDescription = null,
             tint = color,
-            modifier = Modifier.size(14.dp)
+            modifier = Modifier.size(16.dp)
         )
         Spacer(Modifier.width(4.dp))
         Text(

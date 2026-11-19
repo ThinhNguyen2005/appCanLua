@@ -1,11 +1,14 @@
 package com.giathinh.canlua.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.PricePoint
 import com.giathinh.canlua.data.model.RicePrice
 import com.giathinh.canlua.repository.MarketRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,7 +44,8 @@ data class AdsEligibility(
 class MarketViewModel @Inject constructor(
     private val marketRepository: MarketRepository,
     private val nativeAdLoaderManager: NativeAdLoaderManager,
-    private val adConsentManager: AdConsentManager
+    private val adConsentManager: AdConsentManager,
+    @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val nativeAdState: StateFlow<NativeAdUiState> = nativeAdLoaderManager.adState
@@ -154,7 +158,11 @@ class MarketViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     android.util.Log.e("MarketVM", "Supabase fetch error: ${error.message}", error)
-                    _refreshError.value = "Không thể tải giá mới: ${error.message ?: "Lỗi kết nối"}"
+                    val fallback = context.getString(R.string.market_connection_error)
+                    _refreshError.value = context.getString(
+                        R.string.market_refresh_error,
+                        error.message ?: fallback
+                    )
                 }
             )
             _isLoading.value = false

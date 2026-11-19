@@ -2,6 +2,7 @@ package com.giathinh.canlua.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.giathinh.canlua.R
 import com.giathinh.canlua.data.model.Profile
 import com.giathinh.canlua.data.model.RicePrice
 import com.giathinh.canlua.data.remote.ai.ChatMessage
@@ -161,7 +162,9 @@ class AiChatViewModel @Inject constructor(
 
         val isGuest = profile.value == null || profile.value?.uid == "GUEST"
         if (isGuest) {
-            _state.value = _state.value.copy(errorMessage = "Bà con cần đăng nhập để trò chuyện với trợ lý AI nông nghiệp.")
+            _state.value = _state.value.copy(
+                errorMessage = context.getString(R.string.ai_chat_guest_required)
+            )
             return
         }
 
@@ -170,11 +173,10 @@ class AiChatViewModel @Inject constructor(
         val limit = if (premium) PremiumState.PREMIUM_AI_QUERIES_PER_DAY else PremiumState.FREE_AI_QUERIES_PER_DAY
 
         if (dailyCount >= limit) {
-            val errorMsg = if (premium) {
-                "Hạn mức chat AI hôm nay đã hết để tránh spam hệ thống. Bà con quay lại vào ngày mai nhé."
-            } else {
-                "Bà con đã dùng hết 3 lượt chat AI miễn phí hôm nay. Vui lòng nâng cấp Premium để chat không giới hạn."
-            }
+            val errorMsg = context.getString(
+                if (premium) R.string.ai_chat_quota_exhausted_premium
+                else R.string.ai_chat_quota_exhausted_free
+            )
             _state.value = _state.value.copy(errorMessage = errorMsg)
             return
         }
@@ -226,7 +228,8 @@ class AiChatViewModel @Inject constructor(
                 // Message từ repository đã là câu tiếng Việt gần gũi — hiển thị trực tiếp.
                 UiMessage(
                     role = "assistant",
-                    content = result.exceptionOrNull()?.message ?: "AI tạm không trả lời được. Bà con thử lại sau.",
+                    content = result.exceptionOrNull()?.message
+                        ?: context.getString(R.string.ai_chat_error_unavailable),
                     isError = true
                 )
             }
@@ -267,16 +270,12 @@ class AiChatViewModel @Inject constructor(
     private fun welcomeMessages(
         audience: KnowledgeBaseRepository.Audience = KnowledgeBaseRepository.Audience.FARMER
     ): List<UiMessage> {
-        val content = when (audience) {
-            KnowledgeBaseRepository.Audience.TRADER ->
-                "Xin chào! Tôi là **Chuyên Gia Thị Trường Lúa Gạo** của bạn. " +
-                    "Hỏi tôi về **giá thu mua**, kiểm định ẩm/tạp chất, logistics sà lan, biên lợi nhuận, " +
-                    "hay cách đàm phán giao dịch với nông dân."
-            KnowledgeBaseRepository.Audience.FARMER ->
-                "Xin chào! Tôi là Trợ Lý Nông nghiệp của bạn. " +
-                    "Tôi đã biết tên và vị trí của bạn nên có thể tư vấn sát hơn. " +
-                    "Hãy hỏi tôi về **giá lúa**, sâu bệnh, lịch bón phân, hoặc kỹ thuật canh tác."
-        }
+        val content = context.getString(
+            when (audience) {
+                KnowledgeBaseRepository.Audience.TRADER -> R.string.ai_chat_welcome_trader
+                KnowledgeBaseRepository.Audience.FARMER -> R.string.ai_chat_welcome_farmer
+            }
+        )
         return listOf(UiMessage(role = "assistant", content = content))
     }
 }

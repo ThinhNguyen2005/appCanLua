@@ -1,9 +1,6 @@
 package com.giathinh.canlua.ui.component.market
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,13 +8,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -31,8 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -119,7 +122,7 @@ fun BidEditorSheet(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
             .padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             text = if (existing == null) {
@@ -202,7 +205,7 @@ fun BidEditorSheet(
                     .weight(1f)
                     .heightIn(min = 60.dp)
                     .shake(if (isPriceMinError) shakeTrigger else 0),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = sheetTextFieldColors()
             )
             OutlinedTextField(
@@ -231,7 +234,7 @@ fun BidEditorSheet(
                     .weight(1f)
                     .heightIn(min = 60.dp)
                     .shake(if (isPriceMaxError) shakeTrigger else 0),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = sheetTextFieldColors()
             )
         }
@@ -248,7 +251,7 @@ fun BidEditorSheet(
             keyboardActions = nextAction,
             singleLine = true,
             modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = sheetTextFieldColors()
         )
 
@@ -277,7 +280,7 @@ fun BidEditorSheet(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
             maxLines = 3,
             modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = sheetTextFieldColors()
         )
 
@@ -341,47 +344,97 @@ private fun TypeChip(
     selected: String,
     onSelect: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val isSelected = key == selected
     val activeColor = AppColors.GreenPrimary
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) activeColor.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
-            .clickable { onSelect(key) }
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isSelected) activeColor else AppColors.TextSecondary
-        )
-    }
+    FilterChip(
+        selected = isSelected,
+        onClick = {
+            HapticUtil.tick(context)
+            onSelect(key)
+        },
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        leadingIcon = if (isSelected) {
+            {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        } else null,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = AppColors.SurfaceContainer,
+            labelColor = AppColors.TextSecondary,
+            selectedContainerColor = activeColor.copy(alpha = 0.18f),
+            selectedLabelColor = activeColor,
+            selectedLeadingIconColor = activeColor
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = isSelected,
+            borderColor = Color.Transparent,
+            selectedBorderColor = activeColor.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.heightIn(min = 48.dp)
+    )
 }
 
 @Composable
 private fun TrendChip(
     key: String,
     label: String,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     selected: String,
     onSelect: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val isSelected = key == selected
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) color.copy(alpha = 0.18f) else AppColors.SurfaceContainer)
-            .clickable { onSelect(key) }
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isSelected) color else AppColors.TextSecondary
-        )
-    }
+    FilterChip(
+        selected = isSelected,
+        onClick = {
+            HapticUtil.tick(context)
+            onSelect(key)
+        },
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        leadingIcon = if (isSelected) {
+            {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
+        } else null,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = AppColors.SurfaceContainer,
+            labelColor = AppColors.TextSecondary,
+            selectedContainerColor = color.copy(alpha = 0.18f),
+            selectedLabelColor = color,
+            selectedLeadingIconColor = color
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = isSelected,
+            borderColor = Color.Transparent,
+            selectedBorderColor = color.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.heightIn(min = 48.dp)
+    )
 }
 
 @Composable

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +49,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.util.HapticUtil
 
@@ -92,14 +92,14 @@ fun ModernBottomBar(
                 .fillMaxWidth()
                 .height(64.dp)
                 .shadow(
-                    elevation = 6.dp,
+                    elevation = 8.dp,
                     shape = CircleShape
                 ),
             shape = CircleShape,
             color = AppColors.CardBg,
             border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.55f)),
-            shadowElevation = 6.dp,
-            tonalElevation = 2.dp
+            shadowElevation = 8.dp,
+            tonalElevation = 4.dp
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -134,7 +134,7 @@ fun ModernBottomBar(
                         .graphicsLayer {
                             translationX = indicatorOffset.value
                         }
-                        .padding(horizontal = 2.dp, vertical = 2.dp)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
                         .background(
                             color = AppColors.GreenPrimary.copy(alpha = 0.14f),
                             shape = CircleShape
@@ -143,7 +143,9 @@ fun ModernBottomBar(
 
                 // Hàng chứa các tab điều hướng
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .selectableGroup(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     items.forEachIndexed { index, item ->
@@ -201,7 +203,7 @@ private fun ModernBottomTabItem(
                 role = Role.Tab,
                 onClick = onClick
             )
-            .semantics { selected = isSelected },
+            .semantics(mergeDescendants = true) { selected = isSelected },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -210,19 +212,18 @@ private fun ModernBottomTabItem(
                 scaleX = scale
                 scaleY = scale
             },
-            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = if (isSelected) item.selectedIcon else item.icon,
-                contentDescription = label,
+                contentDescription = null,
                 tint = activeColor,
                 modifier = Modifier.size(24.dp)
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.5.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 ),
                 color = activeColor,

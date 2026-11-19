@@ -177,7 +177,7 @@ fun SeasonComparisonBarChart(
                                 fontWeight = FontWeight.Medium,
                                 color = AppColors.TextSecondary
                             ),
-                            modifier = Modifier.padding(bottom = 2.dp)
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
                     }
 
@@ -219,14 +219,14 @@ private fun VicoSeasonBarChart(
 
     val selectedColumn = rememberLineComponent(
         fill = Fill(AppColors.GreenPrimary),
-        thickness = 22.dp,
-        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)
+        thickness = 24.dp,
+        shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
     )
 
     val unselectedColumn = rememberLineComponent(
         fill = Fill(AppColors.GreenLight.copy(alpha = 0.55f)),
-        thickness = 22.dp,
-        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)
+        thickness = 24.dp,
+        shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
     )
 
     val columnProvider = remember(selectedIndex, selectedColumn, unselectedColumn) {
@@ -323,7 +323,7 @@ private fun VicoSeasonBarChart(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             ),
-            padding = Insets(horizontal = 10.dp, vertical = 6.dp),
+            padding = Insets(horizontal = 12.dp, vertical = 8.dp),
             background = rememberShapeComponent(
                 fill = Fill(AppColors.CardBg),
                 shape = RoundedCornerShape(8.dp),

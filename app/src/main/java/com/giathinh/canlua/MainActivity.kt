@@ -42,6 +42,8 @@ private const val ROOT_ROUTE_SPLASH = "splash"
 private const val ROOT_ROUTE_LOGIN = "login"
 private const val ROOT_ROUTE_PROFILE_SETUP = "profile_setup"
 private const val ROOT_ROUTE_MAIN = "main?cardId={cardId}"
+private const val ROOT_ENTER_DURATION_MS = 320
+private const val ROOT_EXIT_DURATION_MS = 220
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -121,7 +123,7 @@ class MainActivity : ComponentActivity() {
                         navController = rootNavController,
                         startDestination = initialDestination,
                         enterTransition = {
-                            fadeIn(animationSpec = tween(320)) + scaleIn(
+                            fadeIn(animationSpec = tween(ROOT_ENTER_DURATION_MS)) + scaleIn(
                                 initialScale = 0.96f,
                                 animationSpec = spring(
                                     dampingRatio = Spring.DampingRatioNoBouncy,
@@ -130,7 +132,7 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         exitTransition = {
-                            fadeOut(animationSpec = tween(220))
+                            fadeOut(animationSpec = tween(ROOT_EXIT_DURATION_MS))
                         }
                     ) {
                         composable(ROOT_ROUTE_SPLASH) {
