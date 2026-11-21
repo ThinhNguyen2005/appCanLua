@@ -17,9 +17,11 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.giathinh.canlua.ads.AdConsentManager
 import com.giathinh.canlua.data.model.AppThemeMode
@@ -41,7 +43,8 @@ import javax.inject.Inject
 private const val ROOT_ROUTE_SPLASH = "splash"
 private const val ROOT_ROUTE_LOGIN = "login"
 private const val ROOT_ROUTE_PROFILE_SETUP = "profile_setup"
-private const val ROOT_ROUTE_MAIN = "main?cardId={cardId}"
+private const val ROOT_ROUTE_MAIN = "main"
+private const val ROOT_ROUTE_MAIN_PATTERN = "main?cardId={cardId}"
 private const val ROOT_ENTER_DURATION_MS = 320
 private const val ROOT_EXIT_DURATION_MS = 220
 
@@ -90,11 +93,11 @@ class MainActivity : ComponentActivity() {
                     // Cố định startDestination lần đầu tiên để NavHost KHÔNG bị dựng lại và không mất Deeplink
                     val initialDestination = remember {
                         when {
-                            isGuestMode -> ROOT_ROUTE_MAIN
+                            isGuestMode -> ROOT_ROUTE_MAIN_PATTERN
                             !authState.isSignedIn -> ROOT_ROUTE_LOGIN
                             authState.needsProfileSetup == null || !isDataReady -> ROOT_ROUTE_SPLASH
                             authState.needsProfileSetup == true -> ROOT_ROUTE_PROFILE_SETUP
-                            else -> ROOT_ROUTE_MAIN
+                            else -> ROOT_ROUTE_MAIN_PATTERN
                         }
                     }
 
@@ -154,13 +157,21 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(
-                            route = ROOT_ROUTE_MAIN,
+                            route = ROOT_ROUTE_MAIN_PATTERN,
+                            arguments = listOf(
+                                navArgument("cardId") {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
                             deepLinks = listOf(
                                 navDeepLink { uriPattern = "https://canluavn.web.app/share/{cardId}" },
                                 navDeepLink { uriPattern = "https://canluavn.firebaseapp.com/share/{cardId}" }
                             )
                         ) { backStackEntry ->
                             val cardId = backStackEntry.arguments?.getString("cardId")
+                                ?.takeIf { it.toLongOrNull() != null }
                             MainScreen(deeplinkCardId = cardId)
                         }
                     }

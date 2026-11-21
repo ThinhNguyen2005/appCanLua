@@ -25,6 +25,7 @@ object CccdCrypto {
     private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
     private const val ITERATION_COUNT = 1000
     private const val KEY_LENGTH = 256
+    private const val MAX_UNWRAP_DEPTH = 16
 
     // Secret salt của ứng dụng dùng để phái sinh khóa theo từng tài khoản
     private val APP_SALT = "CanLua2026_SecureRiceCccdSalt_V2".toByteArray(Charsets.UTF_8)
@@ -53,9 +54,20 @@ object CccdCrypto {
 
     /**
      * Mã hóa số CCCD sang định dạng V2 an toàn với Random IV.
+     * Idempotent: nếu chuỗi đầu vào đã ở dạng "v2:..." thì giải mã trước khi mã hóa lại
+     * để tuyệt đối không tạo nhiều lớp mã hóa lồng nhau.
      */
     fun encrypt(plainText: String?, uid: String? = null): String? {
         if (plainText.isNullOrBlank()) return plainText
+        val normalizedPlain = if (plainText.startsWith(PREFIX_V2)) {
+            val unwrapped = decrypt(plainText, uid)
+            if (unwrapped.isNullOrBlank() || unwrapped.startsWith(PREFIX_V2)) {
+                return plainText
+            }
+            unwrapped
+        } else {
+            plainText
+        }
         return try {
             val key = deriveKey(uid)
             val iv = ByteArray(16).apply { SecureRandom().nextBytes(this) }
@@ -63,50 +75,35 @@ object CccdCrypto {
 
             val cipher = Cipher.getInstance(ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, key, ivSpec)
-            val encryptedBytes = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+            val encryptedBytes = cipher.doFinal(normalizedPlain.toByteArray(Charsets.UTF_8))
 
             val ivB64 = Base64.getEncoder().encodeToString(iv)
             val cipherB64 = Base64.getEncoder().encodeToString(encryptedBytes)
             "$PREFIX_V2$ivB64:$cipherB64"
-        } catch (e: Exception) {
-            plainText
+        } catch (_: Exception) {
+            normalizedPlain
         }
     }
 
     /**
      * Giải mã chuỗi CCCD.
-     * Tự động phát hiện phiên bản V2 (Random IV) hoặc V1 (Legacy Key).
+     * Tự động bóc tách nhiều lớp V2 (nếu dữ liệu cũ từng bị mã hóa lặp), V2 đơn, hoặc V1 (Legacy Key).
      * Trả về bản thô nếu thất bại (bảo vệ backward compatibility).
      */
     fun decrypt(cipherText: String?, uid: String? = null): String? {
         if (cipherText.isNullOrBlank()) return cipherText
 
-        // 1. Kiểm tra định dạng V2
+        // 1. Kiểm tra định dạng V2 (hỗ trợ bóc tách tối đa MAX_UNWRAP_DEPTH lớp lồng nhau)
         if (cipherText.startsWith(PREFIX_V2)) {
-            val parts = cipherText.substring(PREFIX_V2.length).split(":")
-            if (parts.size == 2) {
-                try {
-                    val iv = Base64.getDecoder().decode(parts[0])
-                    val encryptedBytes = Base64.getDecoder().decode(parts[1])
-                    val key = deriveKey(uid)
-                    val cipher = Cipher.getInstance(ALGORITHM)
-                    cipher.init(Cipher.DECRYPT_MODE, key, IvParameterSpec(iv))
-                    val decryptedBytes = cipher.doFinal(encryptedBytes)
-                    return String(decryptedBytes, Charsets.UTF_8)
-                } catch (e: Exception) {
-                    // Fallback thử với key mặc định nếu giải mã với UID thất bại
-                    if (!uid.isNullOrBlank()) {
-                        try {
-                            val iv = Base64.getDecoder().decode(parts[0])
-                            val encryptedBytes = Base64.getDecoder().decode(parts[1])
-                            val key = deriveKey(null)
-                            val cipher = Cipher.getInstance(ALGORITHM)
-                            cipher.init(Cipher.DECRYPT_MODE, key, IvParameterSpec(iv))
-                            val decryptedBytes = cipher.doFinal(encryptedBytes)
-                            return String(decryptedBytes, Charsets.UTF_8)
-                        } catch (_: Exception) {}
-                    }
-                }
+            var current: String = cipherText
+            var depth = 0
+            while (current.startsWith(PREFIX_V2) && depth < MAX_UNWRAP_DEPTH) {
+                val next = decryptV2Once(current, uid)?.takeIf { it != current } ?: break
+                current = next
+                depth++
+            }
+            if (depth > 0 && !current.startsWith(PREFIX_V2)) {
+                return current
             }
         }
 
@@ -117,8 +114,32 @@ object CccdCrypto {
             val decodedBytes = Base64.getDecoder().decode(cipherText)
             val decryptedBytes = cipher.doFinal(decodedBytes)
             String(decryptedBytes, Charsets.UTF_8)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             cipherText // Trả về text gốc nếu là chuỗi thô chưa từng mã hóa
+        }
+    }
+
+    private fun decryptV2Once(cipherText: String, uid: String?): String? {
+        if (!cipherText.startsWith(PREFIX_V2)) return null
+        val parts = cipherText.substring(PREFIX_V2.length).split(":")
+        if (parts.size != 2) return null
+        val (iv, encryptedBytes) = try {
+            Base64.getDecoder().decode(parts[0]) to Base64.getDecoder().decode(parts[1])
+        } catch (_: Exception) {
+            return null
+        }
+        return decryptAesCbc(iv, encryptedBytes, uid)
+            ?: if (!uid.isNullOrBlank()) decryptAesCbc(iv, encryptedBytes, null) else null
+    }
+
+    private fun decryptAesCbc(iv: ByteArray, encryptedBytes: ByteArray, uid: String?): String? {
+        return try {
+            val key = deriveKey(uid)
+            val cipher = Cipher.getInstance(ALGORITHM)
+            cipher.init(Cipher.DECRYPT_MODE, key, IvParameterSpec(iv))
+            String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
+        } catch (_: Exception) {
+            null
         }
     }
 }

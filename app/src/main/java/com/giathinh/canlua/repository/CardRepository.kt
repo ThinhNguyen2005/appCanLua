@@ -197,7 +197,8 @@ class CardRepository @Inject constructor(
         if (existing.isLocked && !allowLockChange) {
             return@withTransaction CardMutationResult.Failure(CardError.Locked)
         }
-        val transformed = transform(existing)
+        val decryptedExisting = existing.copy(cccd = CccdCrypto.decrypt(existing.cccd, existing.ownerUid))
+        val transformed = transform(decryptedExisting)
         val now = System.currentTimeMillis()
         val syncId = existing.syncId.ifBlank { newSyncId() }
         val newRevision = existing.revision + 1
@@ -681,7 +682,7 @@ class CardRepository @Inject constructor(
 
     fun getCardsByRiceVariety(variety: String): Flow<List<Card>> =
         cardDao.getCardsByRiceVariety(variety, uid()).map { list ->
-            list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd)) }
+            list.map { it.copy(cccd = CccdCrypto.decrypt(it.cccd, it.ownerUid)) }
         }
 
     fun getDistinctRiceVarieties(): Flow<List<String>> =
@@ -727,8 +728,15 @@ class CardRepository @Inject constructor(
             }
         }
 
-    /** Lịch sử thương lái đã mua — reactive Flow từ cards table. */
-    fun getTraderHistory(): Flow<List<TraderHistoryItem>> = cardDao.getTraderHistory(uid())
+    /** Lịch sử thương lái đã mua — reactive Flow từ cards table (giải mã CCCD). */
+    fun getTraderHistory(): Flow<List<TraderHistoryItem>> {
+        val currentUid = uid()
+        return cardDao.getTraderHistory(currentUid).map { list ->
+            list.map { item ->
+                item.copy(traderCccd = CccdCrypto.decrypt(item.traderCccd, currentUid))
+            }
+        }
+    }
 
     /**
      * One-shot migration: gán toàn bộ cards orphan (ownerUid='') cho user đang

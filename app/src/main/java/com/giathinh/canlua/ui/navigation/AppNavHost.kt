@@ -37,8 +37,11 @@ fun AppNavHost(
     onDeeplinkConsumed: () -> Unit = {}
 ) {
     LaunchedEffect(deeplinkCardId) {
-        if (!deeplinkCardId.isNullOrBlank()) {
-            navController.navigate("card_detail/$deeplinkCardId")
+        val validCardId = deeplinkCardId?.toLongOrNull()
+        if (validCardId != null && validCardId > 0L) {
+            navController.navigate("card_detail/$validCardId")
+            onDeeplinkConsumed()
+        } else if (!deeplinkCardId.isNullOrBlank()) {
             onDeeplinkConsumed()
         }
     }
