@@ -108,7 +108,7 @@ enum class NewsSource(
      */
     DANVIET_AGRICULTURE(
         displayName = "Dân Việt Nhà Nông",
-        rssUrl = "https://danviet.vn/rss/nha-nong-552.rss",
+        rssUrl = "https://news.google.com/rss/search?q=site:danviet.vn+n%C3%B4ng+nghi%E1%BB%87p&hl=vi&gl=VN&ceid=VN:vi",
         defaultTopic = NewsTopic.RICE
     ),
 
@@ -128,7 +128,7 @@ enum class NewsSource(
      */
     VOV_ECONOMY(
         displayName = "VOV Kinh Tế",
-        rssUrl = "https://vov.vn/rss/kinh-te-83.rss",
+        rssUrl = "https://vov.vn/rss/kinh-te.rss",
         defaultTopic = NewsTopic.MARKET
     );
 

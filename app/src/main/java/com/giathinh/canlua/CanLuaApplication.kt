@@ -68,14 +68,14 @@ class CanLuaApplication : Application(), Configuration.Provider {
         appScope.launch {
             AnalyticsHelper.init(this@CanLuaApplication)
             PremiumState.init(this@CanLuaApplication)
-            FirebaseRemoteConfigManager.init(this@CanLuaApplication)
+            FirebaseRemoteConfigManager.initAwait()
             applyEarlyAdopterPremiumSync()
+            scheduleOrphanClaim()
             val fetched = FirebaseRemoteConfigManager.forceFetch()
             if (fetched) {
                 applyEarlyAdopterPremiumSync()
             }
         }
-        scheduleOrphanClaim()
         observeAutoSyncPreference()
         observeAuthSession()
     }
@@ -114,8 +114,6 @@ class CanLuaApplication : Application(), Configuration.Provider {
         appScope.launch {
             authManager.authStateFlow.filterNotNull().collect {
                 settingsRepository.setGuestMode(false)
-                PremiumState.init(this@CanLuaApplication)
-                applyEarlyAdopterPremiumSync()
                 cardRepository.get().claimOrphanCardsForCurrentUser()
                 if (syncManager.get().refreshPendingSyncState()) {
                     syncManager.get().scheduleImmediateSync()

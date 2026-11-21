@@ -33,8 +33,13 @@ class ProfileViewModel @Inject constructor(
         settingsRepository.setGuestMode(false)
     }
 
-    /** Latest profile — emits null until first save. */
-    val profile = profileRepository.latestProfile()
+    /** Latest profile — cached StateFlow shared across tabs to avoid skeleton flashes. */
+    val profile: StateFlow<Profile?> = profileRepository.latestProfile()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
 
     /**
      * Lịch sử thương lái đã từng mua ruộng — reactive, tự update khi card mới được tạo.

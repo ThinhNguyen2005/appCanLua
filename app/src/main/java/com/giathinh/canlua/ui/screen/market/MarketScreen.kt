@@ -56,6 +56,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
@@ -64,7 +65,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -117,6 +118,10 @@ fun MarketScreen() {
     val newsViewModel: NewsViewModel = hiltViewModel()
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val bidsViewModel: TraderBidsViewModel = hiltViewModel()
+
+    LaunchedEffect(Unit) {
+        newsViewModel.loadData()
+    }
 
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val prices by viewModel.prices.collectAsStateWithLifecycle()
@@ -176,8 +181,14 @@ fun MarketScreenContent(
     val myBids by bidsViewModel.myBids.collectAsStateWithLifecycle()
     val bidUiState by bidsViewModel.uiState.collectAsStateWithLifecycle()
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+    val editorSheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 

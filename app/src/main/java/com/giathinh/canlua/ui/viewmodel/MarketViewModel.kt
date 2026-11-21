@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -116,7 +117,9 @@ class MarketViewModel @Inject constructor(
                     eligible = !isPremium && canRequest && sdkState is MobileAdsSdkState.Ready,
                     adRemoved = isPremium || !canRequest
                 )
-            }.collect { eligibility ->
+            }
+                .distinctUntilChanged()
+                .collect { eligibility ->
                 if (eligibility.adRemoved) {
                     // Mất consent hoặc nâng Premium giữa phiên: hủy ad đang hiển thị
                     // và vô hiệu hóa callback của request đang chạy.

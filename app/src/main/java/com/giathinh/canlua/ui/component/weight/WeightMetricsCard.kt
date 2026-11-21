@@ -2,7 +2,6 @@ package com.giathinh.canlua.ui.component.weight
 
 import com.giathinh.canlua.R
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -173,7 +172,6 @@ fun WeightMetricsCard(
             .shadow(elevation = 3.dp, shape = CARD_SHAPE, clip = false)
             .clip(CARD_SHAPE)
             .background(containerColor)
-            .animateContentSize()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -437,9 +435,12 @@ fun WeightMetricsCard(
                     color = AppColors.GreenPrimary
                 )
             }
-            MoneyFormatter.toWords(totalAmount, context).takeIf { it.isNotEmpty() }?.let { words ->
+            val amountInWords = remember(totalAmount, context) {
+                MoneyFormatter.toWords(totalAmount, context)
+            }
+            if (amountInWords.isNotEmpty()) {
                 Text(
-                    text = words,
+                    text = amountInWords,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = AppColors.TextSecondary,
@@ -450,170 +451,204 @@ fun WeightMetricsCard(
         }
     }
 
-    // ── Hộp thoại giải thích ─────────────────────────────────────────
+    WeightMetricsInfoDialogs(
+        showBagInfo = showBagInfo,
+        showImpurityInfo = showImpurityInfo,
+        showMoistureInfo = showMoistureInfo,
+        showFormulaInfo = showFormulaInfo,
+        onDismissBagInfo = { showBagInfo = false },
+        onDismissImpurityInfo = { showImpurityInfo = false },
+        onDismissMoistureInfo = { showMoistureInfo = false },
+        onDismissFormulaInfo = { showFormulaInfo = false }
+    )
+
+    if (showBagDialog) {
+        BagSetupDialog(
+            bagCount = bagCount,
+            initialIsSampling = bagMethodIsSampling,
+            initialSampleCount = bagSampleCount,
+            initialSampleWeight = bagSampleTotalWeight,
+            onDismiss = { showBagDialog = false },
+            onConfirm = { isSampling, count, weight ->
+                onBagMethodChange(isSampling, count, weight)
+                showBagDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun WeightMetricsInfoDialogs(
+    showBagInfo: Boolean,
+    showImpurityInfo: Boolean,
+    showMoistureInfo: Boolean,
+    showFormulaInfo: Boolean,
+    onDismissBagInfo: () -> Unit,
+    onDismissImpurityInfo: () -> Unit,
+    onDismissMoistureInfo: () -> Unit,
+    onDismissFormulaInfo: () -> Unit
+) {
     ExplainingDialog(
         visible = showBagInfo,
         title = stringResource(R.string.weight_metrics_bag_info_title),
         description = stringResource(R.string.weight_metrics_bag_info_description),
-        onDismiss = { showBagInfo = false }
+        onDismiss = onDismissBagInfo
     )
     ExplainingDialog(
         visible = showImpurityInfo,
         title = stringResource(R.string.weight_metrics_impurity_info_title),
         description = stringResource(R.string.weight_metrics_impurity_info_description),
-        onDismiss = { showImpurityInfo = false }
+        onDismiss = onDismissImpurityInfo
     )
     ExplainingDialog(
         visible = showMoistureInfo,
         title = stringResource(R.string.weight_metrics_moisture_info_title),
         description = stringResource(R.string.weight_metrics_moisture_info_description),
-        onDismiss = { showMoistureInfo = false }
+        onDismiss = onDismissMoistureInfo
     )
     ExplainingDialog(
         visible = showFormulaInfo,
         title = stringResource(R.string.weight_metrics_formula_info_title),
         description = stringResource(R.string.weight_metrics_formula_info_description),
-        onDismiss = { showFormulaInfo = false }
+        onDismiss = onDismissFormulaInfo
     )
+}
 
-    // ── Dialog thiết lập cách trừ bao bì ────────────────────────────
-    if (showBagDialog) {
-        var isSamplingLocal by remember { mutableStateOf(bagMethodIsSampling) }
-        var sampleCountLocal by remember {
-            mutableStateOf(if (bagSampleCount > 0) bagSampleCount.toString() else "8")
-        }
-        var sampleWeightLocal by remember {
-            mutableStateOf(if (bagSampleTotalWeight > 0.0) bagSampleTotalWeight.toString() else "1.0")
-        }
-        val count = sampleCountLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
-        val unitKg = if (isSamplingLocal) {
-            sampleWeightLocal.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0
-        } else {
-            1.0
-        }
-        val total = (bagCount.toDouble() / count.toDouble()) * unitKg
-        val formattedTotal = remember(total) {
-            "%.1f".format(java.util.Locale.US, total).replace(".", ",")
-        }
-        val dialogPreview = stringResource(R.string.weight_metrics_bag_dialog_preview, bagCount, formattedTotal)
+@Composable
+private fun BagSetupDialog(
+    bagCount: Int,
+    initialIsSampling: Boolean,
+    initialSampleCount: Int,
+    initialSampleWeight: Double,
+    onDismiss: () -> Unit,
+    onConfirm: (isSampling: Boolean, count: Int, weight: Double) -> Unit
+) {
+    var isSamplingLocal by remember { mutableStateOf(initialIsSampling) }
+    var sampleCountLocal by remember {
+        mutableStateOf(if (initialSampleCount > 0) initialSampleCount.toString() else "8")
+    }
+    var sampleWeightLocal by remember {
+        mutableStateOf(if (initialSampleWeight > 0.0) initialSampleWeight.toString() else "1.0")
+    }
+    val count = sampleCountLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
+    val sampleWeightKg = if (isSamplingLocal) {
+        sampleWeightLocal.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0
+    } else {
+        1.0
+    }
+    val total = (bagCount.toDouble() / count.toDouble()) * sampleWeightKg
+    val formattedTotal = remember(total) {
+        "%.1f".format(java.util.Locale.US, total).replace(".", ",")
+    }
+    val dialogPreview = stringResource(R.string.weight_metrics_bag_dialog_preview, bagCount, formattedTotal)
 
-        AlertDialog(
-            onDismissRequest = { showBagDialog = false },
-            title = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = stringResource(R.string.weight_metrics_bag_dialog_title),
-                        fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = AppColors.TextPrimary
-                    )
-                    Text(
-                        text = stringResource(R.string.weight_metrics_bag_dialog_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = stringResource(R.string.weight_metrics_bag_dialog_title),
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = AppColors.TextPrimary
+                )
+                Text(
+                    text = stringResource(R.string.weight_metrics_bag_dialog_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextSecondary
+                )
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                BagMethodOption(
+                    selected = !isSamplingLocal,
+                    title = stringResource(R.string.weight_metrics_bag_opt_unit_title),
+                    subtitle = stringResource(R.string.weight_metrics_bag_opt_unit_sub),
+                    formula = stringResource(R.string.weight_metrics_bag_opt_unit_formula),
+                    onClick = { isSamplingLocal = false }
+                ) {
+                    OutlinedTextField(
+                        value = sampleCountLocal,
+                        onValueChange = { value -> sampleCountLocal = value.filter { it.isDigit() } },
+                        label = { Text(stringResource(R.string.weight_metrics_bag_field_count)) },
+                        suffix = { Text(stringResource(R.string.weight_metrics_bag_field_suffix)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = lockedAwareTextFieldColors()
                     )
                 }
-            },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+
+                BagMethodOption(
+                    selected = isSamplingLocal,
+                    title = stringResource(R.string.weight_metrics_bag_opt_sample_title),
+                    subtitle = stringResource(R.string.weight_metrics_bag_opt_sample_sub),
+                    formula = stringResource(R.string.weight_metrics_bag_opt_sample_formula),
+                    onClick = { isSamplingLocal = true }
                 ) {
-                    BagMethodOption(
-                        selected = !isSamplingLocal,
-                        title = stringResource(R.string.weight_metrics_bag_opt_unit_title),
-                        subtitle = stringResource(R.string.weight_metrics_bag_opt_unit_sub),
-                        formula = stringResource(R.string.weight_metrics_bag_opt_unit_formula),
-                        onClick = { isSamplingLocal = false }
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = sampleCountLocal,
                             onValueChange = { value -> sampleCountLocal = value.filter { it.isDigit() } },
-                            label = { Text(stringResource(R.string.weight_metrics_bag_field_count)) },
-                            suffix = { Text(stringResource(R.string.weight_metrics_bag_field_suffix)) },
+                            label = { Text(stringResource(R.string.weight_metrics_bag_field_sample_count)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.weight(1f),
+                            colors = lockedAwareTextFieldColors()
+                        )
+                        OutlinedTextField(
+                            value = sampleWeightLocal,
+                            onValueChange = { value ->
+                                sampleWeightLocal = value.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }
+                                    .replace(',', '.')
+                            },
+                            label = { Text(stringResource(R.string.weight_metrics_bag_field_sample_weight)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
                             colors = lockedAwareTextFieldColors()
                         )
                     }
+                }
 
-                    BagMethodOption(
-                        selected = isSamplingLocal,
-                        title = stringResource(R.string.weight_metrics_bag_opt_sample_title),
-                        subtitle = stringResource(R.string.weight_metrics_bag_opt_sample_sub),
-                        formula = stringResource(R.string.weight_metrics_bag_opt_sample_formula),
-                        onClick = { isSamplingLocal = true }
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = sampleCountLocal,
-                                onValueChange = { value -> sampleCountLocal = value.filter { it.isDigit() } },
-                                label = { Text(stringResource(R.string.weight_metrics_bag_field_sample_count)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                                colors = lockedAwareTextFieldColors()
-                            )
-                            OutlinedTextField(
-                                value = sampleWeightLocal,
-                                onValueChange = { value ->
-                                    sampleWeightLocal = value.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }
-                                        .replace(',', '.')
-                                },
-                                label = { Text(stringResource(R.string.weight_metrics_bag_field_sample_weight)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                                colors = lockedAwareTextFieldColors()
-                            )
-                        }
-                    }
-
-                    Surface(
-                        color = AppColors.GreenSurface,
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            text = dialogPreview,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.GreenPrimary
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val count = sampleCountLocal.toIntOrNull()?.coerceAtLeast(1) ?: 8
-                        val weight = if (isSamplingLocal) {
-                            sampleWeightLocal.toDoubleOrNull()?.coerceAtLeast(0.0) ?: 1.0
-                        } else {
-                            1.0
-                        }
-                        onBagMethodChange(isSamplingLocal, count, weight)
-                        showBagDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
-                    modifier = Modifier.heightIn(min = 48.dp)
+                Surface(
+                    color = AppColors.GreenSurface,
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text(stringResource(R.string.action_apply), fontWeight = FontWeight.Bold)
+                    Text(
+                        text = dialogPreview,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.GreenPrimary
+                    )
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showBagDialog = false },
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
-                }
-            },
-            shape = RoundedCornerShape(24.dp),
-            containerColor = AppColors.Surface
-        )
-    }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(isSamplingLocal, count, sampleWeightKg) },
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.GreenPrimary),
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
+                Text(stringResource(R.string.action_apply), fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
+                Text(stringResource(R.string.action_cancel), color = AppColors.TextSecondary)
+            }
+        },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = AppColors.Surface
+    )
 }
 
 @Composable

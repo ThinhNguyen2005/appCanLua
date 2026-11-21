@@ -29,9 +29,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,9 +100,14 @@ fun FarmerProfileScreen(
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val dashboardViewModel: DashboardViewModel = hiltViewModel()
 
-    val profile by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle()
     val dash by dashboardViewModel.dashboardData.collectAsStateWithLifecycle(DashboardData.EMPTY)
-    val showSkeleton = profile == null || !dash.isAggregated
+    val isDataReady = profile != null && dash.isAggregated
+    var hasLoadedOnce by rememberSaveable { mutableStateOf(isDataReady) }
+    LaunchedEffect(isDataReady) {
+        if (isDataReady) hasLoadedOnce = true
+    }
+    val showSkeleton = !hasLoadedOnce && !isDataReady
     val isGuestMode by profileViewModel.isGuestMode.collectAsStateWithLifecycle(initialValue = false)
 
     val firebaseUser = remember { FirebaseAuth.getInstance().currentUser }

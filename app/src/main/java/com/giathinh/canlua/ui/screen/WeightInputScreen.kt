@@ -13,8 +13,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.byValue
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bluetooth
@@ -48,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import com.giathinh.canlua.util.RiceCalculator
 import androidx.compose.material.icons.outlined.Info
@@ -846,10 +852,53 @@ private fun GridCell(
     } else {
         stringResource(R.string.weight_input_cell_empty, cellLabel)
     }
-    var text by remember(value) { mutableStateOf(displayValue) }
+    val textFieldState = rememberTextFieldState(initialText = displayValue)
+    var lastTypedLength by remember { mutableIntStateOf(0) }
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val appToast = com.giathinh.canlua.ui.feedback.LocalAppToast.current
+    val latestOnValueEntered by rememberUpdatedState(onValueEntered)
+    val latestOnNextFocus by rememberUpdatedState(onNextFocus)
+    val maxLen = maxInputDigits(weightInputMode)
+    val digitInputTransformation = remember(maxLen) {
+        InputTransformation.byValue { current, proposed ->
+            if (proposed.all { it.isDigit() } && proposed.length <= maxLen) proposed else current
+        }
+    }
+
+    LaunchedEffect(displayValue, isFocused) {
+        if (!isFocused && textFieldState.text.toString() != displayValue) {
+            textFieldState.setTextAndPlaceCursorAtEnd(displayValue)
+        }
+    }
+
+    LaunchedEffect(textFieldState, isFocused, maxLen) {
+        if (!isFocused) return@LaunchedEffect
+        snapshotFlow { textFieldState.text.toString() }
+            .distinctUntilChanged()
+            .collect { input ->
+                if (input.length > lastTypedLength) {
+                    HapticUtil.textHandleMove(context)
+                }
+                lastTypedLength = input.length
+                if (input.length == maxLen && input.all { it.isDigit() }) {
+                    parseWeightInput(input)?.let { parsed ->
+                        // T08: chỉ xóa + chuyển focus khi giá trị hợp lệ; nếu vượt
+                        // 200kg giữ nguyên chữ và báo lỗi (không im lặng đánh rơi).
+                        if (com.giathinh.canlua.domain.WeighValidation.isValidWeight(parsed)) {
+                            textFieldState.clearText()
+                            lastTypedLength = 0
+                            latestOnValueEntered(parsed)
+                            // Chờ kết thúc frame hiện tại để IME hoàn tất batch edit trên InputConnection cũ
+                            withFrameNanos { }
+                            latestOnNextFocus()
+                        } else if (parsed > 0) {
+                            appToast.warning(context.getString(R.string.weight_input_invalid_weight))
+                        }
+                    }
+                }
+            }
+    }
 
     // Auto-lift: khi cell focus, kéo cell lên trên bàn phím để không bị che.
     // bringIntoViewRequester phối hợp với .imePadding() của LazyColumn — IME pad
@@ -891,27 +940,8 @@ private fun GridCell(
     ) {
         if (!isLocked) {
             BasicTextField(
-                value = if (isFocused) text else displayValue,
-                onValueChange = { input ->
-                    val maxLen = maxInputDigits(weightInputMode)
-                    if (input.all { it.isDigit() } && input.length <= maxLen) {
-                        if (input.length > text.length) HapticUtil.textHandleMove(context)
-                        text = input
-                        if (input.length == maxLen) {
-                            parseWeightInput(input)?.let {
-                                // T08: chỉ xóa + chuyển focus khi giá trị hợp lệ; nếu vượt
-                                // 200kg giữ nguyên chữ và báo lỗi (không im lặng đánh rơi).
-                                if (com.giathinh.canlua.domain.WeighValidation.isValidWeight(it)) {
-                                    text = ""
-                                    onValueEntered(it)
-                                    onNextFocus()
-                                } else if (it > 0) {
-                                    appToast.warning(context.getString(R.string.weight_input_invalid_weight))
-                                }
-                            }
-                        }
-                    }
-                },
+                state = textFieldState,
+                inputTransformation = digitInputTransformation,
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentHeight(Alignment.CenterVertically)
@@ -921,18 +951,25 @@ private fun GridCell(
                         val wasFocused = isFocused
                         isFocused = state.isFocused
                         if (state.isFocused && !wasFocused) {
-                            text = ""
+                            textFieldState.clearText()
+                            lastTypedLength = 0
                             // Đẩy cell vào tầm nhìn — chờ IME mở (~250ms) rồi mới scroll.
                             scope.launch {
                                 delay(280L)
                                 runCatching { bringIntoView.bringIntoView() }
                             }
                         }
-                        if (!state.isFocused && wasFocused && text.isNotEmpty()) {
-                            val entered = text
-                            text = ""
-                            parseWeightInput(entered)?.let {
-                                if (com.giathinh.canlua.domain.WeighValidation.isValidWeight(it)) onValueEntered(it)
+                        if (!state.isFocused && wasFocused) {
+                            val entered = textFieldState.text.toString()
+                            if (entered.isNotEmpty()) {
+                                textFieldState.clearText()
+                                lastTypedLength = 0
+                                parseWeightInput(entered)?.let {
+                                    if (com.giathinh.canlua.domain.WeighValidation.isValidWeight(it)) onValueEntered(it)
+                                }
+                            }
+                            if (textFieldState.text.toString() != displayValue) {
+                                textFieldState.setTextAndPlaceCursorAtEnd(displayValue)
                             }
                         }
                     },
@@ -942,20 +979,21 @@ private fun GridCell(
                     color = AppColors.TextPrimary
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = {
-                    val entered = text
+                onKeyboardAction = {
+                    val entered = textFieldState.text.toString()
                     val parsed = parseWeightInput(entered)
                     when {
                         parsed == null -> onNextFocus()
                         com.giathinh.canlua.domain.WeighValidation.isValidWeight(parsed) -> {
-                            text = ""
+                            textFieldState.clearText()
+                            lastTypedLength = 0
                             onValueEntered(parsed)
                             onNextFocus()
                         }
                         else -> appToast.warning(context.getString(R.string.weight_input_invalid_weight))
                     }
-                }),
-                singleLine = true
+                },
+                lineLimits = TextFieldLineLimits.SingleLine
             )
         } else {
             Text(

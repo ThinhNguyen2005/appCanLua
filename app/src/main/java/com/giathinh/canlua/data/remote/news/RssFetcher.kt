@@ -45,7 +45,12 @@ class RssFetcher @Inject constructor(
                     android.util.Log.w("RssFetcher", "HTTP error fetching RSS from $url: ${resp.code}")
                     return@withContext emptyList()
                 }
-                resp.body?.byteStream()?.use { parse(it, url) }.orEmpty()
+                val contentType = resp.header("Content-Type").orEmpty()
+                if (contentType.contains("text/html", ignoreCase = true)) {
+                    android.util.Log.w("RssFetcher", "Skipping non-RSS HTML response ($contentType) from $url")
+                    return@withContext emptyList()
+                }
+                resp.body.byteStream().use { parse(it, url) }
             }
         } catch (e: org.xmlpull.v1.XmlPullParserException) {
             android.util.Log.w("RssFetcher", "XML parsing error fetching RSS from $url: ${e.message}")

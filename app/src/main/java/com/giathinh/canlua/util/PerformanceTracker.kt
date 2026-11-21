@@ -59,6 +59,14 @@ object PerformanceTracker {
      */
     fun clearActivity() {
         stopFrameTracking()
+        activeLoadTraces.keys.toList().forEach { route ->
+            activeLoadTraces.remove(route)?.let { trace ->
+                runCatching {
+                    trace.putAttribute("aborted", "true")
+                    trace.stop()
+                }
+            }
+        }
         activityRef.clear()
         Log.d(TAG, "Activity cleared")
     }
@@ -76,9 +84,15 @@ object PerformanceTracker {
         
         Log.d(TAG, "Screen transition: $currentActiveRoute -> $sanitizedRoute")
         
-        // 1. Dừng trace màn hình cũ
+        // 1. Dừng trace màn hình cũ và dọn load trace còn sót nếu user rời màn hình sớm
         currentActiveRoute?.let { oldRoute ->
             stopScreenTrace(oldRoute)
+            activeLoadTraces.remove(oldRoute)?.let { lingeringTrace ->
+                runCatching {
+                    lingeringTrace.putAttribute("aborted", "true")
+                    lingeringTrace.stop()
+                }
+            }
         }
         
         // 2. Cập nhật route hiện tại và khởi chạy trace mới
@@ -235,14 +249,22 @@ object PerformanceTracker {
      * Chuẩn hóa tên route để hợp lệ với quy tắc đặt tên trace của Firebase Performance
      * (Không chứa kí tự đặc biệt, không quá 100 kí tự, không bắt đầu bằng '_').
      */
-    private fun sanitizeRouteName(route: String): String {
+    internal fun sanitizeRouteName(route: String): String {
         var clean = route.replace(Regex("[^a-zA-Z0-9]"), "_")
-        // Rút gọn bớt độ dài của tham số động (ví dụ: weight_input__cardId_ -> weight_input)
         if (clean.contains("_cardId_")) {
-            clean = clean.substringBefore("_cardId_") + "_detail"
+            clean = clean.substringBefore("_cardId_").trimEnd('_')
+        }
+        if (clean.endsWith("__detail")) {
+            clean = clean.removeSuffix("__detail")
+        } else if (clean.endsWith("_detail") && clean != "card_detail") {
+            clean = clean.removeSuffix("_detail")
         }
         clean = clean.trim('_').take(80)
-        return if (clean.isEmpty()) "unknown" else clean
+        return when (clean) {
+            "" -> "unknown"
+            "farmer_profile", "trader_profile" -> "account"
+            else -> clean
+        }
     }
 }
 

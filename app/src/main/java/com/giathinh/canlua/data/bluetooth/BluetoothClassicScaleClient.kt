@@ -136,13 +136,16 @@ class BluetoothClassicScaleClient @Inject constructor(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             runCatching { adapter.cancelDiscovery() }
         }
+        var socket: BluetoothSocket? = null
         return try {
-            val socket = adapter.getRemoteDevice(address).createRfcommSocketToServiceRecord(SPP_UUID)
+            socket = adapter.getRemoteDevice(address).createRfcommSocketToServiceRecord(SPP_UUID)
             socket.connect()
             socket
         } catch (e: SecurityException) {
+            closeSocketSafely(socket)
             throw ScaleConnectionException(R.string.scale_error_permission_required, e)
         } catch (e: IOException) {
+            closeSocketSafely(socket)
             throw ScaleConnectionException(R.string.scale_error_connection_failed, e)
         }
     }

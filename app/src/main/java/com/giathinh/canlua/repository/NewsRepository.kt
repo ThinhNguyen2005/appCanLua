@@ -15,7 +15,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -44,6 +46,10 @@ class NewsRepository @Inject constructor(
     @Named("supabaseAnonKey") private val supabaseAnonKey: String
 ) {
 
+    private val refreshMutex = Mutex()
+    @Volatile
+    private var lastSupabaseFetchMs: Long = 0L
+
     /** Stream bài theo topic từ Room (offline-first); null = tất cả. */
     fun observe(topic: NewsTopic? = null, limit: Int = 30): Flow<List<NewsArticle>> =
         dao.observeByTopic(topic?.name, limit)
@@ -55,68 +61,73 @@ class NewsRepository @Inject constructor(
     }
 
     /**
-     * Fetch fresh articles from RSS sources → upsert into Room.
+     * Fetch fresh articles from Supabase (primary) or RSS sources (fallback) → upsert into Room.
      *
      * @return number of unique articles upserted
      */
     suspend fun refresh(): Result<Int> = withContext(Dispatchers.IO) {
-        runCatching {
-            val now = System.currentTimeMillis()
-            val cutoffMs = now - TimeUnit.DAYS.toMillis(14)
+        refreshMutex.withLock {
+            runCatching {
+                val now = System.currentTimeMillis()
+                val cutoffMs = now - TimeUnit.DAYS.toMillis(14)
 
-            // 1. Fetch from Supabase first
-            val supabaseArticles = fetchFromSupabase().getOrDefault(emptyList())
-            if (supabaseArticles.isNotEmpty()) {
-                dao.upsertAll(supabaseArticles)
-            }
-
-            // 2. Parallel fetch from all RSS sources
-            val localArticles = mutableListOf<NewsArticle>()
-            val jobs = coroutineScope {
-                NewsSource.entries.map { src ->
-                    async {
-                        runCatching {
-                            rssFetcher.fetch(src.rssUrl).map { item -> mapToArticle(item, src, now) }
-                        }.getOrNull().orEmpty()
-                    }
+                // 1. Fetch from Supabase first (already aggregated server-side)
+                val supabaseArticles = fetchFromSupabase().getOrDefault(emptyList())
+                if (supabaseArticles.isNotEmpty()) {
+                    dao.upsertAll(supabaseArticles)
+                    dao.deleteOlderThan(cutoffMs)
+                    lastSupabaseFetchMs = System.currentTimeMillis()
+                    return@runCatching supabaseArticles.size
                 }
-            }
-            jobs.awaitAll().forEach { localArticles.addAll(it) }
 
-            // Filter by time limit, sort by date, and take top 60 first.
-            val candidateArticles = localArticles
-                .filter { it.publishedAt >= cutoffMs }
-                .sortedByDescending { it.publishedAt }
-                .take(60)
-
-            // Split into Google News candidates vs local candidates
-            val googleNewsCandidates = candidateArticles.filter { isGoogleNewsSource(it.source) }
-            val localCandidates = candidateArticles.filter { !isGoogleNewsSource(it.source) }
-
-            // Resolve and enrich Google News items concurrently with a Semaphore limit of 5
-            val semaphore = Semaphore(5)
-            val resolvedGoogleNews = coroutineScope {
-                googleNewsCandidates.map { article ->
-                    async {
-                        semaphore.withPermit {
-                            resolveAndEnrichGoogleNews(article, now)
+                // 2. Fallback: parallel fetch from all RSS sources only when Supabase is empty/failed
+                val localArticles = mutableListOf<NewsArticle>()
+                val jobs = coroutineScope {
+                    NewsSource.entries.map { src ->
+                        async {
+                            runCatching {
+                                rssFetcher.fetch(src.rssUrl).map { item -> mapToArticle(item, src, now) }
+                            }.getOrNull().orEmpty()
                         }
                     }
-                }.awaitAll()
+                }
+                jobs.awaitAll().forEach { localArticles.addAll(it) }
+
+                // Filter by time limit, sort by date, and take top 60 first.
+                val candidateArticles = localArticles
+                    .filter { it.publishedAt >= cutoffMs }
+                    .sortedByDescending { it.publishedAt }
+                    .take(60)
+
+                // Split into Google News candidates vs local candidates
+                val googleNewsCandidates = candidateArticles.filter { isGoogleNewsSource(it.source) }
+                val localCandidates = candidateArticles.filter { !isGoogleNewsSource(it.source) }
+
+                // Resolve and enrich Google News items concurrently with a Semaphore limit of 5
+                val semaphore = Semaphore(5)
+                val resolvedGoogleNews = coroutineScope {
+                    googleNewsCandidates.map { article ->
+                        async {
+                            semaphore.withPermit {
+                                resolveAndEnrichGoogleNews(article, now)
+                            }
+                        }
+                    }.awaitAll()
+                }
+
+                // Merge back, sort again, distinct by ID, and take top 60
+                val articles = (localCandidates + resolvedGoogleNews)
+                    .sortedByDescending { it.publishedAt }
+                    .distinctBy { it.id }
+                    .take(60)
+
+                if (articles.isNotEmpty()) {
+                    dao.upsertAll(articles)
+                    dao.deleteOlderThan(cutoffMs)
+                }
+
+                articles.size
             }
-
-            // Merge back, sort again, distinct by ID, and take top 60
-            val articles = (localCandidates + resolvedGoogleNews)
-                .sortedByDescending { it.publishedAt }
-                .distinctBy { it.id }
-                .take(60)
-
-            if (articles.isNotEmpty()) {
-                dao.upsertAll(articles)
-                dao.deleteOlderThan(cutoffMs)
-            }
-
-            articles.size + supabaseArticles.size
         }
     }
 
@@ -365,13 +376,24 @@ class NewsRepository @Inject constructor(
     /**
      * Fetch from Supabase and cache/upsert to Room.
      */
-    suspend fun refreshFromSupabase(): Result<Int> = withContext(Dispatchers.IO) {
-        fetchFromSupabase().map { articles ->
-            if (articles.isNotEmpty()) {
-                dao.upsertAll(articles)
+    suspend fun refreshFromSupabase(force: Boolean = false): Result<Int> = withContext(Dispatchers.IO) {
+        refreshMutex.withLock {
+            val now = System.currentTimeMillis()
+            if (!force && now - lastSupabaseFetchMs < SUPABASE_SYNC_TTL_MS && !isEmpty()) {
+                return@withLock Result.success(0)
             }
-            articles.size
+            fetchFromSupabase().map { articles ->
+                if (articles.isNotEmpty()) {
+                    dao.upsertAll(articles)
+                    lastSupabaseFetchMs = System.currentTimeMillis()
+                }
+                articles.size
+            }
         }
+    }
+
+    companion object {
+        private const val SUPABASE_SYNC_TTL_MS = 15 * 60_000L
     }
 }
 

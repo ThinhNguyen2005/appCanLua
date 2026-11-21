@@ -51,6 +51,28 @@ object FirebaseRemoteConfigManager {
     val websiteUrlFlow: StateFlow<String> = _websiteUrl.asStateFlow()
 
     /**
+     * Khởi tạo bất đồng bộ và chờ setConfigSettings/setDefaults hoàn tất trước khi đọc giá trị.
+     */
+    suspend fun initAwait() {
+        val configSettings = FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(30 * 60L)
+            .build()
+
+        runCatching { remoteConfig.setConfigSettingsAsync(configSettings).await() }
+        runCatching {
+            remoteConfig.setDefaultsAsync(
+                mapOf(
+                    KEY_EARLY_ADOPTER_ENABLED to DEFAULT_EARLY_ADOPTER_ENABLED,
+                    KEY_EARLY_ADOPTER_CUTOFF_MS to DEFAULT_EARLY_ADOPTER_CUTOFF_MS,
+                    KEY_TUTORIAL_VIDEO_URL to DEFAULT_TUTORIAL_VIDEO_URL,
+                    KEY_WEBSITE_URL to DEFAULT_WEBSITE_URL
+                )
+            ).await()
+        }
+        fetchAndActivate()
+    }
+
+    /**
      * Gọi 1 lần trong Application.onCreate() — KHÔNG blocking UI thread.
      * Thực hiện fetch + activate trên background.
      */
