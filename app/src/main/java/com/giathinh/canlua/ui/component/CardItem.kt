@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -74,7 +76,8 @@ fun CardItem(
     card: CardModel,
     onClick: (Long) -> Unit,
     onDelete: (CardModel) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onContinueWeigh: ((Long) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val displayBagWeight = totalDisplayBagWeight(card)
@@ -100,7 +103,7 @@ fun CardItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .semantics {
+                .semantics(mergeDescendants = true) {
                     if (!card.isLocked) {
                         customActions = listOf(
                             CustomAccessibilityAction(label = deleteActionLabel) {
@@ -162,7 +165,7 @@ fun CardItem(
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = stringResource(R.string.card_item_view_detail),
+                            contentDescription = null,
                             tint = AppColors.TextHint,
                             modifier = Modifier.size(20.dp)
                         )
@@ -181,7 +184,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Grass,
-                                    contentDescription = stringResource(R.string.detail_info_rice_variety),
+                                    contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = AppColors.GreenPrimary
                                 )
@@ -198,7 +201,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.WaterDrop,
-                                    contentDescription = stringResource(R.string.detail_info_moisture),
+                                    contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = AppColors.Info
                                 )
@@ -217,7 +220,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Inventory2,
-                                    contentDescription = stringResource(R.string.detail_info_bag_weight),
+                                    contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = AppColors.TextSecondary
                                 )
@@ -236,7 +239,7 @@ fun CardItem(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Outlined.Scale,
-                                    contentDescription = stringResource(R.string.detail_info_impurity),
+                                    contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = AppColors.TextSecondary
                                 )
@@ -296,25 +299,41 @@ fun CardItem(
                     }
                 }
 
-                // Paid-in-full tag
-                if (card.isPaid) {
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
-                                .background(AppColors.GreenPrimary)
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CardStatusBadge(card = card)
+                    if (!card.isLocked && onContinueWeigh != null) {
+                        Surface(
+                            onClick = {
+                                HapticUtil.tick(context)
+                                onContinueWeigh(card.id)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            color = AppColors.GreenSurface,
+                            modifier = Modifier.heightIn(min = 40.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.card_item_paid_in_full),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Scale,
+                                    contentDescription = null,
+                                    tint = AppColors.GreenPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.card_item_continue_weigh),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = AppColors.GreenPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -352,6 +371,33 @@ fun CardItem(
         ) {
             cardContent()
         }
+    }
+}
+
+@Composable
+private fun CardStatusBadge(
+    card: CardModel,
+    modifier: Modifier = Modifier
+) {
+    val (labelRes, bgColor, textColor) = when {
+        card.isPaid -> Triple(R.string.card_item_paid_in_full, AppColors.GreenPrimary, AppColors.OnGreenPrimary)
+        card.isLocked -> Triple(R.string.card_item_status_locked, AppColors.LockedBg, AppColors.LockedText)
+        card.pricePerKg <= 0.0 -> Triple(R.string.card_item_status_unpriced, Color(0xFFFFF3E0), Color(0xFFBF360C))
+        card.remainingAmount > 0.0 -> Triple(R.string.card_item_status_unpaid, AppColors.GoldLight, Color(0xFFBF360C))
+        else -> Triple(R.string.card_item_status_weighing, Color(0xFFE3F2FD), Color(0xFF1565C0))
+    }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(AppDimensions.CornerRadiusSm))
+            .background(bgColor)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

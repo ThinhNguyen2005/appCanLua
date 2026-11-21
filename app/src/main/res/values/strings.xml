@@ -180,8 +180,8 @@
     <string name="weigh_options_input_scale">Quy cách nhập số kg</string>
     <string name="weigh_options_input_small">Cân nhỏ</string>
     <string name="weigh_options_input_large">Cân lớn</string>
-    <string name="weigh_options_input_hint_small">Dưới 100 kg/lần. Gõ 503 thành 50.3 kg, tự nhảy ô.</string>
-    <string name="weigh_options_input_hint_large">Từ 100 kg/lần trở lên. Gõ 1503 thành 150.3 kg, tự nhảy ô.</string>
+    <string name="weigh_options_input_hint_small">Dưới 100 kg/lần. Gõ 503 thành 50,3 kg, tự nhảy ô.</string>
+    <string name="weigh_options_input_hint_large">Từ 100 kg/lần trở lên. Gõ 1503 thành 150,3 kg, tự nhảy ô.</string>
 
     <string name="weight_input_back_content">Quay lại</string>
     <string name="weight_input_unlock_content">Mở khóa</string>
@@ -973,6 +973,13 @@
     <string name="weigh_options_bags_per_kg_placeholder">Mặc định: 8 bao = 1 kg</string>
     <string name="weigh_options_bag_sample_params_title">Thông số trừ bao bì</string>
     <string name="weigh_options_section_input_scale">QUY CÁCH NHẬP CÂN</string>
+    <string name="weigh_options_subtitle">Áp dụng mặc định cho phiếu cân mới</string>
+    <string name="weigh_options_reset">Mặc định</string>
+    <string name="weigh_options_font_preview">Xem trước: 50,3 kg · 3.891.780 đ</string>
+    <string name="weigh_options_bag_preset_chip">%1$d bao</string>
+    <string name="weigh_options_bags_per_kg_error">Nhập số bao lớn hơn 0</string>
+    <string name="weigh_options_bag_sample_count_error">Nhập số bao mẫu &gt; 0</string>
+    <string name="weigh_options_bag_sample_weight_error">Nhập số kg &gt; 0</string>
 
     <string name="help_section_quick_tips">MẸO SỬ DỤNG NHANH</string>
     <string name="help_section_resources">TÀI NGUYÊN</string>
@@ -1032,6 +1039,21 @@
     <string name="scale_debug_mock_desc">Mô phỏng luồng cân 0 → 52,1 kg → 0 kg để test không cần cân thật</string>
     <string name="scale_accessibility_chip">Trạng thái cân Bluetooth: %1$s</string>
     <string name="scale_accessibility_connect_device">Kết nối với %1$s</string>
+
+    <!-- Card List Quick Filters, Search & Status Badges -->
+    <string name="card_list_quick_all">Tất cả</string>
+    <string name="card_list_quick_unlocked">Chưa chốt</string>
+    <string name="card_list_quick_unpriced">Chưa nhập giá</string>
+    <string name="card_list_quick_unpaid">Còn nợ</string>
+    <string name="card_list_filter_status">Trạng thái phiếu</string>
+    <string name="card_list_search_placeholder">Tìm tên, thương lái, giống lúa...</string>
+    <string name="card_list_search_open">Tìm kiếm phiếu cân</string>
+    <string name="card_list_search_clear">Xóa từ khóa tìm kiếm</string>
+    <string name="card_item_status_locked">Đã chốt</string>
+    <string name="card_item_status_unpriced">Chưa nhập giá</string>
+    <string name="card_item_status_unpaid">Còn nợ</string>
+    <string name="card_item_status_weighing">Đang cân</string>
+    <string name="card_item_continue_weigh">Cân tiếp</string>
 
 </resources>
 

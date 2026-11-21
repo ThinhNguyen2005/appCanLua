@@ -76,6 +76,7 @@ import com.giathinh.canlua.ui.theme.AppDimensions
 import com.giathinh.canlua.ui.util.BottomBarVisibility
 import com.giathinh.canlua.ui.util.isScrollingUp
 import com.giathinh.canlua.ui.viewmodel.CardListViewModel
+import com.giathinh.canlua.ui.viewmodel.CardQuickFilter
 import com.giathinh.canlua.ui.viewmodel.DeleteCardEvent
 import com.giathinh.canlua.ui.viewmodel.ProfileViewModel
 import com.giathinh.canlua.ui.viewmodel.SyncViewModel
@@ -132,6 +133,8 @@ fun CardListScreenContent(
     val suggestedVarieties by viewModel.suggestedRiceVarieties.collectAsStateWithLifecycle()
     val selectedSeason by viewModel.selectedSeasonFilter.collectAsStateWithLifecycle()
     val availableSeasons by viewModel.availableSeasons.collectAsStateWithLifecycle()
+    val quickFilter by viewModel.quickFilter.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val profileState by profileViewModel.profile.collectAsStateWithLifecycle(initialValue = null)
     val syncStatus by syncViewModel.syncStatus.collectAsStateWithLifecycle()
     val lastSyncTime by syncViewModel.lastSyncTime.collectAsStateWithLifecycle()
@@ -228,6 +231,9 @@ fun CardListScreenContent(
     val onCardClick = remember(navController) {
         { id: Long -> navController.navigate("card_detail/$id") }
     }
+    val onContinueWeigh = remember(navController) {
+        { id: Long -> navController.navigate("weight_input/$id") }
+    }
     val onCardDelete: (Card) -> Unit = remember {
         { card ->
             cardToDelete = card
@@ -296,7 +302,14 @@ fun CardListScreenContent(
                                 )
                             }
 
-                            if (availableSeasons.isNotEmpty() || availableVarieties.isNotEmpty()) {
+                            val showFilterBar = cards.isNotEmpty() ||
+                                availableSeasons.isNotEmpty() ||
+                                availableVarieties.isNotEmpty() ||
+                                quickFilter != CardQuickFilter.ALL ||
+                                searchQuery.isNotBlank() ||
+                                selectedFilter != null ||
+                                selectedSeason != null
+                            if (showFilterBar) {
                                 item(key = KEY_FILTER_BAR) {
                                     CardListFilterBar(
                                         selectedSeason = selectedSeason,
@@ -304,6 +317,10 @@ fun CardListScreenContent(
                                         onOpenFilter = { showFilterSheet = true },
                                         onClearSeason = { viewModel.setSeasonFilter(null) },
                                         onClearVariety = { viewModel.setVarietyFilter(null) },
+                                        quickFilter = quickFilter,
+                                        onQuickFilterChange = viewModel::setQuickFilter,
+                                        searchQuery = searchQuery,
+                                        onSearchQueryChange = viewModel::setSearchQuery,
                                         onClearAll = viewModel::clearFilters,
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -313,7 +330,10 @@ fun CardListScreenContent(
                             }
 
                             if (cards.isEmpty()) {
-                                val isFiltered = selectedFilter != null || selectedSeason != null
+                                val isFiltered = selectedFilter != null ||
+                                    selectedSeason != null ||
+                                    quickFilter != CardQuickFilter.ALL ||
+                                    searchQuery.isNotBlank()
                                 item(key = KEY_EMPTY) {
                                     if (isFiltered) {
                                         CardListEmptyState(
@@ -410,7 +430,8 @@ fun CardListScreenContent(
                                             card = card,
                                             onClick = onCardClick,
                                             onDelete = onCardDelete,
-                                            modifier = Modifier.animateItem()
+                                            modifier = Modifier.animateItem(),
+                                            onContinueWeigh = onContinueWeigh
                                         )
                                     }
                                 }
@@ -513,7 +534,9 @@ fun CardListScreenContent(
             onSelectSeason = viewModel::setSeasonFilter,
             onSelectVariety = viewModel::setVarietyFilter,
             onClearFilters = viewModel::clearFilters,
-            onDismiss = { showFilterSheet = false }
+            onDismiss = { showFilterSheet = false },
+            selectedQuickFilter = quickFilter,
+            onSelectQuickFilter = viewModel::setQuickFilter
         )
     }
 }

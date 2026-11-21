@@ -16,8 +16,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
@@ -34,6 +35,8 @@ fun CardListCreateFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val createCardLabel = stringResource(R.string.card_list_create_card_action)
+
     // Extended FAB có animation spring slide-in/out tự động theo hướng cuộn.
     // ContentDescription đầy đủ hỗ trợ tiếp cận cho người khiếm thị qua TalkBack.
     AnimatedVisibility(
@@ -66,8 +69,9 @@ fun CardListCreateFab(
     ) {
         ExtendedFloatingActionButton(
             onClick = onClick,
+            modifier = Modifier.semantics { contentDescription = createCardLabel },
             containerColor = AppColors.GreenPrimary,
-            contentColor = Color.White,
+            contentColor = AppColors.OnGreenPrimary,
             shape = RoundedCornerShape(AppDimensions.CornerRadiusLg),
             elevation = FloatingActionButtonDefaults.elevation(
                 defaultElevation = 4.dp,
@@ -76,12 +80,12 @@ fun CardListCreateFab(
             icon = {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.card_list_create_card_action)
+                    contentDescription = null
                 )
             },
             text = {
                 Text(
-                    text = stringResource(R.string.card_list_create_card_action),
+                    text = createCardLabel,
                     fontWeight = FontWeight.Bold
                 )
             }

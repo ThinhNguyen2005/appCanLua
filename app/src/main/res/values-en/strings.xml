@@ -935,6 +935,13 @@
     <string name="weigh_options_bags_per_kg_placeholder">Default: 8 bags = 1 kg</string>
     <string name="weigh_options_bag_sample_params_title">Bag tare settings</string>
     <string name="weigh_options_section_input_scale">WEIGHT INPUT MODE</string>
+    <string name="weigh_options_subtitle">Applied by default to new weighing cards</string>
+    <string name="weigh_options_reset">Reset</string>
+    <string name="weigh_options_font_preview">Preview: 50.3 kg · 3,891,780 đ</string>
+    <string name="weigh_options_bag_preset_chip">%1$d bags</string>
+    <string name="weigh_options_bags_per_kg_error">Enter a bag count greater than 0</string>
+    <string name="weigh_options_bag_sample_count_error">Enter sample bags &gt; 0</string>
+    <string name="weigh_options_bag_sample_weight_error">Enter weight (kg) &gt; 0</string>
 
     <string name="help_section_quick_tips">QUICK TIPS</string>
     <string name="help_section_resources">RESOURCES</string>
@@ -994,6 +1001,21 @@
     <string name="scale_debug_mock_desc">Simulates 0 → 52.1 kg → 0 kg weighing cycles without physical hardware</string>
     <string name="scale_accessibility_chip">Bluetooth scale status: %1$s</string>
     <string name="scale_accessibility_connect_device">Connect to %1$s</string>
+
+    <!-- Card List Quick Filters, Search & Status Badges -->
+    <string name="card_list_quick_all">All</string>
+    <string name="card_list_quick_unlocked">Open</string>
+    <string name="card_list_quick_unpriced">No Price</string>
+    <string name="card_list_quick_unpaid">Unpaid</string>
+    <string name="card_list_filter_status">Card Status</string>
+    <string name="card_list_search_placeholder">Search name, trader, variety...</string>
+    <string name="card_list_search_open">Search weighing cards</string>
+    <string name="card_list_search_clear">Clear search query</string>
+    <string name="card_item_status_locked">Locked</string>
+    <string name="card_item_status_unpriced">No Price</string>
+    <string name="card_item_status_unpaid">Balance Due</string>
+    <string name="card_item_status_weighing">Weighing</string>
+    <string name="card_item_continue_weigh">Weigh</string>
 
 </resources>
 

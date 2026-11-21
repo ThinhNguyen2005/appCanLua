@@ -932,6 +932,13 @@
     <string name="weigh_options_bags_per_kg_placeholder">លំនាំដើម៖ 8 ការ៉ុង = 1 kg</string>
     <string name="weigh_options_bag_sample_params_title">ព័ត៌មានកាត់ទម្ងន់ការ៉ុង</string>
     <string name="weigh_options_section_input_scale">របៀបបញ្ចូលទម្ងន់</string>
+    <string name="weigh_options_subtitle">អនុវត្តជាលំនាំដើមសម្រាប់ប័ណ្ណថ្លឹងថ្មី</string>
+    <string name="weigh_options_reset">លំនាំដើម</string>
+    <string name="weigh_options_font_preview">មើលជាមុន៖ 50.3 kg · 3,891,780 đ</string>
+    <string name="weigh_options_bag_preset_chip">%1$d ការ៉ុង</string>
+    <string name="weigh_options_bags_per_kg_error">បញ្ចូលចំនួនការ៉ុងធំជាង 0</string>
+    <string name="weigh_options_bag_sample_count_error">បញ្ចូលចំនួនការ៉ុងគំរូ &gt; 0</string>
+    <string name="weigh_options_bag_sample_weight_error">បញ្ចូលទម្ងន់ (kg) &gt; 0</string>
 
     <string name="help_section_quick_tips">គន្លឹះប្រើប្រាស់រហ័ស</string>
     <string name="help_section_resources">ធនធាន</string>
@@ -991,5 +998,20 @@
     <string name="scale_debug_mock_desc">សាកល្បងទិន្នន័យ 0 → 52.1 kg → 0 kg ដោយមិនចាំបាច់មានជញ្ជីងពិត</string>
     <string name="scale_accessibility_chip">ស្ថានភាពជញ្ជីង Bluetooth៖ %1$s</string>
     <string name="scale_accessibility_connect_device">ភ្ជាប់ទៅ %1$s</string>
+
+    <!-- Card List Quick Filters, Search & Status Badges -->
+    <string name="card_list_quick_all">ទាំងអស់</string>
+    <string name="card_list_quick_unlocked">មិនទាន់ចាក់សោ</string>
+    <string name="card_list_quick_unpriced">មិនទាន់មានតម្លៃ</string>
+    <string name="card_list_quick_unpaid">នៅជំពាក់</string>
+    <string name="card_list_filter_status">ស្ថានភាពវិក្កយបត្រ</string>
+    <string name="card_list_search_placeholder">ស្វែងរកឈ្មោះ ឈ្មួញ ពូជស្រូវ...</string>
+    <string name="card_list_search_open">ស្វែងរកវិក្កយបត្រថ្លឹង</string>
+    <string name="card_list_search_clear">លុបពាក្យស្វែងរក</string>
+    <string name="card_item_status_locked">បានចាក់សោ</string>
+    <string name="card_item_status_unpriced">គ្មានតម្លៃ</string>
+    <string name="card_item_status_unpaid">នៅជំពាក់</string>
+    <string name="card_item_status_weighing">កំពុងថ្លឹង</string>
+    <string name="card_item_continue_weigh">ថ្លឹងបន្ត</string>
 
 </resources>

@@ -20,6 +20,13 @@ import com.giathinh.canlua.data.location.LocationProvider
 import com.giathinh.canlua.repository.SettingsRepository
 import java.util.Date
 
+enum class CardQuickFilter {
+    ALL,
+    UNLOCKED,
+    UNPRICED,
+    UNPAID
+}
+
 @HiltViewModel
 class CardListViewModel @Inject constructor(
     private val repository: SyncableCardRepository,
@@ -39,14 +46,34 @@ class CardListViewModel @Inject constructor(
     private val _selectedSeasonFilter = MutableStateFlow<String?>(null)
     val selectedSeasonFilter: StateFlow<String?> = _selectedSeasonFilter.asStateFlow()
 
+    private val _quickFilter = MutableStateFlow(CardQuickFilter.ALL)
+    val quickFilter: StateFlow<CardQuickFilter> = _quickFilter.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     val cards: StateFlow<List<Card>> = combine(
         repository.getAllCards(),
         _selectedVarietyFilter,
-        _selectedSeasonFilter
-    ) { all, variety, season ->
+        _selectedSeasonFilter,
+        _quickFilter,
+        _searchQuery
+    ) { all, variety, season, quick, query ->
+        val normalizedQuery = query.trim()
         all.filter { card ->
-            (variety == null || card.riceVariety == variety) &&
-                    (season == null || card.seasonLabel == season)
+            val matchesVariety = variety == null || card.riceVariety == variety
+            val matchesSeason = season == null || card.seasonLabel == season
+            val matchesQuick = when (quick) {
+                CardQuickFilter.ALL -> true
+                CardQuickFilter.UNLOCKED -> !card.isLocked
+                CardQuickFilter.UNPRICED -> card.pricePerKg <= 0.0
+                CardQuickFilter.UNPAID -> !card.isPaid && (card.remainingAmount > 0.0 || card.totalAmount > 0.0)
+            }
+            val matchesQuery = normalizedQuery.isBlank() ||
+                card.name.contains(normalizedQuery, ignoreCase = true) ||
+                card.traderName.contains(normalizedQuery, ignoreCase = true) ||
+                card.riceVariety.contains(normalizedQuery, ignoreCase = true)
+            matchesVariety && matchesSeason && matchesQuick && matchesQuery
         }
     }.onEach { _isLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -72,9 +99,19 @@ class CardListViewModel @Inject constructor(
         _selectedSeasonFilter.value = season
     }
 
+    fun setQuickFilter(filter: CardQuickFilter) {
+        _quickFilter.value = filter
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
     fun clearFilters() {
         _selectedVarietyFilter.value = null
         _selectedSeasonFilter.value = null
+        _quickFilter.value = CardQuickFilter.ALL
+        _searchQuery.value = ""
     }
 
     fun createNewCard(

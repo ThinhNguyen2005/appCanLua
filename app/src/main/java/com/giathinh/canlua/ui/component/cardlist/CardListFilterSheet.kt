@@ -17,9 +17,10 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.giathinh.canlua.R
 import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.ui.theme.AppColors
+import com.giathinh.canlua.ui.viewmodel.CardQuickFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,13 +40,15 @@ fun CardListFilterSheet(
     selectedVariety: String?,
     onSelectSeason: (String?) -> Unit,
     onSelectVariety: (String?) -> Unit,
+    onDismiss: () -> Unit,
     onClearFilters: () -> Unit = {
         onSelectSeason(null)
         onSelectVariety(null)
     },
-    onDismiss: () -> Unit
+    selectedQuickFilter: CardQuickFilter = CardQuickFilter.ALL,
+    onSelectQuickFilter: (CardQuickFilter) -> Unit = {}
 ) {
-    val filterSheetState = rememberModalBottomSheetState()
+    val filterSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = filterSheetState,
@@ -68,12 +72,17 @@ fun CardListFilterSheet(
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
-                if (selectedSeason != null || selectedVariety != null) {
+                if (selectedQuickFilter != CardQuickFilter.ALL || selectedSeason != null || selectedVariety != null) {
                     TextButton(onClick = onClearFilters) {
                         Text(stringResource(R.string.action_clear_filter), color = AppColors.Error)
                     }
                 }
             }
+
+            StatusFilterSection(
+                selected = selectedQuickFilter,
+                onSelect = onSelectQuickFilter
+            )
 
             if (availableSeasons.isNotEmpty()) {
                 Text(
@@ -162,6 +171,53 @@ fun CardListFilterSheet(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusFilterSection(
+    selected: CardQuickFilter,
+    onSelect: (CardQuickFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val options = listOf(
+        CardQuickFilter.ALL to stringResource(R.string.card_list_quick_all),
+        CardQuickFilter.UNLOCKED to stringResource(R.string.card_list_quick_unlocked),
+        CardQuickFilter.UNPRICED to stringResource(R.string.card_list_quick_unpriced),
+        CardQuickFilter.UNPAID to stringResource(R.string.card_list_quick_unpaid)
+    )
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.card_list_filter_status),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.TextSecondary
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { (option, label) ->
+                val isSelected = selected == option
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        val next = if (isSelected && option != CardQuickFilter.ALL) CardQuickFilter.ALL else option
+                        onSelect(next)
+                    },
+                    label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AppColors.GreenPrimary,
+                        selectedLabelColor = AppColors.OnGreenPrimary
+                    )
+                )
             }
         }
     }

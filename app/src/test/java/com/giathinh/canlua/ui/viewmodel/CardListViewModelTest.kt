@@ -132,7 +132,91 @@ class CardListViewModelTest {
         advanceUntilIdle()
         assertNull(vm.selectedVarietyFilter.value)
         assertNull(vm.selectedSeasonFilter.value)
+        assertEquals(CardQuickFilter.ALL, vm.quickFilter.value)
+        assertEquals("", vm.searchQuery.value)
         assertEquals(2, vm.cards.value.size)
+    }
+
+    @Test
+    fun `setQuickFilter filters unlocked, unpriced, and unpaid cards`() = runTest(testDispatcher) {
+        val pricedLockedPaid = Card(
+            id = 10L,
+            name = "Chú Hai",
+            traderName = "Lái Tám",
+            riceVariety = "OM18",
+            date = Date(),
+            pricePerKg = 8000.0,
+            totalAmount = 8_000_000.0,
+            remainingAmount = 0.0,
+            isPaid = true,
+            isLocked = true
+        )
+        val unpricedOpen = Card(
+            id = 11L,
+            name = "Cô Ba",
+            traderName = "Lái Chín",
+            riceVariety = "ST25",
+            date = Date(),
+            pricePerKg = 0.0,
+            totalAmount = 0.0,
+            remainingAmount = 0.0,
+            isPaid = false,
+            isLocked = false
+        )
+        val unpaidOpen = Card(
+            id = 12L,
+            name = "Anh Tư",
+            traderName = "Lái Mười",
+            riceVariety = "Đài Thơm 8",
+            date = Date(),
+            pricePerKg = 7500.0,
+            totalAmount = 5_000_000.0,
+            remainingAmount = 2_000_000.0,
+            isPaid = false,
+            isLocked = false
+        )
+        every { repository.getAllCards() } returns flowOf(listOf(pricedLockedPaid, unpricedOpen, unpaidOpen))
+        val vm = createViewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            vm.cards.collect()
+        }
+        advanceUntilIdle()
+
+        vm.setQuickFilter(CardQuickFilter.UNLOCKED)
+        advanceUntilIdle()
+        assertEquals(listOf(11L, 12L), vm.cards.value.map { it.id })
+
+        vm.setQuickFilter(CardQuickFilter.UNPRICED)
+        advanceUntilIdle()
+        assertEquals(listOf(11L), vm.cards.value.map { it.id })
+
+        vm.setQuickFilter(CardQuickFilter.UNPAID)
+        advanceUntilIdle()
+        assertEquals(listOf(12L), vm.cards.value.map { it.id })
+    }
+
+    @Test
+    fun `setSearchQuery filters by card name, trader name, or rice variety case-insensitively`() = runTest(testDispatcher) {
+        val c1 = Card(id = 1L, name = "Trường Nguyễn", traderName = "Lái A", riceVariety = "ST25", date = Date())
+        val c2 = Card(id = 2L, name = "Bảy Hậu Giang", traderName = "Thương lái Minh", riceVariety = "OM18", date = Date())
+        every { repository.getAllCards() } returns flowOf(listOf(c1, c2))
+        val vm = createViewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            vm.cards.collect()
+        }
+        advanceUntilIdle()
+
+        vm.setSearchQuery("trường")
+        advanceUntilIdle()
+        assertEquals(listOf(1L), vm.cards.value.map { it.id })
+
+        vm.setSearchQuery("MINH")
+        advanceUntilIdle()
+        assertEquals(listOf(2L), vm.cards.value.map { it.id })
+
+        vm.setSearchQuery("st25")
+        advanceUntilIdle()
+        assertEquals(listOf(1L), vm.cards.value.map { it.id })
     }
 
     @Test

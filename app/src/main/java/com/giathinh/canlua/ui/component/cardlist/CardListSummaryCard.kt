@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +28,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,134 +62,137 @@ fun CardListSummaryCard(
         shape = RoundedCornerShape(AppDimensions.CornerRadiusLg),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBg),
-        border = BorderStroke(1.dp, AppColors.Divider.copy(alpha = 0.5f))
+        border = BorderStroke(1.dp, AppColors.GreenPrimary.copy(alpha = 0.2f))
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Top-edge accent strip — thay thế GreenSurface overlay để có visual weight
-            // mà vẫn giữ tokens đồng bộ (CardBg + 1dp border).
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(AppColors.GreenPrimary)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(AppDimensions.SpacingMd),
-                verticalArrangement = Arrangement.spacedBy(AppDimensions.SpacingSm)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppDimensions.SpacingMd),
+            verticalArrangement = Arrangement.spacedBy(AppDimensions.SpacingSm)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.card_list_summary_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.card_list_summary_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.TextSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    // showSyncStatus hiện được giữ nguyên signature để tương thích ngược,
-                    // nhưng ở bản hiện tại KHÔNG render SyncStatusPulse theo yêu cầu
-                    // "bỏ chấm pulse ở trang Cân lúa".
-                    @Suppress("UNUSED_PARAMETER")
-                    val ignored = showSyncStatus
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.card_list_summary_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary,
+                        modifier = Modifier.semantics { heading() }
+                    )
+                    Text(
+                        text = stringResource(R.string.card_list_summary_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
+                @Suppress("UNUSED_PARAMETER")
+                val ignored = showSyncStatus
+            }
 
-                // Row 1: 3 metric chính (giữ nguyên)
+            // Bento 2x2 Grid Row 1: Phiếu & Sản lượng
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SummaryMetric(
+                    label = titlePrefix,
+                    icon = Icons.AutoMirrored.Outlined.ReceiptLong,
+                    tint = AppColors.GreenPrimary,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    AnimatedNumber(
+                        value = cardCount,
+                        formatter = { numberFormat.format(it) },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                SummaryMetric(
+                    label = stringResource(R.string.card_list_summary_yield),
+                    icon = Icons.Outlined.Scale,
+                    tint = AppColors.GoldAccent,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    AnimatedNumber(
+                        value = totalKg,
+                        formatter = { "${numberFormat.format(it)} kg" },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Bento 2x2 Grid Row 2: Tổng thu & Số bao
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SummaryMetric(
+                    label = amountLabel,
+                    icon = Icons.Outlined.Payments,
+                    tint = AppColors.Success,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    AnimatedNumber(
+                        value = totalAmount,
+                        formatter = { "${numberFormat.format(it.toLong())} đ" },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                SummaryMetric(
+                    label = stringResource(R.string.card_list_summary_bag_count),
+                    icon = Icons.Outlined.Inventory2,
+                    tint = AppColors.Info,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    AnimatedNumber(
+                        value = bagCount ?: 0,
+                        formatter = { numberFormat.format(it) },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AppColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Row 3: chỉ số phụ (đơn giá TB / năng suất ước tính) — chỉ hiện khi có data thực.
+            val hasSecondaryMetrics = avgPricePerKg != null || estimatedYieldKgPerCong != null
+            if (hasSecondaryMetrics) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    SummaryMetric(
-                        label = titlePrefix,
-                        icon = Icons.AutoMirrored.Outlined.ReceiptLong,
-                        tint = AppColors.GreenPrimary,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        AnimatedNumber(
-                            value = cardCount,
-                            formatter = { numberFormat.format(it) },
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = AppColors.TextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    if (avgPricePerKg != null) {
+                        SecondaryMetric(
+                            label = stringResource(R.string.card_list_summary_avg_price),
+                            value = "${numberFormat.format(avgPricePerKg.toLong())} đ/kg",
+                            modifier = Modifier.weight(1f)
                         )
                     }
-                    SummaryMetric(
-                        label = stringResource(R.string.card_list_summary_yield),
-                        icon = Icons.Outlined.Scale,
-                        tint = AppColors.GoldAccent,
-                        modifier = Modifier.weight(1.12f)
-                    ) {
-                        AnimatedNumber(
-                            value = totalKg,
-                            formatter = { "${numberFormat.format(it)} kg" },
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = AppColors.TextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    if (estimatedYieldKgPerCong != null) {
+                        SecondaryMetric(
+                            label = stringResource(R.string.card_list_summary_yield_per_cong),
+                            value = "${numberFormat.format(estimatedYieldKgPerCong.toLong())} kg/công",
+                            modifier = Modifier.weight(1f)
                         )
-                    }
-                    SummaryMetric(
-                        label = amountLabel,
-                        icon = Icons.Outlined.Payments,
-                        tint = AppColors.Success,
-                        modifier = Modifier.weight(1.25f)
-                    ) {
-                        AnimatedNumber(
-                            value = totalAmount,
-                            formatter = { "${numberFormat.format(it.toLong())}đ" },
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = AppColors.TextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // Row 2: chỉ số phụ — chỉ hiện khi có data thực, tránh layout trống gây rối.
-                val hasSecondaryMetrics = avgPricePerKg != null || bagCount != null || estimatedYieldKgPerCong != null
-                if (hasSecondaryMetrics) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (avgPricePerKg != null) {
-                            SecondaryMetric(
-                                label = stringResource(R.string.card_list_summary_avg_price),
-                                value = "${numberFormat.format(avgPricePerKg.toLong())} đ/kg",
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        if (bagCount != null) {
-                            SecondaryMetric(
-                                label = stringResource(R.string.card_list_summary_bag_count),
-                                value = numberFormat.format(bagCount),
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        if (estimatedYieldKgPerCong != null) {
-                            SecondaryMetric(
-                                label = stringResource(R.string.card_list_summary_yield_per_cong),
-                                value = "${numberFormat.format(estimatedYieldKgPerCong.toLong())} kg/công",
-                                modifier = Modifier.weight(1.4f)
-                            )
-                        }
                     }
                 }
             }
@@ -209,8 +212,9 @@ private fun SummaryMetric(
         modifier = modifier
             .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
             .background(AppColors.SurfaceContainer)
+            .semantics(mergeDescendants = true) {}
             .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Box(
             modifier = Modifier
@@ -247,6 +251,7 @@ private fun SecondaryMetric(
         modifier = modifier
             .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
             .background(AppColors.SurfaceContainer)
+            .semantics(mergeDescendants = true) {}
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {

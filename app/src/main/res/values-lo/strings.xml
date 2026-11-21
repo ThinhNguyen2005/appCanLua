@@ -935,6 +935,13 @@
     <string name="weigh_options_bags_per_kg_placeholder">ຄ່າເລີ່ມຕົ້ນ: 8 ຖົງ = 1 kg</string>
     <string name="weigh_options_bag_sample_params_title">ຂໍ້ມູນການຫັກນ້ຳໜັກຖົງ</string>
     <string name="weigh_options_section_input_scale">ຮູບແບບການປ້ອນນ້ຳໜັກ</string>
+    <string name="weigh_options_subtitle">ນຳໃຊ້ເປັນຄ່າເລີ່ມຕົ້ນສຳລັບໃບຊັ່ງໃໝ່</string>
+    <string name="weigh_options_reset">ຄ່າເລີ່ມຕົ້ນ</string>
+    <string name="weigh_options_font_preview">ຕົວຢ່າງ: 50.3 kg · 3,891,780 đ</string>
+    <string name="weigh_options_bag_preset_chip">%1$d ຖົງ</string>
+    <string name="weigh_options_bags_per_kg_error">ປ້ອນຈຳນວນຖົງໃຫຍ່ກວ່າ 0</string>
+    <string name="weigh_options_bag_sample_count_error">ປ້ອນຈຳນວນຖົງຕົວຢ່າງ &gt; 0</string>
+    <string name="weigh_options_bag_sample_weight_error">ປ້ອນນ້ຳໜັກ (kg) &gt; 0</string>
 
     <string name="help_section_quick_tips">ຄຳແນະນຳດ່ວນ</string>
     <string name="help_section_resources">ແຫຼ່ງຂໍ້ມູນ</string>
@@ -994,5 +1001,20 @@
     <string name="scale_debug_mock_desc">ຈຳລອງຮອບການຊັ່ງ 0 → 52.1 kg → 0 kg ເພື່ອທົດສອບໂດຍບໍ່ຕ້ອງມີຊິງຈິງ</string>
     <string name="scale_accessibility_chip">ສະຖານະຊິງຊັ່ງ Bluetooth: %1$s</string>
     <string name="scale_accessibility_connect_device">ເຊື່ອມຕໍ່ກັບ %1$s</string>
+
+    <!-- Card List Quick Filters, Search & Status Badges -->
+    <string name="card_list_quick_all">ທັງໝົດ</string>
+    <string name="card_list_quick_unlocked">ຍັງບໍ່ລັອກ</string>
+    <string name="card_list_quick_unpriced">ຍັງບໍ່ມີລາຄາ</string>
+    <string name="card_list_quick_unpaid">ຍັງຄ້າງຊຳລະ</string>
+    <string name="card_list_filter_status">ສະຖານະໃບຊັ່ງ</string>
+    <string name="card_list_search_placeholder">ຄົ້ນຫາຊື່, ພໍ່ຄ້າ, ແນວພັນເຂົ້າ...</string>
+    <string name="card_list_search_open">ຄົ້ນຫາໃບຊັ່ງ</string>
+    <string name="card_list_search_clear">ລ້າງຄຳຄົ້ນຫາ</string>
+    <string name="card_item_status_locked">ລັອກແລ້ວ</string>
+    <string name="card_item_status_unpriced">ຍັງບໍ່ມີລາຄາ</string>
+    <string name="card_item_status_unpaid">ຄ້າງຊຳລະ</string>
+    <string name="card_item_status_weighing">ກຳລັງຊັ່ງ</string>
+    <string name="card_item_continue_weigh">ຊັ່ງຕໍ່</string>
 
 </resources>
