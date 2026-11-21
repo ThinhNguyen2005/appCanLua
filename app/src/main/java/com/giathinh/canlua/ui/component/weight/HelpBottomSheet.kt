@@ -44,7 +44,10 @@ fun HelpBottomSheet(
     onFeedbackClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 

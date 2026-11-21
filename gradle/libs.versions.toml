@@ -1,72 +1,71 @@
 [versions]
-agp = "9.1.1"
-kotlin = "2.3.0"
-ksp = "2.3.9"
-coreKtx = "1.19.0"
+agp = "9.3.3"
+kotlin = "2.4.21"
+ksp = "2.3.14"
+coreKtx = "1.19.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
-lifecycleRuntimeKtx = "2.11.0"
+lifecycleRuntimeKtx = "2.11.1"
 activityCompose = "1.13.0"
-composeBom = "2026.06.00"
-room = "2.8.4"
-navigation = "2.9.8"
-viewmodel = "2.11.0"
-hilt = "2.59.2"
-hiltNavigationCompose = "1.3.0"
-foundation = "1.11.3"
+composeBom = "2026.11.01"
+room = "2.8.5"
+navigation = "2.10.2"
+viewmodel = "2.11.1"
+hilt = "2.60.1"
+hiltNavigationCompose = "1.4.0"
+foundation = "1.13.0"
 materialIconsExtended = "1.7.8"
-material3 = "1.4.0"
-appcompat = "1.7.1"
+material3 = "1.5.0"
+appcompat = "1.8.0"
 # Firebase
-firebaseBom = "34.15.0"
-firebaseRemoteConfig = "23.1.0"
-googleServices = "4.5.0"
-firebaseCrashlyticsPlugin = "3.0.7"
+firebaseBom = "35.2.0"
+firebaseRemoteConfig = "24.0.1"
+googleServices = "4.6.0"
+firebaseCrashlyticsPlugin = "3.0.8"
 firebasePerfPlugin = "2.0.2"
 # Play Services
-playServicesAuth = "21.6.0"
-playServicesLocation = "21.3.0"
-playServicesMaps = "20.0.0"
+playServicesLocation = "21.4.0"
+playServicesMaps = "20.1.0"
 # Credentials & Identity
 credentials = "1.6.0"
-googleid = "1.2.0"
+googleid = "1.2.1"
 # Coroutines
 coroutinesPlayServices = "1.11.0"
 # Hilt Work
-hiltWork = "1.3.0"
+hiltWork = "1.4.0"
 # WorkManager
-workRuntimeKtx = "2.11.2"
+workRuntimeKtx = "2.12.0"
 # Chart (Vico)
-vico = "3.2.2"
+vico = "3.3.1"
 # Maps Compose
-mapsCompose = "8.3.0"
+mapsCompose = "9.0.1"
 # Accompanist
 accompanist = "0.37.3"
 # Networking
-okhttp = "5.4.0"
-gson = "2.14.0"
+okhttp = "5.5.1"
+gson = "2.15.0"
 # Markdown
 markwon = "4.6.2"
 # Coil
 coilCompose = "2.7.0"
 # Browser
 browser = "1.10.0"
-benchmarkTraceprocessor = "1.4.1"
+benchmarkTraceprocessor = "1.5.0"
 profileinstaller = "1.4.1"
 splashscreen = "1.2.0"
 # Kotlinx Collections Immutable — PersistentList được Compose Compiler nhận diện natively là Stable
-kotlinxCollectionsImmutable = "0.5.0"
+kotlinxCollectionsImmutable = "0.5.2"
 securityCrypto = "1.1.0"
 # DataStore
-datastore = "1.2.1"
+datastore = "1.3.0"
 # org.json — pure-JVM implementation. Thay thế Android stub
 # (org.json.JSONObject trong android.jar là mockable) khi chạy :app:testDebugUnitTest.
 # Test-only, không ảnh hưởng production APK.
-orgJson = "20260522"
-mockk = "1.14.11"
-adsMobileSdk = "1.3.1"
-userMessagingPlatform = "3.1.0"
+orgJson = "20260814"
+mockk = "1.14.12"
+adsMobileSdk = "1.7.0"
+userMessagingPlatform = "4.0.0"
 detekt = "2.0.0-alpha.6"
 composeRules = "0.6.8"
 
@@ -114,7 +113,6 @@ firebase-remoteconfig = { group = "com.google.firebase", name = "firebase-config
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
 # Play Services
-play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 # Credentials & Identity
@@ -161,7 +159,6 @@ compose-rules-detekt = { group = "io.nlopez.compose.rules", name = "detekt", ver
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

@@ -138,7 +138,7 @@ class NativeAdLoaderManager @Inject constructor(
                 android.util.Log.w("NativeAdLoader", "Native Ad failed to load: [${adError.code.name}] ${adError.message}")
                 if (generation.get() != requestGeneration || !adsStillAllowed()) return
                 _adState.value = NativeAdUiState.Error(
-                    message = adError.message ?: "Failed to load native ad",
+                    message = adError.message.ifBlank { "Failed to load native ad" },
                     code = adError.code.name
                 )
             }

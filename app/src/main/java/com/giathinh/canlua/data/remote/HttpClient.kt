@@ -61,7 +61,7 @@ class HttpClient @Inject constructor(
         }
         
         response.use { resp ->
-            val raw = resp.body?.string().orEmpty()
+            val raw = resp.body.string()
             if (!resp.isSuccessful) {
                 throw HttpException(resp.code, raw.take(500))
             }
@@ -76,7 +76,7 @@ class HttpClient @Inject constructor(
     @PublishedApi
     internal inline fun <reified T> executeAndParse(request: Request): T {
         client.newCall(request).execute().use { response ->
-            val raw = response.body?.string().orEmpty()
+            val raw = response.body.string()
             if (!response.isSuccessful) {
                 throw HttpException(response.code, raw.take(500))
             }

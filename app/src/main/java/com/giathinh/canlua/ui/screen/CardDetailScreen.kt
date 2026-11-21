@@ -24,6 +24,9 @@ import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LockOpen
@@ -67,7 +70,8 @@ import com.giathinh.canlua.data.model.Card
 import com.giathinh.canlua.data.model.WeightEntry
 import com.giathinh.canlua.ui.component.CustomHeader
 import com.giathinh.canlua.ui.component.RiceVarietyDropdown
-import com.giathinh.canlua.ui.component.ThousandSeparatorTransformation
+import com.giathinh.canlua.ui.component.ThousandSeparatorOutputTransformation
+import com.giathinh.canlua.ui.component.digitsOnlyInputTransformation
 import com.giathinh.canlua.ui.component.detail.BagEntriesCard
 import com.giathinh.canlua.ui.component.detail.BagEntryActionSheet
 import com.giathinh.canlua.ui.component.detail.CardInfoCard
@@ -817,9 +821,9 @@ fun EditCardDialog(
     var impurityWeight by remember { mutableStateOf(if (card.impurityWeight > 0) card.impurityWeight.toString() else "") }
 
     // ── Tab 2: Tài chính ─────────────────────────────────────────────────────
-    var pricePerKg by remember { mutableStateOf(if (card.pricePerKg > 0) "%.0f".format(card.pricePerKg) else "") }
-    var depositAmount by remember { mutableStateOf(if (card.depositAmount > 0) "%.0f".format(card.depositAmount) else "") }
-    var paidAmount by remember { mutableStateOf(if (card.paidAmount > 0) "%.0f".format(card.paidAmount) else "") }
+    val pricePerKgState = rememberTextFieldState(if (card.pricePerKg > 0) "%.0f".format(card.pricePerKg) else "")
+    val depositAmountState = rememberTextFieldState(if (card.depositAmount > 0) "%.0f".format(card.depositAmount) else "")
+    val paidAmountState = rememberTextFieldState(if (card.paidAmount > 0) "%.0f".format(card.paidAmount) else "")
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -1149,17 +1153,14 @@ fun EditCardDialog(
                         2 -> {
                             // ── Tab 2: Tài chính ──────────────────────────────
                             OutlinedTextField(
-                                value = pricePerKg,
-                                onValueChange = { input ->
-                                    val filtered = input.filter { it.isDigit() }
-                                    pricePerKg = filtered
-                                },
+                                state = pricePerKgState,
                                 label = { Text(stringResource(R.string.create_card_price_label)) },
                                 leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, modifier = Modifier.size(20.dp)) },
                                 suffix = { Text("đ/kg", color = AppColors.TextSecondary) },
-                                visualTransformation = ThousandSeparatorTransformation(),
+                                inputTransformation = digitsOnlyInputTransformation(),
+                                outputTransformation = ThousandSeparatorOutputTransformation,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
+                                lineLimits = TextFieldLineLimits.SingleLine,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -1175,16 +1176,13 @@ fun EditCardDialog(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedTextField(
-                                    value = depositAmount,
-                                    onValueChange = { input ->
-                                        val filtered = input.filter { it.isDigit() }
-                                        depositAmount = filtered
-                                    },
+                                    state = depositAmountState,
                                     label = { Text(stringResource(R.string.create_card_deposit_label)) },
                                     leadingIcon = { Icon(Icons.Outlined.Savings, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                    visualTransformation = ThousandSeparatorTransformation(),
+                                    inputTransformation = digitsOnlyInputTransformation(),
+                                    outputTransformation = ThousandSeparatorOutputTransformation,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    singleLine = true,
+                                    lineLimits = TextFieldLineLimits.SingleLine,
                                     modifier = Modifier.weight(1f).fillMaxHeight(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -1193,16 +1191,13 @@ fun EditCardDialog(
                                     )
                                 )
                                 OutlinedTextField(
-                                    value = paidAmount,
-                                    onValueChange = { input ->
-                                        val filtered = input.filter { it.isDigit() }
-                                        paidAmount = filtered
-                                    },
+                                    state = paidAmountState,
                                     label = { Text(stringResource(R.string.card_detail_paid_amount_label)) },
                                     leadingIcon = { Icon(Icons.Outlined.Payments, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                                    visualTransformation = ThousandSeparatorTransformation(),
+                                    inputTransformation = digitsOnlyInputTransformation(),
+                                    outputTransformation = ThousandSeparatorOutputTransformation,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    singleLine = true,
+                                    lineLimits = TextFieldLineLimits.SingleLine,
                                     modifier = Modifier.weight(1f).fillMaxHeight(),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -1236,9 +1231,9 @@ fun EditCardDialog(
                                 seasonLabel = seasonLabel.trim(),
                                 moisturePercent = moisturePercent.toDoubleOrNull() ?: card.moisturePercent,
                                 impurityWeight = impurityWeight.toDoubleOrNull() ?: card.impurityWeight,
-                                pricePerKg = pricePerKg.toDoubleOrNull() ?: card.pricePerKg,
-                                depositAmount = depositAmount.toDoubleOrNull() ?: card.depositAmount,
-                                paidAmount = paidAmount.toDoubleOrNull() ?: card.paidAmount,
+                                pricePerKg = pricePerKgState.text.toString().toDoubleOrNull() ?: card.pricePerKg,
+                                depositAmount = depositAmountState.text.toString().toDoubleOrNull() ?: card.depositAmount,
+                                paidAmount = paidAmountState.text.toString().toDoubleOrNull() ?: card.paidAmount,
                                 traderPhone = traderPhone.trim(),
                                 cccd = cccd.trim().takeIf { it.isNotEmpty() }
                             )
@@ -1437,14 +1432,13 @@ fun AddPaymentDialog(
     onConfirm: (amount: Double, description: String) -> Unit
 ) {
     val fullRemainingLong = remainingAmount.toLong().coerceAtLeast(0L)
-    var amountText by remember {
-        mutableStateOf(if (fullRemainingLong > 0L) fullRemainingLong.toString() else "")
-    }
+    val amountState = rememberTextFieldState(
+        if (fullRemainingLong > 0L) fullRemainingLong.toString() else ""
+    )
     var descriptionText by remember { mutableStateOf("") }
 
-    val rawAmount = remember(amountText) {
-        amountText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
-    }
+    val amountText = amountState.text.toString()
+    val rawAmount = amountText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
     val isValid = rawAmount > 0.0
     val context = LocalContext.current
 
@@ -1509,7 +1503,7 @@ fun AddPaymentDialog(
                                 SuggestionChip(
                                     onClick = {
                                         com.giathinh.canlua.util.HapticUtil.tick(context)
-                                        amountText = fullRemainingLong.toString()
+                                        amountState.setTextAndPlaceCursorAtEnd(fullRemainingLong.toString())
                                     },
                                     label = { Text("Trả đủ 100%", style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
@@ -1517,7 +1511,7 @@ fun AddPaymentDialog(
                                 SuggestionChip(
                                     onClick = {
                                         com.giathinh.canlua.util.HapticUtil.tick(context)
-                                        amountText = (fullRemainingLong / 2).toString()
+                                        amountState.setTextAndPlaceCursorAtEnd((fullRemainingLong / 2).toString())
                                     },
                                     label = { Text("Trả 50%", style = MaterialTheme.typography.labelSmall) },
                                     modifier = Modifier.weight(1f)
@@ -1528,10 +1522,7 @@ fun AddPaymentDialog(
                 }
 
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { input ->
-                        amountText = input.filter { it.isDigit() }
-                    },
+                    state = amountState,
                     label = { Text("Số tiền thanh toán (VNĐ)") },
                     suffix = {
                         Text(
@@ -1540,8 +1531,9 @@ fun AddPaymentDialog(
                             color = AppColors.TextSecondary
                         )
                     },
-                    visualTransformation = ThousandSeparatorTransformation(),
-                    singleLine = true,
+                    inputTransformation = digitsOnlyInputTransformation(),
+                    outputTransformation = ThousandSeparatorOutputTransformation,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                     isError = amountText.isNotBlank() && !isValid,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,

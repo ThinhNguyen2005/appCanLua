@@ -54,9 +54,9 @@ class TextToSpeechManager @Inject constructor(
                 }
             }
             
+            @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {}
             
-            @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?, errorCode: Int) {
                 super.onError(utteranceId, errorCode)
             }

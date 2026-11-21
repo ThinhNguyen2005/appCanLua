@@ -100,25 +100,30 @@ object PremiumState {
     private val _dailyAiQueries = MutableStateFlow(0)
     val dailyAiQueries: StateFlow<Int> = _dailyAiQueries.asStateFlow()
 
+    // shortcut: androidx.security:security-crypto 1.1.0 deprecated MasterKeys & EncryptedSharedPreferences;
+    // keep existing encrypted prefs to preserve current users' local premium/early-adopter data, and migrate
+    // to DataStore + Tink/Android Keystore (with one-time legacy prefs migration) when wiring Play Billing.
+    @Suppress("DEPRECATION")
+    private fun createEncryptedPrefs(appCtx: Context): android.content.SharedPreferences {
+        val masterKeyAlias = androidx.security.crypto.MasterKeys.getOrCreate(
+            androidx.security.crypto.MasterKeys.AES256_GCM_SPEC
+        )
+        return androidx.security.crypto.EncryptedSharedPreferences.create(
+            PREFS,
+            masterKeyAlias,
+            appCtx,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
     /**
-     * Kiểm tra và apply Early Adopter Premium nếu thỏa điều kiện.
-     * Gọi 1 lần trong Application.onCreate() SAU khi PremiumState.init() đã chạy.
-     *
-     * @param firstInstallTimeMs thời điểm cài app (lấy từ PackageManager)
-     * @param earlyAdopterEnabled feature có đang bật không (từ Firebase Remote Config)
-     * @param remoteCutoffMs timestamp cutoff từ Remote Config (null = dùng default)
+     * Khởi tạo EncryptedSharedPreferences có cơ chế phục hồi file nếu Keystore bị lỗi.
      */
     private fun getEncryptedPrefs(context: Context): android.content.SharedPreferences {
         val appCtx = context.applicationContext
         val basePrefs = try {
-            val masterKeyAlias = androidx.security.crypto.MasterKeys.getOrCreate(androidx.security.crypto.MasterKeys.AES256_GCM_SPEC)
-            androidx.security.crypto.EncryptedSharedPreferences.create(
-                PREFS,
-                masterKeyAlias,
-                appCtx,
-                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
+            createEncryptedPrefs(appCtx)
         } catch (e: Exception) {
             // Clear the corrupted/unreadable preferences file on creation failure
             try {
@@ -131,14 +136,7 @@ object PremiumState {
                 clearEx.printStackTrace()
             }
             try {
-                val masterKeyAlias = androidx.security.crypto.MasterKeys.getOrCreate(androidx.security.crypto.MasterKeys.AES256_GCM_SPEC)
-                androidx.security.crypto.EncryptedSharedPreferences.create(
-                    PREFS,
-                    masterKeyAlias,
-                    appCtx,
-                    androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-                )
+                createEncryptedPrefs(appCtx)
             } catch (fallbackEx: Exception) {
                 // Fallback to clear text if Encrypted SharedPreferences is completely broken on this device
                 appCtx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

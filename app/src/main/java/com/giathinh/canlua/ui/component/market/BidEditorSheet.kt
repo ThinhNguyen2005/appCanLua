@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -47,7 +49,8 @@ import androidx.compose.ui.unit.dp
 import com.giathinh.canlua.R
 import com.giathinh.canlua.data.firestore.FirestoreRicePrice
 import com.giathinh.canlua.ui.component.RiceVarietyDropdown
-import com.giathinh.canlua.ui.component.ThousandSeparatorTransformation
+import com.giathinh.canlua.ui.component.ThousandSeparatorOutputTransformation
+import com.giathinh.canlua.ui.component.digitsOnlyInputTransformation
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.shake
 import com.giathinh.canlua.util.HapticUtil
@@ -84,12 +87,14 @@ fun BidEditorSheet(
     onDismiss: () -> Unit
 ) {
     var variety by remember { mutableStateOf(existing?.variety.orEmpty()) }
-    var priceMinRaw by remember {
-        mutableStateOf(existing?.priceMin?.toLong()?.toString().orEmpty())
-    }
-    var priceMaxRaw by remember {
-        mutableStateOf(existing?.priceMax?.toLong()?.toString().orEmpty())
-    }
+    val priceMinState = rememberTextFieldState(
+        existing?.priceMin?.toLong()?.toString().orEmpty()
+    )
+    val priceMaxState = rememberTextFieldState(
+        existing?.priceMax?.toLong()?.toString().orEmpty()
+    )
+    val priceMinRaw = priceMinState.text.toString()
+    val priceMaxRaw = priceMaxState.text.toString()
     var region by remember { mutableStateOf(existing?.region.orEmpty()) }
     var trend by remember { mutableStateOf(existing?.trend ?: "STABLE") }
     var note by remember { mutableStateOf(existing?.note.orEmpty()) }
@@ -186,21 +191,18 @@ fun BidEditorSheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
-                value = priceMinRaw,
-                onValueChange = { input ->
-                    val digits = input.filter { it.isDigit() }
-                    if (digits.length <= 7) priceMinRaw = digits
-                },
+                state = priceMinState,
                 label = { Text(stringResource(R.string.market_bid_price_min_label)) },
                 placeholder = { Text(stringResource(R.string.market_bid_price_min_placeholder), style = MaterialTheme.typography.bodySmall) },
                 isError = isPriceMinError,
                 supportingText = if (isPriceMinError) {
                     { Text(stringResource(R.string.validation_price_min_required)) }
                 } else null,
-                visualTransformation = ThousandSeparatorTransformation(),
+                inputTransformation = digitsOnlyInputTransformation(7),
+                outputTransformation = ThousandSeparatorOutputTransformation,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                keyboardActions = nextAction,
-                singleLine = true,
+                onKeyboardAction = { focusManager.moveFocus(FocusDirection.Next) },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 60.dp)
@@ -209,11 +211,7 @@ fun BidEditorSheet(
                 colors = sheetTextFieldColors()
             )
             OutlinedTextField(
-                value = priceMaxRaw,
-                onValueChange = { input ->
-                    val digits = input.filter { it.isDigit() }
-                    if (digits.length <= 7) priceMaxRaw = digits
-                },
+                state = priceMaxState,
                 label = { Text(stringResource(R.string.market_bid_price_max_label)) },
                 placeholder = { Text(stringResource(R.string.market_bid_price_max_placeholder), style = MaterialTheme.typography.bodySmall) },
                 isError = isPriceMaxError,
@@ -226,10 +224,11 @@ fun BidEditorSheet(
                     }
                     else -> null
                 },
-                visualTransformation = ThousandSeparatorTransformation(),
+                inputTransformation = digitsOnlyInputTransformation(7),
+                outputTransformation = ThousandSeparatorOutputTransformation,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                keyboardActions = nextAction,
-                singleLine = true,
+                onKeyboardAction = { focusManager.moveFocus(FocusDirection.Next) },
+                lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 60.dp)

@@ -117,4 +117,63 @@ class BackupManagerTest {
             })
         }
     }
+
+    @Test
+    fun `importData sanitizes omitted non-nullable Card and Transaction fields from Gson`() = runBlocking {
+        val context = mockk<Context>()
+        val contentResolver = mockk<ContentResolver>()
+        val uri = mockk<Uri>()
+        val cardRepository = mockk<CardRepository>(relaxed = true)
+
+        val json = """
+            {
+              "version": 1,
+              "backupDate": 1782838800000,
+              "data": [
+                {
+                  "card": {
+                    "id": 2
+                  },
+                  "entries": [],
+                  "transactions": [
+                    {
+                      "id": 30,
+                      "cardId": 2,
+                      "amount": 2000.0
+                    }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val inputStream = ByteArrayInputStream(json.toByteArray(Charsets.UTF_8))
+        every { context.contentResolver } returns contentResolver
+        every { contentResolver.openInputStream(uri) } returns inputStream
+
+        coEvery { cardRepository.importBackupBatch("newUser", any()) } returns 1
+
+        val result = BackupManager.importData(context, uri, "newUser", cardRepository)
+        assertTrue(result.isSuccess)
+
+        coVerify(exactly = 1) {
+            cardRepository.importBackupBatch("newUser", match { wrappers ->
+                val card = wrappers.single().card
+                val tx = wrappers.single().transactions.single()
+                @Suppress("SENSELESS_COMPARISON")
+                val cardSanitized = card.ownerUid == "" &&
+                    card.name == "" &&
+                    card.traderName == "" &&
+                    card.date != null &&
+                    card.riceVariety == "" &&
+                    card.seasonLabel == "" &&
+                    card.traderPhone == "" &&
+                    card.fieldAddress == "" &&
+                    card.weightInputMode == "SMALL"
+                @Suppress("SENSELESS_COMPARISON")
+                val txSanitized = tx.type == TransactionType.PAYMENT && tx.date != null
+                cardSanitized && txSanitized
+            })
+        }
+    }
 }

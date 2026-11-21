@@ -33,6 +33,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.byValue
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Eco
@@ -51,6 +57,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -65,11 +72,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.geometry.Offset
@@ -86,8 +96,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -102,6 +110,7 @@ import com.giathinh.canlua.ui.viewmodel.AuthViewModel
 import com.giathinh.canlua.util.HapticUtil
 import com.giathinh.canlua.util.TrackScreenRender
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 private const val SCREEN_NAME_AUTH = "auth"
@@ -393,7 +402,7 @@ private fun AuthEmailForm(
     activity: Activity?
 ) {
     var identifier by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    val passwordState = rememberTextFieldState()
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var otp by rememberSaveable { mutableStateOf("") }
     var isRegister by rememberSaveable { mutableStateOf(false) }
@@ -415,7 +424,7 @@ private fun AuthEmailForm(
         focusManager.clearFocus()
         HapticUtil.tick(context)
         val idTrim = identifier.trim()
-        val passwordTrim = password
+        val passwordTrim = passwordState.text.toString()
 
         if (isPhoneMode) {
             if (showOtpField) {
@@ -500,9 +509,8 @@ private fun AuthEmailForm(
     ) {
         Column {
             Spacer(modifier = Modifier.height(AppDimensions.SpacingSm))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+            OutlinedSecureTextField(
+                state = passwordState,
                 placeholder = {
                     Text(
                         text = stringResource(R.string.auth_password_placeholder),
@@ -530,10 +538,10 @@ private fun AuthEmailForm(
                         )
                     }
                 },
-                visualTransformation = if (passwordVisible) {
-                    VisualTransformation.None
+                textObfuscationMode = if (passwordVisible) {
+                    TextObfuscationMode.Visible
                 } else {
-                    PasswordVisualTransformation()
+                    TextObfuscationMode.Hidden
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -541,14 +549,11 @@ private fun AuthEmailForm(
                     .semantics {
                         contentType = if (isRegister) ContentType.NewPassword else ContentType.Password
                     },
-                singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = { submitAction() }
-                ),
+                onKeyboardAction = { submitAction() },
                 shape = RoundedCornerShape(AppDimensions.CornerRadiusMd),
                 colors = authTextFieldColors()
             )
@@ -686,54 +691,86 @@ private fun OtpSixDigitField(
     otp: String,
     onOtpChange: (String) -> Unit
 ) {
+    val otpState = rememberTextFieldState(initialText = otp)
+    val latestOtp by rememberUpdatedState(otp)
+    val latestOnOtpChange by rememberUpdatedState(onOtpChange)
+
+    LaunchedEffect(otp) {
+        if (otpState.text.toString() != otp) {
+            otpState.setTextAndPlaceCursorAtEnd(otp)
+        }
+    }
+
+    LaunchedEffect(otpState) {
+        snapshotFlow { otpState.text.toString() }
+            .distinctUntilChanged()
+            .collect { current ->
+                if (current != latestOtp) {
+                    latestOnOtpChange(current)
+                }
+            }
+    }
+
     BasicTextField(
-        value = otp,
-        onValueChange = { input ->
-            val filtered = input.filter { it.isDigit() }.take(OTP_LENGTH)
-            onOtpChange(filtered)
+        state = otpState,
+        inputTransformation = InputTransformation.byValue { _, proposed ->
+            proposed.filter { it.isDigit() }.take(OTP_LENGTH)
         },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.NumberPassword,
             imeAction = ImeAction.Done
         ),
+        lineLimits = TextFieldLineLimits.SingleLine,
         modifier = Modifier
             .fillMaxWidth()
             .semantics { contentType = ContentType.SmsOtpCode },
-        decorationBox = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppDimensions.SpacingXs)
-            ) {
-                repeat(OTP_LENGTH) { index ->
-                    val char = otp.getOrNull(index)?.toString().orEmpty()
-                    val isFocused = otp.length == index || (otp.length == OTP_LENGTH && index == OTP_LENGTH - 1)
-                    val borderColor = when {
-                        isFocused -> AppColors.GreenPrimary
-                        char.isNotEmpty() -> AppColors.GreenPrimary.copy(alpha = 0.5f)
-                        else -> AppColors.Divider
-                    }
-                    val borderWidth = if (isFocused) 2.dp else 1.dp
+        decorator = { innerTextField ->
+            val currentOtp = otpState.text.toString()
+            Box(modifier = Modifier.fillMaxWidth()) {
+                // Keep innerTextField mounted once so focus, IME, and semantics attach cleanly.
+                Box(
+                    modifier = Modifier
+                        .size(1.dp)
+                        .alpha(0f)
+                ) {
+                    innerTextField()
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimensions.SpacingXs)
+                ) {
+                    repeat(OTP_LENGTH) { index ->
+                        val char = currentOtp.getOrNull(index)?.toString().orEmpty()
+                        val isFocused = currentOtp.length == index ||
+                            (currentOtp.length == OTP_LENGTH && index == OTP_LENGTH - 1)
+                        val borderColor = when {
+                            isFocused -> AppColors.GreenPrimary
+                            char.isNotEmpty() -> AppColors.GreenPrimary.copy(alpha = 0.5f)
+                            else -> AppColors.Divider
+                        }
+                        val borderWidth = if (isFocused) 2.dp else 1.dp
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(AppDimensions.ButtonHeight)
-                            .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
-                            .background(AppColors.SurfaceContainer)
-                            .border(
-                                width = borderWidth,
-                                color = borderColor,
-                                shape = RoundedCornerShape(AppDimensions.CornerRadiusMd)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = char,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.TextPrimary,
-                            textAlign = TextAlign.Center
-                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(AppDimensions.ButtonHeight)
+                                .clip(RoundedCornerShape(AppDimensions.CornerRadiusMd))
+                                .background(AppColors.SurfaceContainer)
+                                .border(
+                                    width = borderWidth,
+                                    color = borderColor,
+                                    shape = RoundedCornerShape(AppDimensions.CornerRadiusMd)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = char,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = AppColors.TextPrimary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }

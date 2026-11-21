@@ -55,7 +55,7 @@ class SupabaseClient @Inject constructor(
             .build()
 
         client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
+            val body = response.body.string()
             if (!response.isSuccessful) {
                 Log.w(TAG, "GET $table failed ${response.code}: ${body.take(200)}")
                 throw SupabaseException(response.code, body.take(200))
@@ -92,7 +92,7 @@ class SupabaseClient @Inject constructor(
             .build()
 
         client.newCall(request).execute().use { response ->
-            val responseBody = response.body?.string().orEmpty()
+            val responseBody = response.body.string()
             if (!response.isSuccessful) {
                 Log.w(TAG, "UPSERT $table failed ${response.code}: ${responseBody.take(200)}")
                 throw SupabaseException(response.code, responseBody.take(200))

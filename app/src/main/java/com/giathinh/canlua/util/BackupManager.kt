@@ -107,11 +107,11 @@ object BackupManager {
 private fun Card.sanitize(): Card {
     return Card(
         id = this.id,
-        ownerUid = this.ownerUid ?: "",
-        name = this.name ?: "",
+        ownerUid = gsonNonNull(this.ownerUid, ""),
+        name = gsonNonNull(this.name, ""),
         cccd = this.cccd,
-        traderName = this.traderName ?: "",
-        date = this.date ?: Date(),
+        traderName = gsonNonNull(this.traderName, ""),
+        date = gsonNonNull(this.date) { Date() },
         totalWeight = this.totalWeight,
         bagWeight = this.bagWeight,
         impurityWeight = this.impurityWeight,
@@ -123,15 +123,15 @@ private fun Card.sanitize(): Card {
         remainingAmount = this.remainingAmount,
         bagCount = this.bagCount,
         isLocked = this.isLocked,
-        riceVariety = this.riceVariety ?: "",
+        riceVariety = gsonNonNull(this.riceVariety, ""),
         moisturePercent = this.moisturePercent,
-        seasonLabel = this.seasonLabel ?: "",
+        seasonLabel = gsonNonNull(this.seasonLabel, ""),
         qrToken = this.qrToken,
         lockedByTraderId = this.lockedByTraderId,
         latitude = this.latitude,
         longitude = this.longitude,
-        traderPhone = this.traderPhone ?: "",
-        fieldAddress = this.fieldAddress ?: "",
+        traderPhone = gsonNonNull(this.traderPhone, ""),
+        fieldAddress = gsonNonNull(this.fieldAddress, ""),
         firestoreId = this.firestoreId,
         lastModifiedMs = this.lastModifiedMs,
         isPaid = this.isPaid,
@@ -139,7 +139,7 @@ private fun Card.sanitize(): Card {
         bagMethodIsSampling = this.bagMethodIsSampling,
         bagSampleCount = this.bagSampleCount,
         bagSampleTotalWeight = this.bagSampleTotalWeight,
-        weightInputMode = this.weightInputMode ?: "SMALL"
+        weightInputMode = gsonNonNull(this.weightInputMode, "SMALL")
     )
 }
 
@@ -151,9 +151,17 @@ private fun Transaction.sanitize(): Transaction {
         id = this.id,
         cardId = this.cardId,
         amount = this.amount,
-        type = this.type ?: TransactionType.PAYMENT,
+        type = gsonNonNull(this.type, TransactionType.PAYMENT),
         description = this.description,
-        date = this.date ?: Date(),
+        date = gsonNonNull(this.date) { Date() },
         firestoreId = this.firestoreId
     )
 }
+
+/**
+ * Gson uses Unsafe/reflection and can populate non-nullable Kotlin properties with null at runtime.
+ * Accepting a nullable parameter prevents Kotlin's redundant-Elvis warning while keeping the guard.
+ */
+private fun <T : Any> gsonNonNull(value: T?, fallback: T): T = value ?: fallback
+
+private fun <T : Any> gsonNonNull(value: T?, fallback: () -> T): T = value ?: fallback()

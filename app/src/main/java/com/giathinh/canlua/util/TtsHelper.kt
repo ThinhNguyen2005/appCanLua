@@ -48,6 +48,7 @@ class TtsHelper @Inject constructor(
                 // TTS completed
             }
             
+            @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
                 // TTS error
             }

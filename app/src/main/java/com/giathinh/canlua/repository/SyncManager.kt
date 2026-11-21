@@ -388,10 +388,10 @@ class SyncManager @Inject constructor(
                     )
                 }
                 when (action) {
-                    is PullDedupResolver.Action.Insert ->
-                        cardDao.insertCard(action.fsCard.toLocalCard(currentUid, existingId = 0L)).also {
-                            if (fsCard.id.isNotBlank() && it > 0) cloudWonCards[fsCard.id] = it
-                        }
+                    is PullDedupResolver.Action.Insert -> {
+                        val insertedId = cardDao.insertCard(action.fsCard.toLocalCard(currentUid, existingId = 0L))
+                        if (fsCard.id.isNotBlank() && insertedId > 0) cloudWonCards[fsCard.id] = insertedId
+                    }
 
                     is PullDedupResolver.Action.Update -> {
                         cardDao.updateCard(
@@ -401,12 +401,10 @@ class SyncManager @Inject constructor(
                             AnalyticsHelper.breadcrumb("pull_dedup_composite cardId=${action.localId}")
                         }
                         if (fsCard.id.isNotBlank() && action.localId > 0) cloudWonCards[fsCard.id] = action.localId
-                        action.localId
                     }
 
-                    is PullDedupResolver.Action.Skip -> action.localId
+                    is PullDedupResolver.Action.Skip -> Unit
                 }
-                Unit
             }
 
             // T11: truyền lỗi fetch children, không nuốt thành rỗng.

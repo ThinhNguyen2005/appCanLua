@@ -1,5 +1,3 @@
-@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
-
 package com.giathinh.canlua.ui.screen.map
 
 import androidx.compose.foundation.background
@@ -26,6 +24,8 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MapsComposeExperimentalApi
+import com.google.maps.android.compose.clustering.Clustering
 
 /**
  * Render bản đồ Google Maps với clustering — toàn bộ logic Maps SDK gói trong file này.
@@ -35,6 +35,7 @@ import com.google.maps.android.compose.MapUiSettings
  * @param onClusterTap user tap cluster nhiều card — caller tự quyết định
  *                    zoom in hay show list bottom sheet.
  */
+@OptIn(MapsComposeExperimentalApi::class)
 @Composable
 internal fun MapContent(
     cards: List<Card>,
@@ -65,7 +66,7 @@ internal fun MapContent(
             compassEnabled = true
         )
     ) {
-        com.google.maps.android.compose.clustering.Clustering(
+        Clustering(
             items = items,
             onClusterClick = { cluster ->
                 onClusterTap(cluster.items.toList())
@@ -100,15 +101,15 @@ internal fun ClusterBubble(count: Int) {
 
 /**
  * Adapter Card → ClusterItem cho Google Maps clustering library.
- * `getSnippet()` hiện trên info window mặc định nếu user dùng default marker;
+ * `snippet` hiện trên info window mặc định nếu user dùng default marker;
  * trong app này custom info qua bottom sheet nên snippet chỉ là backup.
  */
 data class RiceClusterItem(
     val card: Card,
     private val latLng: LatLng
 ) : ClusterItem {
-    override fun getPosition(): LatLng = latLng
-    override fun getTitle(): String = card.name.ifBlank { "—" }
-    override fun getSnippet(): String = "${MapFormatters.number(card.netWeight)} kg (${card.bagCount})"
-    override fun getZIndex(): Float = 0f
+    override val position: LatLng get() = latLng
+    override val title: String get() = card.name.ifBlank { "—" }
+    override val snippet: String get() = "${MapFormatters.number(card.netWeight)} kg (${card.bagCount})"
+    override val zIndex: Float get() = 0f
 }

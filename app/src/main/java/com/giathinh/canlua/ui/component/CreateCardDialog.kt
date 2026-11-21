@@ -29,6 +29,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldBuffer
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.byValue
+import androidx.compose.foundation.text.input.insert
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -47,10 +54,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -63,21 +71,16 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.giathinh.canlua.R
 import com.giathinh.canlua.ui.theme.AppColors
 import com.giathinh.canlua.ui.util.shake
 import com.giathinh.canlua.util.HapticUtil
-import java.util.Locale
 
 /**
  * Mode điều khiển lại layout của dialog cho cả nhữ vai trò:
@@ -154,10 +157,10 @@ fun CreateCardBottomSheet(
         }
     }
 
-    // Lưu chuỗi số thô, hiển thị được format qua VisualTransformation
+    // Lưu chuỗi số thô, hiển thị được format qua OutputTransformation
     var moistureRaw        by remember { mutableStateOf("") }   // "18.2" -> 18.2%
-    var priceRaw           by remember { mutableStateOf("") }   // "8200" -> 8.200 đ
-    var depositRaw         by remember { mutableStateOf("") }   // "500000" -> 500.000 đ
+    val priceState         = rememberTextFieldState()           // "8200" -> 8.200 đ
+    val depositState       = rememberTextFieldState()           // "500000" -> 500.000 đ
     var impurityWeightRaw  by remember { mutableStateOf("") }   // "5.0" -> 5.0 kg
 
     // Trợ giúp giải thích
@@ -252,7 +255,10 @@ fun CreateCardBottomSheet(
         KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
     }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -545,17 +551,14 @@ fun CreateCardBottomSheet(
 
                     // Đơn giá đ/kg (1 dòng)
                     OutlinedTextField(
-                        value = priceRaw,
-                        onValueChange = { input ->
-                            val digits = input.filter { it.isDigit() }
-                            if (digits.length <= 7) priceRaw = digits
-                        },
+                        state = priceState,
                         label = { Text(stringResource(R.string.create_card_price_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_price_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        visualTransformation = ThousandSeparatorTransformation(),
+                        inputTransformation = digitsOnlyInputTransformation(7),
+                        outputTransformation = ThousandSeparatorOutputTransformation,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                        keyboardActions = nextAction,
-                        singleLine = true,
+                        onKeyboardAction = { focusManager.moveFocus(FocusDirection.Down) },
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
@@ -563,17 +566,14 @@ fun CreateCardBottomSheet(
 
                     // Row 5: Tiền cọc — full width
                     OutlinedTextField(
-                        value = depositRaw,
-                        onValueChange = { input ->
-                            val digits = input.filter { it.isDigit() }
-                            if (digits.length <= 10) depositRaw = digits
-                        },
+                        state = depositState,
                         label = { Text(stringResource(R.string.create_card_deposit_label)) },
                         placeholder = { Text(stringResource(R.string.create_card_deposit_placeholder), style = MaterialTheme.typography.bodyMedium) },
-                        visualTransformation = ThousandSeparatorTransformation(),
+                        inputTransformation = digitsOnlyInputTransformation(10),
+                        outputTransformation = ThousandSeparatorOutputTransformation,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        singleLine = true,
+                        onKeyboardAction = { focusManager.clearFocus() },
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = dialogTextFieldColors()
@@ -659,8 +659,8 @@ fun CreateCardBottomSheet(
                                     riceVariety,
                                     seasonLabel.trim(),
                                     moistureRaw.toDoubleOrNull() ?: 0.0,
-                                    priceRaw.toDoubleOrNull() ?: 0.0,
-                                    depositRaw.toDoubleOrNull() ?: 0.0,
+                                    priceState.text.toString().toDoubleOrNull() ?: 0.0,
+                                    depositState.text.toString().toDoubleOrNull() ?: 0.0,
                                     cccd.trim().takeIf { it.isNotEmpty() },
                                     impurityWeightRaw.toDoubleOrNull() ?: 0.0,
                                     recordLocation
@@ -743,49 +743,27 @@ private fun InlineFieldHelpHint(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VisualTransformation: Tự động chèn dấu chấm phân cách phần ngàn
+// OutputTransformation: Tự động chèn dấu chấm phân cách phần ngàn
 // ─────────────────────────────────────────────────────────────────────────────
-class ThousandSeparatorTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val original = text.text
-        if (original.isEmpty()) {
-            return TransformedText(text, OffsetMapping.Identity)
+object ThousandSeparatorOutputTransformation : OutputTransformation {
+    private const val THOUSAND_GROUP_SIZE = 3
+
+    override fun TextFieldBuffer.transformOutput() {
+        val len = length
+        if (len <= THOUSAND_GROUP_SIZE || !asCharSequence().all { it.isDigit() }) return
+        var pos = len - THOUSAND_GROUP_SIZE
+        while (pos > 0) {
+            insert(pos, ".")
+            pos -= THOUSAND_GROUP_SIZE
         }
-
-        val formatted = try {
-            val number = original.toLong()
-            String.format(Locale.forLanguageTag("vi-VN"), "%,d", number)
-        } catch (e: Exception) {
-            original
-        }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 0) return 0
-                var transformedOffset = 0
-                var originalOffset = 0
-                while (transformedOffset < formatted.length && originalOffset < offset) {
-                    if (formatted[transformedOffset].isDigit()) {
-                        originalOffset++
-                    }
-                    transformedOffset++
-                }
-                while (transformedOffset < formatted.length && !formatted[transformedOffset].isDigit()) {
-                    transformedOffset++
-                }
-                return transformedOffset.coerceAtMost(formatted.length)
-            }
-
-            override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 0) return 0
-                val safeOffset = offset.coerceAtMost(formatted.length)
-                return formatted.take(safeOffset).count { it.isDigit() }.coerceAtMost(original.length)
-            }
-        }
-
-        return TransformedText(AnnotatedString(formatted), offsetMapping)
     }
 }
+
+fun digitsOnlyInputTransformation(maxLength: Int? = null): InputTransformation =
+    InputTransformation.byValue { current, proposed ->
+        val digits = proposed.filter { it.isDigit() }
+        if (maxLength != null && digits.length > maxLength) current else digits
+    }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Helpers

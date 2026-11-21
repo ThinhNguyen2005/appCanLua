@@ -151,9 +151,9 @@ class GoogleSignInHelper(private val context: Context) {
             val cred = GoogleIdTokenCredential.createFrom(credential.data)
             return GoogleAccount(
                 idToken = cred.idToken,
-                email = cred.id,
+                email = cred.email,
                 displayName = cred.displayName,
-                phoneNumber = cred.phoneNumber,
+                phoneNumber = null,
                 photoUri = cred.profilePictureUri
             )
         }
