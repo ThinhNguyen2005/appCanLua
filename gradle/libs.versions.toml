@@ -63,7 +63,7 @@ datastore = "1.2.1"
 # org.json — pure-JVM implementation. Thay thế Android stub
 # (org.json.JSONObject trong android.jar là mockable) khi chạy :app:testDebugUnitTest.
 # Test-only, không ảnh hưởng production APK.
-orgJson = "20260522"
+orgJson = "20260814"
 mockk = "1.14.11"
 adsMobileSdk = "1.3.1"
 userMessagingPlatform = "3.1.0"
