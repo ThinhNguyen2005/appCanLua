@@ -59,7 +59,7 @@ splashscreen = "1.2.0"
 kotlinxCollectionsImmutable = "0.5.0"
 securityCrypto = "1.1.0"
 # DataStore
-datastore = "1.2.1"
+datastore = "1.3.0"
 # org.json — pure-JVM implementation. Thay thế Android stub
 # (org.json.JSONObject trong android.jar là mockable) khi chạy :app:testDebugUnitTest.
 # Test-only, không ảnh hưởng production APK.
